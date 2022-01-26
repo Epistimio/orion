@@ -224,12 +224,6 @@ class TrialAdapter:
         return trial
 
     @property
-    def lie(self):
-        """See `~orion.core.worker.trial.Trial`"""
-        # we do not lie like Orion does
-        return None
-
-    @property
     def objective(self):
         """See `~orion.core.worker.trial.Trial`"""
 
@@ -381,15 +375,13 @@ class Track(BaseStorageProtocol):  # noqa: F811
         self.project = None
         self.group = None
         self.objective = self.options.get("objective")
-        self.lies = dict()
         assert self.objective is not None, "An objective should be defined!"
 
     def __getstate__(self):
-        return dict(uri=self.uri, lies=self.lies)
+        return dict(uri=self.uri)
 
     def __setstate__(self, state):
         self._initialize_client(state["uri"])
-        self.lies = state["lies"]
 
     def _get_project(self, name):
         if self.project is None:
@@ -510,29 +502,6 @@ class Track(BaseStorageProtocol):  # noqa: F811
             raise DuplicateKeyError("Was not able to register Trial!")
 
         return TrialAdapter(trial, objective=self.objective)
-
-    def register_lie(self, trial):
-        """Register a *fake* trial created by the strategist.
-
-        The main difference between fake trial and original ones is the addition of a fake objective
-        result, and status being set to completed. The id of the fake trial is different than the id
-        of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
-        Strategist object and generation of fake trials.
-
-        Parameters
-        ----------
-        trial: `Trial` object
-            Fake trial to register in the database
-
-        """
-        warnings.warn("Track does not persist lies!")
-
-        if trial.id in self.lies:
-            raise DuplicateKeyError("Lie already exists")
-
-        self.lies[trial.id] = trial
-        return trial
 
     def _fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""

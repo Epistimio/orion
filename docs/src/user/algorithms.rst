@@ -145,14 +145,6 @@ Configuration
                 seed: null
                 repetitions: 1
 
-        strategy: StubParallelStrategy
-
-
-.. note::
-
-   Notice the additional ``strategy`` in configuration which is not mandatory for most other
-   algorithms. See :ref:`StubParallelStrategy` for more information.
-
 
 .. autoclass:: orion.algo.hyperband.Hyperband
    :noindex:
@@ -211,13 +203,6 @@ Configuration
                 num_brackets: 1
                 repetitions: 1
 
-        strategy: StubParallelStrategy
-
-
-.. note::
-
-   Notice the additional ``strategy`` in configuration which is not mandatory for most other
-   algorithms. See :ref:`StubParallelStrategy` for more information.
 
 .. autoclass:: orion.algo.asha.ASHA
    :noindex:
@@ -271,6 +256,13 @@ Configuration
                 equal_weight: False
                 prior_weight: 1.0
                 full_weight_num: 25
+                parallel_strategy:
+                    of_type: StatusBasedParallelStrategy
+                    strategy_configs:
+                        broken:
+                            of_type: MaxParallelStrategy
+                    default_strategy:
+                        of_type: NoParallelStrategy
 
 
 .. autoclass:: orion.algo.tpe.TPE
@@ -339,8 +331,6 @@ Configuration
                     multiply_factor: 3.0
                     add_factor: 1
 
-        strategy: StubParallelStrategy
-
 
 .. autoclass:: orion.algo.evolution_es.EvolutionES
    :noindex:
@@ -393,16 +383,10 @@ A parallel strategy is a method to improve parallel optimization
 for sequential algorithms. Such algorithms can only observe
 trials that are completed and have a corresponding objective.
 To get around this, parallel strategies produces *lies*,
-noncompleted trials with fake objectives, which are then
-passed to a temporary copy of the algorithm that will suggest
-a new point. The temporary algorithm is then discarded.
-The original algorithm never obverses lies, and
-the temporary copy always observes lies that are based on
-most up-to-date data.
+noncompleted trials with fake objectives, which can
+be used by algorithms to avoid exploring space nearby pending or broken trials.
 The strategies will differ in how they assign objectives
 to the *lies*.
-
-By default, the strategy used is :ref:`MaxParallelStrategy`
 
 NoParallelStrategy
 ------------------
@@ -410,6 +394,10 @@ NoParallelStrategy
 Does not return any lie. This is useful to benchmark parallel
 strategies and measure how they can help compared to no
 strategy.
+
+.. autoclass:: orion.algo.parallel_strategy.NoParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
 .. _StubParallelStrategy:
 
@@ -422,12 +410,9 @@ that can leverage parallel optimization.
 
 The value of the objective is customizable with ``stub_value``.
 
-.. code-block:: yaml
-
-    experiment:
-        strategy:
-            StubParallelStrategy:
-                stub_value: 'custom value'
+.. autoclass:: orion.algo.parallel_strategy.StubParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
 .. _MaxParallelStrategy:
 
@@ -440,13 +425,12 @@ The default value assigned to objective when less than 1 trial
 is completed is configurable with ``default_result``. It
 is ``float('inf')`` by default.
 
-.. code-block:: yaml
+.. autoclass:: orion.algo.parallel_strategy.MaxParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
-    experiment:
-        strategy:
-            MaxParallelStrategy:
-                default_result: 10000
 
+.. _MeanParallelStrategy:
 
 MeanParallelStrategy
 --------------------
@@ -457,9 +441,17 @@ The default value assigned to objective when less than 2 trials
 are completed is configurable with ``default_result``. It
 is ``float('inf')`` by default.
 
-.. code-block:: yaml
+.. autoclass:: orion.algo.parallel_strategy.MeanParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
-    experiment:
-        strategy:
-            MeanParallelStrategy:
-                default_result: 0.5
+.. _StatusBasedParallelStrategy:
+
+StatusBasedParallelStrategy
+---------------------------
+
+Uses a different strategy based on the status of the trial at hand.
+
+.. autoclass:: orion.algo.parallel_strategy.StatusBasedParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe, get_strategy

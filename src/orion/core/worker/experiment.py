@@ -93,7 +93,6 @@ class Experiment:
         "version",
         "space",
         "algorithms",
-        "producer",
         "working_dir",
         "_id",
         "_storage",
@@ -115,7 +114,6 @@ class Experiment:
         self.space = None
         self.algorithms = None
         self.working_dir = None
-        self.producer = {}
 
         self._storage = get_storage()
 
@@ -332,33 +330,6 @@ class Experiment:
         log.info("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
 
-    def register_lie(self, lying_trial):
-        """Register a *fake* trial created by the strategist.
-
-        The main difference between fake trial and orignal ones is the addition of a fake objective
-        result, and status being set to completed. The id of the fake trial is different than the id
-        of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See :mod:`orion.core.worker.strategy` for more information and the
-        Strategist object and generation of fake trials.
-
-        Parameters
-        ----------
-        trials: `Trial` object
-            Fake trial to register in the database
-
-        Raises
-        ------
-        orion.core.io.database.DuplicateKeyError
-            If a trial with the same id already exist in the database. Since the id is computed
-            based on a hashing of the trial, this should mean that an identical trial already exist
-            in the database.
-
-        """
-        self._check_if_writable()
-        lying_trial.status = "completed"
-        lying_trial.end_time = datetime.datetime.utcnow()
-        self._storage.register_lie(lying_trial)
-
     def register_trial(self, trial, status="new"):
         """Register new trial in the database.
 
@@ -514,14 +485,6 @@ class Experiment:
                 attribute.get("adapter"), BaseAdapter
             ):
                 config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-            elif (
-                attrname == "producer"
-                and attribute.get("strategy")
-                and not isinstance(attribute["strategy"], dict)
-            ):
-                config[attrname]["strategy"] = config[attrname][
-                    "strategy"
-                ].configuration
 
         if self.id is not None:
             config["_id"] = self.id

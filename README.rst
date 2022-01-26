@@ -118,7 +118,7 @@ If you use Oríon for published work, please cite our work using the following b
 
 .. code-block:: bibtex
 
-   @software{xavier_bouthillier_2021_0_2_0,
+   @software{xavier_bouthillier_2021_0_2_1,
      author       = {Xavier Bouthillier and
                      Christos Tsirigotis and
                      François Corneau-Tremblay and
@@ -145,7 +145,7 @@ If you use Oríon for published work, please cite our work using the following b
      month        = nov,
      year         = 2021,
      publisher    = {Zenodo},
-     version      = {v0.2.0},
+     version      = {v0.2.1},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }

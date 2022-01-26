@@ -49,7 +49,6 @@ config = dict(
     max_broken=5,
     working_dir="",
     algorithms={"random": {"seed": 1}},
-    producer={"strategy": "NoParallelStrategy"},
     refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
 )
 
@@ -60,7 +59,6 @@ def user_config():
     user_config = copy.deepcopy(config)
     user_config.pop("metadata")
     user_config.pop("version")
-    user_config["strategy"] = user_config.pop("producer")["strategy"]
     user_config.pop("refers")
     user_config.pop("pool_size")
     return user_config
@@ -210,9 +208,6 @@ class TestCreateExperiment:
             assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
             assert experiment.algorithms.configuration == {"random": {"seed": None}}
-            assert experiment.configuration["producer"] == {
-                "strategy": {"MaxParallelStrategy": {"default_result": float("inf")}}
-            }
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""
@@ -226,7 +221,6 @@ class TestCreateExperiment:
             assert exp_config["max_broken"] == config["max_broken"]
             assert exp_config["working_dir"] == config["working_dir"]
             assert exp_config["algorithms"] == config["algorithms"]
-            assert exp_config["producer"] == config["producer"]
 
     def test_create_experiment_hit_no_branch(self, user_config):
         """Test creating an existing experiment by specifying all identical attributes."""
@@ -242,7 +236,6 @@ class TestCreateExperiment:
             assert exp_config["max_broken"] == config["max_broken"]
             assert exp_config["working_dir"] == config["working_dir"]
             assert exp_config["algorithms"] == config["algorithms"]
-            assert exp_config["producer"] == config["producer"]
 
     def test_create_experiment_hit_no_config(self):
         """Test creating an existing experiment by specifying the name only."""
@@ -256,10 +249,6 @@ class TestCreateExperiment:
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
             assert experiment.working_dir == config["working_dir"]
-            assert (
-                experiment.producer["strategy"].configuration
-                == config["producer"]["strategy"]
-            )
 
     def test_create_experiment_hit_branch(self):
         """Test creating a differing experiment that cause branching."""
@@ -277,10 +266,6 @@ class TestCreateExperiment:
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
             assert experiment.working_dir == config["working_dir"]
-            assert (
-                experiment.producer["strategy"].configuration
-                == config["producer"]["strategy"]
-            )
 
     def test_create_experiment_race_condition(self, monkeypatch):
         """Test that a single race condition is handled seemlessly
