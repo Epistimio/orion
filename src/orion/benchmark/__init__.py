@@ -139,7 +139,7 @@ class Benchmark:
                 ]
                 exp_column["Experiment Name"] = exp.name
                 exp_column["Number Trial"] = len(exp.fetch_trials())
-                exp_column["Best Evaluation"] = stats["best_evaluation"]
+                exp_column["Best Evaluation"] = stats.best_evaluation
                 experiment_table.append(exp_column)
 
         if not silent:

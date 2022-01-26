@@ -21,6 +21,7 @@ from orion.core.utils.format_terminal import (
     format_title,
     get_trial_params,
 )
+from orion.core.worker.experiment import ExperimentStats
 from orion.core.worker.trial import Trial
 
 
@@ -564,7 +565,7 @@ def test_get_trial_params(dummy_trial):
 def test_format_stats(dummy_trial):
     """Test stats section formatting"""
     experiment = DummyExperiment()
-    experiment.stats = dict(
+    experiment.stats = ExperimentStats(
         best_trials_id="dummy",
         trials_completed=10,
         best_evaluation=0.1,
@@ -647,7 +648,7 @@ def test_format_info(algorithm_dict, dummy_trial):
     adapter.configuration = dict(adummy="dict", foran="adapter")
 
     experiment.refers = dict(adapter=adapter)
-    experiment.stats = dict(
+    experiment.stats = ExperimentStats(
         best_trials_id="dummy",
         trials_completed=10,
         best_evaluation=0.1,
