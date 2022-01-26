@@ -187,11 +187,8 @@ class ExperimentClient:
 
     @property
     def stats(self):
-        """Calculate stats for this particular experiment.
-
-        Returns
-        -------
-        stats : :py:class:`orion.core.worker.experiment.ExperimentStats`
+        """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
+        experiment.
         """
         return self._experiment.stats
 
