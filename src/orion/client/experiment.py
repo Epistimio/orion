@@ -14,15 +14,15 @@ import orion.core
 import orion.core.utils.format_trials as format_trials
 from orion.client.runner import Runner
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils import backward
 from orion.core.utils.exceptions import (
+    AlreadyReleased,
     BrokenExperiment,
     CompletedExperiment,
     ReservationRaceCondition,
     UnsupportedOperation,
     WaitingForTrials,
 )
-from orion.core.utils.flatten import flatten, unflatten
+from orion.core.utils.flatten import unflatten
 from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
