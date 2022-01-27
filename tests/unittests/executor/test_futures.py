@@ -4,6 +4,7 @@ import pytest
 
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import PoolExecutor
+from orion.executor.single_backend import SingleExecutor
 
 
 def multiprocess(n):
@@ -16,7 +17,7 @@ def thread(n):
     return PoolExecutor(n, "threading")
 
 
-backends = [thread, multiprocess, Dask]
+backends = [thread, multiprocess, Dask, SingleExecutor]
 
 
 class FunctionException(Exception):

@@ -5,6 +5,7 @@ Executor without parallelism for debugging
 
 """
 import functools
+import time
 import traceback
 
 from orion.executor.base import (
@@ -35,16 +36,21 @@ class _Future(Future):
         return self.result
 
     def wait(self, timeout=None):
+        start = time.time()
+
         try:
             self.result = self.future()
         except Exception as e:
             self.exception = e
 
+        if timeout and time.time() - start > timeout:
+            raise TimeoutError()
+
     def ready(self):
-        return self.result is None
+        return self.result is not None or self.exception is not None
 
     def successful(self):
-        if self.result is None:
+        if not self.ready():
             raise ValueError()
 
         return self.exception is None
