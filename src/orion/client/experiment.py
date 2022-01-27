@@ -809,8 +809,6 @@ class ExperimentClient:
 
             return runner.run()
 
-        return sum(trials)
-
     def close(self):
         """Verify that no reserved trials are remaining.
 
