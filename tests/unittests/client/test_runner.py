@@ -126,7 +126,7 @@ def test_stop_after_max_trial_reached():
 
 
 def test_interrupted_gather():
-    count = 10
+    count = 2
 
     runner = new_runner(0.01, n_workers=16)
     runner.fct = function

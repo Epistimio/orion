@@ -26,7 +26,11 @@ class _Future(Future):
         self.exception = None
 
     def get(self, timeout=None):
+        start = time.time()
         self.wait(timeout)
+
+        if timeout and time.time() - start > timeout:
+            raise TimeoutError()
 
         if self.result:
             return self.result
@@ -38,15 +42,10 @@ class _Future(Future):
         if self.ready():
             return
 
-        start = time.time()
-
         try:
             self.result = self.future()
         except Exception as e:
             self.exception = e
-
-        if timeout and time.time() - start > timeout:
-            raise TimeoutError()
 
     def ready(self):
         return self.result is not None or self.exception is not None
