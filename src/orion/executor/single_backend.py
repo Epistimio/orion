@@ -26,16 +26,18 @@ class _Future(Future):
         self.exception = None
 
     def get(self, timeout=None):
+        self.wait(timeout)
+
         if self.result:
             return self.result
 
-        if self.exception:
+        else:
             raise self.exception
 
-        self.result = self.future()
-        return self.result
-
     def wait(self, timeout=None):
+        if self.ready():
+            return
+
         start = time.time()
 
         try:
