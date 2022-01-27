@@ -95,7 +95,7 @@ def new_runner(idle_timeout, n_workers=2, client=None):
     return runner
 
 
-def function_raise_on_2(lhs, rhs):
+def function_raise_on_2(lhs, sleep):
     """Simple function for testing purposes."""
 
     if lhs % 2 == 1:
