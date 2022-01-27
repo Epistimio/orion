@@ -21,7 +21,6 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
     WaitingForTrials,
 )
-from orion.core.utils.flatten import unflatten
 from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
