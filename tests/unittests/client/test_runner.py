@@ -42,6 +42,7 @@ class FakeClient:
         self.suggest_error = WaitingForTrials
         self.trials = []
         self.status = []
+        self.working_dir = ''
 
     def suggest(self, pool_size=None):
         """Fake suggest."""
