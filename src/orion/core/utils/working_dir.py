@@ -6,44 +6,51 @@ ContextManager for working directory
 ContextManager class to create a permanent directory or a temporary one.
 
 """
+import logging
 import os
 import tempfile
 
+log = logging.getLogger(__name__)
+
 
 # pylint: disable=too-few-public-methods
-class WorkingDir:
-    """ContextManager class for temporary or permanent directory."""
+class SetupWorkingDir:
+    """ContextManager class for temporary or permanent directory.
 
-    def __init__(self, working_dir, temp=True, suffix=None, prefix=None):
-        """Create the context manager with the given name.
+    Parameters
+    ----------
+    experiment: ``orion.client.experiment.ExperimentClient``
+        Experiment for which the working directory will be created
 
-        Parameters
-        ----------
-        name : str, optional
-            Name of the directory. If empty, will create a temporary one.
+    """
 
-        """
-        self.working_dir = str(working_dir)
-        self._temp = temp
-        self._suffix = suffix
-        self._prefix = prefix
+    def __init__(self, experiment):
+        self.experiment = experiment
+        self.tmp = None
         self._tmpdir = None
 
     def __enter__(self):
         """Create the a permanent directory or a temporary one."""
-        os.makedirs(self.working_dir, exist_ok=True)
 
-        if not self._temp:
-            path = os.path.join(self.working_dir, self._prefix + self._suffix)
-            os.makedirs(path, exist_ok=True)
-            return path
+        self.tmp = bool(not self.experiment.working_dir)
 
-        self._tmpdir = tempfile.TemporaryDirectory(
-            suffix=self._suffix, prefix=self._prefix, dir=self.working_dir
-        )
-        return self._tmpdir.name
+        if self.tmp:
+            base_path = os.path.join(tempfile.gettempdir(), "orion")
+            os.makedirs(base_path, exist_ok=True)
+            self._tmpdir = tempfile.TemporaryDirectory(
+                prefix=f"{self.experiment.name}-v{self.experiment.version}",
+                dir=self.experiment.working_dir,
+            )
+            self.experiment.working_dir = self._tmpdir.name
+        else:
+            os.makedirs(self.experiment.working_dir, exist_ok=True)
+
+        log.debug("Working directory at '%s':", self.experiment.working_dir)
+
+        return self.experiment.working_dir
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Cleanup temporary directory."""
-        if self._temp:
+        if self.tmp:
             self._tmpdir.cleanup()
+            self.experiment.working_dir = None

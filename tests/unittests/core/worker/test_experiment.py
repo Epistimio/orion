@@ -347,11 +347,12 @@ def test_update_completed_trial(random_dt):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_register_trials(random_dt):
+def test_register_trials(tmp_path, random_dt):
     """Register a list of newly proposed trials/parameters."""
     with OrionState():
         exp = Experiment("supernaekei", mode="x")
         exp._id = 0
+        exp.working_dir = tmp_path
 
         trials = [
             Trial(params=[{"name": "a", "type": "integer", "value": 5}]),
@@ -368,6 +369,8 @@ def test_register_trials(random_dt):
         assert yo[1]["status"] == "new"
         assert yo[0]["submit_time"] == random_dt
         assert yo[1]["submit_time"] == random_dt
+        assert yo[0]["exp_working_dir"] == tmp_path
+        assert yo[1]["exp_working_dir"] == tmp_path
 
 
 class TestToPandas:
@@ -553,13 +556,12 @@ def test_experiment_stats():
         exp._id = cfg.trials[0]["experiment"]
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
         stats = exp.stats
-        assert stats["trials_completed"] == NUM_COMPLETED
-        assert stats["best_trials_id"] == cfg.trials[3]["_id"]
-        assert stats["best_evaluation"] == 0
-        assert stats["start_time"] == exp.metadata["datetime"]
-        assert stats["finish_time"] == cfg.trials[0]["end_time"]
-        assert stats["duration"] == stats["finish_time"] - stats["start_time"]
-        assert len(stats) == 6
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[3]["_id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[0]["end_time"]
+        assert stats.duration == stats.finish_time - stats.start_time
 
 
 def test_experiment_pickleable():

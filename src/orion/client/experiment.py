@@ -14,6 +14,7 @@ import orion.core
 import orion.core.utils.format_trials as format_trials
 from orion.client.runner import Runner
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -21,7 +22,9 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
     WaitingForTrials,
 )
-from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
+from orion.core.utils.flatten import flatten, unflatten
+from orion.core.utils.working_dir import SetupWorkingDir
+from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
 from orion.plotting.base import PlotAccessor
@@ -186,28 +189,8 @@ class ExperimentClient:
 
     @property
     def stats(self):
-        """Calculate a stats dictionary for this particular experiment.
-
-        Returns
-        -------
-        stats : dict
-
-        Stats
-        -----
-        trials_completed : int
-           Number of completed trials
-        best_trials_id : int
-           Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
-           which achieved the best known objective result.
-        best_evaluation : float
-           Evaluation score of the best trial
-        start_time : `datetime.datetime`
-           When Experiment was first dispatched and started running.
-        finish_time : `datetime.datetime`
-           When Experiment reached terminating condition and stopped running.
-        duration : `datetime.timedelta`
-           Elapsed time.
-
+        """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
+        experiment.
         """
         return self._experiment.stats
 
@@ -220,6 +203,11 @@ class ExperimentClient:
     def working_dir(self):
         """Working directory of the experiment."""
         return self._experiment.working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        """Working directory of the experiment."""
+        self._experiment.working_dir = value
 
     @property
     def producer(self):
@@ -805,20 +793,23 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        runner = Runner(
-            self,
-            fct,
-            pool_size=pool_size,
-            idle_timeout=idle_timeout,
-            max_trials_per_worker=max_trials_per_worker,
-            max_broken=max_broken,
-            trial_arg=trial_arg,
-            on_error=on_error,
-            n_workers=n_workers,
-            **kwargs,
-        )
+        with SetupWorkingDir(self):
+            runner = Runner(
+                self,
+                fct,
+                pool_size=pool_size,
+                idle_timeout=idle_timeout,
+                max_trials_per_worker=max_trials_per_worker,
+                max_broken=max_broken,
+                trial_arg=trial_arg,
+                on_error=on_error,
+                n_workers=n_workers,
+                **kwargs,
+            )
 
-        return runner.run()
+            return runner.run()
+
+        return sum(trials)
 
     def close(self):
         """Verify that no reserved trials are remaining.
