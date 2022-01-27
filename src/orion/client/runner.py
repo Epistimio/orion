@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 import orion.core
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -29,6 +30,8 @@ from orion.executor.base import AsyncException, AsyncResult
 
 def _optimize(trial, fct, trial_arg, **kwargs):
     """Execute a trial on a worker"""
+
+    backward.ensure_trial_working_dir(self, trial)
     kwargs.update(flatten(trial.params))
 
     if trial_arg:

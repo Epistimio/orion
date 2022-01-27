@@ -101,7 +101,7 @@ def function_raise_on_2(lhs, sleep):
     if lhs % 2 == 1:
         raise RuntimeError()
 
-    return lhs + rhs
+    return lhs + sleep
 
 
 def test_stop_after_max_trial_reached():
