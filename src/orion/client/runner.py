@@ -31,7 +31,6 @@ from orion.executor.base import AsyncException, AsyncResult
 def _optimize(trial, fct, trial_arg, **kwargs):
     """Execute a trial on a worker"""
 
-    backward.ensure_trial_working_dir(self, trial)
     kwargs.update(flatten(trial.params))
 
     if trial_arg:
@@ -228,6 +227,8 @@ class Runner:
         """Schedule new trials to be computed"""
         new_futures = []
         for trial in new_trials:
+            backward.ensure_trial_working_dir(self.client, trial)
+
             future = self.client.executor.submit(
                 _optimize, trial, self.fct, self.trial_arg, **self.kwargs
             )
