@@ -194,6 +194,28 @@ def test_interrupted_scatter_gather_custom_signal():
         runner.run()
 
 
+def test_interrupted_scatter_gather_custom_signal_restore():
+    count = 2
+
+    runner = new_runner(2, n_workers=16)
+    runner.fct = function
+    client = runner.client
+
+    def custom_handler(*args):
+        raise CustomExceptionForTest()
+
+    # add a custom signal
+    signal.signal(signal.SIGINT, custom_handler)
+
+    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
+
+    runner.run()
+
+    # custom signal was restored
+    with pytest.raises(CustomExceptionForTest):
+        os.kill(os.getpid(), signal.SIGINT)
+
+
 def test_interrupted_scatter_gather_now():
     count = 2
 
