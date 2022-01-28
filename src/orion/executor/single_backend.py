@@ -16,17 +16,9 @@ from orion.executor.base import (
     Future,
 )
 
-
-class _None:
-    """A function can return None so we have to create a difference between
-    The None result and the absence of result
-
-    """
-
-    pass
-
-
-none = _None()
+# A function can return None so we have to create a difference between
+# the None result and the absence of result
+NOT_SET = object()
 
 
 class _Future(Future):
@@ -34,8 +26,8 @@ class _Future(Future):
 
     def __init__(self, future):
         self.future = future
-        self.result = none
-        self.exception = none
+        self.result = NOT_SET
+        self.exception = NOT_SET
 
     def get(self, timeout=None):
         start = time.time()
@@ -44,7 +36,7 @@ class _Future(Future):
         if timeout and time.time() - start > timeout:
             raise TimeoutError()
 
-        if self.result is not none:
+        if self.result is not NOT_SET:
             return self.result
 
         else:
@@ -60,13 +52,13 @@ class _Future(Future):
             self.exception = e
 
     def ready(self):
-        return (self.result is not none) or (self.exception is not none)
+        return (self.result is not NOT_SET) or (self.exception is not NOT_SET)
 
     def successful(self):
         if not self.ready():
             raise ValueError()
 
-        return self.exception is none
+        return self.exception is NOT_SET
 
 
 class SingleExecutor(BaseExecutor):
