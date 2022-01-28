@@ -49,9 +49,9 @@ class Protected(object):
 
     def handler(self, sig, frame):
         """Register the received signal for later"""
-        log.warning(f"Delaying signal %d to finish operations", sig)
+        log.warning("Delaying signal %d to finish operations", sig)
         log.warning(
-            f"Press CTRL-C again to terminate the program now  (You may lose results)"
+            "Press CTRL-C again to terminate the program now  (You may lose results)"
         )
 
         self.start = time.time()
@@ -76,7 +76,7 @@ class Protected(object):
         else:
             self.delayed = time.time() - self.start
 
-            log.warning(f"Termination was delayed by %.4f s", self.delayed)
+            log.warning("Termination was delayed by %.4f s", self.delayed)
             handler = self.handlers[self.signal_received[0]]
 
             if callable(handler):
