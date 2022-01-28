@@ -125,25 +125,80 @@ def test_stop_after_max_trial_reached():
     assert client.status == status
 
 
-def test_interrupted_gather():
+def test_interrupted_scatter_gather():
     count = 2
 
-    runner = new_runner(0.01, n_workers=16)
+    runner = new_runner(2, n_workers=16)
     runner.fct = function
     client = runner.client
 
-    client.trials.extend([new_trial(i) for i in range(count, -1, -1)])
+    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
 
-    def bad_async(*args, **kwargs):
-        raise KeyboardInterrupt()
+    def interrupt():
+        # this should have no impact on the runner
+        time.sleep(0.5)
+        os.kill(os.getpid(), signal.SIGINT)
 
-    client.executor.async_get = bad_async
+    def slow_gather():
+        # Sleep until some results are ready
+        time.sleep(1)
+        Runner.gather(runner)
+
+    runner.gather = slow_gather
 
     with pytest.raises(KeyboardInterrupt):
+        start = time.time()
+        Thread(target=interrupt).start()
+
+        # Gather will wait 1 sec to execute
+        # so we received the sig int very early
+        # but the full gather should still execute
         runner.run()
 
+    elapsed = time.time() - start
+    assert elapsed > 1, "Keyboard interrupt got delayed until gather finished"
+    status = ["completed" for i in range(count)]
+    assert (
+        client.status == status
+    ), "Trials had time to finish because of the slow gather"
+
+
+def test_interrupted_scatter_gather_now():
+    count = 2
+
+    runner = new_runner(2, n_workers=16)
+    runner.fct = function
+    client = runner.client
+
+    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
+
+    def interrupt():
+        # this will stop the runner right now
+        time.sleep(0.5)
+        os.kill(os.getpid(), signal.SIGINT)
+
+        # We need the sleep here or the second SIGINT is ignored
+        time.sleep(0.1)
+        os.kill(os.getpid(), signal.SIGINT)
+
+    def slow_gather():
+        # Sleep until some results are ready
+        time.sleep(1)
+        Runner.gather(runner)
+
+    runner.gather = slow_gather
+
+    with pytest.raises(KeyboardInterrupt):
+        start = time.time()
+        Thread(target=interrupt).start()
+
+        # the two interrupts forced runner to stop right now
+        runner.run()
+
+    elapsed = time.time() - start
+    assert elapsed > 0.5 and elapsed < 1, "Stopped right after the 2 interrupts"
     status = ["interrupted" for i in range(count)]
-    assert client.status == status
+    assert client.status == status, "Trials did not have time to finish"
 
 
 failures = [WaitingForTrials, ReservationRaceCondition, CompletedExperiment]

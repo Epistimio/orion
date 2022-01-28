@@ -44,8 +44,6 @@ class _Future(Future):
         if timeout and time.time() - start > timeout:
             raise TimeoutError()
 
-        print(self.result, self.exception)
-
         if self.result is not none:
             return self.result
 
@@ -62,7 +60,7 @@ class _Future(Future):
             self.exception = e
 
     def ready(self):
-        return self.result is not none or self.exception is not none
+        return (self.result is not none) or (self.exception is not none)
 
     def successful(self):
         if not self.ready():

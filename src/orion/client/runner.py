@@ -38,30 +38,52 @@ class Protected(object):
         self.signal_received = None
         self.handlers = dict()
         self.start = 0
+        self.delayed = 0
 
     def __enter__(self):
         """Override the signal handlers with our delayed handler"""
         self.signal_received = False
-        self.start = time.time()
         self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
         self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
+        return self
 
     def handler(self, sig, frame):
         """Register the received signal for later"""
         log.warning(f"Delaying signal %d to finish operations", sig)
+        log.warning(
+            f"Press CTRL-C again to terminate the program now  (You may lose results)"
+        )
+
+        self.start = time.time()
+
         self.signal_received = (sig, frame)
 
-    def __exit__(self, type, value, traceback):
-        """Restore old signal handlers and raise the delay signal is any"""
+        # if CTRL-C is pressed again the original handlers will handle it
+        # and make the program stop
+        self.restore_handlers()
+
+    def restore_handlers(self):
+        """Restore old signal handlers"""
         signal.signal(signal.SIGINT, self.handlers[signal.SIGINT])
         signal.signal(signal.SIGTERM, self.handlers[signal.SIGTERM])
 
-        if self.signal_received:
-            log.warning(f"Termination was delayed by %.4f s", time.time() - self.start)
+    def stop_now(self):
+        """Raise the delayed signal if any or restore the old signal handlers"""
+
+        if not self.signal_received:
+            self.restore_handlers()
+
+        else:
+            self.delayed = time.time() - self.start
+
+            log.warning(f"Termination was delayed by %.4f s", self.delayed)
             handler = self.handlers[self.signal_received[0]]
 
             if callable(handler):
                 handler(*self.signal_received)
+
+    def __exit__(self, *args):
+        self.stop_now()
 
 
 def _optimize(trial, fct, trial_arg, **kwargs):
