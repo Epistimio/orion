@@ -5,6 +5,7 @@ import copy
 import os
 import signal
 import time
+from contextlib import contextmanager
 from multiprocessing import Process
 from threading import Thread
 
@@ -31,6 +32,15 @@ def new_trial(value, sleep=0.01):
             dict(name="sleep", type="real", value=sleep),
         ]
     )
+
+
+@contextmanager
+def change_signal_handler(sig, handler):
+    previous = signal.signal(sig, handler)
+
+    yield None
+
+    signal.signal(sig, previous)
 
 
 class FakeClient:
@@ -178,20 +188,19 @@ def test_interrupted_scatter_gather_custom_signal():
         raise CustomExceptionForTest()
 
     # add a custom signal
-    signal.signal(signal.SIGINT, custom_handler)
+    with change_signal_handler(signal.SIGINT, custom_handler):
+        client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
 
-    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
+        def interrupt():
+            time.sleep(0.5)
+            os.kill(os.getpid(), signal.SIGINT)
 
-    def interrupt():
-        time.sleep(0.5)
-        os.kill(os.getpid(), signal.SIGINT)
+        # Our custom signal got called
+        with pytest.raises(CustomExceptionForTest):
+            start = time.time()
+            Thread(target=interrupt).start()
 
-    # Our custom signal got called
-    with pytest.raises(CustomExceptionForTest):
-        start = time.time()
-        Thread(target=interrupt).start()
-
-        runner.run()
+            runner.run()
 
 
 def test_interrupted_scatter_gather_custom_signal_restore():
@@ -205,15 +214,14 @@ def test_interrupted_scatter_gather_custom_signal_restore():
         raise CustomExceptionForTest()
 
     # add a custom signal
-    signal.signal(signal.SIGINT, custom_handler)
+    with change_signal_handler(signal.SIGINT, custom_handler):
+        client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
 
-    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
+        runner.run()
 
-    runner.run()
-
-    # custom signal was restored
-    with pytest.raises(CustomExceptionForTest):
-        os.kill(os.getpid(), signal.SIGINT)
+        # custom signal was restored
+        with pytest.raises(CustomExceptionForTest):
+            os.kill(os.getpid(), signal.SIGINT)
 
 
 def test_interrupted_scatter_gather_now():
