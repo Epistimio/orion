@@ -104,7 +104,7 @@ class TestFutures:
 
         future.wait(0.01)
 
-        # SingleExecutor is not truely async so 
+        # SingleExecutor is not truely async so
         # results are always ready after a wait
         if executor != SingleExecutor:
             assert future.ready() is False
