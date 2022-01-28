@@ -8,6 +8,7 @@ Runner
 Executes the optimization process
 """
 import logging
+import signal
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -27,6 +28,41 @@ from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
 
+log = logging.getLogger(__name__)
+
+
+class Protected(object):
+    """Prevent a signal to be raised during the execution of some code"""
+
+    def __init__(self):
+        self.signal_received = None
+        self.handlers = dict()
+        self.start = 0
+
+    def __enter__(self):
+        """Override the signal handlers with our delayed handler"""
+        self.signal_received = False
+        self.start = time.time()
+        self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
+        self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
+
+    def handler(self, sig, frame):
+        """Register the received signal for later"""
+        log.warning(f"Delaying signal %d to finish operations", sig)
+        self.signal_received = (sig, frame)
+
+    def __exit__(self, type, value, traceback):
+        """Restore old signal handlers and raise the delay signal is any"""
+        signal.signal(signal.SIGINT, self.handlers[signal.SIGINT])
+        signal.signal(signal.SIGTERM, self.handlers[signal.SIGTERM])
+
+        if self.signal_received:
+            log.warning(f"Termination was delayed by %.4f s", time.time() - self.start)
+            handler = self.handlers[self.signal_received[0]]
+
+            if callable(handler):
+                handler(*self.signal_received)
+
 
 def _optimize(trial, fct, trial_arg, **kwargs):
     """Execute a trial on a worker"""
@@ -37,9 +73,6 @@ def _optimize(trial, fct, trial_arg, **kwargs):
         kwargs[trial_arg] = trial
 
     return fct(**unflatten(kwargs))
-
-
-log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -160,38 +193,52 @@ class Runner:
         idle_time = 0
 
         while self.is_running:
-            # Get new trials for our free workers
-            with self.stat.time("sample"):
-                new_trials = self.sample()
+            try:
 
-            # Scatter the new trials to our free workers
-            with self.stat.time("scatter"):
-                self.scatter(new_trials)
+                # Protected will prevent Keyboard interrupts from
+                # happening in the middle of the scatter-gather process
+                # that we can be sure that completed trials are observed
+                with Protected():
 
-            # Gather the results of the workers that have finished
-            with self.stat.time("gather"):
-                self.gather()
+                    # Get new trials for our free workers
+                    with self.stat.time("sample"):
+                        new_trials = self.sample()
 
-            if self.is_idle:
-                idle_end = time.time()
-                idle_time += idle_end - idle_start
-                idle_start = idle_end
+                    # Scatter the new trials to our free workers
+                    with self.stat.time("scatter"):
+                        self.scatter(new_trials)
 
-                log.debug(f"Workers have been idle for {idle_time:.2f} s")
-            else:
-                idle_start = time.time()
-                idle_time = 0
+                    # Gather the results of the workers that have finished
+                    with self.stat.time("gather"):
+                        self.gather()
 
-            if self.is_idle and idle_time > self.idle_timeout:
-                msg = f"Workers have been idle for {idle_time:.2f} s"
+                    if self.is_idle:
+                        idle_end = time.time()
+                        idle_time += idle_end - idle_start
+                        idle_start = idle_end
 
-                if self.has_remaining and not self.is_done:
-                    msg = (
-                        f"{msg}; worker has leg room (has_remaining: {self.has_remaining})"
-                        f" and optimization is not done (is_done: {self.is_done})"
-                    )
+                        log.debug(f"Workers have been idle for {idle_time:.2f} s")
+                    else:
+                        idle_start = time.time()
+                        idle_time = 0
 
-                raise LazyWorkers(msg)
+                    if self.is_idle and idle_time > self.idle_timeout:
+                        msg = f"Workers have been idle for {idle_time:.2f} s"
+
+                        if self.has_remaining and not self.is_done:
+                            msg = (
+                                f"{msg}; worker has leg room (has_remaining: {self.has_remaining})"
+                                f" and optimization is not done (is_done: {self.is_done})"
+                            )
+
+                        raise LazyWorkers(msg)
+
+            except KeyboardInterrupt:
+                self._release_all()
+                raise
+            except:
+                self._release_all()
+                raise
 
         return self.trials
 
@@ -240,14 +287,9 @@ class Runner:
 
     def gather(self):
         """Gather the results from each worker asynchronously"""
-        results = []
-        try:
-            results = self.client.executor.async_get(
-                self.futures, timeout=self.gather_timeout
-            )
-        except KeyboardInterrupt:
-            self._release_all()
-            raise
+        results = self.client.executor.async_get(
+            self.futures, timeout=self.gather_timeout
+        )
 
         to_be_raised = None
         log.debug(f"Gathered new results {len(results)}")
