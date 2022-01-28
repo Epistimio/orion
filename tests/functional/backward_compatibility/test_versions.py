@@ -24,6 +24,12 @@ with open(os.path.join(DIRNAME, "versions.txt"), "r") as f:
     VERSIONS = [version.strip() for version in f.read().split("\n") if version.strip()]
 
 
+def function(x):
+    """Evaluate partial information of a quadratic."""
+    z = x - 34.56789
+    return [dict(name="example_objective", type="objective", value=4 * z ** 2 + 23.4)]
+
+
 def get_branch_argument(version):
     """Get argument to branch.
 
@@ -334,15 +340,6 @@ class TestBackwardCompatibility:
         version = fill_db
         if not has_python_api(version):
             pytest.skip("Python API not supported by {}".format(version))
-
-        def function(x):
-            """Evaluate partial information of a quadratic."""
-            z = x - 34.56789
-            return [
-                dict(
-                    name="example_objective", type="objective", value=4 * z ** 2 + 23.4
-                )
-            ]
 
         exp = create_experiment(
             "hunt-python", branching={"branch-to": "hunt-python-branch"}

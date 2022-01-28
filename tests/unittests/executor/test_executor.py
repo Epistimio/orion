@@ -1,0 +1,190 @@
+import sys
+import time
+from multiprocessing import TimeoutError
+
+import pytest
+
+from orion.executor.base import AsyncException, ExecutorClosed
+from orion.executor.dask_backend import Dask
+from orion.executor.multiprocess_backend import PoolExecutor
+from orion.executor.single_backend import SingleExecutor
+
+
+def multiprocess(n):
+    return PoolExecutor(n, "multiprocess")
+
+
+def thread(n):
+    return PoolExecutor(n, "threading")
+
+
+backends = [thread, multiprocess, Dask, SingleExecutor]
+
+
+def function(a, b, c):
+    return a + b * c
+
+
+def slow_function(a, b, c):
+    time.sleep(5)
+    return function(a, b, c)
+
+
+class BadException(Exception):
+    pass
+
+
+def bad_function(a, b, c):
+    raise BadException()
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_function(backend):
+    with backend(5) as executor:
+        future = executor.submit(function, 1, 2, c=3)
+        assert executor.wait([future]) == [7]
+
+    # Executor was closed at exit
+    with pytest.raises(ExecutorClosed):
+        executor.submit(function, 1, 2, c=3)
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_delete(backend):
+    executor = backend(5)
+
+    future = executor.submit(function, 1, 2, c=3)
+    assert executor.wait([future]) == [7]
+
+    executor.__del__()
+
+    # Executor was closed when deleted
+    with pytest.raises(ExecutorClosed):
+        executor.submit(function, 1, 2, c=3)
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_bad_function(backend):
+    with backend(5) as executor:
+        future = executor.submit(bad_function, 1, 2, 3)
+        with pytest.raises(BadException):
+            executor.wait([future])
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_async_exception(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(bad_function, 1, 2, i) for i in range(20)]
+        results = []
+
+        # waiting should not raise exception
+        while len(results) != 20:
+            partial = executor.async_get(futures)
+            results.extend(partial)
+
+        # exception is raised when we try to fetch the result
+        for result in results:
+            with pytest.raises(BadException):
+                _ = result.value
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_async(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(function, 1, 2, i) for i in range(10)]
+
+        total_task = len(futures)
+        results = executor.async_get(futures, timeout=1)
+
+        assert len(results) > 0, "We got some results"
+        assert len(futures) == total_task - len(results), "Finished futures got removed"
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_async_all(backend):
+    """Makes sure wait can be reinplemented as a async_get"""
+    all_results = []
+
+    with backend(5) as executor:
+        futures = [executor.submit(function, 1, 2, i) for i in range(10)]
+        all_results = executor.wait(futures)
+    all_results.sort()
+
+    # Async version
+    all_results_async = []
+    with backend(5) as executor:
+        futures = [executor.submit(function, 1, 2, i) for i in range(10)]
+
+        results = True
+        while results:
+            results = executor.async_get(futures, timeout=1)
+            all_results_async.extend(results)
+
+    all_results_async = [a.value for a in all_results_async]
+    all_results_async.sort()
+    assert all_results_async == all_results
+
+
+@pytest.mark.parametrize("backend", [thread, multiprocess, Dask])
+def test_execute_async_timeout(backend):
+    """Makes sure async_get does not wait after timeout"""
+    with backend(5) as executor:
+        futures = [executor.submit(slow_function, 1, 2, i) for i in range(10)]
+        results = executor.async_get(futures, timeout=1)
+
+        assert len(results) == 0, "No tasks had time to finish yet"
+        assert len(futures) == 10, "All futures are still there"
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_async_bad(backend):
+    """Makes sure async_get does not throw exceptions"""
+    with backend(5) as executor:
+        futures = [executor.submit(bad_function, 1, 2, i) for i in range(10)]
+
+        results = []
+        while futures:
+            results.extend(executor.async_get(futures))
+
+    for result in results:
+        assert isinstance(result, AsyncException)
+
+        with pytest.raises(BadException):
+            result.value
+
+
+def nested_jobs(executor):
+    with executor:
+        print("nested_jobs sub")
+        futures = [executor.submit(function, 1, 2, i) for i in range(10)]
+        print("nested_jobs wait")
+        all_results = executor.wait(futures)
+    return sum(all_results)
+
+
+@pytest.mark.parametrize("backend", [SingleExecutor])
+def test_executor_is_serializable(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(nested_jobs, executor) for _ in range(10)]
+        all_results = executor.wait(futures)
+
+    assert sum(all_results) == 1000
+
+
+def proxy(*args):
+    import subprocess
+
+    subprocess.run(["echo", ""])
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_multisubprocess(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(proxy) for i in range(5)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            # access the results to make sure no exception is being
+            # suppressed
+            r.value
