@@ -16,12 +16,15 @@ from orion.executor.base import (
     Future,
 )
 
+
 class _None:
     """A function can return None so we have to create a difference between
     The None result and the absence of result
 
     """
+
     pass
+
 
 none = _None()
 
