@@ -106,7 +106,7 @@ class TestFutures:
 
         # SingleExecutor is not truely async so
         # results are always ready after a wait
-        if executor != SingleExecutor:
+        if not isinstance(executor, SingleExecutor):
             assert future.ready() is False
         else:
             assert future.ready() is True
