@@ -101,8 +101,16 @@ class TestFutures:
         future = executor.submit(function, FunctionException, 1, None)
 
         assert future.ready() is False
+
         future.wait(0.01)
-        assert future.ready() is False
+
+        # SingleExecutor is not truely async so 
+        # results are always ready after a wait
+        if executor != SingleExecutor:
+            assert future.ready() is False
+        else:
+            assert future.ready() is True
+
         future.wait()
         assert future.ready() is True
 
