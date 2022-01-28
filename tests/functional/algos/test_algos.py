@@ -187,6 +187,7 @@ def test_with_multidim(algorithm):
     space = copy.deepcopy(space_with_fidelity)
     space["x"] = "uniform(-50, 50, shape=(2, 1))"
     MAX_TRIALS = 30
+
     exp = workon(
         multidim_rosenbrock, space, algorithms=algorithm, max_trials=MAX_TRIALS
     )

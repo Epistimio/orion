@@ -1,11 +1,54 @@
-from orion.executor.base import BaseExecutor
+import traceback
+
+from orion.executor.base import (
+    AsyncException,
+    AsyncResult,
+    BaseExecutor,
+    ExecutorClosed,
+    Future,
+)
 
 try:
+    import dask.distributed
     from dask.distributed import Client, get_client, get_worker, rejoin, secede
 
     HAS_DASK = True
 except ImportError:
     HAS_DASK = False
+
+
+class _Future(Future):
+    """Wraps a Dask Future"""
+
+    def __init__(self, future):
+        self.future = future
+        self.exception = None
+
+    def get(self, timeout=None):
+        if self.exception:
+            raise self.exception
+
+        try:
+            return self.future.result(timeout)
+        except dask.distributed.TimeoutError as e:
+            raise TimeoutError() from e
+
+    def wait(self, timeout=None):
+        try:
+            self.future.result(timeout)
+        except dask.distributed.TimeoutError:
+            pass
+        except Exception as e:
+            self.exception = e
+
+    def ready(self):
+        return self.future.done()
+
+    def successful(self):
+        if not self.future.done():
+            raise ValueError()
+
+        return self.future.exception() is None
 
 
 class Dask(BaseExecutor):
@@ -42,10 +85,43 @@ class Dask(BaseExecutor):
         results = self.client.gather(list(futures))
         if self.in_worker:
             rejoin()
+        return [r.get() for r in results]
+
+    def async_get(self, futures, timeout=0.01):
+        results = []
+        tobe_deleted = []
+
+        for i, future in enumerate(futures):
+            if timeout and i == 0:
+                future.wait(timeout)
+
+            if future.ready():
+
+                try:
+                    results.append(AsyncResult(future, future.get()))
+                except Exception as err:
+                    results.append(AsyncException(future, err, traceback.format_exc()))
+
+                tobe_deleted.append(future)
+
+        for future in tobe_deleted:
+            futures.remove(future)
+
         return results
 
     def submit(self, function, *args, **kwargs):
-        return self.client.submit(function, *args, **kwargs, pure=False)
+        try:
+            return _Future(self.client.submit(function, *args, **kwargs, pure=False))
+        except Exception as e:
+            if str(e).startswith(
+                "Tried sending message after closing.  Status: closed"
+            ):
+                raise ExecutorClosed() from e
+
+            raise
+
+    def __del__(self):
+        self.client.close()
 
     def __enter__(self):
         return self

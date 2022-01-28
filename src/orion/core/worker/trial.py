@@ -18,6 +18,12 @@ from orion.core.utils.flatten import unflatten
 log = logging.getLogger(__name__)
 
 
+class AlreadyReleased(Exception):
+    """Raised when a trial gets released twice"""
+
+    pass
+
+
 def validate_status(status):
     """
     Verify if given status is valid. Can be one of ``new``, ``reserved``, ``suspended``,
@@ -566,5 +572,5 @@ class TrialCM:
                 self._cm_experiment.release(self._cm_trial, "broken")
             elif self._cm_trial.status == "reserved":
                 self._cm_experiment.release(self._cm_trial)
-        except RuntimeError as e:
+        except AlreadyReleased as e:
             log.warning(e)
