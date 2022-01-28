@@ -163,6 +163,37 @@ def test_interrupted_scatter_gather():
     ), "Trials had time to finish because of the slow gather"
 
 
+class CustomExceptionForTest(Exception):
+    pass
+
+
+def test_interrupted_scatter_gather_custom_signal():
+    count = 2
+
+    runner = new_runner(2, n_workers=16)
+    runner.fct = function
+    client = runner.client
+
+    def custom_handler(*args):
+        raise CustomExceptionForTest()
+
+    # add a custom signal
+    signal.signal(signal.SIGINT, custom_handler)
+
+    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
+
+    def interrupt():
+        time.sleep(0.5)
+        os.kill(os.getpid(), signal.SIGINT)
+
+    # Our custom signal got called
+    with pytest.raises(CustomExceptionForTest):
+        start = time.time()
+        Thread(target=interrupt).start()
+
+        runner.run()
+
+
 def test_interrupted_scatter_gather_now():
     count = 2
 
