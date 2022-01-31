@@ -25,14 +25,14 @@ class QuadraticsTask(BenchmarkTask):
     max_trials : int
         Maximum number of tr
     a_2 : float, optional
-        a_2 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval,
-        rounded to 4 decimal points.
+        a_2 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval.
+        Gets rounded to 4 decimal points.
     a_1 : float, optional
-        a_1 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval,
-        rounded to 4 decimal points.
+        a_1 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval.
+        Gets rounded to 4 decimal points.
     a_0 : float, optional
-        a_0 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval,
-        rounded to 4 decimal points.
+        a_0 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval.
+        Gets rounded to 4 decimal points.
     seed : int, optional
         Random seed, by default None
     with_context : bool, optional
@@ -53,9 +53,9 @@ class QuadraticsTask(BenchmarkTask):
         super().__init__(max_trials=max_trials)
         self.seed: Optional[int] = seed
         self.rng = np.random.default_rng(self.seed)
-        self.a_2 = a_2 if a_2 is not None else round(self.rng.uniform(0.1, 10.0), 4)
-        self.a_1 = a_1 if a_1 is not None else round(self.rng.uniform(0.1, 10.0), 4)
-        self.a_0 = a_0 if a_0 is not None else round(self.rng.uniform(0.1, 10.0), 4)
+        self.a_2 = round(a_2 if a_2 is not None else self.rng.uniform(0.1, 10.0), 4)
+        self.a_1 = round(a_1 if a_1 is not None else self.rng.uniform(0.1, 10.0), 4)
+        self.a_0 = round(a_0 if a_0 is not None else self.rng.uniform(0.1, 10.0), 4)
         self.with_context = with_context
 
     def get_search_space(self) -> Dict[str, str]:
@@ -89,6 +89,6 @@ class QuadraticsTask(BenchmarkTask):
         a_1: float = None,
         a_0: float = None,
     ) -> List[Dict]:
-        x = np.array([x_0, x_1, x_2])
+        x = np.array([x_0, x_1, x_2]).round(4)
         y = 0.5 * self.a_2 * (x ** 2).sum() + self.a_1 * x.sum() + self.a_0
         return [dict(name="quadratics", type="objective", value=y)]
