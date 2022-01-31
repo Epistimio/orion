@@ -30,18 +30,22 @@ class BenchmarkTask(ABC):
         self._param_names["max_trials"] = max_trials
 
     @abstractmethod
-    def call(self, x) -> List[Dict]:
+    def call(self) -> List[Dict]:
         """
         Define the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
+        
+        This method should be overridden by subclasses. It should receive the hyper-parameters
+        as keyword arguments, with argument names matching the keys of the dictionary returned by
+        `get_search_space`.
         """
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, **kwargs):
         """
-        All tasks will be callable by default,
-        and method `call()` will be executed when a task is called directly.
+        All tasks will be callable by default, and method `call()` will be executed when a task is
+        called directly.
         """
-        return self.call(*args, **kwargs)
+        return self.call(**kwargs)
 
     @property
     def max_trials(self) -> int:
