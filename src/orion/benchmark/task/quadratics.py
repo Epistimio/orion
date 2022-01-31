@@ -54,7 +54,7 @@ class QuadraticsTask(BenchmarkTask):
     seed : int, optional
         Random seed, by default None
     with_context : bool, optional
-        Wether to append the values of (a2, a1, a0) to the points sampled from this task. 
+        Whether to append the values of (a2, a1, a0) to the points sampled from this task. 
     """
 
     def __init__(
