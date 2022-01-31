@@ -93,5 +93,4 @@ class QuadraticsTask(BenchmarkTask):
     ) -> List[Dict]:
         x = np.array([x_0, x_1, x_2])
         y = 0.5 * self.a_2 * (x ** 2).sum() + self.a_1 * x.sum() + self.a_0
-        # NOTE: We could also easily give back the gradient.
         return [dict(name="quadratics", type="objective", value=y)]
