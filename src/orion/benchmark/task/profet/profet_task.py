@@ -222,7 +222,7 @@ class ProfetTask(BenchmarkTask):
             return self.space.sample(n_samples=1, seed=self._np_rng_state)[0]
         return self.space.sample(n_samples=n_samples, seed=self._np_rng_state)
 
-    def call(self, *args, **kwargs) -> List[Dict]:
+    def call(self, **kwargs) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
         If `self.with_grad` is set, also returns the gradient of the objective function with respect
@@ -230,7 +230,7 @@ class ProfetTask(BenchmarkTask):
 
         Parameters
         ----------
-        x : InputDict
+        **kwargs
             Dictionary of hyper-parameters.
 
         Returns
@@ -243,8 +243,6 @@ class ProfetTask(BenchmarkTask):
         ValueError
             If the input isn't of a supported type.
         """
-        if args:
-            raise RuntimeError("Expected to receive only keyword arguments.")
         # A bit of gymnastics to convert the params Dict into a PyTorch tensor.
         trial = dict_to_trial(kwargs, self._space)
         flattened_trial = self.transformed_space.transform(trial)

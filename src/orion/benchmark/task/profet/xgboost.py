@@ -33,7 +33,6 @@ class ProfetXgBoostTask(ProfetTask):
 
     def call(
         self,
-        *args,
         learning_rate: float,
         gamma: float,
         l1_regularization: float,
@@ -42,10 +41,8 @@ class ProfetXgBoostTask(ProfetTask):
         subsampling: float,
         max_depth: int,
         min_child_weight: int,
-        **kwargs
     ) -> List[Dict]:
         return super().call(
-            *args,
             learning_rate=learning_rate,
             gamma=gamma,
             l1_regularization=l1_regularization,
@@ -54,7 +51,6 @@ class ProfetXgBoostTask(ProfetTask):
             subsampling=subsampling,
             max_depth=max_depth,
             min_child_weight=min_child_weight,
-            **kwargs
         )
 
     def get_search_space(self) -> Dict[str, str]:

@@ -42,8 +42,8 @@ class ProfetForresterTask(ProfetTask):
         log_target: ClassVar[bool] = False
         # -----------
 
-    def call(self, *args, x: float, **kwargs) -> List[Dict]:
-        return super().call(*args, x=x, **kwargs)
+    def call(self, x: float) -> List[Dict]:
+        return super().call(x=x)
 
     def get_search_space(self) -> Dict[str, str]:
         return {

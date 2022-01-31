@@ -33,24 +33,20 @@ class ProfetFcNetTask(ProfetTask):
 
     def call(
         self,
-        *args,
         learning_rate: float,
         batch_size: int,
         units_layer1: int,
         units_layer2: int,
         dropout_rate_l1: float,
         dropout_rate_l2: float,
-        **kwargs,
     ) -> List[Dict]:
         return super().call(
-            *args,
             learning_rate=learning_rate,
             batch_size=batch_size,
             units_layer1=units_layer1,
             units_layer2=units_layer2,
             dropout_rate_l1=dropout_rate_l1,
             dropout_rate_l2=dropout_rate_l2,
-            **kwargs,
         )
 
     def get_search_space(self) -> Dict[str, str]:

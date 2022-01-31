@@ -34,8 +34,8 @@ class ProfetSvmTask(ProfetTask):
         log_target: ClassVar[bool] = False
         # -----------
 
-    def call(self, *args, C: float, gamma: float, **kwargs) -> List[Dict]:
-        return super().call(*args, C=C, gamma=gamma, **kwargs)
+    def call(self, C: float, gamma: float) -> List[Dict]:
+        return super().call(C=C, gamma=gamma)
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(
