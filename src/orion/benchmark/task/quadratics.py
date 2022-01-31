@@ -53,8 +53,6 @@ class QuadraticsTask(BenchmarkTask):
         super().__init__(max_trials=max_trials)
         self.seed: Optional[int] = seed
         self.rng = np.random.default_rng(self.seed)
-        # Note: rounding to 4 decimals just to prevent some potential issues
-        # related to the string representation of the task later on.
         self.a_2 = a_2 if a_2 is not None else round(self.rng.uniform(0.1, 10.0), 4)
         self.a_1 = a_1 if a_1 is not None else round(self.rng.uniform(0.1, 10.0), 4)
         self.a_0 = a_0 if a_0 is not None else round(self.rng.uniform(0.1, 10.0), 4)
