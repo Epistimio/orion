@@ -20,13 +20,13 @@ class Forrester(BenchmarkTask):
     ..
 
     Parameters
-        ----------
-        max_trials : int
-            Maximum number of trials for this task.
-        alpha : float, optional
-            Alpha parameter used in the above equation, by default 0.5
-        beta : float, optional
-            Beta parameter used in the above equation, by default 0.5
+    ----------
+    max_trials : int
+        Maximum number of trials for this task.
+    alpha : float, optional
+        Alpha parameter used in the above equation, by default 0.5
+    beta : float, optional
+        Beta parameter used in the above equation, by default 0.5
     """
 
     def __init__(self, max_trials: int, alpha: float = 0.5, beta: float = 0.5):
