@@ -91,9 +91,26 @@ class CmdlineParser(object):
         # Arguments with spaces are broken if we use ' '.join(template).format().split(' ').
         # Hence we iterate over the list as-is and format on each item separately.
         formatted = []
+        item: str
         for item in self.template:
             if item.startswith("-"):
                 formatted.append(item)
+            elif (
+                item.startswith("{")
+                and item.endswith("}")
+                and "." in item
+                and item.partition(".")[0] not in ["trial", "experiment"]
+            ):
+                # There is an argument, for example "--a.b~uniform(0,1)".
+                for key, value in configuration.items():
+                    if item == f"{{{key}}}":
+                        formatted.append(str(value))
+                        break
+                else:
+                    raise RuntimeError(
+                        f"Unable to find matching value from configuration {configuration} for "
+                        f"template item '{item}'."
+                    )
             else:
                 formatted.append(item.format(**configuration))
 

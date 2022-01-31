@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.orion_cmdliner_parser`."""
 import os
+import textwrap
+from typing import List
 
 import pytest
+from orion.core.cli.base import OrionArgsParser
 
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.worker.trial import Trial
@@ -35,6 +38,7 @@ def commandline():
         "--lr~uniform(-3, 1)",
         "--non-prior=choices({{'sgd': 0.2, 'adam': 0.8}})",
         "--prior~choices({'sgd': 0.2, 'adam': 0.8})",
+        "--a.b~uniform(0,1)",
     ]
 
 
@@ -118,9 +122,10 @@ def test_parse_from_args_only(parser, commandline_fluff):
     parser.parse(cmd_args)
 
     assert not parser.config_file_data
-    assert len(parser.cmd_priors) == 2
+    assert len(parser.cmd_priors) == 3
     assert "/lr" in parser.cmd_priors
     assert "/prior" in parser.cmd_priors
+    assert "/a.b" in parser.cmd_priors
     assert parser.parser.template == [
         "--seed",
         "{seed}",
@@ -130,6 +135,8 @@ def test_parse_from_args_only(parser, commandline_fluff):
         "{non-prior}",
         "--prior",
         "{prior}",
+        "--a.b",
+        "{a.b}",
         "--some-path",
         "{some-path}",
         "--home-path",
@@ -146,7 +153,7 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
     parser.parse(cmd_args)
     config = parser.priors
 
-    assert len(config) == 8
+    assert len(config) == 9
     assert "/lr" in config
     assert "/prior" in config
     assert "/layers/1/width" in config
@@ -155,6 +162,7 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
     assert "/training/lr0" in config
     assert "/training/mbs" in config
     assert "/something-same" in config
+    assert "/a.b" in config
 
     template = parser.parser.template
     assert template == [
@@ -168,6 +176,8 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
         "{non-prior}",
         "--prior",
         "{prior}",
+        "--a.b",
+        "{a.b}",
     ]
 
 
@@ -191,6 +201,7 @@ def test_format_commandline_only(parser, commandline):
         params=[
             {"name": "/lr", "type": "real", "value": -2.4},
             {"name": "/prior", "type": "categorical", "value": "sgd"},
+            {"name": "/a.b", "type": "real", "value": 0.5},
         ]
     )
 
@@ -226,6 +237,7 @@ def test_format_commandline_and_config(
             {"name": "/training/lr0", "type": "real", "value": 0.032},
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
+            {"name": "/a.b", "type": "real", "value": 0.3},
         ]
     )
 
@@ -244,6 +256,8 @@ def test_format_commandline_and_config(
         "choices({'sgd': 0.2, 'adam': 0.8})",
         "--prior",
         "sgd",
+        "--a.b",
+        "0.3",
     ]
 
     output_data = json_converter.parse(output_file)
@@ -428,6 +442,7 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
             {"name": "/training/lr0", "type": "real", "value": 0.032},
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
+            {"name": "/a.b", "type": "real", "value": 0.2},
         ]
     )
 
@@ -446,6 +461,8 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
         "choices({'sgd': 0.2, 'adam': 0.8})",
         "--prior",
         "sgd",
+        "--a.b",
+        "0.2",
     ]
 
     output_data = json_converter.parse(output_file)
