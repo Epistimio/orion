@@ -722,7 +722,7 @@ class Categorical(Dimension):
 
         """
         rng = check_random_state(seed)
-        cat_ndarray = numpy.array(self.categories, dtype=numpy.object)
+        cat_ndarray = numpy.array(self.categories, dtype=object)
         samples = [
             rng.choice(cat_ndarray, p=self._probs, size=self._shape)
             for _ in range(n_samples)
