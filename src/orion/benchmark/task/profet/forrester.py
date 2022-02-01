@@ -10,7 +10,7 @@ from a given forrester function.
 import typing
 from dataclasses import dataclass
 from logging import getLogger as get_logger
-from typing import Any, Callable, ClassVar, Dict, List
+from typing import Any, Callable, ClassVar, Dict, List, Tuple
 
 
 from orion.benchmark.task.profet.profet_task import ProfetTask
@@ -46,6 +46,15 @@ class ProfetForresterTask(ProfetTask):
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = False
         log_target: ClassVar[bool] = False
+        shapes: ClassVar[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = (
+            (10, 1),
+            (9, 10),
+            (9, 10),
+        )
+        y_min: ClassVar[float] = -18.049155413936802
+        y_max: ClassVar[float] = 14718.31848526001
+        c_min: ClassVar[float] = -18.049155413936802
+        c_max: ClassVar[float] = 14718.3184852600
         # -----------
 
     def call(self, x: float) -> List[Dict]:

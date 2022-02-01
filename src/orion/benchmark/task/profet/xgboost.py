@@ -2,7 +2,7 @@
 """
 import typing
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Dict, List
+from typing import Callable, ClassVar, Dict, List, Tuple
 
 from orion.benchmark.task.profet.model_utils import MetaModelConfig, get_default_architecture
 from orion.benchmark.task.profet.profet_task import ProfetTask
@@ -35,6 +35,16 @@ class ProfetXgBoostTask(ProfetTask):
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = True
+
+        shapes: ClassVar[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = (
+            (800, 8),
+            (11, 800),
+            (11, 800),
+        )
+        y_min: ClassVar[float] = 0.0
+        y_max: ClassVar[float] = 3991387.335843141
+        c_min: ClassVar[float] = 0.0
+        c_max: ClassVar[float] = 5485.541382551193
         # -----------
 
     def call(

@@ -24,7 +24,7 @@ try:
 except ImportError:
     pytest.skip("skipping profet tests", allow_module_level=True)
 
-from .conftest import REAL_PROFET_DATA_DIR, c_max, c_min, is_nonempty_dir, y_max, y_min
+from .conftest import REAL_PROFET_DATA_DIR, is_nonempty_dir
 
 
 class ProfetTaskTests:

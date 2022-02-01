@@ -3,7 +3,7 @@
 import typing
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, ClassVar, Dict, List, Any
+from typing import Callable, ClassVar, Dict, List, Any, Tuple
 from orion.benchmark.task.profet.profet_task import ProfetTask
 from orion.benchmark.task.profet.model_utils import (
     MetaModelConfig,
@@ -34,6 +34,16 @@ class ProfetFcNetTask(ProfetTask):
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = False
         normalize_targets: ClassVar[bool] = False
+
+        shapes: ClassVar[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = (
+            (600, 6),
+            (27, 600),
+            (27, 600),
+        )
+        y_min: ClassVar[float] = 0.0
+        y_max: ClassVar[float] = 1.0
+        c_min: ClassVar[float] = 0.0
+        c_max: ClassVar[float] = 14718.31848526001
 
     def call(
         self,

@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 
 @dataclass
 class MetaModelConfig(ABC):
-    """ Configuration options for the training of the Profet meta-model.        
+    """ Configuration options for the training of the Profet meta-model.
     """
 
     benchmark: str
@@ -66,6 +66,22 @@ class MetaModelConfig(ABC):
 
     normalize_targets: ClassVar[bool]
     """ Whether to normalize the targets (y), by default False. """
+
+    shapes: ClassVar[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]]
+    """ The shapes of the X, Y and Y arrays of the dataset. """
+
+    y_min: ClassVar[float]
+    """ The minimum of the Y array. """
+
+    y_max: ClassVar[float]
+    """ The maximum of the Y array. """
+
+    c_min: ClassVar[float]
+    """ The minimum of the C array. """
+
+    c_max: ClassVar[float]
+    """ The maximum of the C array. """
+
     # -----------
 
     task_id: int = 0
@@ -318,9 +334,9 @@ class MetaModelConfig(ABC):
         hidden_space = task_features_std.shape[1]
         n_configs = X.shape[0]
 
-        X_train = []
-        Y_train = []
-        C_train = []
+        X_train_list = []
+        Y_train_list = []
+        C_train_list = []
 
         for i, xi in enumerate(X):
             for idx in range(n_tasks):
@@ -329,13 +345,13 @@ class MetaModelConfig(ABC):
                     ht = task_features_mean[idx] + task_features_std[idx] * multiplier
 
                     x = np.concatenate((xi, ht), axis=0)
-                    X_train.append(x)
-                    Y_train.append(Y[idx, i])
-                    C_train.append(C[idx, i])
+                    X_train_list.append(x)
+                    Y_train_list.append(Y[idx, i])
+                    C_train_list.append(C[idx, i])
 
-        X_train = np.array(X_train)
-        Y_train = np.array(Y_train)
-        C_train = np.array(C_train)
+        X_train = np.array(X_train_list)
+        Y_train = np.array(Y_train_list)
+        C_train = np.array(C_train_list)
         if log_C:
             C_train = np.log(C_train)
 

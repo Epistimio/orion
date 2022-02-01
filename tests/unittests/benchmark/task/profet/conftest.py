@@ -39,36 +39,6 @@ def profet_input_dir(tmp_path_factory):
 
 
 logger = get_logger(__name__)
-shapes: Dict[str, Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = {
-    "fcnet": ((600, 6), (27, 600), (27, 600)),
-    "forrester": ((10, 1), (9, 10), (9, 10)),
-    "svm": ((200, 2), (26, 200), (26, 200)),
-    "xgboost": ((800, 8), (11, 800), (11, 800)),
-}
-y_min: Dict[str, float] = {
-    "fcnet": 0.0,
-    "forrester": -18.049155413936802,
-    "svm": 0.0,
-    "xgboost": 0.0,
-}
-y_max: Dict[str, float] = {
-    "fcnet": 1.0,
-    "forrester": 14718.31848526001,
-    "svm": 1.0,
-    "xgboost": 3991387.335843141,
-}
-c_min: Dict[str, float] = {
-    "fcnet": 0.0,
-    "forrester": -18.049155413936802,
-    "svm": 0.0,
-    "xgboost": 0.0,
-}
-c_max: Dict[str, float] = {
-    "fcnet": 14718.31848526001,
-    "forrester": 14718.31848526001,
-    "svm": 697154.4010462761,
-    "xgboost": 5485.541382551193,
-}
 
 
 @pytest.fixture(autouse=True, params=[True, False], ids=["real_data", "fake_data"])
@@ -103,13 +73,13 @@ def mock_load_data(
             return real_load_data(self, REAL_PROFET_DATA_DIR)
         # Generate fake datasets.
         logger.info("Using random data instead of the actual profet training data.")
-        x_shape, y_shape, c_shape = shapes[self.benchmark]
+        x_shape, y_shape, c_shape = self.shapes
         X = np.random.rand(*x_shape)
-        min_y = y_min[self.benchmark]
-        max_y = y_max[self.benchmark]
+        min_y = self.y_min
+        max_y = self.y_max
         Y = np.random.rand(*y_shape) * (max_y - min_y) + min_y
-        min_c = c_min[self.benchmark]
-        max_c = c_max[self.benchmark]
+        min_c = self.c_min
+        max_c = self.c_max
         C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
         return X, Y, C
 
