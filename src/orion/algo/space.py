@@ -914,10 +914,10 @@ class Fidelity(Dimension):
         """Build the string corresponding to current prior"""
         args = [str(self.low), str(self.high)]
 
-        if self.base !=2:
+        if self.base != 2:
             args += [f"base={self.base}"]
 
-        return "fidelity({})".format(', '.join(args))
+        return "fidelity({})".format(", ".join(args))
 
     def validate(self):
         """Do not do anything."""

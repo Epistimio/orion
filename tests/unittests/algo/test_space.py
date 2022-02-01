@@ -6,7 +6,6 @@ import sys
 from collections import OrderedDict, defaultdict
 
 import numpy as np
-from orion.core.worker.transformer import Precision
 import pytest
 from numpy.testing import assert_array_equal as assert_eq
 from scipy.stats import distributions as dists
@@ -21,6 +20,7 @@ from orion.algo.space import (
     check_random_state,
 )
 from orion.core.utils import format_trials
+from orion.core.worker.transformer import Precision
 from orion.core.worker.trial import Trial
 
 
@@ -681,7 +681,6 @@ class TestFidelity(object):
         assert dim.name == "epoch"
         assert dim.type == "fidelity"
         assert dim.shape is None
-
 
     def test_fidelity_omit_base(self):
         """Test that default base is not included."""
