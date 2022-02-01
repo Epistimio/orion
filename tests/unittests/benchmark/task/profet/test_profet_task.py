@@ -95,11 +95,11 @@ class ProfetTaskTests:
         assert 0 <= real_x.min() and 0 <= fake_x.min()
         assert real_x.max() <= 1 and fake_x.max() <= 1
 
-        min_y, max_y = y_min[model_config.benchmark], y_max[model_config.benchmark]
+        min_y, max_y = model_config.y_min, model_config.y_max
         assert min_y <= real_y.min() and min_y <= fake_y.min()
         assert real_y.max() <= max_y and fake_y.max() <= max_y
 
-        min_c, max_c = c_min[model_config.benchmark], c_max[model_config.benchmark]
+        min_c, max_c = model_config.c_min, model_config.c_max
         assert min_c <= real_c.min() and min_c <= fake_c.min()
         assert real_c.max() <= max_c and fake_c.max() <= max_c
 
