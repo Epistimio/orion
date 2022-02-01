@@ -594,7 +594,7 @@ class TestView(object):
 @pytest.fixture()
 def dim():
     """Create an example of `Dimension`."""
-    dim = Real("yolo", "norm", 0.9, shape=(3, 2))
+    dim = Real("yolo", "normal", 0.9, shape=(3, 2))
     return dim
 
 
@@ -788,7 +788,7 @@ class TestTransformedDimension(object):
             (0.9,),
             (),
             None,
-            "norm",
+            "normal",
         )
         assert tdim2._get_hashable_members() == (
             "Compose",
@@ -852,7 +852,7 @@ class TestTransformedDimension(object):
 
     def test_prior_name_property(self, tdim, tdim2):
         """Check property `prior_name`."""
-        assert tdim.prior_name == "norm"
+        assert tdim.prior_name == "normal"
         assert tdim2.prior_name == "choices"
 
     def test_shape_property(self, tdim, tdim2):
@@ -926,7 +926,7 @@ class TestReshapedDimension(object):
             (0.9,),
             (),
             None,
-            "norm",
+            "normal",
         )
         assert rdim2._get_hashable_members() == (
             "View",
@@ -971,7 +971,7 @@ class TestReshapedDimension(object):
 
     def test_prior_name_property(self, rdim, rdim2):
         """Check property `prior_name`."""
-        assert rdim.prior_name == "norm"
+        assert rdim.prior_name == "normal"
         assert rdim2.prior_name == "choices"
 
     def test_shape_property(self, rdim, rdim2):

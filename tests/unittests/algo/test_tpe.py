@@ -430,7 +430,7 @@ class TestTPE:
         TPE(space)
 
         space = Space()
-        dim = Real("yolo1", "norm", 0.9)
+        dim = Real("yolo1", "normal", 0.9)
         space.register(dim)
 
         with pytest.raises(ValueError) as ex:

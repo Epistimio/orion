@@ -7,7 +7,7 @@ from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Sp
 
 def dim1():
     """Create an example of `orion.algo.space.Dimension`."""
-    dim = Real("yolo0", "norm", 0.9, shape=(3, 2))
+    dim = Real("yolo0", "normal", 0.9, shape=(3, 2))
     return dim
 
 
