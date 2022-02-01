@@ -358,22 +358,6 @@ class TestStorage:
             with pytest.raises(DuplicateKeyError):
                 storage.register_trial(Trial(**base_trial))
 
-    def test_register_lie(self, storage):
-        """Test register lie"""
-        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.storage()
-            storage.register_lie(Trial(**base_trial))
-
-    def test_register_lie_fail(self, storage):
-        """Test register lie"""
-        with OrionState(
-            experiments=[base_experiment], lies=[base_trial], storage=storage
-        ) as cfg:
-            storage = cfg.storage()
-
-            with pytest.raises(DuplicateKeyError):
-                storage.register_lie(Trial(**cfg.lies[0]))
-
     def test_update_trials(self, storage):
         """Test update many trials"""
         with OrionState(

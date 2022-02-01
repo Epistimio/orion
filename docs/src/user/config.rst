@@ -97,8 +97,6 @@ Full Example of Global Configuration
                 seed: None
         max_broken: 3
         max_trials: 1000000000
-        strategy:
-            MaxParallelStrategy
         worker_trials: 1000000000
         working_dir:
 
@@ -211,8 +209,6 @@ Experiment
                 seed: None
         max_broken: 3
         max_trials: 1000000000
-        strategy:
-            MaxParallelStrategy
         worker_trials: 1000000000
         working_dir:
 
@@ -339,13 +335,17 @@ algorithms
 strategy
 ~~~~~~~~
 
+.. warning::
+
+   **DEPRECATED.** This argument will be removed in v0.4.
+   Set parallel strategy in algorithm configuration directly, if the algorithm supports it.
+
 :Type: dict
 :Default: MaxParallelStrategy
 :Env var:
 :Description:
-    Parallel strategy to use with the algorithm.
-
-
+    (DEPRECATED) This argument will be removed in v0.4. Parallel strategies are now handled by
+    algorithms directly and should be set in algorithm configuration when they support it.
 
 ----
 

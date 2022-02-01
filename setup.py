@@ -16,6 +16,7 @@ tests_require = ["pytest>=3.0.0", "scikit-learn"]
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.pbt",
     "orion.analysis",
     "orion.benchmark",
     "orion.client",
@@ -53,6 +54,7 @@ setup_args = dict(
             "hyperband = orion.algo.hyperband:Hyperband",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
+            "pbt = orion.algo.pbt.pbt:PBT",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
@@ -70,6 +72,7 @@ setup_args = dict(
         ],
     },
     install_requires=[
+        "dataclasses",
         "PyYAML",
         "pymongo>=3",
         "numpy",

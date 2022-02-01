@@ -179,8 +179,11 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "strategy",
         option_type=dict,
-        default={"MaxParallelStrategy": {}},
-        help="Parallel strategy to use with the algorithm.",
+        default={},
+        help=(
+            "This option is deprecated and will be removed in v0.4.0. Parallel strategies may "
+            "now be set in algorithm configuration."
+        ),
     )
 
     config.experiment = experiment_config
@@ -286,11 +289,28 @@ def define_worker_config(config):
         option_type=int,
         default=60,
         env_var="ORION_RESERVATION_TIMEOUT",
+        deprecate=dict(
+            version="v0.4",
+            alternative="worker.idle_timeout",
+            name="worker.reservation_timeout",
+        ),
         help=(
             "Maximum time the experiment can spend trying to reserve a new suggestion."
             "Such timeout are generally caused by slow database, large number of "
             "concurrent workers leading to many race conditions or small search spaces "
             "with integer/categorical dimensions that may be fully explored."
+        ),
+    )
+
+    worker_config.add_option(
+        "idle_timeout",
+        option_type=int,
+        default=60,
+        env_var="ORION_IDLE_TIMEOUT",
+        help=(
+            "Maximum time the workers can spend without work."
+            "Such timeout generally occur when reaching the end of the optimization"
+            "when no new trials can be scheduled"
         ),
     )
 

@@ -8,8 +8,10 @@ Package-wide useful routines
 import hashlib
 import logging
 import os
+import signal
 from abc import ABCMeta
 from collections import defaultdict
+from contextlib import contextmanager
 from glob import glob
 from importlib import import_module
 
@@ -206,3 +208,20 @@ def compute_identity(size: int = 16, **sample) -> str:
             sample_hash.update(str(v).encode("utf8"))
 
     return sample_hash.hexdigest()[:size]
+
+
+# pylint: disable = unused-argument
+def _handler(signum, frame):
+    log.error("Oríon has been interrupted.")
+    raise KeyboardInterrupt
+
+
+@contextmanager
+def sigterm_as_interrupt():
+    """Intercept ``SIGTERM`` signals and raise ``KeyboardInterrupt`` instead"""
+    ## Signal only works inside the main process
+    previous = signal.signal(signal.SIGTERM, _handler)
+
+    yield None
+
+    signal.signal(signal.SIGTERM, previous)

@@ -80,3 +80,8 @@ target/
 
 # Notebooks
 tests/**.ipynb
+
+# Generated doc
+docs/src/auto_examples
+docs/src/auto_tutorials
+docs/src/gen_modules

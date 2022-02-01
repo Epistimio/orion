@@ -12,7 +12,6 @@ Worker and its components
    worker/experiment
    worker/primary_algo
    worker/producer
-   worker/strategy
    worker/transformer
    worker/trial
    worker/trial_pacemaker

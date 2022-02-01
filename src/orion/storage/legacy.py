@@ -187,10 +187,6 @@ class Legacy(BaseStorageProtocol):
             where["experiment"] = uid
         return self._db.remove("trials", query=where)
 
-    def register_lie(self, trial):
-        """See :func:`orion.storage.base.BaseStorageProtocol.register_lie`"""
-        return self._db.write("lying_trials", trial.to_dict())
-
     def retrieve_result(self, trial, **kwargs):
         """Do nothing for the legacy backend.
 

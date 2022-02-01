@@ -159,23 +159,6 @@ class BaseStorageProtocol:
         """Create a new trial to be executed"""
         raise NotImplementedError()
 
-    def register_lie(self, trial):
-        """Register a *fake* trial created by the strategist.
-
-        The main difference between fake trial and orignal ones is the addition of a fake objective
-        result, and status being set to completed. The id of the fake trial is different than the id
-        of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
-        Strategist object and generation of fake trials.
-
-        Parameters
-        ----------
-        trial: `Trial` object
-            Fake trial to register in the database
-
-        """
-        raise NotImplementedError()
-
     def delete_trials(self, experiment=None, uid=None, where=None):
         """Delete matching trials from the database
 

@@ -1417,13 +1417,13 @@ def test_change_trial_params(space, rspace):
     trial = space.sample()[0]
     point = format_trials.trial_to_tuple(trial, space)
 
-    rtrial.working_dir = working_dir
+    rtrial.exp_working_dir = working_dir
     rtrial.status = status
 
     restored_trial = change_trial_params(rtrial, point, space)
 
     # Test that attributes are conserved
-    assert restored_trial.working_dir == working_dir
+    assert restored_trial.exp_working_dir == working_dir
     assert restored_trial.status == status
 
     # Test params are updated
