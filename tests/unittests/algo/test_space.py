@@ -208,6 +208,11 @@ class TestDimension(object):
         dim = Dimension("yolo", "reciprocal", 1e-10, 1)
         assert dim.get_prior_string() == "loguniform(1e-10, 1)"
 
+    def test_get_prior_string_normal(self):
+        """Test that special norm prior name is replaced properly."""
+        dim = Dimension("yolo", "norm", 1e-10, 1)
+        assert dim.get_prior_string() == "normal(1e-10, 1)"
+
     def test_prior_name(self):
         """Test prior name is correct in dimension"""
         dim = Dimension("yolo", "reciprocal", 1e-10, 1)
