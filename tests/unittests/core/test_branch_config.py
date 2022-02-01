@@ -124,7 +124,7 @@ def new_config_with_w(child_config):
 def changed_config(child_config):
     """Create a child config with a changed dimension"""
     second_element = child_config["metadata"]["user_args"][3]
-    second_element = second_element.replace("norm", "uniform")
+    second_element = second_element.replace("normal", "uniform")
     child_config["metadata"]["user_args"][3] = second_element
     backward.populate_space(child_config)
     return child_config
