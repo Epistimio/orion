@@ -1,16 +1,11 @@
 import json
 import pickle
+from abc import ABC
 from copy import deepcopy
 from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import (
-    Callable,
-    ClassVar,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Callable, ClassVar, Optional, Tuple, Union
 
 import GPy
 import numpy as np
@@ -21,28 +16,7 @@ from GPy.models import BayesianGPLVM
 from pybnn.bohamiann import Bohamiann
 from torch import nn
 
-
 logger = get_logger(__name__)
-
-# NOTE: Split up these shared properties into the different config classes.
-# NAMES: Dict[str, str] = dict(
-#     forrester="data_sobol_forrester.json",
-#     svm="data_sobol_svm.json",
-#     fcnet="data_sobol_fcnet.json",
-#     xgboost="data_sobol_xgboost.json",
-# )
-# get_architecture: Dict[str, Callable[[int], nn.Module]] = dict(
-#     forrester=get_architecture_forrester,
-#     svm=functools.partial(get_default_architecture, classification=True),
-#     fcnet=functools.partial(get_default_architecture, classification=True),
-#     xgboost=get_default_architecture,
-# )
-# hidden_space: Dict[str, int] = dict(forrester=2, fcnet=5, svm=5, xgboost=5)
-# normalize_targets: Dict[str, bool] = dict(forrester=True, fcnet=False, svm=False, xgboost=True)
-# log_cost: Dict[str, bool] = dict(forrester=False, fcnet=True, svm=True, xgboost=True)
-# log_target: Dict[str, bool] = dict(forrester=False, fcnet=False, svm=False, xgboost=True)
-
-from abc import ABC
 
 
 @dataclass
