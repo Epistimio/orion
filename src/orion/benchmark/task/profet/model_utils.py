@@ -1,3 +1,4 @@
+""" Options and utilities for training the profet meta-model from Emukit. """
 import json
 import pickle
 from abc import ABC
@@ -6,32 +7,66 @@ from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import Callable, ClassVar, Optional, Tuple, Union
+import warnings
 
-import GPy
 import numpy as np
-import torch
-from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
-from emukit.examples.profet.train_meta_model import download_data
-from GPy.models import BayesianGPLVM
-from pybnn.bohamiann import Bohamiann
-from torch import nn
+
+_ERROR_MSG = (
+    "The `profet` extras needs to be installed in order to use the Profet tasks.\n"
+    "Error: {0}\n"
+    "Use `pip install orion[profet]` to install the profet extras."
+)
+try:
+    import GPy
+    import torch
+    from torch import nn
+    from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
+    from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
+    from emukit.examples.profet.train_meta_model import download_data
+    from GPy.models import BayesianGPLVM
+    from pybnn.bohamiann import Bohamiann
+except ImportError as err:
+    warnings.warn(RuntimeWarning(_ERROR_MSG.format(err)))
+    # NOTE: Need to set some garbage dummy values, so that the documentation can be generated without
+    # actually having these values.
+    def get_default_architecture(
+        input_dimensionality: int, classification: bool = False, n_hidden: int = 500
+    ) -> "torch.nn.Module":
+        raise RuntimeError(_ERROR_MSG)
+
+    def get_architecture_forrester(input_dimensionality: int) -> "torch.nn.Module":
+        raise RuntimeError(_ERROR_MSG)
+
 
 logger = get_logger(__name__)
 
 
 @dataclass
 class MetaModelConfig(ABC):
-    """Configuration options for the training of the Profet meta-model."""
+    """ Configuration options for the training of the Profet meta-model.        
+    """
 
     benchmark: str
+    """ Name of the benchmark. """
 
-    # ---------- "Abstract"/required attributes:
+    # ---------- "Abstract"/required class attributes:
     json_file_name: ClassVar[str]
-    get_architecture: ClassVar[Callable[[int], nn.Module]]
+    """ Name of the json file that contains the data of this benchmark. """
+
+    get_architecture: ClassVar[Callable[[int], "nn.Module"]]
+    """ Callable that takes a task id and returns a network for this benchmark. """
+
     hidden_space: ClassVar[int]
+    """ Size of the hidden space for this benchmark. """
+
     log_cost: ClassVar[bool]
+    """ Whether to apply `np.log` onto the raw data for the cost of each point. """
+
     log_target: ClassVar[bool]
+    """ Whether to apply `np.log` onto the raw data for the `y` of each point. """
+
     normalize_targets: ClassVar[bool]
+    """ Whether to normalize the targets (y), by default False. """
     # -----------
 
     task_id: int = 0
@@ -43,26 +78,29 @@ class MetaModelConfig(ABC):
     mcmc_thining: int = 100
     lr: float = 1e-2
     batch_size: int = 5
-    # Maximum number of samples to use when training the meta-model. This can be useful
-    # if the dataset is large (e.g. FCNet task) and you don't have crazy amounts of
-    # memory.
     max_samples: Optional[int] = None
-    # Argument passed to the `BayesianGPLVM` constructor in `get_features`. Not sure what this does.
+    """ Maximum number of samples to use when training the meta-model. This can be useful
+    if the dataset is large (e.g. FCNet task) and you don't have crazy amounts of memory.
+    """
+
     n_inducing_lvm: int = 50
-    # Argument passed to the `optimze` method of the `BayesianGPLVM` instance that is used in the
-    # call to `get_features`. Appears to be the number of training iterations to perform.
+    """ Argument passed to the `BayesianGPLVM` constructor in `get_features`. Not sure what this
+    does.
+    """
+
     max_iters: int = 10_000
-    # Number of tasks to create in `get_training_data`.
+    """Argument passed to the `optimze` method of the `BayesianGPLVM` instance that is used in the
+    call to `get_features`. Appears to be the number of training iterations to perform.
+    """
+
     n_samples_task: int = 500
+    """ Number of tasks to create in `get_training_data`."""
 
     def __post_init__(self):
         if not self.num_steps:
             self.num_steps = 100 * self.n_samples + 1
 
-    def get_task_network(
-        self,
-        input_path: Union[Path, str],
-    ) -> Tuple[nn.Module, np.ndarray]:
+    def get_task_network(self, input_path: Union[Path, str],) -> Tuple["nn.Module", np.ndarray]:
         """Create, train and return a surrogate model for the given `benchmark`, `seed` and `task_id`.
 
         Parameters
@@ -100,10 +138,7 @@ class MetaModelConfig(ABC):
             n_samples_task=self.n_samples_task,
         )
         objective_model, cost_model = self.get_meta_model(
-            X_train,
-            Y_train,
-            C_train,
-            with_cost=False,
+            X_train, Y_train, C_train, with_cost=False,
         )
 
         net = self.get_network(objective_model, X_train.shape[1])
@@ -214,10 +249,7 @@ class MetaModelConfig(ABC):
         kern = GPy.kern.Matern52(Q_h, ARD=True)
 
         m_lvm = BayesianGPLVM(
-            Y_norm.reshape(n_tasks, n_configs),
-            Q_h,
-            kernel=kern,
-            num_inducing=n_inducing_lvm,
+            Y_norm.reshape(n_tasks, n_configs), Q_h, kernel=kern, num_inducing=n_inducing_lvm,
         )
         m_lvm.optimize(max_iters=max_iters, messages=display_messages)
 
@@ -302,7 +334,7 @@ class MetaModelConfig(ABC):
         Y_train: np.ndarray,
         C_train: np.ndarray,
         with_cost: bool = False,
-    ) -> Tuple[Bohamiann, Optional[Bohamiann]]:
+    ) -> Tuple["Bohamiann", Optional["Bohamiann"]]:
         """Create, train and return the objective model, and (optionally) a cost model for the data.
 
         Parameters
@@ -374,7 +406,7 @@ class MetaModelConfig(ABC):
 
         return objective_model, cost_model
 
-    def get_network(self, model: Bohamiann, size: int, idx: int = 0) -> nn.Module:
+    def get_network(self, model: "Bohamiann", size: int, idx: int = 0) -> "nn.Module":
         """Retrieve a network with sampled weights for the given task id.
 
         Parameters
@@ -400,9 +432,8 @@ class MetaModelConfig(ABC):
         return net
 
     def load_task_network(
-        self,
-        checkpoint_file: Union[str, Path],
-    ) -> Tuple[nn.Module, np.ndarray]:
+        self, checkpoint_file: Union[str, Path],
+    ) -> Tuple["nn.Module", np.ndarray]:
         """Load the result of the `get_task_network` function stored in the pickle file.
 
         Parameters
@@ -431,7 +462,7 @@ class MetaModelConfig(ABC):
         return network, h
 
     def save_task_network(
-        self, checkpoint_file: Union[str, Path], network: nn.Module, h: np.ndarray
+        self, checkpoint_file: Union[str, Path], network: "nn.Module", h: np.ndarray
     ) -> None:
         """Save the meta-model for the task at the given path.
 

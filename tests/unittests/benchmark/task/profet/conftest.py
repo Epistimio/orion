@@ -5,11 +5,16 @@ from typing import Dict, Tuple
 
 import numpy as np
 import pytest
-import torch
+
+try:
+    import torch
+    from orion.benchmark.task.profet.profet_task import MetaModelConfig
+except ImportError:
+    pytest.skip("skipping profet tests", allow_module_level=True)
+
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
-from orion.benchmark.task.profet.profet_task import MetaModelConfig
 
 logger = get_logger(__name__)
 

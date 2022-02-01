@@ -1,20 +1,27 @@
-""" Hyper-Parameters of a simulated task based on variants of the Forrester function:
+"""Hyper-Parameters of a simulated task based on variants of the Forrester function:
 
-.. math::
-f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4)
-..
+.. math:: f(x) = ((\alpha x - 2)^2) sin(\beta x - 4)
+
 
 This task uses a meta-model that is trained using a dataset of points from different functions, each
 with different values of alpha and beta. This meta-model can then be used to sample "fake" points
 from a given forrester function.
 """
+import typing
 from dataclasses import dataclass
 from logging import getLogger as get_logger
 from typing import Callable, ClassVar, Dict, List
 
-from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
-from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
-from torch import nn
+
+from orion.benchmark.task.profet.profet_task import ProfetTask
+from orion.benchmark.task.profet.model_utils import (
+    MetaModelConfig,
+    get_default_architecture,
+    get_architecture_forrester,
+)
+
+if typing.TYPE_CHECKING:
+    from torch import nn
 
 try:
     from typing import Final
@@ -35,7 +42,7 @@ class ProfetForresterTask(ProfetTask):
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"
-        get_architecture: ClassVar[Callable[[int], nn.Module]] = get_architecture_forrester
+        get_architecture: ClassVar[Callable[[int], "nn.Module"]] = get_architecture_forrester
         hidden_space: ClassVar[int] = 2
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = False

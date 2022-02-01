@@ -13,17 +13,27 @@ from contextlib import contextmanager
 from dataclasses import asdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Generic, List, Optional, Type, TypeVar, Union, overload
+from typing import ClassVar, Dict, List, Optional, Type, Union, overload
 
 import numpy as np
-import torch
+
+try:
+    import torch
+    from torch.distributions import Normal
+except ImportError as err:
+    warnings.warn(
+        RuntimeWarning(
+            f"The `profet` extras needs to be installed in order to use the Profet tasks.\n"
+            f"Error: {err}\n"
+            f"Use `pip install orion[profet]` to install the profet extras."
+        )
+    )
 from orion.algo.space import Space
 from orion.benchmark.task.base import BenchmarkTask
 from orion.benchmark.task.profet.model_utils import MetaModelConfig
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import compute_identity
-from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple
-from torch.distributions import Normal
+from orion.core.utils.format_trials import dict_to_trial
 from orion.core.worker import transformer
 from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
@@ -89,7 +99,7 @@ class ProfetTask(BenchmarkTask):
         input_dir: Union[Path, str] = "profet_data",
         checkpoint_dir: Union[Path, str] = None,
         model_config: MetaModelConfig = None,
-        device: Union[torch.device, str] = None,
+        device: Union["torch.device", str] = None,
         with_grad: bool = False,
     ):
         super().__init__(max_trials=max_trials)

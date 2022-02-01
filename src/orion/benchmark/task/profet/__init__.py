@@ -12,3 +12,11 @@ from .svm import ProfetSvmTask
 from .fcnet import ProfetFcNetTask
 from .forrester import ProfetForresterTask
 from .xgboost import ProfetXgBoostTask
+
+__all__ = [
+    "ProfetTask",
+    "ProfetSvmTask",
+    "ProfetFcNetTask",
+    "ProfetForresterTask",
+    "ProfetXgBoostTask",
+]

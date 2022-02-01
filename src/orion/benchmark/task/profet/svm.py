@@ -1,17 +1,19 @@
 """ Simulated Task consisting in training a Support Vector Machine (SVM).
 """
+import typing
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Dict, List
-
-from torch import nn
-from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from functools import partial
-from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
+from typing import Callable, ClassVar, Dict, List
+from orion.benchmark.task.profet.profet_task import ProfetTask
+from orion.benchmark.task.profet.model_utils import MetaModelConfig, get_default_architecture
 
 try:
     from typing import Final
 except ImportError:
     from typing_extensions import Final  # type: ignore
+
+if typing.TYPE_CHECKING:
+    from torch import nn
 
 
 class ProfetSvmTask(ProfetTask):
@@ -25,7 +27,7 @@ class ProfetSvmTask(ProfetTask):
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_svm.json"
-        get_architecture: ClassVar[Callable[[int], nn.Module]] = partial(
+        get_architecture: ClassVar[Callable[[int], "nn.Module"]] = partial(
             get_default_architecture, classification=True
         )
         hidden_space: ClassVar[int] = 5

@@ -1,12 +1,17 @@
 """ Simulated Task consisting in training a fully-connected network.
 """
+import typing
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, ClassVar, Dict, List
+from orion.benchmark.task.profet.profet_task import ProfetTask
+from orion.benchmark.task.profet.model_utils import (
+    MetaModelConfig,
+    get_default_architecture,
+)
 
-from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
-from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
-from torch import nn
+if typing.TYPE_CHECKING:
+    from torch import nn
 
 try:
     from typing import Final
@@ -24,7 +29,7 @@ class ProfetFcNetTask(ProfetTask):
         benchmark: Final[str] = "fcnet"
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
-        get_architecture: ClassVar[Callable[[int], nn.Module]] = partial(get_default_architecture)
+        get_architecture: ClassVar[Callable[[int], "nn.Module"]] = partial(get_default_architecture)
         hidden_space: ClassVar[int] = 5
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = False

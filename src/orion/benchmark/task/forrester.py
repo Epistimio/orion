@@ -13,11 +13,10 @@ import numpy as np
 
 
 class Forrester(BenchmarkTask):
-    """ Task based on the Forrester function, as described in https://arxiv.org/abs/1905.12982
-    
-    .. math::
-    f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4)
-    ..
+    """Task based on the Forrester function, as described in https://arxiv.org/abs/1905.12982
+
+    .. math:: f(x) = ((\alpha x - 2)^2) sin(\beta x - 4)
+
 
     Parameters
     ----------

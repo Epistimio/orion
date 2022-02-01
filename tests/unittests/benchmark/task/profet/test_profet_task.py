@@ -6,9 +6,14 @@ from typing import Any, Callable, ClassVar, Dict, Type
 
 import numpy as np
 import pytest
-import torch
+
+try:
+    import torch
+    from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+except ImportError:
+    pytest.skip("skipping profet tests", allow_module_level=True)
+
 from orion.algo.space import Space, _Discrete
-from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
