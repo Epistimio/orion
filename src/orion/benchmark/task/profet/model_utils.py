@@ -204,7 +204,7 @@ class MetaModelConfig(ABC):
         Y : np.ndarray
             Labels from the datasets.
         indexD : np.ndarray
-            NOTE: Not sure what this argument represents.
+            Task indices of corresponding labels Y.
 
         Returns
         -------
