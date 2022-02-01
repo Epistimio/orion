@@ -183,7 +183,7 @@ class DimensionBuilder(object):
         """Another synonym for :scipy.stats:`distributions.norm`."""
         name = self.name
         klass = _real_or_int(kwargs)
-        return klass(name, "normal", *args, **kwargs)
+        return klass(name, "norm", *args, **kwargs)
 
     def loguniform(self, *args, **kwargs):
         """Return a `Dimension` object with
