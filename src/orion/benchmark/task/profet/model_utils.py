@@ -239,7 +239,7 @@ class MetaModelConfig(ABC):
         Y : np.ndarray
             Training labels
         C : np.ndarray
-            Training costs (NOTE: This isn't really used at the moment).
+            Training costs
         hidden_space : int
             Dimensionality of the hidden space.
         n_inducing_lvm : int, optional
@@ -373,8 +373,8 @@ class MetaModelConfig(ABC):
         Returns
         -------
         Tuple[Bohamiann, Optional[Bohamiann]]
-            Surrogate model for the objective, as well as another for the cost, if `with_cose` is True,
-            otherwise `None`.
+            Surrogate model for the objective, as well as another for the cost, if `with_cost` is
+            True, otherwise `None`.
         """
         objective_model = Bohamiann(
             get_network=type(self).get_architecture,
@@ -382,8 +382,7 @@ class MetaModelConfig(ABC):
             normalize_output=self.normalize_targets,
         )
         logger.info("Training Bohamiann objective model.")
-        # NOTE: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
-        # memory to run!
+
         if self.max_samples is not None:
             logger.info(f"Limiting the dataset to a maximum of {self.max_samples} samples.")
             X_train = X_train[: self.max_samples, ...]
