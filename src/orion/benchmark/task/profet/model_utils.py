@@ -6,9 +6,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Callable, ClassVar, Optional, Tuple, Union
+from typing import Callable, ClassVar, Optional, Tuple, Union, Any
 import warnings
-
 import numpy as np
 
 _ERROR_MSG = (
@@ -21,7 +20,7 @@ try:
     import torch
     from torch import nn
     from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
-    from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
+    from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester  # type: ignore
     from emukit.examples.profet.train_meta_model import download_data
     from GPy.models import BayesianGPLVM
     from pybnn.bohamiann import Bohamiann
@@ -31,10 +30,10 @@ except ImportError as err:
     # actually having these values.
     def get_default_architecture(
         input_dimensionality: int, classification: bool = False, n_hidden: int = 500
-    ) -> "torch.nn.Module":
+    ) -> Any:
         raise RuntimeError(_ERROR_MSG)
 
-    def get_architecture_forrester(input_dimensionality: int) -> "torch.nn.Module":
+    def get_architecture_forrester(input_dimensionality: int) -> Any:
         raise RuntimeError(_ERROR_MSG)
 
 
@@ -53,7 +52,7 @@ class MetaModelConfig(ABC):
     json_file_name: ClassVar[str]
     """ Name of the json file that contains the data of this benchmark. """
 
-    get_architecture: ClassVar[Callable[[int], "nn.Module"]]
+    get_architecture: ClassVar[Callable[[int], Any]]
     """ Callable that takes a task id and returns a network for this benchmark. """
 
     hidden_space: ClassVar[int]
@@ -70,14 +69,31 @@ class MetaModelConfig(ABC):
     # -----------
 
     task_id: int = 0
+    """ Task index. """
+
     seed: int = 123
+    """ Random seed. """
 
     n_samples: int = 1
+    """ Number of samples. """
+
     num_burnin_steps: int = 50000
+    """ (copied from `Bohamiann.train`): Number of burn-in steps to perform. This value is passed to the given `optimizer` if it
+    supports special burn-in specific behavior. Networks sampled during burn-in are discarded.
+    """
+
     num_steps: int = 0
+    """ `num_steps` argument to `Bohamiann.train`. """
+
     mcmc_thining: int = 100
+    """ `keep_every` argument of `Bohamiann.train`. """
+
     lr: float = 1e-2
+    """ `lr` argument of `Bohamiann.train`. """
+
     batch_size: int = 5
+    """ `batch_size` argument of `Bohamiann.train`. """
+
     max_samples: Optional[int] = None
     """ Maximum number of samples to use when training the meta-model. This can be useful
     if the dataset is large (e.g. FCNet task) and you don't have crazy amounts of memory.
@@ -100,7 +116,7 @@ class MetaModelConfig(ABC):
         if not self.num_steps:
             self.num_steps = 100 * self.n_samples + 1
 
-    def get_task_network(self, input_path: Union[Path, str],) -> Tuple["nn.Module", np.ndarray]:
+    def get_task_network(self, input_path: Union[Path, str]) -> Tuple[Any, np.ndarray]:
         """Create, train and return a surrogate model for the given `benchmark`, `seed` and `task_id`.
 
         Parameters
@@ -110,7 +126,7 @@ class MetaModelConfig(ABC):
 
         Returns
         -------
-        Tuple[nn.Module, np.ndarray]
+        Tuple[Any, np.ndarray]
             The surrogate model for the objective, as well as an array of sampled task features.
         """
         rng = np.random.RandomState(seed=self.seed)
@@ -406,7 +422,7 @@ class MetaModelConfig(ABC):
 
         return objective_model, cost_model
 
-    def get_network(self, model: "Bohamiann", size: int, idx: int = 0) -> "nn.Module":
+    def get_network(self, model: "Bohamiann", size: int, idx: int = 0) -> Any:
         """Retrieve a network with sampled weights for the given task id.
 
         Parameters
@@ -420,8 +436,8 @@ class MetaModelConfig(ABC):
 
         Returns
         -------
-        nn.Module
-            A `nn.Module` with sampled weights.
+        Any
+            A module with sampled weights.
         """
         net = model.get_network(size)
 
@@ -431,9 +447,7 @@ class MetaModelConfig(ABC):
                 parameter.copy_(torch.from_numpy(sample))
         return net
 
-    def load_task_network(
-        self, checkpoint_file: Union[str, Path],
-    ) -> Tuple["nn.Module", np.ndarray]:
+    def load_task_network(self, checkpoint_file: Union[str, Path],) -> Tuple[Any, np.ndarray]:
         """Load the result of the `get_task_network` function stored in the pickle file.
 
         Parameters
@@ -444,7 +458,7 @@ class MetaModelConfig(ABC):
 
         Returns
         -------
-        Tuple[nn.Module, np.ndarray]
+        Tuple[Any, np.ndarray]
             The surrogate model for the objective, as well as an array of sampled task features.
         """
         with open(checkpoint_file, "rb") as f:
@@ -462,7 +476,7 @@ class MetaModelConfig(ABC):
         return network, h
 
     def save_task_network(
-        self, checkpoint_file: Union[str, Path], network: "nn.Module", h: np.ndarray
+        self, checkpoint_file: Union[str, Path], network: Any, h: np.ndarray
     ) -> None:
         """Save the meta-model for the task at the given path.
 
@@ -470,7 +484,7 @@ class MetaModelConfig(ABC):
         ----------
         checkpoint_file : Union[str, Path]
             Path where the model should be saved
-        network : nn.Module
+        network : Any
             The network
         h : np.ndarray
             The embedding vector

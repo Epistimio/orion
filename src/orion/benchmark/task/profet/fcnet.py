@@ -3,7 +3,7 @@
 import typing
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, ClassVar, Dict, List
+from typing import Callable, ClassVar, Dict, List, Any
 from orion.benchmark.task.profet.profet_task import ProfetTask
 from orion.benchmark.task.profet.model_utils import (
     MetaModelConfig,
@@ -27,14 +27,13 @@ class ProfetFcNetTask(ProfetTask):
         """Config for training the Profet model on an FcNet task."""
 
         benchmark: Final[str] = "fcnet"
-        # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
-        get_architecture: ClassVar[Callable[[int], "nn.Module"]] = partial(get_default_architecture)
+        get_architecture: ClassVar[Callable[[int], Any]] = partial(get_default_architecture)
+        """ Callable that takes a task id and returns a network for this benchmark. """
         hidden_space: ClassVar[int] = 5
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = False
         normalize_targets: ClassVar[bool] = False
-        # -----------
 
     def call(
         self,

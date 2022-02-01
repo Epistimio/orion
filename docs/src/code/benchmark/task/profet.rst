@@ -7,7 +7,7 @@ Profet Task modules
 
 .. toctree::
    :maxdepth: 2
-   :caption: 
+   :caption: Profet tasks
 
    profet/profet_task
    profet/model_utils

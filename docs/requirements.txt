@@ -8,3 +8,5 @@ plotly
 matplotlib
 kaleido
 dask[complete]
+# numpy
+# sphinx-autodoc-typehints

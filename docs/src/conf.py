@@ -42,21 +42,20 @@ import orion.core as orion  # noqa
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
-extensions = (
-    [  # Extensions must be sorted alphabetically to ease maintenance and merges.
-        "numpydoc",
-        "sphinxcontrib.httpdomain",  # Documentation directives for the REST API.
-        "sphinx_gallery.gen_gallery",
-        "sphinx.ext.autodoc",
-        "sphinx.ext.autosummary",
-        "sphinx.ext.coverage",
-        "sphinx.ext.doctest",
-        "sphinx.ext.extlinks",
-        "sphinx.ext.todo",
-        "sphinx.ext.viewcode",
-        "sphinx.ext.intersphinx",
-    ]
-)
+extensions = [  # Extensions must be sorted alphabetically to ease maintenance and merges.
+    "numpydoc",
+    "sphinxcontrib.httpdomain",  # Documentation directives for the REST API.
+    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.coverage",
+    "sphinx.ext.doctest",
+    "sphinx.ext.extlinks",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    # "sphinx_autodoc_typehints",
+]
 
 # General information about the project.
 project = u"orion"

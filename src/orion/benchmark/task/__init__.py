@@ -12,7 +12,8 @@ from .forrester import Forrester
 
 try:
     from . import profet
-    from .profet import ProfetSvmTask, ProfetFcNetTask, ProfetForresterTask, ProfetXgBoostTask
+
+    # from .profet import ProfetSvmTask, ProfetFcNetTask, ProfetForresterTask, ProfetXgBoostTask
 except ImportError:
     pass
 
@@ -24,9 +25,9 @@ __all__ = [
     "EggHolder",
     "Forrester",
     "profet",
-    "ProfetSvmTask",
-    "ProfetFcNetTask",
-    "ProfetForresterTask",
-    "ProfetXgBoostTask",
+    # "ProfetSvmTask",
+    # "ProfetFcNetTask",
+    # "ProfetForresterTask",
+    # "ProfetXgBoostTask",
     "bench_task_factory",
 ]

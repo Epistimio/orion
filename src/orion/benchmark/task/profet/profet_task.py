@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from dataclasses import asdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, Type, Union, overload
+from typing import ClassVar, Dict, List, Optional, Type, Union, overload, Any
 
 import numpy as np
 
@@ -83,7 +83,7 @@ class ProfetTask(BenchmarkTask):
         Directory used to save/load trained meta-models, by default None.
     model_config : MetaModelConfig, optional
         Configuration options for the training of the meta-model, by default None
-    device : Union[torch.device, str], optional
+    device : str, optional
         The device to use for training, by default None.
     with_grad : bool, optional
         Wether the task should also return the gradients of the objective function with respect to
@@ -99,7 +99,7 @@ class ProfetTask(BenchmarkTask):
         input_dir: Union[Path, str] = "profet_data",
         checkpoint_dir: Union[Path, str] = None,
         model_config: MetaModelConfig = None,
-        device: Union["torch.device", str] = None,
+        device: Union[str, Any] = None,
         with_grad: bool = False,
     ):
         super().__init__(max_trials=max_trials)
@@ -137,7 +137,6 @@ class ProfetTask(BenchmarkTask):
         self.checkpoint_file = self.checkpoint_dir / filename
         logger.info(f"Checkpoint file for this task: {self.checkpoint_file}")
 
-        self.device: torch.device
         if isinstance(device, torch.device):
             self.device = device
         else:
@@ -206,14 +205,15 @@ class ProfetTask(BenchmarkTask):
         Samples a trial (dict of hyper-parameters) from the search space of this task.
         This dict can then be passed as an input to the task to get the objective:
 
-        ```python
-        x: Trial = task.sample()
-        assert x in task.space
-        y: float = task(**x.param)
+        .. code-block:: python
+           :linenos:
 
-        xs: List[Trial] = task.sample(2)
-        ys = [task(**x.param) for x in xs]
-        ```
+            x: Trial = task.sample()
+            assert x in task.space
+            y: float = task(**x.param)
+
+            xs: List[Trial] = task.sample(2)
+            ys = [task(**x.param) for x in xs]
         
         Parameters
         ----------

@@ -29,6 +29,8 @@ class ProfetXgBoostTask(ProfetTask):
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_xgboost.json"
         get_architecture: ClassVar[Callable[[int], "nn.Module"]] = get_default_architecture
+        """ Callable that takes a task id and returns a network for this benchmark. """
+
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = True

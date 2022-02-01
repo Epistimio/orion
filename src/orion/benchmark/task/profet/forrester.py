@@ -10,13 +10,12 @@ from a given forrester function.
 import typing
 from dataclasses import dataclass
 from logging import getLogger as get_logger
-from typing import Callable, ClassVar, Dict, List
+from typing import Any, Callable, ClassVar, Dict, List
 
 
 from orion.benchmark.task.profet.profet_task import ProfetTask
 from orion.benchmark.task.profet.model_utils import (
     MetaModelConfig,
-    get_default_architecture,
     get_architecture_forrester,
 )
 
@@ -42,7 +41,7 @@ class ProfetForresterTask(ProfetTask):
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"
-        get_architecture: ClassVar[Callable[[int], "nn.Module"]] = get_architecture_forrester
+        get_architecture: ClassVar[Callable[[int], Any]] = get_architecture_forrester
         hidden_space: ClassVar[int] = 2
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = False

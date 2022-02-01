@@ -7,23 +7,24 @@ from typing import Any, Callable, ClassVar, Dict, Type
 import numpy as np
 import pytest
 
-try:
-    import torch
-    from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
-except ImportError:
-    pytest.skip("skipping profet tests", allow_module_level=True)
 
 from orion.algo.space import Space, _Discrete
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 
-from .conftest import REAL_PROFET_DATA_DIR, c_max, c_min, is_nonempty_dir, y_max, y_min
-
 logger = get_logger(__name__)
 
 _devices = ["cpu"]
-if torch.cuda.is_available():
-    _devices.append("cuda")
+try:
+    import torch
+    from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+
+    if torch.cuda.is_available():
+        _devices.append("cuda")
+except ImportError:
+    pytest.skip("skipping profet tests", allow_module_level=True)
+
+from .conftest import REAL_PROFET_DATA_DIR, c_max, c_min, is_nonempty_dir, y_max, y_min
 
 
 class ProfetTaskTests:

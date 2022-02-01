@@ -14,3 +14,5 @@ Task modules
    task/carromtable
    task/eggholder
    task/rosenbrock
+   task/forrester
+   task/profet
