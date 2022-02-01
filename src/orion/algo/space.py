@@ -740,7 +740,7 @@ class Categorical(Dimension):
         :type point: numeric or array-like
 
         """
-        point_ = numpy.asarray(point, dtype=numpy.object)
+        point_ = numpy.asarray(point, dtype=object)
         if point_.shape != self.shape:
             return False
         _check = numpy.vectorize(lambda x: x in self.categories)
@@ -825,8 +825,8 @@ class Categorical(Dimension):
 
             return categorical_strings[str(value)]
 
-        point_ = numpy.asarray(point, dtype=numpy.object)
-        cast = numpy.vectorize(get_category, otypes=[numpy.object])
+        point_ = numpy.asarray(point, dtype=object)
+        cast = numpy.vectorize(get_category, otypes=[object])
         casted_point = cast(point_)
 
         if not isinstance(point, numpy.ndarray):
