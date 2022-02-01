@@ -7,11 +7,11 @@ import numpy as np
 import pytest
 
 try:
-    import torch
-    from orion.benchmark.task.profet.profet_task import MetaModelConfig
+    import torch  # type: ignore
 except ImportError:
     pytest.skip("skipping profet tests", allow_module_level=True)
 
+from orion.benchmark.task.profet.profet_task import MetaModelConfig
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
@@ -19,14 +19,6 @@ from _pytest.tmpdir import TempPathFactory
 logger = get_logger(__name__)
 
 REAL_PROFET_DATA_DIR: Path = Path("profet_data")
-
-
-def seed_everything(seed: int) -> None:
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.random.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
 
 
 def is_nonempty_dir(p: Path) -> bool:
