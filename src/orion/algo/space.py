@@ -272,6 +272,9 @@ class Dimension:
         if prior_name == "reciprocal":
             prior_name = "loguniform"
 
+        if prior_name == "norm":
+            prior_name = "normal"
+
         return "{prior_name}({args})".format(
             prior_name=prior_name, args=", ".join(args)
         )

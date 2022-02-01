@@ -61,7 +61,7 @@ class TestDimension(object):
 
     def test_simple_instance(self, seed):
         """Test Dimension.__init__."""
-        dim = Dimension("yolo", "normal", 0.9, 0.1)
+        dim = Dimension("yolo", "norm", 0.9, 0.1)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
         assert dists.norm.rvs(0.9, 0.1) == samples[0]
@@ -80,14 +80,14 @@ class TestDimension(object):
 
     def test_shaped_instance(self, seed):
         """Use shape keyword argument."""
-        dim = Dimension("yolo", "normal", 0.9, shape=(3, 2))
+        dim = Dimension("yolo", "norm", 0.9, shape=(3, 2))
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
         assert_eq(dists.norm.rvs(0.9, size=(3, 2)), samples[0])
 
         assert dim.shape == (3, 2)
 
-        dim = Dimension("yolo", "normal", 0.9, shape=4)
+        dim = Dimension("yolo", "norm", 0.9, shape=4)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
         assert_eq(dists.norm.rvs(0.9, size=4), samples[0])
@@ -97,17 +97,17 @@ class TestDimension(object):
     def test_ban_size_kwarg(self):
         """Should not be able to use 'size' kwarg."""
         with pytest.raises(ValueError):
-            Dimension("yolo", "normal", 0.9, size=(3, 2))
+            Dimension("yolo", "norm", 0.9, size=(3, 2))
 
     def test_ban_seed_kwarg(self):
         """Should not be able to use 'seed' kwarg."""
         with pytest.raises(ValueError):
-            Dimension("yolo", "normal", 0.9, seed=8)
+            Dimension("yolo", "norm", 0.9, seed=8)
 
     def test_ban_rng_kwarg(self):
         """Should not be able to use 'random_state' kwarg."""
         with pytest.raises(ValueError):
-            Dimension("yolo", "normal", 0.9, random_state=8)
+            Dimension("yolo", "norm", 0.9, random_state=8)
 
     def test_with_predefined_dist(self, seed):
         """Use an already defined distribution object as prior arg."""
@@ -213,8 +213,8 @@ class TestDimension(object):
         dim = Dimension("yolo", "reciprocal", 1e-10, 1)
         assert dim.prior_name == "reciprocal"
 
-        dim = Dimension("yolo", "normal", 0.9)
-        assert dim.prior_name == "normal"
+        dim = Dimension("yolo", "norm", 0.9)
+        assert dim.prior_name == "norm"
 
         dim = Real("yolo", "uniform", 1, 2)
         assert dim.prior_name == "uniform"
@@ -222,7 +222,7 @@ class TestDimension(object):
         dim = Integer("yolo1", "uniform", -3, 6)
         assert dim.prior_name == "int_uniform"
 
-        dim = Integer("yolo1", "normal", -3, 6)
+        dim = Integer("yolo1", "norm", -3, 6)
         assert dim.prior_name == "int_norm"
 
         categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, "lalala": 0.4}
@@ -235,7 +235,7 @@ class TestReal(object):
 
     def test_simple_instance(self, seed):
         """Test Real.__init__."""
-        dim = Real("yolo", "normal", 0.9)
+        dim = Real("yolo", "norm", 0.9)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
         assert dists.norm.rvs(0.9) == samples[0]
@@ -255,7 +255,7 @@ class TestReal(object):
 
     def test_contains_extra_bounds(self):
         """Test __contains__ for the extra bounds."""
-        dim = Real("yolo", "normal", 0, 3, low=-3, high=+3)
+        dim = Real("yolo", "norm", 0, 3, low=-3, high=+3)
         assert dists.uniform.rvs(-3, 3) in dim
         assert -4 not in dim
         assert +4 not in dim
@@ -263,7 +263,7 @@ class TestReal(object):
 
     def test_sample_from_extra_bounds_good(self):
         """Randomized test **successful** sampling with the extra bounds."""
-        dim = Real("yolo", "normal", 0, 2, low=-5, high=+5, shape=(4, 4))
+        dim = Real("yolo", "norm", 0, 2, low=-5, high=+5, shape=(4, 4))
         for _ in range(8):
             samples = dim.sample(8)
             for sample in samples:
@@ -271,7 +271,7 @@ class TestReal(object):
 
     def test_sample_from_extra_bounds_bad(self):
         """Randomized test **unsuccessfully** sampling with the extra bounds."""
-        dim = Real("yolo", "normal", 0, 2, low=-2, high=+2, shape=(4, 4))
+        dim = Real("yolo", "norm", 0, 2, low=-2, high=+2, shape=(4, 4))
         with pytest.raises(ValueError) as exc:
             dim.sample(8)
         assert "Improbable bounds" in str(exc.value)
@@ -279,13 +279,13 @@ class TestReal(object):
     def test_bad_bounds(self):
         """Try setting bound with high <= low."""
         with pytest.raises(ValueError):
-            Real("yolo", "normal", 0, 2, low=+2, high=-2, shape=(4, 4))
+            Real("yolo", "norm", 0, 2, low=+2, high=-2, shape=(4, 4))
         with pytest.raises(ValueError):
-            Real("yolo", "normal", 0, 2, low=+2, high=+2, shape=(4, 4))
+            Real("yolo", "norm", 0, 2, low=+2, high=+2, shape=(4, 4))
 
     def test_interval(self):
         """Interval takes into account explicitly bounds."""
-        dim = Real("yolo", "normal", 0, 3, low=-3, high=+3)
+        dim = Real("yolo", "norm", 0, 3, low=-3, high=+3)
         assert dim.interval() == (-3, 3)
 
         dim = Real("yolo", "alpha", 0.9, low=-3, high=+3)
@@ -772,7 +772,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer("yolo2", "uniform", -3, 6)
         space.register(dim)
-        dim = Real("yolo3", "normal", 0.9)
+        dim = Real("yolo3", "norm", 0.9)
         space.register(dim)
 
         assert "yolo" in space
@@ -791,7 +791,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer("yolo2.nested", "uniform", -3, 6)
         space.register(dim)
-        dim = Real("yolo3", "normal", 0.9)
+        dim = Real("yolo3", "norm", 0.9)
         space.register(dim)
 
         trial = Trial(
@@ -820,7 +820,7 @@ class TestSpace(object):
         space.register(dim1)
         dim2 = Integer("yolo2", "uniform", -3, 6)
         space.register(dim2)
-        dim3 = Real("yolo3", "normal", 0.9)
+        dim3 = Real("yolo3", "norm", 0.9)
         space.register(dim3)
 
         point = space.sample(seed=seed)
@@ -863,7 +863,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer("yolo2", "uniform", -3, 6)
         space.register(dim)
-        dim = Real("yolo3", "normal", 0.9)
+        dim = Real("yolo3", "norm", 0.9)
         space.register(dim)
 
         assert space.interval() == [categories, (-3, 3), (-np.inf, np.inf)]
@@ -886,7 +886,7 @@ class TestSpace(object):
         space.register(dim)
         assert space.cardinality == (4 ** 2) * (6 + 1) * 1 * ((2 + 1) ** (3 * 2))
 
-        dim = Real("yolo4", "normal", 0.9)
+        dim = Real("yolo4", "norm", 0.9)
         space.register(dim)
         assert np.inf == space.cardinality
 
@@ -920,7 +920,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer("yolo2", "uniform", -3, 6)
         space.register(dim)
-        dim = Real("yolo3", "normal", 0.9)
+        dim = Real("yolo3", "norm", 0.9)
         space.register(dim)
 
         assert space["yolo"].type == "categorical"
@@ -937,12 +937,12 @@ class TestSpace(object):
         space1 = Space()
         space1.register(Integer("yolo1", "uniform", -3, 6, shape=(2,)))
         space1.register(Integer("yolo2", "uniform", -3, 6, shape=(2,)))
-        space1.register(Real("yolo3", "normal", 0.9))
+        space1.register(Real("yolo3", "norm", 0.9))
         space1.register(Categorical("yolo4", ("asdfa", 2)))
 
         space2 = Space()
         space2.register(Integer("yolo1", "uniform", -3, 6, shape=(2,)))
-        space2.register(Real("yolo3", "normal", 0.9))
+        space2.register(Real("yolo3", "norm", 0.9))
         space2.register(Categorical("yolo4", ("asdfa", 2)))
         space2.register(Integer("yolo2", "uniform", -3, 6, shape=(2,)))
 
@@ -959,7 +959,7 @@ class TestSpace(object):
         space = Space()
         dim = Integer("yolo2", "uniform", -3, 6, shape=(2,))
         space.register(dim)
-        dim = Real("yolo3", "normal", 0.9)
+        dim = Real("yolo3", "norm", 0.9)
         space.register(dim)
 
         assert (
@@ -975,7 +975,7 @@ class TestSpace(object):
         space = Space()
         space.register(Integer("yolo1", "uniform", -3, 6, shape=(2,)))
         space.register(Integer("yolo2", "uniform", -3, 6, shape=(2,)))
-        space.register(Real("yolo3", "normal", 0.9))
+        space.register(Real("yolo3", "norm", 0.9))
         space.register(Categorical("yolo4", ("asdfa", 2)))
 
         assert space.configuration == {
@@ -988,16 +988,16 @@ class TestSpace(object):
     def test_precision(self):
         """Test that precision is correctly handled."""
         space = Space()
-        space.register(Real("yolo1", "normal", 0.9, precision=6))
-        space.register(Real("yolo2", "normal", 0.9, precision=None))
-        space.register(Real("yolo5", "normal", 0.9))
+        space.register(Real("yolo1", "norm", 0.9, precision=6))
+        space.register(Real("yolo2", "norm", 0.9, precision=None))
+        space.register(Real("yolo5", "norm", 0.9))
 
         assert space["yolo1"].precision == 6
         assert space["yolo2"].precision is None
         assert space["yolo5"].precision == 4
 
         with pytest.raises(TypeError):
-            space.register(Real("yolo3", "normal", 0.9, precision=-12))
+            space.register(Real("yolo3", "norm", 0.9, precision=-12))
 
         with pytest.raises(TypeError):
-            space.register(Real("yolo4", "normal", 0.9, precision=0.6))
+            space.register(Real("yolo4", "norm", 0.9, precision=0.6))

@@ -62,7 +62,7 @@ def test_log_discrete_grid():
 
 def test_unsupported_discrete_prior():
     """Test unsupported discrete prior message"""
-    dim = Integer("yolo", "normal", 0, 1)
+    dim = Integer("yolo", "norm", 0, 1)
     with pytest.raises(TypeError) as exc:
         discrete_grid(dim, 6)
 
@@ -88,7 +88,7 @@ def test_log_real_grid():
 
 def test_unsupported_real_prior():
     """Test unsupported real prior message"""
-    dim = Real("yolo", "normal", 0.0001, 1)
+    dim = Real("yolo", "norm", 0.0001, 1)
     with pytest.raises(TypeError) as exc:
         real_grid(dim, 5)
 

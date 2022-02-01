@@ -132,13 +132,13 @@ class TestDimensionBuilder(object):
         dim = dimbuilder.build("yolo", "gaussian(3, 5)")
         assert isinstance(dim, Real)
         assert dim.name == "yolo"
-        assert dim._prior_name == "normal"
+        assert dim._prior_name == "norm"
         assert isinstance(dim.prior, dists.norm_gen)
 
         dim = dimbuilder.build("yolo2", "gaussian(1, 0.5, discrete=True)")
         assert isinstance(dim, Integer)
         assert dim.name == "yolo2"
-        assert dim._prior_name == "normal"
+        assert dim._prior_name == "norm"
         assert isinstance(dim.prior, dists.norm_gen)
 
     def test_build_normal(self, dimbuilder):
@@ -146,13 +146,13 @@ class TestDimensionBuilder(object):
         dim = dimbuilder.build("yolo", "normal(0.001, 10)")
         assert isinstance(dim, Real)
         assert dim.name == "yolo"
-        assert dim._prior_name == "normal"
+        assert dim._prior_name == "norm"
         assert isinstance(dim.prior, dists.norm_gen)
 
         dim = dimbuilder.build("yolo2", "normal(1, 0.5, discrete=True)")
         assert isinstance(dim, Integer)
         assert dim.name == "yolo2"
-        assert dim._prior_name == "normal"
+        assert dim._prior_name == "norm"
         assert isinstance(dim.prior, dists.norm_gen)
 
     def test_build_choices(self, dimbuilder):
