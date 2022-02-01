@@ -465,7 +465,7 @@ class TestInteger(object):
         dim = Integer("yolo", "uniform", 1, 2, precision=5)
         assert dim.get_prior_string() == "uniform(1, 3, precision=5)"
 
-    def test_get_prior_string_precision(self):
+    def test_get_prior_string_no_precision(self):
         """Test that default precision is not included."""
         dim = Integer("yolo", "uniform", 1, 2, precision=4)
         assert dim.get_prior_string() == "uniform(1, 3)"
@@ -681,6 +681,17 @@ class TestFidelity(object):
         assert dim.name == "epoch"
         assert dim.type == "fidelity"
         assert dim.shape is None
+
+
+    def test_fidelity_omit_base(self):
+        """Test that default base is not included."""
+        dim = Fidelity("epoch", "uniform", 1, 2, base=2)
+        assert dim.get_prior_string() == "fidelity(1, 2)"
+
+    def test_fidelity_set_base(self):
+        """Test that base is included."""
+        dim = Fidelity("epoch", "uniform", 1, 2, base=3)
+        assert dim.get_prior_string() == "fidelity(1, 2, base=3)"
 
     def test_min_resources(self):
         """Test that an error is raised if min is smaller than 1"""
