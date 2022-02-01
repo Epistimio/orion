@@ -162,7 +162,8 @@ class MetaModelConfig(ABC):
             logger.info("Download finished.")
             if not file.exists():
                 raise RuntimeError(f"Download finished, but file {file} still doesn't exist!")
-        res = json.load(open(file, "r"))
+        with open(file, "r") as f:
+            res = json.load(f)
         X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
         if len(X.shape) == 1:
             X = X[:, None]
@@ -222,7 +223,7 @@ class MetaModelConfig(ABC):
             Argument to `optimize` method of `BayesianGPLVM` that is called in `get_features`.
             Defaults to 10000.
         display_messages : bool, optional
-            Wether to log messages to the console or not, by default True.
+            Whether to log messages to the console or not, by default True.
 
         Returns
         -------
@@ -280,9 +281,9 @@ class MetaModelConfig(ABC):
         task_features_std : np.ndarray
             Std of the model training weights.
         log_C : bool, optional
-            Wether to apply `np.log` onto `C`, by default True.
+            Whether to apply `np.log` onto `C`, by default True.
         log_Y : bool, optional
-            Wether to apply `np.log` onto `Y`, by default False.
+            Whether to apply `np.log` onto `Y`, by default False.
         n_samples_task : int, optional
             Number of tasks to sample, by default 500.
 
@@ -343,9 +344,9 @@ class MetaModelConfig(ABC):
         config : MetaModelTrainingConfig
             Configuration options for the training of the meta-model.
         with_cost : bool, optional
-            Wether to also create a surrogate model for the cost. Defaults to `False`.
+            Whether to also create a surrogate model for the cost. Defaults to `False`.
         normalize_targets : bool, optional
-            Wether to normalize the targets (y), by default False.
+            Whether to normalize the targets (y), by default False.
 
         Returns
         -------
