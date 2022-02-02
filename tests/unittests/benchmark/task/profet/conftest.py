@@ -11,10 +11,11 @@ try:
 except ImportError:
     pytest.skip("skipping profet tests", allow_module_level=True)
 
-from orion.benchmark.task.profet.profet_task import MetaModelConfig
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
+
+from orion.benchmark.task.profet.profet_task import MetaModelConfig
 
 logger = get_logger(__name__)
 

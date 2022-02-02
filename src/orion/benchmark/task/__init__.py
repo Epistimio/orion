@@ -7,8 +7,8 @@ from .base import BenchmarkTask, bench_task_factory
 from .branin import Branin
 from .carromtable import CarromTable
 from .eggholder import EggHolder
-from .rosenbrock import RosenBrock
 from .forrester import Forrester
+from .rosenbrock import RosenBrock
 
 try:
     from . import profet

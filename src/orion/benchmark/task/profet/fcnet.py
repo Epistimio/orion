@@ -1,19 +1,14 @@
 """ Simulated Task consisting in training a fully-connected network.
 """
 from dataclasses import dataclass
-from typing import ClassVar, Dict, List, Tuple, Callable
-import typing
-from orion.benchmark.task.profet.profet_task import ProfetTask
-from orion.benchmark.task.profet.model_utils import get_default_architecture
+from typing import ClassVar, Dict, List, Tuple
 
+from orion.benchmark.task.profet.profet_task import ProfetTask
 
 try:
     from typing import Final
 except ImportError:
     from typing_extensions import Final  # type: ignore
-
-if typing.TYPE_CHECKING:
-    import torch
 
 
 class ProfetFcNetTask(ProfetTask):

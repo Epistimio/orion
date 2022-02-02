@@ -7,9 +7,11 @@ Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Me
 benchmarking for hyperparameter optimization." Advances in Neural Information Processing Systems 32
 (2019): 6270-6280.
 """
-from orion.benchmark.task.base import BenchmarkTask
-from typing import List, Dict
+from typing import Dict, List
+
 import numpy as np
+
+from orion.benchmark.task.base import BenchmarkTask
 
 
 class Forrester(BenchmarkTask):

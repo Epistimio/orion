@@ -2,15 +2,13 @@
 from dataclasses import asdict, replace
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Dict, Type
+from typing import ClassVar, Type
 
 import numpy as np
 import pytest
-
-
-from orion.algo.space import Space, _Discrete
-from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
+
+from orion.algo.space import Space
 
 logger = get_logger(__name__)
 
@@ -23,8 +21,9 @@ try:
 except ImportError:
     pytest.skip("skipping profet tests", allow_module_level=True)
 
-from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from pytest_mock import MockerFixture
+
+from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 from .conftest import REAL_PROFET_DATA_DIR, is_nonempty_dir
 

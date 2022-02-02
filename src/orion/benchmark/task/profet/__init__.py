@@ -7,10 +7,10 @@ Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Me
 benchmarking for hyperparameter optimization." Advances in Neural Information Processing Systems 32
 (2019): 6270-6280.
 """
-from .profet_task import ProfetTask
-from .svm import ProfetSvmTask
 from .fcnet import ProfetFcNetTask
 from .forrester import ProfetForresterTask
+from .profet_task import ProfetTask
+from .svm import ProfetSvmTask
 from .xgboost import ProfetXgBoostTask
 
 __all__ = [

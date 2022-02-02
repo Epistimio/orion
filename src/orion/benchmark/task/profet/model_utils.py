@@ -1,14 +1,15 @@
 """ Options and utilities for training the profet meta-model from Emukit. """
 import json
 import pickle
+import typing
+import warnings
 from abc import ABC
 from copy import deepcopy
 from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Callable, ClassVar, Optional, Tuple, Union, Any
-import typing
-import warnings
+from typing import Any, Callable, ClassVar, Optional, Tuple, Union
+
 import numpy as np
 
 _ERROR_MSG = (

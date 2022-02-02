@@ -4,8 +4,9 @@ import typing
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, ClassVar, Dict, List, Tuple
-from orion.benchmark.task.profet.profet_task import ProfetTask
+
 from orion.benchmark.task.profet.model_utils import get_default_architecture
+from orion.benchmark.task.profet.profet_task import ProfetTask
 
 try:
     from typing import Final
