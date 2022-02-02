@@ -87,6 +87,7 @@ setup_args = dict(
         "pandas",
         "gunicorn",
         "falcon",
+        "falcon-cors",
         "scikit-learn",
         "psutil",
         "joblib",

@@ -9,6 +9,7 @@ Exposes a WSGI REST server application instance by subclassing ``falcon.API``.
 """
 
 import falcon
+from falcon_cors import CORS
 
 from orion.serving.experiments_resource import ExperimentsResource
 from orion.serving.plots_resources import PlotsResource
@@ -24,7 +25,17 @@ class WebApi(falcon.API):
     """
 
     def __init__(self, config=None):
-        super(WebApi, self).__init__()
+        # By default, server will reject requests coming from a server
+        # with different origin. E.g., if server is hosted at
+        # http://myorionserver.com, it won't accept an API call
+        # coming from a server not hosted at same address
+        # (e.g. a local installation at http://localhost)
+        # This is a Cross-Origin Resource Sharing (CORS) security:
+        # https://developer.mozilla.org/fr/docs/Web/HTTP/CORS
+        # To make server accept CORS requests, we need to use
+        # falcon-cors package: https://github.com/lwcolton/falcon-cors
+        cors = CORS(allow_all_origins=True)
+        super(WebApi, self).__init__(middleware=[cors.middleware])
         self.config = config
 
         setup_storage(config.get("storage"))
