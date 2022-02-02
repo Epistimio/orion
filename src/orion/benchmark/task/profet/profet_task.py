@@ -206,7 +206,6 @@ class ProfetTask(BenchmarkTask):
         This dict can then be passed as an input to the task to get the objective:
 
         .. code-block:: python
-           :linenos:
 
             x: Trial = task.sample()
             assert x in task.space
@@ -224,9 +223,9 @@ class ProfetTask(BenchmarkTask):
         Returns
         -------
         trials: Union[Trial, List[Trial]]
-           Single `Trial` when `n` is not passed, or list of `Trials`, when `n` is an integer.
-           Each element is a separate sample of this space, a trial containing values associated
-           with the corresponding dimension.
+           Single `orion.core.worker.trial.Trial` when `n` is not passed, or list of `Trials`, when
+           `n` is an integer. Each element is a separate sample of this space, a trial containing
+           values associated with the corresponding dimension.
         """
         if n_samples is None:
             return self.space.sample(n_samples=1, seed=self._np_rng_state)[0]

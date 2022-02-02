@@ -253,6 +253,8 @@ sphinx_gallery_conf = {
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "plotly": ("https://plotly.com/python-api-reference/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
 }
 
 

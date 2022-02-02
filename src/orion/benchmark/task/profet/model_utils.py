@@ -59,10 +59,10 @@ class MetaModelConfig(ABC):
     """ Size of the hidden space for this benchmark. """
 
     log_cost: ClassVar[bool]
-    """ Whether to apply `np.log` onto the raw data for the cost of each point. """
+    """ Whether to apply `numpy.log` onto the raw data for the cost of each point. """
 
     log_target: ClassVar[bool]
-    """ Whether to apply `np.log` onto the raw data for the `y` of each point. """
+    """ Whether to apply `numpy.log` onto the raw data for the `y` of each point. """
 
     normalize_targets: ClassVar[bool]
     """ Whether to normalize the targets (y), by default False. """
@@ -366,7 +366,7 @@ class MetaModelConfig(ABC):
         Y_train: np.ndarray,
         C_train: np.ndarray,
         with_cost: bool = False,
-    ) -> Tuple["Bohamiann", Optional["Bohamiann"]]:
+    ):
         """Create, train and return the objective model, and (optionally) a cost model for the data.
 
         Parameters
@@ -437,7 +437,7 @@ class MetaModelConfig(ABC):
 
         return objective_model, cost_model
 
-    def get_network(self, model: "Bohamiann", size: int, idx: int = 0) -> Any:
+    def get_network(self, model, size: int, idx: int = 0) -> "torch.nn.Module":
         """Retrieve a network with sampled weights for the given task id.
 
         Parameters
@@ -451,7 +451,7 @@ class MetaModelConfig(ABC):
 
         Returns
         -------
-        Any
+        nn.Module
             A module with sampled weights.
         """
         net = model.get_network(size)
