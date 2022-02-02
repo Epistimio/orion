@@ -9,39 +9,35 @@ from a given forrester function.
 """
 import typing
 from dataclasses import dataclass
-from logging import getLogger as get_logger
 from typing import Any, Callable, ClassVar, Dict, List, Tuple
 
 
 from orion.benchmark.task.profet.profet_task import ProfetTask
-from orion.benchmark.task.profet.model_utils import (
-    MetaModelConfig,
-    get_architecture_forrester,
-)
+from orion.benchmark.task.profet.model_utils import get_architecture_forrester
 
-if typing.TYPE_CHECKING:
-    from torch import nn
 
 try:
     from typing import Final
 except ImportError:
     from typing_extensions import Final  # type: ignore
 
-logger = get_logger(__name__)
+if typing.TYPE_CHECKING:
+    import torch
 
 
 class ProfetForresterTask(ProfetTask):
     """Simulated Task consisting in training a model on a variant of the Forrester function. """
 
     @dataclass
-    class ModelConfig(MetaModelConfig):
+    class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on a Forrester task."""
 
         benchmark: Final[str] = "forrester"
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"
-        get_architecture: ClassVar[Callable[[int], Any]] = get_architecture_forrester
+        get_architecture: ClassVar[Callable[[int], "torch.nn.Module"]] = get_architecture_forrester
+        """ Callable that takes the input dimensionality and returns the network to be trained. """
         hidden_space: ClassVar[int] = 2
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = False

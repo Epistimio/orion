@@ -3,9 +3,9 @@
 import typing
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, ClassVar, Dict, List, Any, Tuple
+from typing import Callable, ClassVar, Dict, List, Tuple
 from orion.benchmark.task.profet.profet_task import ProfetTask
-from orion.benchmark.task.profet.model_utils import MetaModelConfig, get_default_architecture
+from orion.benchmark.task.profet.model_utils import get_default_architecture
 
 try:
     from typing import Final
@@ -13,23 +13,24 @@ except ImportError:
     from typing_extensions import Final  # type: ignore
 
 if typing.TYPE_CHECKING:
-    from torch import nn
+    import torch
 
 
 class ProfetSvmTask(ProfetTask):
     """Simulated Task consisting in training a Support Vector Machine."""
 
     @dataclass
-    class ModelConfig(MetaModelConfig):
+    class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on an SVM task."""
 
         benchmark: Final[str] = "svm"
 
-        # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_svm.json"
-        get_architecture: ClassVar[Callable[[int], Any]] = partial(
+        get_architecture: ClassVar[Callable[[int], "torch.nn.Module"]] = partial(
             get_default_architecture, classification=True
         )
+        """ Callable that takes the input dimensionality and returns the network to be trained. """
+
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = False
         log_cost: ClassVar[bool] = True
@@ -44,12 +45,11 @@ class ProfetSvmTask(ProfetTask):
         c_min: ClassVar[float] = 0.0
         c_max: ClassVar[float] = 697154.4010462761
 
-        # -----------
-
     def call(self, C: float, gamma: float) -> List[Dict]:
         return super().call(C=C, gamma=gamma)
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(
-            C="loguniform(np.exp(-10), np.exp(10))", gamma="loguniform(np.exp(-10), np.exp(10))",
+            C="loguniform(np.exp(-10), np.exp(10))",
+            gamma="loguniform(np.exp(-10), np.exp(10))",
         )

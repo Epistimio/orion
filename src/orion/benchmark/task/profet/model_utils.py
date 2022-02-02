@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import Callable, ClassVar, Optional, Tuple, Union, Any
+import typing
 import warnings
 import numpy as np
 
@@ -18,9 +19,12 @@ _ERROR_MSG = (
 try:
     import GPy
     import torch
-    from torch import nn
-    from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
-    from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester  # type: ignore
+    from emukit.examples.profet.meta_benchmarks.architecture import (
+        get_default_architecture,
+    )
+    from emukit.examples.profet.meta_benchmarks.meta_forrester import (
+        get_architecture_forrester,  # type: ignore
+    )
     from emukit.examples.profet.train_meta_model import download_data
     from GPy.models import BayesianGPLVM
     from pybnn.bohamiann import Bohamiann
@@ -39,11 +43,13 @@ except ImportError as err:
 
 logger = get_logger(__name__)
 
+if typing.TYPE_CHECKING:
+    import torch
+
 
 @dataclass
 class MetaModelConfig(ABC):
-    """ Configuration options for the training of the Profet meta-model.
-    """
+    """Configuration options for the training of the Profet meta-model."""
 
     benchmark: str
     """ Name of the benchmark. """
@@ -52,7 +58,9 @@ class MetaModelConfig(ABC):
     json_file_name: ClassVar[str]
     """ Name of the json file that contains the data of this benchmark. """
 
-    get_architecture: ClassVar[Callable[[int], Any]]
+    get_architecture: ClassVar[
+        Callable[[int], "torch.nn.Module"]
+    ] = get_default_architecture
     """ Callable that takes the input dimensionality and returns the network to be trained. """
 
     hidden_space: ClassVar[int]
@@ -68,7 +76,7 @@ class MetaModelConfig(ABC):
     """ Whether to normalize the targets (y), by default False. """
 
     shapes: ClassVar[Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]]
-    """ The shapes of the X, Y and Y arrays of the dataset. """
+    """ The shapes of the X, Y and C arrays of the dataset. """
 
     y_min: ClassVar[float]
     """ The minimum of the Y array. """
@@ -90,19 +98,27 @@ class MetaModelConfig(ABC):
     seed: int = 123
     """ Random seed. """
 
-    n_samples: int = 1
-    """ Number of samples. """
-
     num_burnin_steps: int = 50000
-    """ (copied from `Bohamiann.train`): Number of burn-in steps to perform. This value is passed to the given `optimizer` if it
-    supports special burn-in specific behavior. Networks sampled during burn-in are discarded.
+    """ (copied from `Bohamiann.train`): Number of burn-in steps to perform. This value is passed
+    to the given `optimizer` if it supports special burn-in specific behavior. Networks sampled
+    during burn-in are discarded.
     """
 
-    num_steps: int = 0
-    """ `num_steps` argument to `Bohamiann.train`. """
+    num_steps: int = 13_000
+    """Value passed to the argument of the same name in `Bohamiann.train`.
+
+    (copied from `Bohamiann.train`):
+    Number of sampling steps to perform after burn-in is finished. In total,
+    `num_steps // keep_every` network weights will be sampled.
+    """
 
     mcmc_thining: int = 100
-    """ `keep_every` argument of `Bohamiann.train`. """
+    """ `keep_every` argument of `Bohamiann.train`.
+
+    (copied from `Bohamiann.train`):
+    Number of sampling steps (after burn-in) to perform before keeping a sample. In total,
+    `num_steps // keep_every` network weights will be sampled.
+    """
 
     lr: float = 1e-2
     """ `lr` argument of `Bohamiann.train`. """
@@ -111,26 +127,24 @@ class MetaModelConfig(ABC):
     """ `batch_size` argument of `Bohamiann.train`. """
 
     max_samples: Optional[int] = None
-    """ Maximum number of samples to use when training the meta-model. This can be useful
+    """ Maximum number of data samples to use when training the meta-model. This can be useful
     if the dataset is large (e.g. FCNet task) and you don't have crazy amounts of memory.
     """
 
     n_inducing_lvm: int = 50
-    """ Argument passed to the `BayesianGPLVM` constructor in `get_features`. Not sure what this
-    does.
+    """ Passed as the value for the "num_inducing" argument of `BayesianGPLVM` constructor.
+
+    (copied form `GPy.core.sparse_gp_mpi.SparseGP_MPI`):
+    Number of inducing points (optional, default 10. Ignored if Z is not None)
     """
 
     max_iters: int = 10_000
-    """Argument passed to the `optimze` method of the `BayesianGPLVM` instance that is used in the
+    """Argument passed to the `optimize` method of the `BayesianGPLVM` instance that is used in the
     call to `get_features`. Appears to be the number of training iterations to perform.
     """
 
     n_samples_task: int = 500
     """ Number of tasks to create in `get_training_data`."""
-
-    def __post_init__(self):
-        if not self.num_steps:
-            self.num_steps = 100 * self.n_samples + 1
 
     def get_task_network(self, input_path: Union[Path, str]) -> Tuple[Any, np.ndarray]:
         """Create, train and return a surrogate model for the given `benchmark`, `seed` and `task_id`.
@@ -149,31 +163,39 @@ class MetaModelConfig(ABC):
 
         X, Y, C = self.load_data(input_path)
 
-        task_features_mean, task_features_std = self.get_features(
+        task_features_mean, task_features_std = self._get_features(
             X=X,
             Y=Y,
             C=C,
             display_messages=False,
         )
 
-        X_train, Y_train, C_train = self.get_training_data(
+        X_train, Y_train, C_train = self._get_training_data(
             X,
             Y,
             C,
             task_features_mean=task_features_mean,
             task_features_std=task_features_std,
         )
-        objective_model, cost_model = self.get_meta_model(
-            X_train, Y_train, C_train, with_cost=False,
+        objective_model, cost_model = self._get_meta_model(
+            X_train,
+            Y_train,
+            C_train,
+            with_cost=False,
         )
 
-        net = self.get_network(objective_model, X_train.shape[1])
+        net = self._create_task_network(objective_model, X_train.shape[1])
 
         multiplier = rng.randn(self.hidden_space)
-        h = task_features_mean[self.task_id] + task_features_std[self.task_id] * multiplier
+        h = (
+            task_features_mean[self.task_id]
+            + task_features_std[self.task_id] * multiplier
+        )
         return net, h
 
-    def load_data(self, input_path: Union[str, Path]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def load_data(
+        self, input_path: Union[str, Path]
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Load the profet data for the given benchmark from the input directory.
 
         When the input directory doesn't exist, attempts to download the data to create the input
@@ -196,7 +218,9 @@ class MetaModelConfig(ABC):
             download_data(input_path)
             logger.info("Download finished.")
             if not file.exists():
-                raise RuntimeError(f"Download finished, but file {file} still doesn't exist!")
+                raise RuntimeError(
+                    f"Download finished, but file {file} still doesn't exist!"
+                )
         with open(file, "r") as f:
             res = json.load(f)
         X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
@@ -230,7 +254,7 @@ class MetaModelConfig(ABC):
             Y[indexD == i] = (Y[indexD == i] - Y_mean[i]) / Y_std[i]
         return Y, Y_mean[:, None], Y_std[:, None]
 
-    def get_features(
+    def _get_features(
         self,
         X: np.ndarray,
         Y: np.ndarray,
@@ -255,21 +279,25 @@ class MetaModelConfig(ABC):
         Tuple[np.ndarray, np.ndarray]
             The features mean and std arrays.
         """
-        Q_h = self.hidden_space  # the dimensionality of the latent space
         n_tasks = Y.shape[0]
         n_configs = X.shape[0]
         index_task = np.repeat(np.arange(n_tasks), n_configs)
         Y_norm, _, _ = self.normalize_Y(deepcopy(Y.flatten()), index_task)
 
         # train the probabilistic encoder
-        kern = GPy.kern.Matern52(Q_h, ARD=True)
+        kern = GPy.kern.Matern52(input_dim=self.hidden_space, ARD=True)
 
         m_lvm = BayesianGPLVM(
-            Y_norm.reshape(n_tasks, n_configs), Q_h, kernel=kern, num_inducing=self.n_inducing_lvm,
+            Y_norm.reshape(n_tasks, n_configs),
+            input_dim=self.hidden_space,
+            kernel=kern,
+            num_inducing=self.n_inducing_lvm,
         )
         m_lvm.optimize(max_iters=self.max_iters, messages=display_messages)
 
-        ls = np.array([m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])])
+        ls = np.array(
+            [m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])]
+        )
 
         # generate data to train the multi-task model
         task_features_mean = np.array(m_lvm.X.mean / ls)
@@ -277,7 +305,7 @@ class MetaModelConfig(ABC):
 
         return task_features_mean, task_features_std
 
-    def get_training_data(
+    def _get_training_data(
         self,
         X: np.ndarray,
         Y: np.ndarray,
@@ -335,7 +363,7 @@ class MetaModelConfig(ABC):
 
         return X_train, Y_train, C_train
 
-    def get_meta_model(
+    def _get_meta_model(
         self,
         X_train: np.ndarray,
         Y_train: np.ndarray,
@@ -352,14 +380,8 @@ class MetaModelConfig(ABC):
             Training objectives.
         C_train : np.ndarray
             Training costs.
-        get_architecture : Callable
-            Function used to get a model architecture for a given input dimensionality.
-        config : MetaModelTrainingConfig
-            Configuration options for the training of the meta-model.
         with_cost : bool, optional
             Whether to also create a surrogate model for the cost. Defaults to `False`.
-        normalize_targets : bool, optional
-            Whether to normalize the targets (y), by default False.
 
         Returns
         -------
@@ -375,7 +397,9 @@ class MetaModelConfig(ABC):
         logger.info("Training Bohamiann objective model.")
 
         if self.max_samples is not None:
-            logger.info(f"Limiting the dataset to a maximum of {self.max_samples} samples.")
+            logger.info(
+                f"Limiting the dataset to a maximum of {self.max_samples} samples."
+            )
             X_train = X_train[: self.max_samples, ...]
             Y_train = Y_train[: self.max_samples, ...]
             C_train = C_train[: self.max_samples, ...]
@@ -395,7 +419,9 @@ class MetaModelConfig(ABC):
         )
 
         if with_cost:
-            cost_model = Bohamiann(get_network=get_default_architecture, print_every_n_steps=1000)
+            cost_model = Bohamiann(
+                get_network=type(self).get_architecture, print_every_n_steps=1000
+            )
             logger.info("Training Bohamiann cost model.")
             cost_model.train(
                 X_train,
@@ -412,7 +438,7 @@ class MetaModelConfig(ABC):
 
         return objective_model, cost_model
 
-    def get_network(self, model, size: int, idx: int = 0) -> "torch.nn.Module":
+    def _create_task_network(self, model, size: int, idx: int = 0) -> "torch.nn.Module":
         """Retrieve a network with sampled weights for the given task id.
 
         Parameters
@@ -430,14 +456,17 @@ class MetaModelConfig(ABC):
             A module with sampled weights.
         """
         net = model.get_network(size)
-
+        # assert False, (type(self).get_architecture, net, self.shapes)
         with torch.no_grad():
-            weights = model.sampled_weights[idx]
-            for parameter, sample in zip(net.parameters(), weights):
+            sampled_weights = model.sampled_weights[idx]
+            for parameter, sample in zip(net.parameters(), sampled_weights):
                 parameter.copy_(torch.from_numpy(sample))
         return net
 
-    def load_task_network(self, checkpoint_file: Union[str, Path],) -> Tuple[Any, np.ndarray]:
+    def load_task_network(
+        self,
+        checkpoint_file: Union[str, Path],
+    ) -> Tuple[Any, np.ndarray]:
         """Load the result of the `get_task_network` function stored in the pickle file.
 
         Parameters
@@ -459,7 +488,7 @@ class MetaModelConfig(ABC):
                 f"Trying to load model for benchmark {self.benchmark} from checkpoint that "
                 f"contains data from benchmark {state['benchmark']}."
             )
-        network = type(self).get_architecture(state["size"])
+        network = type(self).get_architecture(input_dimensionality=state["size"])
         network.load_state_dict(state["network"])
         h = state["h"]
 

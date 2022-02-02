@@ -17,12 +17,14 @@ logger = get_logger(__name__)
 _devices = ["cpu"]
 try:
     import torch
-    from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
     if torch.cuda.is_available():
         _devices.append("cuda")
 except ImportError:
     pytest.skip("skipping profet tests", allow_module_level=True)
+
+from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from pytest_mock import MockerFixture
 
 from .conftest import REAL_PROFET_DATA_DIR, is_nonempty_dir
 
@@ -35,12 +37,14 @@ class ProfetTaskTests:
     @pytest.fixture()
     def profet_train_config(self):
         """Fixture that provides a configuration object for the Profet algorithm for testing."""
-        quick_train_config = self.Task.ModelConfig(
+        quick_train_config = self.Task.ModelConfig(  # type: ignore
             task_id=0,
             seed=123,
             num_burnin_steps=10,
-            # num_steps=10,
+            max_samples=1000,
             max_iters=10,
+            mcmc_thining=5,
+            num_steps=100,
             n_samples_task=20,
         )
         return quick_train_config
@@ -59,12 +63,13 @@ class ProfetTaskTests:
         fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
 
         # We expect the `load_data` function to NOT attempt to download the dataset, hence the timeout.
-        fake_x, fake_y, fake_c = self.Task.ModelConfig().load_data(fake_input_dir)
+        fake_x, fake_y, fake_c = self.Task.ModelConfig().load_data(fake_input_dir)  # type: ignore
         # NOTE: This might look a bit weird, but it's consistent for each of the real datasets.
         assert fake_x.shape[0] == fake_y.shape[1] == fake_c.shape[1]
 
     @pytest.mark.skipif(
-        not is_nonempty_dir(REAL_PROFET_DATA_DIR), reason="Real profet data is required.",
+        not is_nonempty_dir(REAL_PROFET_DATA_DIR),
+        reason="Real profet data is required.",
     )
     @pytest.mark.timeout(15)
     def test_mock_load_data_fixture_when_real_data_available(
@@ -73,7 +78,7 @@ class ProfetTaskTests:
         """Test that the mock_load_data fixture returns real data when the input dir is non-empty,
         and that the means, dtypes, shapes, etc match between the real and fake data.
         """
-        model_config = self.Task.ModelConfig()
+        model_config = self.Task.ModelConfig()  # type: ignore
 
         real_input_dir: Path = REAL_PROFET_DATA_DIR
         real_x, real_y, real_c = model_config.load_data(real_input_dir)
@@ -137,74 +142,49 @@ class ProfetTaskTests:
         profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         tmp_path_factory: TempPathFactory,
-        monkeypatch: MonkeyPatch,
+        mocker: MockerFixture,
     ):
         """Tests that when instantiating multiple tasks with the same arguments, the
         meta-model is trained only once.
         """
-
         checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         # Directory should be empty.
         assert len(list(checkpoint_dir.iterdir())) == 0
 
-        MetaModelConfig.get_task_network.__call_counts = 0
+        mocked_get_task_network = mocker.spy(profet_train_config, "get_task_network")
+        mocked_load_task_network = mocker.spy(profet_train_config, "load_task_network")
+        assert mocked_get_task_network.call_count == 0
+        assert mocked_load_task_network.call_count == 0
 
-        calls: Dict[Callable, int] = {}
-
-        def count_calls(f: Callable):
-            calls[f] = 0
-
-            def _counted_calls(*args, **kwargs) -> Any:
-                calls[f] += 1
-                return f(*args, **kwargs)
-
-            return _counted_calls
-
-        _get_task_network = profet_train_config.get_task_network
-        _load_task_network = profet_train_config.load_task_network
-
-        monkeypatch.setattr(
-            profet_train_config,
-            "get_task_network",
-            count_calls(profet_train_config.get_task_network),
-        )
-        monkeypatch.setattr(
-            profet_train_config,
-            "load_task_network",
-            count_calls(profet_train_config.load_task_network),
-        )
-
-        assert calls[_get_task_network] == 0
-        assert calls[_load_task_network] == 0
-
-        task = self.Task(
+        task_a = self.Task(
             model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-
-        assert calls[_get_task_network] == 1
-        assert calls[_load_task_network] == 0
+        assert mocked_get_task_network.call_count == 1
+        mocked_get_task_network.assert_called_once_with(input_path=task_a.input_dir)
+        assert mocked_load_task_network.call_count == 0
 
         # Directory should have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
-        task = self.Task(
+        task_b = self.Task(
             model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
+        assert task_a.configuration == task_b.configuration
+        assert task_a.checkpoint_file == task_b.checkpoint_file
 
-        assert calls[_get_task_network] == 1
-        assert calls[_load_task_network] == 1
+        assert mocked_get_task_network.call_count == 1
+        assert mocked_load_task_network.call_count == 1
+        mocked_load_task_network.assert_called_once_with(task_b.checkpoint_file)
 
         # Directory should *still* only have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
     @pytest.mark.parametrize("with_grad", [True, False])
-    @pytest.mark.parametrize(
-        "device_str", ["cpu"] + (["cuda"] if torch.cuda.is_available() else [])
-    )
+    @pytest.mark.parametrize("device_str", _devices)
     def test_configuration(
         self,
         profet_train_config: MetaModelConfig,
@@ -244,7 +224,10 @@ class ProfetTaskTests:
         assert second_task.configuration == first_task.configuration
 
     def test_space_attribute(
-        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
+        self,
+        profet_train_config: MetaModelConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
     ):
         """
         BUG: Space.keys() returns *sorted* keys that don't match the ordering in
@@ -290,7 +273,10 @@ class ProfetTaskTests:
         #     assert space_string_dict[dim_name] == dimension.get_prior_string()
 
     def test_sanity_check(
-        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
+        self,
+        profet_train_config: MetaModelConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
     ):
         """Tests that two tasks with different arguments give different results."""
         first_task_kwargs = dict(
@@ -307,7 +293,9 @@ class ProfetTaskTests:
         assert first_results[0]["type"] == "objective"
         first_objective = first_results[0]["value"]
 
-        second_task_model_config = replace(profet_train_config, seed=profet_train_config.seed + 456)
+        second_task_model_config = replace(
+            profet_train_config, seed=profet_train_config.seed + 456
+        )
         second_task_kwargs = first_task_kwargs.copy()
         second_task_kwargs["model_config"] = second_task_model_config
 
@@ -361,7 +349,9 @@ class ProfetTaskTests:
             # directory, forcing the task to create and train a new model using the same training
             # configuration, rather than load the same one as task_a.
             task_b_kwargs = task_kwargs.copy()
-            task_b_kwargs["checkpoint_dir"] = checkpoint_dir.with_name(checkpoint_dir.name + "_2")
+            task_b_kwargs["checkpoint_dir"] = checkpoint_dir.with_name(
+                checkpoint_dir.name + "_2"
+            )
             task_b = self.Task(**task_b_kwargs)
 
         # Check that, if the seed is the same, the weights are the same, regardless of if the model
@@ -413,7 +403,9 @@ class ProfetTaskTests:
         """When using the same task and the same point twice, the results should be identical."""
         model_config = replace(profet_train_config, seed=seed)
         task = self.Task(
-            model_config=model_config, input_dir=profet_input_dir, checkpoint_dir=checkpoint_dir,
+            model_config=model_config,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
         )
         assert task.model_config.seed == seed
         trial = task.sample()
@@ -450,8 +442,5 @@ class ProfetTaskTests:
         assert results[1]["type"] == "gradient"
         first_gradient = results[1]["value"]
         assert first_gradient is not None
-        # TODO: Gradients here might not have the same structure as the inputs, in the case of
+        # Note: Gradients here might not have the same structure as the inputs, in the case of
         # XGBoost, since there are categorical variables.
-        # - Should we return the grads in the same format as the input Trial, by applying the
-        #   inverse transform of `self.transformed_space` to the gradients? Is that possible?
-        #   Wouldn't some information be lost?

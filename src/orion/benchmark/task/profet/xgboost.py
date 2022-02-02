@@ -1,10 +1,8 @@
 """ Simulated Task consisting in training an Extreme-Gradient Boosting (XGBoost) predictor.
 """
-import typing
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Dict, List, Tuple
+from typing import ClassVar, Dict, List, Tuple
 
-from orion.benchmark.task.profet.model_utils import MetaModelConfig, get_default_architecture
 from orion.benchmark.task.profet.profet_task import ProfetTask
 
 try:
@@ -13,22 +11,15 @@ except ImportError:
     from typing_extensions import Final
 
 
-if typing.TYPE_CHECKING:
-    from torch import nn
-
-
 class ProfetXgBoostTask(ProfetTask):
     """Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor."""
 
     @dataclass
-    class ModelConfig(MetaModelConfig):
+    class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on an XgBoost task."""
 
         benchmark: Final[str] = "xgboost"
-
-        # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_xgboost.json"
-        get_architecture: ClassVar[Callable[[int], "nn.Module"]] = get_default_architecture
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = True

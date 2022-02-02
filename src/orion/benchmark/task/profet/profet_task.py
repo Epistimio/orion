@@ -9,11 +9,12 @@ benchmarking for hyperparameter optimization." Advances in Neural Information Pr
 import os
 import random
 import warnings
+from abc import ABC
 from contextlib import contextmanager
 from dataclasses import asdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, Type, Union, overload, Any
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union, overload
 
 import numpy as np
 
@@ -33,9 +34,9 @@ from orion.benchmark.task.base import BenchmarkTask
 from orion.benchmark.task.profet.model_utils import MetaModelConfig
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import compute_identity
+from orion.core.utils.flatten import flatten
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.worker import transformer
-from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
@@ -65,7 +66,7 @@ def make_reproducible(seed: int):
     random.setstate(start_random_state)
 
 
-class ProfetTask(BenchmarkTask):
+class ProfetTask(BenchmarkTask, ABC):
     """Base class for Tasks that are generated using the Profet algorithm.
 
     For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
@@ -140,7 +141,9 @@ class ProfetTask(BenchmarkTask):
         if isinstance(device, torch.device):
             self.device = device
         else:
-            self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+            self.device = torch.device(
+                device or ("cuda" if torch.cuda.is_available() else "cpu")
+            )
 
         # NOTE: Need to control the randomness that's happening inside *both* the training
         # function, as well as the loading function (since `load_task_network`` instantiates a model
@@ -177,7 +180,9 @@ class ProfetTask(BenchmarkTask):
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
         self._space: Optional[Space] = None
-        self.name = f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
+        self.name = (
+            f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
+        )
         self.transformed_space = transformer.build_required_space(
             self.space,
             type_requirement="real",
@@ -213,7 +218,7 @@ class ProfetTask(BenchmarkTask):
 
             xs: List[Trial] = task.sample(2)
             ys = [task(**x.param) for x in xs]
-        
+
         Parameters
         ----------
         n_samples : int, optional
@@ -256,7 +261,9 @@ class ProfetTask(BenchmarkTask):
         trial = dict_to_trial(kwargs, self._space)
         flattened_trial = self.transformed_space.transform(trial)
         flattened_params = flatten(flattened_trial.params)
-        flattened_point = np.array([flattened_params[key] for key in self.transformed_space.keys()])
+        flattened_point = np.array(
+            [flattened_params[key] for key in self.transformed_space.keys()]
+        )
 
         x_tensor = torch.as_tensor(flattened_point).type_as(self.h_tensor)
         if self.with_grad:
@@ -293,7 +300,9 @@ class ProfetTask(BenchmarkTask):
             self.net.zero_grad()
             y_sample.backward()
             assert x_tensor.grad is not None
-            results.append(dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy()))
+            results.append(
+                dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy())
+            )
 
         return results
 

@@ -1,34 +1,30 @@
 """ Simulated Task consisting in training a fully-connected network.
 """
-import typing
 from dataclasses import dataclass
-from functools import partial
-from typing import Callable, ClassVar, Dict, List, Any, Tuple
+from typing import ClassVar, Dict, List, Tuple, Callable
+import typing
 from orion.benchmark.task.profet.profet_task import ProfetTask
-from orion.benchmark.task.profet.model_utils import (
-    MetaModelConfig,
-    get_default_architecture,
-)
+from orion.benchmark.task.profet.model_utils import get_default_architecture
 
-if typing.TYPE_CHECKING:
-    from torch import nn
 
 try:
     from typing import Final
 except ImportError:
-    from typing_extensions import Final
+    from typing_extensions import Final  # type: ignore
+
+if typing.TYPE_CHECKING:
+    import torch
 
 
 class ProfetFcNetTask(ProfetTask):
     """Simulated Task consisting in training a fully-connected network."""
 
     @dataclass
-    class ModelConfig(MetaModelConfig):
+    class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on an FcNet task."""
 
         benchmark: Final[str] = "fcnet"
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
-        get_architecture: ClassVar[Callable[[int], Any]] = get_default_architecture
         hidden_space: ClassVar[int] = 5
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = False
