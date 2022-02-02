@@ -153,9 +153,6 @@ class MetaModelConfig(ABC):
             X=X,
             Y=Y,
             C=C,
-            hidden_space=self.hidden_space,
-            n_inducing_lvm=self.n_inducing_lvm,
-            max_iters=self.max_iters,
             display_messages=False,
         )
 
@@ -165,9 +162,6 @@ class MetaModelConfig(ABC):
             C,
             task_features_mean=task_features_mean,
             task_features_std=task_features_std,
-            log_C=self.log_cost,
-            log_Y=self.log_target,
-            n_samples_task=self.n_samples_task,
         )
         objective_model, cost_model = self.get_meta_model(
             X_train, Y_train, C_train, with_cost=False,
@@ -241,9 +235,6 @@ class MetaModelConfig(ABC):
         X: np.ndarray,
         Y: np.ndarray,
         C: np.ndarray,
-        hidden_space: int,
-        n_inducing_lvm: int = 50,
-        max_iters: int = 10000,
         display_messages: bool = True,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Generate features for the given task.
@@ -256,13 +247,6 @@ class MetaModelConfig(ABC):
             Training labels
         C : np.ndarray
             Training costs
-        hidden_space : int
-            Dimensionality of the hidden space.
-        n_inducing_lvm : int, optional
-            Argument to the `BayesianGPLVM` constructor, by default 50.
-        max_iters : int, optional
-            Argument to `optimize` method of `BayesianGPLVM` that is called in `get_features`.
-            Defaults to 10000.
         display_messages : bool, optional
             Whether to log messages to the console or not, by default True.
 
@@ -271,7 +255,7 @@ class MetaModelConfig(ABC):
         Tuple[np.ndarray, np.ndarray]
             The features mean and std arrays.
         """
-        Q_h = hidden_space  # the dimensionality of the latent space
+        Q_h = self.hidden_space  # the dimensionality of the latent space
         n_tasks = Y.shape[0]
         n_configs = X.shape[0]
         index_task = np.repeat(np.arange(n_tasks), n_configs)
@@ -281,9 +265,9 @@ class MetaModelConfig(ABC):
         kern = GPy.kern.Matern52(Q_h, ARD=True)
 
         m_lvm = BayesianGPLVM(
-            Y_norm.reshape(n_tasks, n_configs), Q_h, kernel=kern, num_inducing=n_inducing_lvm,
+            Y_norm.reshape(n_tasks, n_configs), Q_h, kernel=kern, num_inducing=self.n_inducing_lvm,
         )
-        m_lvm.optimize(max_iters=max_iters, messages=display_messages)
+        m_lvm.optimize(max_iters=self.max_iters, messages=display_messages)
 
         ls = np.array([m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])])
 
@@ -300,9 +284,6 @@ class MetaModelConfig(ABC):
         C: np.ndarray,
         task_features_mean: np.ndarray,
         task_features_std: np.ndarray,
-        log_C: bool = True,
-        log_Y: bool = False,
-        n_samples_task: int = 500,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Create training data by sampling a given number of tasks.
 
@@ -318,12 +299,6 @@ class MetaModelConfig(ABC):
             Mean of the model training weights.
         task_features_std : np.ndarray
             Std of the model training weights.
-        log_C : bool, optional
-            Whether to apply `np.log` onto `C`, by default True.
-        log_Y : bool, optional
-            Whether to apply `np.log` onto `Y`, by default False.
-        n_samples_task : int, optional
-            Number of tasks to sample, by default 500.
 
         Returns
         -------
@@ -340,7 +315,7 @@ class MetaModelConfig(ABC):
 
         for i, xi in enumerate(X):
             for idx in range(n_tasks):
-                for _ in range(n_samples_task):
+                for _ in range(self.n_samples_task):
                     multiplier = np.random.randn(hidden_space)
                     ht = task_features_mean[idx] + task_features_std[idx] * multiplier
 
@@ -352,10 +327,10 @@ class MetaModelConfig(ABC):
         X_train = np.array(X_train_list)
         Y_train = np.array(Y_train_list)
         C_train = np.array(C_train_list)
-        if log_C:
+        if self.log_cost:
             C_train = np.log(C_train)
 
-        if log_Y:
+        if self.log_target:
             Y_train = np.log(Y_train)
 
         return X_train, Y_train, C_train
