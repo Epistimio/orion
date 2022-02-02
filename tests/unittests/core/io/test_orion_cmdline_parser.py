@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.orion_cmdliner_parser`."""
 import os
-import textwrap
-from typing import List
 
 import pytest
-from orion.core.cli.base import OrionArgsParser
 
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.worker.trial import Trial
