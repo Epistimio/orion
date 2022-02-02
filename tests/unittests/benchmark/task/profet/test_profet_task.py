@@ -73,10 +73,6 @@ class ProfetTaskTests:
         """Test that the mock_load_data fixture returns real data when the input dir is non-empty,
         and that the means, dtypes, shapes, etc match between the real and fake data.
         """
-        # NOTE: Need to re-import, because the `mock_load_data` fixture modifies that function in the
-        # module. If we imported the function at the top of this test module, we would get the original
-        # version.
-
         model_config = self.Task.ModelConfig()
 
         real_input_dir: Path = REAL_PROFET_DATA_DIR
