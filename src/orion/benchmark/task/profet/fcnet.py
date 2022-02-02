@@ -28,8 +28,7 @@ class ProfetFcNetTask(ProfetTask):
 
         benchmark: Final[str] = "fcnet"
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
-        get_architecture: ClassVar[Callable[[int], Any]] = partial(get_default_architecture)
-        """ Callable that takes a task id and returns a network for this benchmark. """
+        get_architecture: ClassVar[Callable[[int], Any]] = get_default_architecture
         hidden_space: ClassVar[int] = 5
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = False

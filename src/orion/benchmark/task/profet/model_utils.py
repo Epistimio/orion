@@ -53,7 +53,7 @@ class MetaModelConfig(ABC):
     """ Name of the json file that contains the data of this benchmark. """
 
     get_architecture: ClassVar[Callable[[int], Any]]
-    """ Callable that takes a task id and returns a network for this benchmark. """
+    """ Callable that takes the input dimensionality and returns the network to be trained. """
 
     hidden_space: ClassVar[int]
     """ Size of the hidden space for this benchmark. """

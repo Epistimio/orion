@@ -30,8 +30,6 @@ class ProfetSvmTask(ProfetTask):
         get_architecture: ClassVar[Callable[[int], Any]] = partial(
             get_default_architecture, classification=True
         )
-        """ Callable that takes a task id and returns a network for this benchmark. """
-
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = False
         log_cost: ClassVar[bool] = True
