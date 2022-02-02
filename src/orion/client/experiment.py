@@ -299,7 +299,9 @@ class ExperimentClient:
 
         :return: list of :class:`orion.core.worker.trial.Trial` objects
         """
-        return self._experiment.fetch_trials_by_status(status, with_evc_tree=with_evc_tree)
+        return self._experiment.fetch_trials_by_status(
+            status, with_evc_tree=with_evc_tree
+        )
 
     def fetch_pending_trials(self, with_evc_tree=False):
         """Fetch all trials with status new, interrupted or suspended
@@ -382,8 +384,10 @@ class ExperimentClient:
             self._experiment.register_trial(trial, status="reserved")
             self._maintain_reservation(trial)
         except DuplicateKeyError as e:
-            message = "A trial with params {} already exist for experiment {}-v{}".format(
-                params, self.name, self.version
+            message = (
+                "A trial with params {} already exist for experiment {}-v{}".format(
+                    params, self.name, self.version
+                )
             )
             raise DuplicateKeyError(message) from e
 
@@ -439,12 +443,18 @@ class ExperimentClient:
             log.warning("Trial %s is already reserved.", trial.id)
             return
         elif trial.status == "reserved" and trial.id not in self._pacemakers:
-            raise RuntimeError("Trial {} is already reserved by another process.".format(trial.id))
+            raise RuntimeError(
+                "Trial {} is already reserved by another process.".format(trial.id)
+            )
         try:
-            self._experiment.set_trial_status(trial, "reserved", heartbeat=self.heartbeat)
+            self._experiment.set_trial_status(
+                trial, "reserved", heartbeat=self.heartbeat
+            )
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError("Trial {} does not exist in database.".format(trial.id)) from e
+                raise ValueError(
+                    "Trial {} does not exist in database.".format(trial.id)
+                ) from e
             raise RuntimeError("Could not reserve trial {}.".format(trial.id)) from e
 
         self._maintain_reservation(trial)
@@ -484,13 +494,19 @@ class ExperimentClient:
             self._experiment.set_trial_status(trial, status, was="reserved")
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError("Trial {} does not exist in database.".format(trial.id)) from e
+                raise ValueError(
+                    "Trial {} does not exist in database.".format(trial.id)
+                ) from e
             if current_status != "reserved":
                 raise_if_unreserved = False
-                raise RuntimeError("Trial {} was already released locally.".format(trial.id)) from e
+                raise RuntimeError(
+                    "Trial {} was already released locally.".format(trial.id)
+                ) from e
 
             raise RuntimeError(
-                "Reservation for trial {} has been lost before release.".format(trial.id)
+                "Reservation for trial {} has been lost before release.".format(
+                    trial.id
+                )
             ) from e
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
@@ -611,9 +627,13 @@ class ExperimentClient:
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise_if_unreserved = False
-                raise ValueError("Trial {} does not exist in database.".format(trial.id)) from e
+                raise ValueError(
+                    "Trial {} does not exist in database.".format(trial.id)
+                ) from e
 
-            raise RuntimeError("Reservation for trial {} has been lost.".format(trial.id)) from e
+            raise RuntimeError(
+                "Reservation for trial {} has been lost.".format(trial.id)
+            ) from e
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
@@ -831,7 +851,9 @@ class ExperimentClient:
 
         if self.get_trial(trial).status != "reserved":
             self._release_reservation(trial)
-            raise RuntimeError("Reservation for trial {} has been lost.".format(trial.id))
+            raise RuntimeError(
+                "Reservation for trial {} has been lost.".format(trial.id)
+            )
 
     def _maintain_reservation(self, trial):
         self._pacemakers[trial.id] = TrialPacemaker(trial)
@@ -841,7 +863,9 @@ class ExperimentClient:
         if trial.id not in self._pacemakers:
             if raise_if_unreserved:
                 raise RuntimeError(
-                    "Trial {} had no pacemakers. Was it reserved properly?".format(trial.id)
+                    "Trial {} had no pacemakers. Was it reserved properly?".format(
+                        trial.id
+                    )
                 )
             else:
                 return

@@ -34,7 +34,9 @@ class ProfetForresterTask(ProfetTask):
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"
-        get_architecture: ClassVar[Callable[[int], "torch.nn.Module"]] = get_architecture_forrester
+        get_architecture: ClassVar[
+            Callable[[int], "torch.nn.Module"]
+        ] = get_architecture_forrester
         """ Callable that takes the input dimensionality and returns the network to be trained. """
         hidden_space: ClassVar[int] = 2
         normalize_targets: ClassVar[bool] = True
@@ -58,4 +60,3 @@ class ProfetForresterTask(ProfetTask):
         return {
             "x": "uniform(0.0, 1.0, discrete=False)",
         }
-

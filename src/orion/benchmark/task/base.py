@@ -34,7 +34,7 @@ class BenchmarkTask(ABC):
         """
         Define the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
-        
+
         This method should be overridden by subclasses. It should receive the hyper-parameters
         as keyword arguments, with argument names matching the keys of the dictionary returned by
         `get_search_space`.
