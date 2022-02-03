@@ -11,7 +11,8 @@ import pandas.testing
 import pytest
 
 import orion.core
-from orion.client.experiment import AlreadyReleased, reserve_trial
+from orion.client.experiment import reserve_trial
+from orion.core.worker.trial import AlreadyReleased
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.utils.exceptions import (
