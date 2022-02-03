@@ -44,9 +44,6 @@ except ImportError as err:
 
 logger = get_logger(__name__)
 
-if typing.TYPE_CHECKING:
-    import torch
-
 
 @dataclass
 class MetaModelConfig(ABC):
