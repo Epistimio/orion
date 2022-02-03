@@ -40,12 +40,12 @@ class BenchmarkTask(ABC):
         `get_search_space`.
         """
 
-    def __call__(self, **kwargs):
+    def __call__(self, *args, **kwargs):
         """
         All tasks will be callable by default, and method `call()` will be executed when a task is
         called directly.
         """
-        return self.call(**kwargs)
+        return self.call(*args, **kwargs)
 
     @property
     def max_trials(self) -> int:
