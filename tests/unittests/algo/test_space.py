@@ -986,7 +986,7 @@ class TestSpace(object):
         assert space.configuration == {
             "yolo1": "uniform(-3, 3, shape=(2,), discrete=True)",
             "yolo2": "uniform(-3, 3, shape=(2,), discrete=True)",
-            "yolo3": "norm(0.9)",
+            "yolo3": "normal(0.9)",
             "yolo4": "choices(['asdfa', 2])",
         }
 
