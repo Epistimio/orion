@@ -27,6 +27,57 @@ from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 from .conftest import REAL_PROFET_DATA_DIR, is_nonempty_dir
 
+from typing import overload, List, Union
+from orion.core.worker.trial import Trial
+
+
+@overload
+def sample(task: ProfetTask) -> Trial:
+    ...
+
+
+@overload
+def sample(task: ProfetTask, n_samples: int) -> List[Trial]:
+    ...
+
+
+def sample(task: ProfetTask, n_samples: int = None) -> Union[Trial, List[Trial]]:
+    """Draw random sample(s) from the space of this task.
+
+    Samples a trial (dict of hyper-parameters) from the search space of this task.
+    This dict can then be passed as an input to the task to get the objective:
+
+    ```python
+    x: Trial = sample(task)
+    assert x in task.space
+    y: float = task(**x.param)
+
+    xs: List[Trial] = sample(task, n_samples=2)
+    ys = [task(**x.param) for x in xs]
+    ```
+
+    NOTE: The randomness in the sampling is also handled correctly, by passing the local rng State
+    of the task.
+
+    Parameters
+    ----------
+    task
+        A Profet task.
+    n_samples
+        The number of samples to be drawn. When None, a single trial is returned. When an integer
+        is passed, a list of Trials is returned. Defaults to `None`.
+
+    Returns
+    -------
+    trials
+        Single `orion.core.worker.trial.Trial` when `n` is not passed, or list of `Trials`, when
+        `n` is an integer. Each element is a separate sample of this space, a trial containing
+        values associated with the corresponding dimension.
+    """
+    if n_samples is None:
+        return task.space.sample(n_samples=1, seed=task._np_rng_state)[0]
+    return task.space.sample(n_samples=n_samples, seed=task._np_rng_state)
+
 
 class ProfetTaskTests:
     """Base class for testing Profet tasks."""
@@ -248,7 +299,7 @@ class ProfetTaskTests:
         ```
         This hasn't been a problem for the other tasks because they have a single dimension `x`.
 
-        This is why I'm adding a `sample` method on the task itself, so that I don't have to reach
+        This is why I'm using the `sample` function above, so that I don't have to reach
         into the task to get the space in order to create dicts, and so the ordering isn't a
         problem anymore.
         """
@@ -285,7 +336,7 @@ class ProfetTaskTests:
         )
 
         first_task = self.Task(**first_task_kwargs)
-        first_trial = first_task.sample()
+        first_trial = sample(first_task)
 
         first_results = first_task(**first_trial.params)
         assert len(first_results) == 1
@@ -299,7 +350,7 @@ class ProfetTaskTests:
         second_task_kwargs["model_config"] = second_task_model_config
 
         second_task = self.Task(**second_task_kwargs)
-        second_trial = second_task.sample()
+        second_trial = sample(second_task)
         assert second_trial != first_trial
 
         second_results = second_task(**second_trial.params)
@@ -365,8 +416,8 @@ class ProfetTaskTests:
                 assert task_b_param.grad is not None
                 assert torch.allclose(task_a_param.grad, task_b_param.grad), param_name
 
-        trial_a = task_a.sample()
-        trial_b = task_b.sample()
+        trial_a = sample(task_a)
+        trial_b = sample(task_b)
         assert trial_a.params == trial_b.params
 
         # NOTE: The forward pass samples from a distribution, therefore the values might be
@@ -407,7 +458,7 @@ class ProfetTaskTests:
             checkpoint_dir=checkpoint_dir,
         )
         assert task.model_config.seed == seed
-        trial = task.sample()
+        trial = sample(task)
 
         first_results = task(**trial.params)
         assert len(first_results) == 1
@@ -433,7 +484,7 @@ class ProfetTaskTests:
             with_grad=True,
         )
 
-        first_trial = task.sample()
+        first_trial = sample(task)
         results = task(**first_trial.params)
 
         assert results[0]["type"] == "objective"

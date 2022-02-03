@@ -196,46 +196,6 @@ class ProfetTask(BenchmarkTask, ABC):
             self._space = SpaceBuilder().build(self.get_search_space())
         return self._space
 
-    @overload
-    def sample(self) -> Trial:
-        ...
-
-    @overload
-    def sample(self, n_samples: int) -> List[Trial]:
-        ...
-
-    def sample(self, n_samples: int = None) -> Union[Trial, List[Trial]]:
-        """Draw random sample(s) from the space of this task.
-
-        Samples a trial (dict of hyper-parameters) from the search space of this task.
-        This dict can then be passed as an input to the task to get the objective:
-
-        .. code-block:: python
-
-            x: Trial = task.sample()
-            assert x in task.space
-            y: float = task(**x.param)
-
-            xs: List[Trial] = task.sample(2)
-            ys = [task(**x.param) for x in xs]
-
-        Parameters
-        ----------
-        n_samples : int, optional
-           The number of samples to be drawn. When None, a single trial is returned. When an integer
-           is passed, a list of Trials is returned. Defaults to `None`.
-
-        Returns
-        -------
-        trials: Union[Trial, List[Trial]]
-           Single `orion.core.worker.trial.Trial` when `n` is not passed, or list of `Trials`, when
-           `n` is an integer. Each element is a separate sample of this space, a trial containing
-           values associated with the corresponding dimension.
-        """
-        if n_samples is None:
-            return self.space.sample(n_samples=1, seed=self._np_rng_state)[0]
-        return self.space.sample(n_samples=n_samples, seed=self._np_rng_state)
-
     def call(self, **kwargs) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
