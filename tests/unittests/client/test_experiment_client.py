@@ -12,7 +12,6 @@ import pytest
 
 import orion.core
 from orion.client.experiment import reserve_trial
-from orion.core.worker.trial import AlreadyReleased
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.utils.exceptions import (
@@ -22,7 +21,7 @@ from orion.core.utils.exceptions import (
     ReservationTimeout,
     WaitingForTrials,
 )
-from orion.core.worker.trial import Trial
+from orion.core.worker.trial import AlreadyReleased, Trial
 from orion.executor.base import ExecutorClosed, executor_factory
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
