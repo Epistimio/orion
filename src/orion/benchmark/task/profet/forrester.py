@@ -14,11 +14,6 @@ from typing import Any, Callable, ClassVar, Dict, List, Tuple
 from orion.benchmark.task.profet.model_utils import get_architecture_forrester
 from orion.benchmark.task.profet.profet_task import ProfetTask
 
-try:
-    from typing import Final
-except ImportError:
-    from typing_extensions import Final  # type: ignore
-
 if typing.TYPE_CHECKING:
     import torch
 
@@ -30,7 +25,7 @@ class ProfetForresterTask(ProfetTask):
     class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on a Forrester task."""
 
-        benchmark: Final[str] = "forrester"
+        benchmark: str = "forrester"
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"

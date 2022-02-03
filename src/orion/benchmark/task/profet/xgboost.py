@@ -5,11 +5,6 @@ from typing import ClassVar, Dict, List, Tuple
 
 from orion.benchmark.task.profet.profet_task import ProfetTask
 
-try:
-    from typing import Final
-except ImportError:
-    from typing_extensions import Final
-
 
 class ProfetXgBoostTask(ProfetTask):
     """Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor."""
@@ -18,7 +13,7 @@ class ProfetXgBoostTask(ProfetTask):
     class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on an XgBoost task."""
 
-        benchmark: Final[str] = "xgboost"
+        benchmark: str = "xgboost"
         json_file_name: ClassVar[str] = "data_sobol_xgboost.json"
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = True

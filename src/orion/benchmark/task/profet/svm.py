@@ -8,11 +8,6 @@ from typing import Callable, ClassVar, Dict, List, Tuple
 from orion.benchmark.task.profet.model_utils import get_default_architecture
 from orion.benchmark.task.profet.profet_task import ProfetTask
 
-try:
-    from typing import Final
-except ImportError:
-    from typing_extensions import Final  # type: ignore
-
 if typing.TYPE_CHECKING:
     import torch
 
@@ -24,7 +19,7 @@ class ProfetSvmTask(ProfetTask):
     class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on an SVM task."""
 
-        benchmark: Final[str] = "svm"
+        benchmark: str = "svm"
 
         json_file_name: ClassVar[str] = "data_sobol_svm.json"
         get_architecture: ClassVar[Callable[[int], "torch.nn.Module"]] = partial(

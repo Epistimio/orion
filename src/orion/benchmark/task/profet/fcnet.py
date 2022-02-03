@@ -5,11 +5,6 @@ from typing import ClassVar, Dict, List, Tuple
 
 from orion.benchmark.task.profet.profet_task import ProfetTask
 
-try:
-    from typing import Final
-except ImportError:
-    from typing_extensions import Final  # type: ignore
-
 
 class ProfetFcNetTask(ProfetTask):
     """Simulated Task consisting in training a fully-connected network."""
@@ -18,7 +13,7 @@ class ProfetFcNetTask(ProfetTask):
     class ModelConfig(ProfetTask.ModelConfig):
         """Config for training the Profet model on an FcNet task."""
 
-        benchmark: Final[str] = "fcnet"
+        benchmark: str = "fcnet"
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
         hidden_space: ClassVar[int] = 5
         log_cost: ClassVar[bool] = True
