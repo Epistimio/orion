@@ -22,7 +22,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.working_dir import SetupWorkingDir
-from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
+from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
 from orion.plotting.base import PlotAccessor
