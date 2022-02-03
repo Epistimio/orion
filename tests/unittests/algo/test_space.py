@@ -689,12 +689,12 @@ class TestFidelity(object):
 
     def test_fidelity_omit_base(self):
         """Test that default base is not included."""
-        dim = Fidelity("epoch", "uniform", 1, 2, base=2)
+        dim = Fidelity("epoch", 1, 2, base=2)
         assert dim.get_prior_string() == "fidelity(1, 2)"
 
     def test_fidelity_set_base(self):
         """Test that base is included."""
-        dim = Fidelity("epoch", "uniform", 1, 2, base=3)
+        dim = Fidelity("epoch", 1, 2, base=3)
         assert dim.get_prior_string() == "fidelity(1, 2, base=3)"
 
     def test_min_resources(self):
