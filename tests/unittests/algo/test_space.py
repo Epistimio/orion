@@ -238,6 +238,16 @@ class TestDimension(object):
 class TestReal(object):
     """Test methods of a `Real` object."""
 
+    def test_get_prior_string_precision(self):
+        """Test that precision is included."""
+        dim = Real("yolo", "uniform", 1, 2, precision=5)
+        assert dim.get_prior_string() == "uniform(1, 3, precision=5)"
+
+    def test_get_prior_string_no_precision(self):
+        """Test that default precision is not included."""
+        dim = Real("yolo", "uniform", 1, 2, precision=4)
+        assert dim.get_prior_string() == "uniform(1, 3)"
+
     def test_simple_instance(self, seed):
         """Test Real.__init__."""
         dim = Real("yolo", "norm", 0.9)
@@ -464,16 +474,6 @@ class TestInteger(object):
         """Test that discrete is included."""
         dim = Integer("yolo", "uniform", 1, 2)
         assert dim.get_prior_string() == "uniform(1, 3, discrete=True)"
-
-    def test_get_prior_string_precision(self):
-        """Test that precision is included."""
-        dim = Integer("yolo", "uniform", 1, 2, precision=5)
-        assert dim.get_prior_string() == "uniform(1, 3, precision=5)"
-
-    def test_get_prior_string_no_precision(self):
-        """Test that default precision is not included."""
-        dim = Integer("yolo", "uniform", 1, 2, precision=4)
-        assert dim.get_prior_string() == "uniform(1, 3)"
 
 
 class TestCategorical(object):
