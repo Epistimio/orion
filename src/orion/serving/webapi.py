@@ -34,7 +34,9 @@ class WebApi(falcon.API):
         # https://developer.mozilla.org/fr/docs/Web/HTTP/CORS
         # To make server accept CORS requests, we need to use
         # falcon-cors package: https://github.com/lwcolton/falcon-cors
-        cors = CORS(allow_origins_list=["http://localhost:3000"])
+        cors = CORS(
+            allow_origins_list=config.get("frontends", ["http://localhost:3000"])
+        )
         super(WebApi, self).__init__(middleware=[cors.middleware])
         self.config = config
 

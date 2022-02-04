@@ -55,6 +55,7 @@ def define_config():
     define_experiment_config(config)
     define_worker_config(config)
     define_evc_config(config)
+    define_frontends_config(config)
 
     config.add_option(
         "user_script_config",
@@ -71,6 +72,17 @@ def define_config():
     )
 
     return config
+
+
+def define_frontends_config(config):
+    """Create and define the field of frontends configuration."""
+    config.add_option(
+        "frontends",
+        option_type=list,
+        default=[],
+        env_var=None,
+        help="List of frontends addresses allowed to send requests to Orion server.",
+    )
 
 
 def define_storage_config(config):

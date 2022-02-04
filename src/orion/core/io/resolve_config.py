@@ -213,8 +213,9 @@ def fetch_config(args):
 
         local_config = unflatten(local_config)
 
+        backawrd_keys = ["storage", "experiment", "worker", "evc"]
         # For backward compatibility
-        for key in ["storage", "experiment", "worker", "evc"]:
+        for key in backawrd_keys:
             subkeys = list(global_config[key].keys())
 
             # Arguments that are only supported locally
@@ -240,6 +241,11 @@ def fetch_config(args):
                 if value is not None:
                     local_config.setdefault(key, {})
                     local_config[key][subkey] = value
+
+        # Keep other keys parsed from config file
+        for key in tmp_config.keys():
+            if key not in backawrd_keys:
+                local_config[key] = tmp_config[key]
 
     return local_config
 
