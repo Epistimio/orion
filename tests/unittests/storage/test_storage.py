@@ -4,6 +4,7 @@
 
 import copy
 import datetime
+import inspect
 import logging
 import os
 import pickle
@@ -21,6 +22,8 @@ from orion.core.utils.singleton import (
 )
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
+    BaseStorageProtocol,
+    BatchWrite,
     FailedUpdate,
     MissingArguments,
     get_storage,
@@ -813,3 +816,139 @@ class TestStorage:
             serialized = pickle.dumps(storage)
             deserialized = pickle.loads(serialized)
             assert storage.fetch_experiments({}) == deserialized.fetch_experiments({})
+
+
+class ExperimentMock:
+    def __init__(self, _id):
+        self._id = _id
+
+
+experiment = ExperimentMock(_id=0)
+
+read_methods_kwargs = {
+    "fetch_benchmark": dict(query={}),
+    "fetch_trials": dict(uid=0),
+    "fetch_lost_trials": dict(experiment=experiment),
+    "fetch_pending_trials": dict(experiment=experiment),
+    "fetch_noncompleted_trials": dict(experiment=experiment),
+    "fetch_trials_by_status": dict(experiment=experiment, status="completed"),
+    "count_completed_trials": dict(experiment=experiment),
+    "count_broken_trials": dict(experiment=experiment),
+    "get_trial": dict(uid=0),
+}
+
+
+completed_trial_config, reserved_trial_config, new_trial_config = generate_trials(
+    ["completed", "reserved", "new"]
+)
+
+
+queuable_methods_kwargs = {
+    "update_experiment": dict(uid=1, some="value"),
+    "update_trials": dict(uid=1, status="what-is-that?"),
+    "update_trial": dict(uid=1, status="what-is-that?"),
+    "register_trial": dict(trial=Trial(**new_trial_config)),
+    # at the time of producer.produce
+    "push_trial_results": dict(trial=Trial(**reserved_trial_config)),
+    "set_trial_status": dict(trial=Trial(**reserved_trial_config), status="completed"),
+    "update_heartbeat": dict(trial=Trial(**new_trial_config)),
+}
+
+non_batchable_kwargs = {
+    "acquire_algorithm_lock": {},
+    "create_benchmark": {},
+    "create_experiment": {},
+    "delete_experiment": {},
+    "delete_trials": {},
+    "fetch_experiments": {},
+    "reserve_trial": {},
+    "retrieve_result": {},
+}
+
+
+class TestBatchWrite:
+    @pytest.mark.parametrize("method,kwargs", list(read_methods_kwargs.items()))
+    def test_read_method(self, method, kwargs):
+        with OrionState(experiments=[base_experiment], trials=generate_trials()) as cfg:
+            storage = cfg.storage()
+            with BatchWrite(storage) as batched_storage:
+                assert getattr(batched_storage, method)(**kwargs) == getattr(
+                    storage, method
+                )(**kwargs)
+
+    @pytest.mark.parametrize("method,kwargs", list(queuable_methods_kwargs.items()))
+    def test_batchable_method(self, method, kwargs):
+        with OrionState(
+            experiments=[base_experiment],
+            trials=[completed_trial_config, reserved_trial_config],
+        ) as cfg:
+            storage = cfg.storage()
+            with BatchWrite(storage) as batched_storage:
+                # deepcopy to avoid side-effects affecting next call with storage
+                future = getattr(batched_storage, method)(**copy.deepcopy(kwargs))
+
+        # Compute value of base storage in another DB so that writing operations
+        # are done on the same base DB for batchtwrite and normal write.
+        with OrionState(
+            experiments=[base_experiment],
+            trials=[completed_trial_config, reserved_trial_config],
+        ) as cfg:
+            storage = cfg.storage()
+            assert future.get() == getattr(storage, method)(**kwargs)
+
+    @pytest.mark.parametrize("method,kwargs", list(non_batchable_kwargs.items()))
+    def test_nonbatchable_methods(self, method, kwargs):
+        with OrionState(experiments=[]) as cfg:
+            with BatchWrite(cfg.storage()) as batched_storage:
+                with pytest.raises(RuntimeError):
+                    getattr(batched_storage, method)(**kwargs)
+
+    def test_interleaved_methods(self):
+        with OrionState(experiments=[]) as cfg:
+            storage = cfg.storage()
+            trial = Trial(**new_trial_config)
+            storage.register_trial(trial)
+            trials = storage.fetch_trials(uid=new_trial_config["experiment"])
+            assert len(trials) == 1
+            assert trials[0] == trial
+            with BatchWrite(storage) as batched_storage:
+                reserved_trial = Trial(**reserved_trial_config)
+
+                # It can delay writes
+                batched_storage.register_trial(reserved_trial)
+
+                # But reads are on current DB
+                trials = batched_storage.fetch_trials(
+                    uid=new_trial_config["experiment"]
+                )
+                assert len(trials) == 1
+                assert trials[0] != reserved_trial
+                # Same for original storage (unwrapped)
+                trials = storage.fetch_trials(uid=new_trial_config["experiment"])
+                assert len(trials) == 1
+                assert trials[0] != reserved_trial
+
+                # Add second commant to queue
+                batched_storage.set_trial_status(reserved_trial, status="broken")
+
+            trials = storage.fetch_trials(uid=new_trial_config["experiment"])
+            assert len(trials) == 2
+            assert trials[0] == trial
+            assert trials[1] == reserved_trial
+            assert trials[1].status == "broken"
+
+    def test_coverage(self):
+        methods = set()
+        with OrionState(experiments=[]) as cfg:
+            storage = cfg.storage()
+            for name, attr in inspect.getmembers(storage):
+                if not name.startswith("_") and inspect.ismethod(attr):
+                    methods.add(name)
+
+        tested_methods = (
+            set(read_methods_kwargs.keys())
+            | set(queuable_methods_kwargs.keys())
+            | set(non_batchable_kwargs.keys())
+        )
+
+        assert methods == tested_methods
