@@ -78,6 +78,36 @@ class MissingArguments(Exception):
     pass
 
 
+class LockedAlgorithmState:
+    """Locked state of the algorithm from the storage.
+
+    This class helps handle setting the state of the algorithm or resetting it in case
+    the execution crashes during the lock.
+
+    Parameters
+    ----------
+    state: dict
+        Dictionary representing the state of the algorithm.
+    """
+
+    def __init__(self, state):
+        self._original_state = state
+        self._state = state
+
+    @property
+    def state(self):
+        """State of the algorithm"""
+        return self._state
+
+    def set_state(self, state):
+        """Update the state of the algorithm that should be saved back in storage."""
+        self._state = state
+
+    def reset(self):
+        """Set back algorithm state to original state found in storage."""
+        self._state = self._original_state
+
+
 NOT_SET = object()
 
 # TODO: It should return futures which has their value sent during commit.

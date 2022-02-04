@@ -22,6 +22,7 @@ from orion.core.utils.singleton import (
 )
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
+    LockedAlgorithmState,
     BaseStorageProtocol,
     BatchWrite,
     FailedUpdate,
@@ -952,3 +953,15 @@ class TestBatchWrite:
         )
 
         assert methods == tested_methods
+
+
+class TestLockedAlgorithmState:
+    def test_reset(self):
+        original = "whatever"
+        new = "new state"
+        locked_algo_state = LockedAlgorithmState(original)
+        assert locked_algo_state.state == original
+        locked_algo_state.set_state(new)
+        assert locked_algo_state.state == new
+        locked_algo_state.reset()
+        assert locked_algo_state.state == original
