@@ -319,6 +319,10 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
 
     assert evc_config == {}
 
+    # Test remaining config
+    assert config.pop("debug") is False
+    assert config.pop("frontends") == []
+
     # Confirm that all fields were tested.
     assert config == {}
 
