@@ -8,10 +8,14 @@ import pytest
 import orion.core.cli
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.worker.consumer import Consumer
+from orion.storage.base import get_storage, setup_storage
 
 
-def test_interrupt(storage, monkeypatch, capsys):
+def test_interrupt(monkeypatch, capsys):
     """Test interruption from within user script."""
+    setup_storage()
+    storage = get_storage()
+
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = ["-x~uniform(-50, 50, precision=5)"]

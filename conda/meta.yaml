@@ -17,6 +17,7 @@ requirements:
     - pytest-runner
     - appdirs
   run:
+    - dataclasses
     - python
     - numpy
     - scipy

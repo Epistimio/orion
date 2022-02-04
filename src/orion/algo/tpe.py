@@ -9,6 +9,7 @@ import numpy
 from scipy.stats import norm
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.parallel_strategy import strategy_factory
 from orion.core.utils import format_trials
 
 logger = logging.getLogger(__name__)
@@ -173,6 +174,10 @@ class TPE(BaseAlgorithm):
     max_retry: int, optional
         Number of attempts to sample new points if the sampled points were already suggested.
         Default: ``100``
+    parallel_strategy: dict or None, optional
+        The configuration of a parallel strategy to use for pending trials or broken trials.
+        Default is a MaxParallelStrategy for broken trials and NoParallelStrategy for pending
+        trials.
 
     """
 
@@ -192,6 +197,7 @@ class TPE(BaseAlgorithm):
         prior_weight=1.0,
         full_weight_num=25,
         max_retry=100,
+        parallel_strategy=None,
     ):
 
         if n_initial_points < 2:
@@ -208,6 +214,18 @@ class TPE(BaseAlgorithm):
                 str(n_ei_candidates),
             )
 
+        if parallel_strategy is None:
+            parallel_strategy = {
+                "of_type": "StatusBasedParallelStrategy",
+                "strategy_configs": {
+                    "broken": {
+                        "of_type": "MaxParallelStrategy",
+                    },
+                },
+            }
+
+        self.strategy = strategy_factory.create(**parallel_strategy)
+
         super(TPE, self).__init__(
             space,
             seed=seed,
@@ -218,6 +236,7 @@ class TPE(BaseAlgorithm):
             prior_weight=prior_weight,
             full_weight_num=full_weight_num,
             max_retry=max_retry,
+            parallel_strategy=parallel_strategy,
         )
 
     @property
@@ -266,6 +285,7 @@ class TPE(BaseAlgorithm):
 
         _state_dict["rng_state"] = self.rng.get_state()
         _state_dict["seed"] = self.seed
+        _state_dict["strategy"] = self.strategy.state_dict
         return _state_dict
 
     def set_state(self, state_dict):
@@ -277,6 +297,7 @@ class TPE(BaseAlgorithm):
 
         self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])
+        self.strategy.set_state(state_dict["strategy"])
 
     def suggest(self, num=None):
         """Suggest a `num` of new sets of parameters. Randomly draw samples
@@ -499,15 +520,16 @@ class TPE(BaseAlgorithm):
 
     def split_trials(self):
         """Split the observed trials into good and bad ones based on the ratio `gamma``"""
-        sorted_trials = sorted(
-            (
-                (trial, results)
-                for (trial, results) in self._trials_info.values()
-                if results is not None
-            ),
-            key=lambda point: point[1]["objective"],
-        )
-        sorted_trials = [trial for trial, results in sorted_trials]
+
+        trials = []
+        for trial, _ in self._trials_info.values():
+            if trial.status != "completed":
+                trial = self.strategy.infer(trial)
+
+            if trial is not None:
+                trials.append(trial)
+
+        sorted_trials = sorted(trials, key=lambda trial: trial.objective.value)
 
         split_index = int(numpy.ceil(self.gamma * len(sorted_trials)))
 
@@ -546,7 +568,6 @@ class GMMSampler:
         If sampling always falls out of bound try again with `attempts` * `attempts_factor`
         up to `max_attempts` (inclusive).
         Defaults to 10000.
-
     """
 
     def __init__(

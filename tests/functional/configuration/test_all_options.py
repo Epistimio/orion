@@ -371,7 +371,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "working_dir": "here",
             "worker_trials": 5,
             "algorithms": {"aa": {"b": "c", "d": {"e": "f"}}},
-            "strategy": {"sa": {"c": "d", "e": {"f": "g"}}},
         }
     }
 
@@ -388,7 +387,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
         "max_broken": 16,
         "working_dir": "in_db?",
         "algorithms": {"ab": {"d": "i", "f": "g"}},
-        "producer": {"strategy": {"sb": {"e": "c", "d": "g"}}},
         "space": {"/x": "uniform(0, 1)"},
         "metadata": {
             "VCS": {
@@ -433,7 +431,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "max_broken": 15,
             "working_dir": "here_again",
             "algorithms": {"ac": {"d": "e", "f": "g"}},
-            "strategy": {"sd": {"b": "c", "d": "e"}},
         }
     }
 
@@ -455,9 +452,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             config = copy.deepcopy(config)
             for key in ignore:
                 config.pop(key, None)
-
-            if "producer" in config:
-                config["strategy"] = config.pop("producer")["strategy"]
 
             if "metadata" in config and "user" in config["metadata"]:
                 config["user"] = config["metadata"]["user"]
@@ -568,6 +562,8 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "heartbeat": 30,
             "max_trials": 10,
             "max_broken": 5,
+            "reservation_timeout": 16,
+            "idle_timeout": 17,
             "max_idle_time": 15,
             "interrupt_signal_code": 131,
             "user_script_config": "cfg",
@@ -581,6 +577,8 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "ORION_HEARTBEAT": 40,
         "ORION_WORKER_MAX_TRIALS": 20,
         "ORION_WORKER_MAX_BROKEN": 6,
+        "ORION_RESERVATION_TIMEOUT": 17,
+        "ORION_IDLE_TIMEOUT": 18,
         "ORION_MAX_IDLE_TIME": 16,
         "ORION_INTERRUPT_CODE": 132,
         "ORION_USER_SCRIPT_CONFIG": "envcfg",
@@ -595,7 +593,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "heartbeat": 50,
             "max_trials": 30,
             "max_broken": 7,
-            "max_idle_time": 17,
+            "reservation_timeout": 17,
+            "idle_timeout": 18,
+            "max_idle_time": 16,
             "interrupt_signal_code": 133,
             "user_script_config": "lclcfg",
         }
@@ -606,9 +606,11 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "pool-size": 6,
         "executor": "dask",
         "heartbeat": 70,
-        "worker-max-trials": 1,
+        "worker-max-trials": 0,
         "worker-max-broken": 8,
-        "max-idle-time": 18,
+        "reservation-timeout": 18,
+        "idle-timeout": 19,
+        "max-idle-time": 17,
         "interrupt-signal-code": 134,
         "user-script-config": "cmdcfg",
     }
@@ -667,7 +669,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
     def _check_mocks(self, config):
         self._check_exp_client(config)
         self._check_consumer(config)
-        self._check_producer(config)
         self._check_workon(config)
 
     def _check_exp_client(self, config):
@@ -679,9 +680,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
         )
         assert self.consumer.interrupt_signal_code == config["interrupt_signal_code"]
 
-    def _check_producer(self, config):
-        assert self.producer.max_idle_time == config["max_idle_time"]
-
     def _check_workon(self, config):
         assert self.workon_kwargs["n_workers"] == config["n_workers"]
         assert self.workon_kwargs["executor"] == config["executor"]
@@ -689,6 +687,11 @@ class TestWorkerConfig(ConfigurationTestSuite):
             self.workon_kwargs["executor_configuration"]
             == config["executor_configuration"]
         )
+        assert self.workon_kwargs["pool_size"] == config["pool_size"]
+        assert (
+            self.workon_kwargs["reservation_timeout"] == config["reservation_timeout"]
+        )
+        assert self.workon_kwargs["idle_timeout"] == config["idle_timeout"]
         assert self.workon_kwargs["max_trials"] == config["max_trials"]
         assert self.workon_kwargs["max_broken"] == config["max_broken"]
 
@@ -713,6 +716,8 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "heartbeat": self.env_vars["ORION_HEARTBEAT"],
             "max_trials": self.env_vars["ORION_WORKER_MAX_TRIALS"],
             "max_broken": self.env_vars["ORION_WORKER_MAX_BROKEN"],
+            "reservation_timeout": self.env_vars["ORION_RESERVATION_TIMEOUT"],
+            "idle_timeout": self.env_vars["ORION_IDLE_TIMEOUT"],
             "max_idle_time": self.env_vars["ORION_MAX_IDLE_TIME"],
             "interrupt_signal_code": self.env_vars["ORION_INTERRUPT_CODE"],
             "user_script_config": self.env_vars["ORION_USER_SCRIPT_CONFIG"],
@@ -753,10 +758,12 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "n_workers": self.cmdargs["n-workers"],
             "executor": self.cmdargs["executor"],
             "executor_configuration": {"threads_per_worker": 2},
+            "pool_size": self.cmdargs["pool-size"],
+            "reservation_timeout": self.cmdargs["reservation-timeout"],
+            "idle_timeout": self.cmdargs["idle-timeout"],
             "heartbeat": self.cmdargs["heartbeat"],
             "max_trials": self.cmdargs["worker-max-trials"],
             "max_broken": self.cmdargs["worker-max-broken"],
-            "max_idle_time": self.cmdargs["max-idle-time"],
             "interrupt_signal_code": self.cmdargs["interrupt-signal-code"],
             "user_script_config": self.cmdargs["user-script-config"],
         }
@@ -766,7 +773,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         # Override executor so that executor and configuration are coherent in global config
         os.environ["ORION_EXECUTOR"] = "dask"
 
-        command = f"hunt --worker-max-trials 0 -c {conf_file} -n cmd-test"
+        command = f"hunt -c {conf_file} -n cmd-test"
         command += " " + " ".join(
             "--{} {}".format(name, value) for name, value in self.cmdargs.items()
         )

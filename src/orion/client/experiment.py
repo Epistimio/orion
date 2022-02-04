@@ -8,22 +8,21 @@ Wraps the core Experiment object to provide further functionalities for the user
 """
 import inspect
 import logging
-import traceback
 from contextlib import contextmanager
 
 import orion.core
 import orion.core.utils.format_trials as format_trials
+from orion.client.runner import Runner
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    InvalidResult,
-    SampleTimeout,
+    ReservationRaceCondition,
     UnsupportedOperation,
     WaitingForTrials,
 )
-from orion.core.utils.flatten import flatten, unflatten
-from orion.core.worker.trial import Trial, TrialCM
+from orion.core.utils.working_dir import SetupWorkingDir
+from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
 from orion.plotting.base import PlotAccessor
@@ -32,28 +31,42 @@ from orion.storage.base import FailedUpdate
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer, pool_size, _depth=1):
+def reserve_trial(experiment, producer, pool_size, timeout=None):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
+
+    if timeout is not None:
+        log.warning(
+            "Reservation_timeout is deprecated and will be removed in v0.4.0."
+            "Use idle_timeout instead."
+        )
+
+    trial = None
+    produced = 0
+
+    # Try to reserve an existing trial
     trial = experiment.reserve_trial()
 
-    if trial is None and not producer.is_done:
-
-        if _depth > 10:
-            raise WaitingForTrials(
-                "No trials are available at the moment "
-                "wait for current trials to finish"
-            )
-
-        log.debug("#### Failed to pull a new trial from database.")
-
+    if trial is None and not (experiment.is_broken or experiment.is_done):
         log.debug("#### Fetch most recent completed trials and update algorithm.")
         producer.update()
 
         log.debug("#### Produce new trials.")
-        producer.produce(pool_size)
+        produced = producer.produce(pool_size)
+        log.debug("#### %s trials produced.", produced)
 
-        return reserve_trial(experiment, producer, pool_size, _depth=_depth + 1)
+        # Try to reverse once more
+        trial = experiment.reserve_trial()
+
+    if trial is None:
+        if experiment.is_done:
+            raise CompletedExperiment()
+        elif experiment.is_broken:
+            raise BrokenExperiment()
+        elif produced == 0:
+            raise WaitingForTrials()
+        else:
+            raise ReservationRaceCondition()
 
     return trial
 
@@ -81,16 +94,27 @@ class ExperimentClient:
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
-        self.executor = executor or executor_factory.create(
-            orion.core.config.worker.executor,
-            n_workers=orion.core.config.worker.n_workers,
-            **orion.core.config.worker.executor_configuration,
-        )
+
+        self._executor = executor
+        self._executor_owner = False
+
         self.plot = PlotAccessor(self)
 
     ###
     # Attributes
     ###
+    @property
+    def executor(self):
+        """Returns the current executor to use to run jobs in parallel"""
+        if self._executor is None:
+            self._executor_owner = True
+            self._executor = executor_factory.create(
+                orion.core.config.worker.executor,
+                n_workers=orion.core.config.worker.n_workers,
+                **orion.core.config.worker.executor_configuration,
+            )
+
+        return self._executor
 
     @property
     def name(self):
@@ -163,28 +187,8 @@ class ExperimentClient:
 
     @property
     def stats(self):
-        """Calculate a stats dictionary for this particular experiment.
-
-        Returns
-        -------
-        stats : dict
-
-        Stats
-        -----
-        trials_completed : int
-           Number of completed trials
-        best_trials_id : int
-           Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
-           which achieved the best known objective result.
-        best_evaluation : float
-           Evaluation score of the best trial
-        start_time : `datetime.datetime`
-           When Experiment was first dispatched and started running.
-        finish_time : `datetime.datetime`
-           When Experiment reached terminating condition and stopped running.
-        duration : `datetime.timedelta`
-           Elapsed time.
-
+        """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
+        experiment.
         """
         return self._experiment.stats
 
@@ -197,6 +201,11 @@ class ExperimentClient:
     def working_dir(self):
         """Working directory of the experiment."""
         return self._experiment.working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        """Working directory of the experiment."""
+        self._experiment.working_dir = value
 
     @property
     def producer(self):
@@ -469,6 +478,8 @@ class ExperimentClient:
         ------
         `RuntimeError`
             If reservation of the trial has been lost prior to releasing it.
+        `AlreadyReleased`
+            If reservation of trial was already released
         `ValueError`
             If the trial does not exist in storage.
         `orion.core.utils.exceptions.UnsupportedOperation`
@@ -488,7 +499,7 @@ class ExperimentClient:
                 ) from e
             if current_status != "reserved":
                 raise_if_unreserved = False
-                raise RuntimeError(
+                raise AlreadyReleased(
                     "Trial {} was already released locally.".format(trial.id)
                 ) from e
 
@@ -534,8 +545,8 @@ class ExperimentClient:
             if too many trials failed to run and the experiment cannot continue.
             This is determined by ``max_broken`` in the configuration of the experiment.
 
-        :class:`orion.core.utils.exceptions.SampleTimeout`
-            if the algorithm of the experiment could not sample new unique trials.
+        :class:`orion.core.utils.exceptions.ReservationRaceCondition`
+            If a trial could not be reserved right after they were generated
 
         :class:`orion.core.utils.exceptions.CompletedExperiment`
             if the experiment was completed and algorithm could not sample new trials.
@@ -557,17 +568,21 @@ class ExperimentClient:
             raise CompletedExperiment("Experiment is done, cannot sample more trials.")
 
         try:
-            trial = reserve_trial(self._experiment, self._producer, pool_size)
+            trial = reserve_trial(
+                self._experiment, self._producer, pool_size, timeout=None
+            )
 
-        except (WaitingForTrials, SampleTimeout) as e:
+        except (ReservationRaceCondition, WaitingForTrials) as e:
             if self.is_broken:
                 raise BrokenExperiment("Trials failed too many times") from e
 
             raise e
 
         # This is to handle cases where experiment was completed during call to `reserve_trial`
-        if trial is None:
+        if trial is None and self.is_done:
             raise CompletedExperiment("Producer is done, cannot sample more trials.")
+        elif trial is None and self.is_broken:
+            raise BrokenExperiment("Trials failed too many times")
 
         self._maintain_reservation(trial)
         return TrialCM(self, trial)
@@ -601,7 +616,8 @@ class ExperimentClient:
             If reservation of the trial has been lost prior to releasing it.
         `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
-
+        `orion.core.utils.exceptions.InvalidResult`
+            If the format of trial result is invalid.
         """
         self._check_if_executable()
 
@@ -637,11 +653,11 @@ class ExperimentClient:
         """
         if isinstance(executor, str):
             executor = executor_factory.create(executor, **config)
-        old_executor = self.executor
-        self.executor = executor
+        old_executor = self._executor
+        self._executor = executor
         with executor:
             yield self
-        self.executor = old_executor
+        self._executor = old_executor
 
     # pylint:disable=too-many-arguments
     def workon(
@@ -649,11 +665,13 @@ class ExperimentClient:
         fct,
         n_workers=None,
         pool_size=0,
+        reservation_timeout=None,
         max_trials=None,
         max_trials_per_worker=None,
         max_broken=None,
         trial_arg=None,
         on_error=None,
+        idle_timeout=None,
         **kwargs,
     ):
         """Optimize a given function
@@ -673,6 +691,12 @@ class ExperimentClient:
             config if defined.  Increase it to improve the sampling speed if workers spend too much
             time waiting for algorithms to sample points. An algorithm will try sampling
             `pool_size` trials but may return less.
+        reservation_timeout: int, optional
+            Maximum time allowed to try reserving a trial. ReservationTimeout will be raised if
+            timeout is reached.  Such timeout are generally caused by slow database, large number
+            of concurrent workers leading to many race conditions or small search spaces with
+            integer/categorical dimensions that may be fully explored.
+            Defaults to ``orion.core.config.worker.reservation_timeout``.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -697,25 +721,33 @@ class ExperimentClient:
             If the callblack returns False, the error will be ignored, otherwise it is counted
             for the threshold `max_broken`. In case of critical errors, you may also directly
             raise an error and force break out of ``workon``.
+        idle_timeout: int, optional
+            Maximum time (seconds) allowed for idle workers. LazyWorkers will be raised if
+            timeout is reached. Such timeout are generally caused when reaching the
+            end of the optimization when no new trials can be sampled for the idle workers.
+            Defaults to ``orion.core.config.worker.idle_timeout``.
         **kwargs
             Constant argument to pass to `fct` in addition to trial.params. If values in kwargs are
             present in trial.params, the latter takes precedence.
 
         Raises
         ------
+        :class:`orion.core.utils.exceptions.LazyWorkers`
+             If workers stay idle for too long.
+
         :class:`orion.core.utils.exceptions.InvalidResult`
              If results returned by `fct` have invalid format.
 
         :class:`orion.core.utils.exceptions.WaitingForTrials`
-            if the experiment is not completed and algorithm needs to wait for some
+            If the experiment is not completed and algorithm needs to wait for some
             trials to complete before it can suggest new trials.
 
         :class:`orion.core.utils.exceptions.BrokenExperiment`
-            if too many trials failed to run and the experiment cannot continue.
+            If too many trials failed to run and the experiment cannot continue.
             This is determined by ``max_broken`` in the configuration of the experiment.
 
-        :class:`orion.core.utils.exceptions.SampleTimeout`
-            if the algorithm of the experiment could not sample new unique points.
+        :class:`orion.core.utils.exceptions.ReservationRaceCondition`
+            If a trial could not be reserved right after they were generated.
 
         :class:`orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
@@ -738,6 +770,12 @@ class ExperimentClient:
         if not pool_size:
             pool_size = n_workers
 
+        if not reservation_timeout:
+            reservation_timeout = orion.core.config.worker.reservation_timeout
+
+        if not idle_timeout:
+            idle_timeout = orion.core.config.worker.idle_timeout
+
         if max_trials is None:
             max_trials = self.max_trials
 
@@ -753,68 +791,21 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        trials = self.executor.wait(
-            self.executor.submit(
-                self._optimize,
+        with SetupWorkingDir(self):
+            runner = Runner(
+                self,
                 fct,
-                pool_size,
-                max_trials_per_worker,
-                max_broken,
-                trial_arg,
-                on_error,
+                pool_size=pool_size,
+                idle_timeout=idle_timeout,
+                max_trials_per_worker=max_trials_per_worker,
+                max_broken=max_broken,
+                trial_arg=trial_arg,
+                on_error=on_error,
+                n_workers=n_workers,
                 **kwargs,
             )
-            for _ in range(n_workers)
-        )
 
-        return sum(trials)
-
-    def _optimize(
-        self, fct, pool_size, max_trials, max_broken, trial_arg, on_error, **kwargs
-    ):
-        worker_broken_trials = 0
-        trials = 0
-        kwargs = flatten(kwargs)
-        max_trials = min(max_trials, self.max_trials)
-        while not self.is_done and trials - worker_broken_trials < max_trials:
-            try:
-                with self.suggest(pool_size=pool_size) as trial:
-
-                    kwargs.update(flatten(trial.params))
-
-                    if trial_arg:
-                        kwargs[trial_arg] = trial
-
-                    try:
-                        results = self.executor.wait(
-                            [self.executor.submit(fct, **unflatten(kwargs))]
-                        )[0]
-                        self.observe(trial, results=results)
-                    except (KeyboardInterrupt, InvalidResult):
-                        raise
-                    except BaseException as e:
-                        if on_error is None or on_error(
-                            self, trial, e, worker_broken_trials
-                        ):
-                            log.error(traceback.format_exc())
-                            worker_broken_trials += 1
-                        else:
-                            log.error(str(e))
-                            log.debug(traceback.format_exc())
-
-                        if worker_broken_trials >= max_broken:
-                            raise BrokenExperiment(
-                                "Worker has reached broken trials threshold"
-                            )
-                        else:
-                            self.release(trial, status="broken")
-            except CompletedExperiment as e:
-                log.warning(e)
-                break
-
-            trials += 1
-
-        return trials
+            return runner.run()
 
     def close(self):
         """Verify that no reserved trials are remaining.
@@ -828,6 +819,7 @@ class ExperimentClient:
 
         """
         self._check_if_executable()
+        self._free_executor()
 
         if self._pacemakers:
             raise RuntimeError(
@@ -839,6 +831,14 @@ class ExperimentClient:
     ###
     # Private
     ###
+    def __del__(self):
+        self._free_executor()
+
+    def _free_executor(self):
+        if self._executor_owner:
+            self._executor.__exit__(None, None, None)
+            self._executor = None
+            self._executor_owner = False
 
     def __repr__(self):
         """Represent the object as a string."""

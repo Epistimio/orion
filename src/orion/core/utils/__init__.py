@@ -7,8 +7,10 @@ Package-wide useful routines
 
 import logging
 import os
+import signal
 from abc import ABCMeta
 from collections import defaultdict
+from contextlib import contextmanager
 from glob import glob
 from importlib import import_module
 
@@ -180,3 +182,20 @@ class Factory(ABCMeta):
         error += "\nCurrently, there is an implementation for types:\n"
         error += str(sorted(cls.types.keys()))
         raise NotImplementedError(error)
+
+
+# pylint: disable = unused-argument
+def _handler(signum, frame):
+    log.error("Oríon has been interrupted.")
+    raise KeyboardInterrupt
+
+
+@contextmanager
+def sigterm_as_interrupt():
+    """Intercept ``SIGTERM`` signals and raise ``KeyboardInterrupt`` instead"""
+    ## Signal only works inside the main process
+    previous = signal.signal(signal.SIGTERM, _handler)
+
+    yield None
+
+    signal.signal(signal.SIGTERM, previous)

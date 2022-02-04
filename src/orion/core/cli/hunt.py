@@ -9,13 +9,13 @@ Gets an experiment and iterates over it until one of the exit conditions is met
 """
 
 import logging
-import signal
 
 import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
+from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     InexecutableUserScript,
@@ -111,11 +111,6 @@ orion status --name {experiment.name} --version {experiment.version} --all
 
 """
 
-# pylint: disable = unused-argument
-def _handler(signum, frame):
-    log.error("Oríon has been interrupted.")
-    raise KeyboardInterrupt
-
 
 # pylint:disable=unused-argument
 def on_error(client, trial, error, worker_broken_trials):
@@ -134,15 +129,22 @@ def workon(
     max_trials=None,
     max_broken=None,
     max_idle_time=None,
+    reservation_timeout=None,
     heartbeat=None,
     user_script_config=None,
     interrupt_signal_code=None,
     ignore_code_changes=None,
     executor=None,
     executor_configuration=None,
+    idle_timeout=None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
-    producer = Producer(experiment, max_idle_time)
+
+    # NOTE: Remove in v0.3.0
+    if max_idle_time is not None and reservation_timeout is None:
+        reservation_timeout = max_idle_time
+
+    producer = Producer(experiment)
     consumer = Consumer(
         experiment,
         user_script_config,
@@ -165,10 +167,12 @@ def workon(
                 consumer,
                 n_workers=n_workers,
                 pool_size=pool_size,
+                reservation_timeout=reservation_timeout,
                 max_trials_per_worker=max_trials,
                 max_broken=max_broken,
                 trial_arg="trial",
                 on_error=on_error,
+                idle_timeout=idle_timeout,
             )
         except BrokenExperiment as e:
             print(e)
@@ -198,12 +202,11 @@ def main(args):
     if config.get("worker"):
         worker_config.update(config.get("worker"))
 
-    signal.signal(signal.SIGTERM, _handler)
-
     # If EVC is not enabled, we force Consumer to ignore code changes.
     if not config["branching"].get("enable", orion.core.config.evc.enable):
         ignore_code_changes = True
     else:
         ignore_code_changes = config["branching"].get("ignore_code_changes")
 
-    workon(experiment, ignore_code_changes=ignore_code_changes, **worker_config)
+    with sigterm_as_interrupt():
+        workon(experiment, ignore_code_changes=ignore_code_changes, **worker_config)

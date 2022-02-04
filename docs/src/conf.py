@@ -293,6 +293,7 @@ ignore_algo_attr = [
     "orion.plotting.base.PlotAccessor.__call__",
     "orion.benchmark.task.BaseTask.__call__",
     "orion.benchmark.task.base.BaseTask.__call__",
+    "AlreadyReleased",
 ]
 
 nitpicky = True

@@ -6,6 +6,8 @@ Python API
 Provides functions for communicating with `orion.core`.
 
 """
+import logging
+
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.cli import (
     interrupt_trial,
@@ -29,6 +31,8 @@ __all__ = [
     "get_experiment",
     "workon",
 ]
+
+log = logging.getLogger(__name__)
 
 
 def create_experiment(name, **config):
@@ -125,7 +129,8 @@ def build_experiment(
     algorithms: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
-        Parallel strategy to use to parallelize the algorithm.
+        Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
+        directly if it supports it.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
@@ -136,11 +141,8 @@ def build_experiment(
         Working directory created for the experiment inside which a unique folder will be created
         for each trial. Defaults to a temporary directory that is deleted at end of execution.
     max_idle_time: int, optional
-        Maximum time the producer can spend trying to generate a new suggestion.
-        Such timeout are generally caused by slow database, large number of
-        concurrent workers leading to many race conditions or small search spaces
-        with integer/categorical dimensions that may be fully explored.
-        Defaults to ``orion.core.config.worker.max_idle_time``.
+        Deprecated and will be removed in v0.3.0.
+        Use experiment.workon(reservation_timeout) instead.
     heartbeat: int, optional
         Frequency (seconds) at which the heartbeat of the trial is updated.
         If the heartbeat of a `reserved` trial is larger than twice the configured
@@ -199,9 +201,14 @@ def build_experiment(
         ``(name, x)`` already has a child ``(name, x+1)``. If you really need to branch from version
         ``x``, give it a new name to branch to with ``branching={'branch_to': <new_name>}``.
     `NotImplementedError`
-        If the algorithm, storage or strategy specified is not properly installed.
+        If the algorithm or storage specified is not properly installed.
 
     """
+    if max_idle_time:
+        log.warning(
+            "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
+        )
+
     setup_storage(storage=storage, debug=debug)
 
     try:
@@ -241,7 +248,7 @@ def build_experiment(
                 "repository."
             ) from e
 
-    producer = Producer(experiment, max_idle_time)
+    producer = Producer(experiment)
 
     return ExperimentClient(experiment, producer, executor, heartbeat)
 
@@ -330,7 +337,6 @@ def workon(
             version=1,
             space=space,
             algorithms=algorithms,
-            strategy="NoParallelStrategy",
             max_trials=max_trials,
             max_broken=max_broken,
         )

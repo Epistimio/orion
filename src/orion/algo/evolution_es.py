@@ -184,7 +184,7 @@ class EvolutionES(Hyperband):
 
     def _get_bracket(self, trial):
         """Get the bracket of a trial during observe"""
-        return self.brackets[0]
+        return self.brackets[-1]
 
 
 class BracketEVES(HyperbandBracket):

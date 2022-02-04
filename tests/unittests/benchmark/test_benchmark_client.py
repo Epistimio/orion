@@ -11,6 +11,7 @@ import orion.core
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
+from orion.client import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
@@ -327,28 +328,57 @@ class TestCreateBenchmark:
             assert orion.core.config.worker.n_workers != 2
 
     def test_experiments_parallel(self, benchmark_config_py, monkeypatch):
-        def optimize(*args, **kwargs):
-            optimize.count += 1
-            return 1
+        import multiprocessing
+
+        class FakeFuture:
+            def __init__(self, value):
+                self.value = value
+
+            def wait(self, timeout=None):
+                return
+
+            def ready(self):
+                return True
+
+            def get(self, timeout=None):
+                return self.value
+
+            def successful(self):
+                return True
+
+        count = multiprocessing.Value("i", 0)
+        is_done_value = multiprocessing.Value("i", 0)
+
+        def is_done(self):
+            return count.value > 0
+
+        def submit(*args, c=count, **kwargs):
+            # because worker == 2 only 2 jobs were submitted
+            # we now set is_done to True so when runner checks
+            # for adding more jobs it will stop right away
+            c.value += 1
+            return FakeFuture([dict(name="v", type="objective", value=1)])
 
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
 
-            executor = Joblib(n_workers=5, backend="threading")
-            config["executor"] = executor
-            bm1 = get_or_create_benchmark(**config)
+            with Joblib(n_workers=5, backend="threading") as executor:
+                monkeypatch.setattr(ExperimentClient, "is_done", property(is_done))
+                monkeypatch.setattr(executor, "submit", submit)
 
-            client = bm1.studies[0].experiments_info[0][1]
-            monkeypatch.setattr(client, "_optimize", optimize)
+                config["executor"] = executor
+                bm1 = get_or_create_benchmark(**config)
+                client = bm1.studies[0].experiments_info[0][1]
 
-            optimize.count = 0
-            bm1.process(n_workers=2)
-            assert optimize.count == 2
-            assert executor.n_workers == 5
-            assert orion.core.config.worker.n_workers != 2
+                count.value = 0
+                bm1.process(n_workers=2)
+                assert count.value == 2
+                assert executor.n_workers == 5
+                assert orion.core.config.worker.n_workers != 2
 
-            optimize.count = 0
-            bm1.process(n_workers=3)
-            assert optimize.count == 3
-            assert executor.n_workers == 5
-            assert orion.core.config.worker.n_workers != 3
+                is_done.done = False
+                count.value = 0
+                bm1.process(n_workers=3)
+                assert count.value == 3
+                assert executor.n_workers == 5
+                assert orion.core.config.worker.n_workers != 3

@@ -32,6 +32,14 @@ algorithm_configs = {
             "prior_weight": 1.0,
             "full_weight_num": 25,
             "max_retry": 100,
+            "parallel_strategy": {
+                "of_type": "StatusBasedParallelStrategy",
+                "strategy_configs": {
+                    "broken": {
+                        "of_type": "MaxParallelStrategy",
+                    },
+                },
+            },
         }
     },
     "asha": {"asha": {"seed": 1, "num_rungs": 4, "num_brackets": 1, "repetitions": 2}},
@@ -179,6 +187,7 @@ def test_with_multidim(algorithm):
     space = copy.deepcopy(space_with_fidelity)
     space["x"] = "uniform(-50, 50, shape=(2, 1))"
     MAX_TRIALS = 30
+
     exp = workon(
         multidim_rosenbrock, space, algorithms=algorithm, max_trials=MAX_TRIALS
     )
