@@ -21,14 +21,14 @@ try:
 except ImportError:
     pytest.skip("skipping profet tests", allow_module_level=True)
 
+from typing import List, Union, overload
+
 from pytest_mock import MockerFixture
 
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from orion.core.worker.trial import Trial
 
 from .conftest import REAL_PROFET_DATA_DIR, is_nonempty_dir
-
-from typing import overload, List, Union
-from orion.core.worker.trial import Trial
 
 
 @overload
