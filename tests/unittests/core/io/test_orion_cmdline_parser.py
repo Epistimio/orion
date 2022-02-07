@@ -27,23 +27,33 @@ def parser_diff_prefix():
     return OrionCmdlineParser(config_prefix="config2", allow_non_existing_files=True)
 
 
+@pytest.fixture(
+    params=[("some/weird:arg_value", "choices({{'a': 0.5, 'b': 0.5}})", "a")]
+)
+def weird_argument_name_prior_and_value(request):
+    """ Fixture that provides a weird name, along with a prior and value. """
+    weird_param_name, prior, value = request.param
+    yield weird_param_name, prior, value
+
+
 @pytest.fixture
-def commandline():
+def commandline(weird_argument_name_prior_and_value):
     """Return a simple commandline list."""
+    weird_name, prior, _ = weird_argument_name_prior_and_value
     return [
         "--seed=555",
         "--lr~uniform(-3, 1)",
         "--non-prior=choices({{'sgd': 0.2, 'adam': 0.8}})",
         "--prior~choices({'sgd': 0.2, 'adam': 0.8})",
         "--a.b~uniform(0,1)",
-        "--some/weird:arg.value~choices({{'a': 0.5, 'b': 0.5}})",
+        f"--{weird_name}~{prior}",
     ]
 
 
 @pytest.fixture
 def commandline_fluff(commandline):
     """Add extra useless info to commandline."""
-    cmd_args = commandline
+    cmd_args = commandline.copy()
     cmd_args.extend(
         ["--some-path=~/some_path", "--home-path=~", "~/../folder/.hidden/folder"]
     )
@@ -53,7 +63,7 @@ def commandline_fluff(commandline):
 @pytest.fixture
 def cmd_with_properties(commandline):
     """Add extra arguments that use `trial` and `exp` properties"""
-    cmd_args = commandline
+    cmd_args = commandline.copy()
     cmd_args.extend(["--trial-name", "{trial.hash_name}", "--exp-name", "{exp.name}"])
 
     return cmd_args
@@ -113,7 +123,9 @@ def test_parse_equivalency(yaml_config, json_config):
     assert dict_from_json == dict_from_yaml
 
 
-def test_parse_from_args_only(parser, commandline_fluff):
+def test_parse_from_args_only(
+    parser, commandline_fluff, weird_argument_name_prior_and_value
+):
     """Parse a commandline."""
     cmd_args = commandline_fluff
 
@@ -124,7 +136,9 @@ def test_parse_from_args_only(parser, commandline_fluff):
     assert "/lr" in parser.cmd_priors
     assert "/prior" in parser.cmd_priors
     assert "/a.b" in parser.cmd_priors
-    assert "/some/weird:arg.value" in parser.cmd_priors
+    weird_name, _, _ = weird_argument_name_prior_and_value
+    assert f"/{weird_name}" in parser.cmd_priors
+
     assert parser.parser.template == [
         "--seed",
         "{seed}",
@@ -136,8 +150,8 @@ def test_parse_from_args_only(parser, commandline_fluff):
         "{prior}",
         "--a.b",
         "{a.b}",
-        "--some/weird:arg.value",
-        "{some/weird:arg.value}",
+        f"--{weird_name}",
+        f"{{{weird_name}}}",
         "--some-path",
         "{some-path}",
         "--home-path",
@@ -146,7 +160,9 @@ def test_parse_from_args_only(parser, commandline_fluff):
     ]
 
 
-def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
+def test_parse_from_args_and_config_yaml(
+    parser, commandline, yaml_config, weird_argument_name_prior_and_value
+):
     """Parse both from commandline and config file."""
     cmd_args = yaml_config
     cmd_args.extend(commandline)
@@ -164,7 +180,9 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
     assert "/training/mbs" in config
     assert "/something-same" in config
     assert "/a.b" in config
-    assert "/some/weird:arg.value" in config
+
+    weird_name, _, _ = weird_argument_name_prior_and_value
+    assert f"/{weird_name}" in config
 
     template = parser.parser.template
     assert template == [
@@ -180,8 +198,8 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
         "{prior}",
         "--a.b",
         "{a.b}",
-        "--some/weird:arg.value",
-        "{some/weird:arg.value}",
+        f"--{weird_name}",
+        f"{{{weird_name}}}",
     ]
 
 
@@ -197,16 +215,19 @@ def test_parse_finds_conflict(parser, commandline, yaml_config):
     assert "Conflict" in str(exc.value)
 
 
-def test_format_commandline_only(parser, commandline):
+def test_format_commandline_only(
+    parser, commandline, weird_argument_name_prior_and_value
+):
     """Format the commandline using only args."""
     parser.parse(commandline)
 
+    weird_name, prior, value = weird_argument_name_prior_and_value
     trial = Trial(
         params=[
             {"name": "/lr", "type": "real", "value": -2.4},
             {"name": "/prior", "type": "categorical", "value": "sgd"},
             {"name": "/a.b", "type": "real", "value": 0.5},
-            {"name": "/some/weird:arg.value", "type": "categorical", "value": "b"},
+            {"name": f"/{weird_name}", "type": "categorical", "value": value},
         ]
     )
 
@@ -222,20 +243,25 @@ def test_format_commandline_only(parser, commandline):
         "sgd",
         "--a.b",
         "0.5",
-        "--some/weird:arg.value",
-        "b",
+        f"--{weird_name}",
+        f"{value}",
     ]
 
 
 def test_format_commandline_and_config(
-    parser, commandline, json_config, tmpdir, json_converter
+    parser,
+    commandline,
+    json_config,
+    tmpdir,
+    json_converter,
+    weird_argument_name_prior_and_value,
 ):
     """Format the commandline and a configuration file."""
     cmd_args = json_config
     cmd_args.extend(commandline)
 
     parser.parse(cmd_args)
-
+    weird_name, prior, value = weird_argument_name_prior_and_value
     trial = Trial(
         params=[
             {"name": "/lr", "type": "real", "value": -2.4},
@@ -247,7 +273,7 @@ def test_format_commandline_and_config(
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
             {"name": "/a.b", "type": "real", "value": 0.3},
-            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
+            {"name": f"/{weird_name}", "type": "categorical", "value": value},
         ]
     )
 
@@ -268,8 +294,8 @@ def test_format_commandline_and_config(
         "sgd",
         "--a.b",
         "0.3",
-        "--some/weird:arg.value",
-        "a",
+        f"--{weird_name}",
+        f"{value}",
     ]
 
     output_data = json_converter.parse(output_file)
@@ -286,13 +312,20 @@ def test_format_commandline_and_config(
 
 
 def test_format_without_config_path(
-    parser, commandline, json_config, tmpdir, json_converter
+    parser,
+    commandline,
+    json_config,
+    tmpdir,
+    json_converter,
+    weird_argument_name_prior_and_value,
 ):
     """Verify that parser.format() raises ValueError when config path not passed."""
     cmd_args = json_config
     cmd_args.extend(commandline)
 
     parser.parse(cmd_args)
+
+    weird_name, prior, value = weird_argument_name_prior_and_value
 
     trial = Trial(
         params=[
@@ -304,7 +337,7 @@ def test_format_without_config_path(
             {"name": "/training/lr0", "type": "real", "value": 0.032},
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
-            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
+            {"name": f"/{weird_name}", "type": "categorical", "value": value},
         ]
     )
 
@@ -314,16 +347,21 @@ def test_format_without_config_path(
         parser.format(trial=trial)
 
 
-def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
+def test_format_with_properties(
+    parser, cmd_with_properties, hacked_exp, weird_argument_name_prior_and_value
+):
     """Test if format correctly puts the value of `trial` and `exp` when used as properties"""
     parser.parse(cmd_with_properties)
+    # NOTE: Also using a weird argument here, to make sure the parser is able to distinguish
+    # property look-up vs weird argument names.
+    weird_name, prior, value = weird_argument_name_prior_and_value
 
     trial = Trial(
         experiment="trial_test",
         params=[
             {"name": "/lr", "type": "real", "value": -2.4},
             {"name": "/prior", "type": "categorical", "value": "sgd"},
-            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
+            {"name": f"/{weird_name}", "type": "categorical", "value": value},
         ],
     )
 
@@ -432,7 +470,14 @@ def test_get_state_dict_after_parse_with_config_file(parser, yaml_config, comman
     }
 
 
-def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter):
+def test_set_state_dict(
+    parser,
+    commandline,
+    json_config,
+    tmpdir,
+    json_converter,
+    weird_argument_name_prior_and_value,
+):
     """Test that set_state_dict sets state properly to generate new config."""
     cmd_args = json_config
     cmd_args.extend(commandline)
@@ -443,6 +488,7 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
     parser = None
 
     blank_parser = OrionCmdlineParser(allow_non_existing_files=True)
+    weird_name, prior, value = weird_argument_name_prior_and_value
 
     blank_parser.set_state_dict(state)
 
@@ -457,7 +503,7 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
             {"name": "/a.b", "type": "real", "value": 0.2},
-            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
+            {"name": f"/{weird_name}", "type": "categorical", "value": value},
         ]
     )
 
@@ -478,8 +524,8 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
         "sgd",
         "--a.b",
         "0.2",
-        "--some/weird:arg.value",
-        "a",
+        f"--{weird_name}",
+        f"{value}",
     ]
 
     output_data = json_converter.parse(output_file)
