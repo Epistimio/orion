@@ -159,6 +159,7 @@ class ProfetTaskTests:
     def test_attributes(
         self,
         profet_train_config: MetaModelConfig,
+        checkpoint_dir: Path,
         profet_input_dir: Path,
         device_str: str,
         tmp_path_factory,
@@ -167,7 +168,6 @@ class ProfetTaskTests:
         correctly.
         """
         max_trials = 123
-        checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         device = torch.device(device_str)
         task = self.Task(
             max_trials=max_trials,
@@ -192,12 +192,12 @@ class ProfetTaskTests:
         profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         tmp_path_factory: TempPathFactory,
+        checkpoint_dir: Path,
         mocker: MockerFixture,
     ):
         """Tests that when instantiating multiple tasks with the same arguments, the
         meta-model is trained only once.
         """
-        checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         # Directory should be empty.
         assert len(list(checkpoint_dir.iterdir())) == 0
 

@@ -24,9 +24,9 @@ def is_nonempty_dir(p: Path) -> bool:
     return p.exists() and p.is_dir() and bool(list(p.iterdir()))
 
 
-@pytest.fixture(scope="session")
-def checkpoint_dir(tmp_path_factory):
-    return tmp_path_factory.mktemp("checkpoint_dir")
+@pytest.fixture()
+def checkpoint_dir(tmp_path: Path):
+    return tmp_path
 
 
 @pytest.fixture(scope="session")
