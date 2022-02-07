@@ -366,7 +366,7 @@ def test_pending_idle_worker():
 
 def test_no_remaining_worker():
     """Runner stops if we have not more trials to run"""
-    idle_timeout = 1
+    idle_timeout = 2
     pop_time = 1
     runner = new_runner(idle_timeout)
 

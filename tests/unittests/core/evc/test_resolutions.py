@@ -116,14 +116,14 @@ class TestAddDimensionResolution(object):
         resolution = new_dimension_conflict.AddDimensionResolution(
             new_dimension_conflict
         )
-        assert resolution.new_prior == "norm(0, 2)"
+        assert resolution.new_prior == "normal(0, 2)"
 
     def test_new_prior_default_from_dim(self, new_dimension_with_default_conflict):
         """Verify prior string with default value in dimension"""
         resolution = new_dimension_with_default_conflict.AddDimensionResolution(
             new_dimension_with_default_conflict
         )
-        assert resolution.new_prior == "norm(0, 2, default_value=0.001)"
+        assert resolution.new_prior == "normal(0, 2, default_value=0.001)"
 
     def test_new_prior_default(
         self, new_dimension_conflict, new_dimension_with_default_conflict
@@ -133,14 +133,14 @@ class TestAddDimensionResolution(object):
         resolution = new_dimension_with_default_conflict.AddDimensionResolution(
             new_dimension_with_default_conflict, default_value=default_value
         )
-        assert resolution.new_prior == "norm(0, 2, default_value={})".format(
+        assert resolution.new_prior == "normal(0, 2, default_value={})".format(
             default_value
         )
 
         resolution = new_dimension_conflict.AddDimensionResolution(
             new_dimension_conflict, default_value=default_value
         )
-        assert resolution.new_prior == "norm(0, 2, default_value={})".format(
+        assert resolution.new_prior == "normal(0, 2, default_value={})".format(
             default_value
         )
 
@@ -150,14 +150,14 @@ class TestAddDimensionResolution(object):
 
     def test_repr_without_default(self, add_dimension_resolution):
         """Verify resolution representation for user interface, without default value"""
-        assert repr(add_dimension_resolution) == "new~+norm(0, 2)"
+        assert repr(add_dimension_resolution) == "new~+normal(0, 2)"
 
     def test_repr_default_from_dim(self, new_dimension_with_default_conflict):
         """Verify resolution representation for user interface, without default value"""
         resolution = new_dimension_with_default_conflict.AddDimensionResolution(
             new_dimension_with_default_conflict
         )
-        assert repr(resolution) == "new~+norm(0, 2, default_value=0.001)"
+        assert repr(resolution) == "new~+normal(0, 2, default_value=0.001)"
 
     def test_adapters_without_default(self, new_dimension_conflict):
         """Verify adapters without default values (filter everything out)"""

@@ -264,12 +264,17 @@ class Dimension:
 
         if self._shape is not None:
             args += ["shape={}".format(self._shape)]
+
         if self.default_value is not self.NO_DEFAULT_VALUE:
             args += ["default_value={}".format(repr(self.default_value))]
 
         prior_name = self._prior_name
         if prior_name == "reciprocal":
             prior_name = "loguniform"
+
+        if prior_name == "norm":
+            prior_name = "normal"
+
         return "{prior_name}({args})".format(
             prior_name=prior_name, args=", ".join(args)
         )
@@ -418,6 +423,15 @@ class Real(Dimension):
             return False
 
         return numpy.all(point_ >= low) and numpy.all(point_ <= high)
+
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        prior_string = super(Real, self).get_prior_string()
+
+        if self.precision != 4:
+            return prior_string[:-1] + f", precision={self.precision})"
+
+        return prior_string
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -722,7 +736,7 @@ class Categorical(Dimension):
 
         """
         rng = check_random_state(seed)
-        cat_ndarray = numpy.array(self.categories, dtype=numpy.object)
+        cat_ndarray = numpy.array(self.categories, dtype=object)
         samples = [
             rng.choice(cat_ndarray, p=self._probs, size=self._shape)
             for _ in range(n_samples)
@@ -740,7 +754,7 @@ class Categorical(Dimension):
         :type point: numeric or array-like
 
         """
-        point_ = numpy.asarray(point, dtype=numpy.object)
+        point_ = numpy.asarray(point, dtype=object)
         if point_.shape != self.shape:
             return False
         _check = numpy.vectorize(lambda x: x in self.categories)
@@ -825,8 +839,8 @@ class Categorical(Dimension):
 
             return categorical_strings[str(value)]
 
-        point_ = numpy.asarray(point, dtype=numpy.object)
-        cast = numpy.vectorize(get_category, otypes=[numpy.object])
+        point_ = numpy.asarray(point, dtype=object)
+        cast = numpy.vectorize(get_category, otypes=[object])
         casted_point = cast(point_)
 
         if not isinstance(point, numpy.ndarray):
@@ -901,7 +915,12 @@ class Fidelity(Dimension):
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        return "fidelity({}, {}, {})".format(self.low, self.high, self.base)
+        args = [str(self.low), str(self.high)]
+
+        if self.base != 2:
+            args += [f"base={self.base}"]
+
+        return "fidelity({})".format(", ".join(args))
 
     def validate(self):
         """Do not do anything."""
