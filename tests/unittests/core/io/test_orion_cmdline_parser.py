@@ -212,6 +212,8 @@ def test_format_commandline_only(parser, commandline):
         "choices({'sgd': 0.2, 'adam': 0.8})",
         "--prior",
         "sgd",
+        "--a.b",
+        "0.5",
     ]
 
 
