@@ -46,7 +46,7 @@ def test_user_script_crash(capfd):
             "hunt",
             "-n",
             "test",
-            "--exp-max-trials",
+            "--exp-max-broken",
             "1",
             "./black_box_fail.py",
             "-c",
