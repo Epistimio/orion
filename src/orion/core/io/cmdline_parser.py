@@ -91,7 +91,6 @@ class CmdlineParser(object):
         # Arguments with spaces are broken if we use ' '.join(template).format().split(' ').
         # Hence we iterate over the list as-is and format on each item separately.
         formatted = []
-        item: str
         for item in self.template:
             if item.startswith("-"):
                 formatted.append(item)
