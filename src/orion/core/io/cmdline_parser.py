@@ -97,19 +97,15 @@ class CmdlineParser(object):
             elif (
                 item.startswith("{")
                 and item.endswith("}")
-                and "." in item
-                and item.partition(".")[0] not in ["trial", "experiment"]
+                and any(item == f"{{{key}}}" for key in configuration)
             ):
-                # There is an argument, for example "--a.b~uniform(0,1)".
-                for key, value in configuration.items():
-                    if item == f"{{{key}}}":
-                        formatted.append(str(value))
-                        break
-                else:
-                    raise RuntimeError(
-                        f"Unable to find matching value from configuration {configuration} for "
-                        f"template item '{item}'."
-                    )
+                # The argument has an entry with exactly matching name in the configuration.
+                # Extract it from the configuration, rather than try to use `str.format`.
+                # This solves bugs that arise from using strings that are invalid python expressions
+                # (e.g. names with ".", "/", or ":").
+                key = [key for key in configuration if item == f"{{{key}}}"][0]
+                value = configuration[key]
+                formatted.append(str(value))
             else:
                 formatted.append(item.format(**configuration))
 
