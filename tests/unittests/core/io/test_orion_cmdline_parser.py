@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any, List, NamedTuple, Optional, Tuple
 
 import pytest
-from orion.core.io.convert import JSONConverter
 
+from orion.core.io.convert import JSONConverter
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
