@@ -22,7 +22,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.working_dir import SetupWorkingDir
-from orion.core.worker.trial import Trial, TrialCM
+from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
 from orion.plotting.base import PlotAccessor
@@ -499,7 +499,7 @@ class ExperimentClient:
                 ) from e
             if current_status != "reserved":
                 raise_if_unreserved = False
-                raise RuntimeError(
+                raise AlreadyReleased(
                     "Trial {} was already released locally.".format(trial.id)
                 ) from e
 
@@ -620,6 +620,7 @@ class ExperimentClient:
             If the format of trial result is invalid.
         """
         self._check_if_executable()
+
         trial.results += [Trial.Result(**result) for result in results]
         raise_if_unreserved = True
         try:
