@@ -530,7 +530,7 @@ class TestResolutions(object):
         assert "'w_d~+' is not in list" in str(exc.value)
         assert len(conflicts.get_resolved()) == 2
 
-        branch_builder.reset("w_d~+norm(0, 1)")
+        branch_builder.reset("w_d~+normal(0, 1)")
 
         assert len(conflicts.get()) == 2
 
