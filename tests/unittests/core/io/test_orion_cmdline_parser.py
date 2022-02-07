@@ -36,6 +36,7 @@ def commandline():
         "--non-prior=choices({{'sgd': 0.2, 'adam': 0.8}})",
         "--prior~choices({'sgd': 0.2, 'adam': 0.8})",
         "--a.b~uniform(0,1)",
+        "--some/weird:arg.value~choices({{'a': 0.5, 'b': 0.5}})",
     ]
 
 
@@ -119,10 +120,11 @@ def test_parse_from_args_only(parser, commandline_fluff):
     parser.parse(cmd_args)
 
     assert not parser.config_file_data
-    assert len(parser.cmd_priors) == 3
+    assert len(parser.cmd_priors) == 4
     assert "/lr" in parser.cmd_priors
     assert "/prior" in parser.cmd_priors
     assert "/a.b" in parser.cmd_priors
+    assert "/some/weird:arg.value" in parser.cmd_priors
     assert parser.parser.template == [
         "--seed",
         "{seed}",
@@ -134,6 +136,8 @@ def test_parse_from_args_only(parser, commandline_fluff):
         "{prior}",
         "--a.b",
         "{a.b}",
+        "--some/weird:arg.value",
+        "{some/weird:arg.value}",
         "--some-path",
         "{some-path}",
         "--home-path",
@@ -150,7 +154,7 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
     parser.parse(cmd_args)
     config = parser.priors
 
-    assert len(config) == 9
+    assert len(config) == 10
     assert "/lr" in config
     assert "/prior" in config
     assert "/layers/1/width" in config
@@ -160,6 +164,7 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
     assert "/training/mbs" in config
     assert "/something-same" in config
     assert "/a.b" in config
+    assert "/some/weird:arg.value" in config
 
     template = parser.parser.template
     assert template == [
@@ -175,6 +180,8 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
         "{prior}",
         "--a.b",
         "{a.b}",
+        "--some/weird:arg.value",
+        "{some/weird:arg.value}",
     ]
 
 
@@ -199,6 +206,7 @@ def test_format_commandline_only(parser, commandline):
             {"name": "/lr", "type": "real", "value": -2.4},
             {"name": "/prior", "type": "categorical", "value": "sgd"},
             {"name": "/a.b", "type": "real", "value": 0.5},
+            {"name": "/some/weird:arg.value", "type": "categorical", "value": "b"},
         ]
     )
 
@@ -214,6 +222,8 @@ def test_format_commandline_only(parser, commandline):
         "sgd",
         "--a.b",
         "0.5",
+        "--some/weird:arg.value",
+        "b",
     ]
 
 
@@ -237,6 +247,7 @@ def test_format_commandline_and_config(
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
             {"name": "/a.b", "type": "real", "value": 0.3},
+            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
         ]
     )
 
@@ -257,6 +268,8 @@ def test_format_commandline_and_config(
         "sgd",
         "--a.b",
         "0.3",
+        "--some/weird:arg.value",
+        "a",
     ]
 
     output_data = json_converter.parse(output_file)
@@ -291,13 +304,14 @@ def test_format_without_config_path(
             {"name": "/training/lr0", "type": "real", "value": 0.032},
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
+            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
         ]
     )
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(
+        ValueError, match="Cannot format without a `config_path` argument."
+    ):
         parser.format(trial=trial)
-
-    assert "Cannot format without a `config_path` argument." in str(exc_info.value)
 
 
 def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
@@ -309,6 +323,7 @@ def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
         params=[
             {"name": "/lr", "type": "real", "value": -2.4},
             {"name": "/prior", "type": "categorical", "value": "sgd"},
+            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
         ],
     )
 
@@ -442,6 +457,7 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
             {"name": "/training/mbs", "type": "integer", "value": 64},
             {"name": "/something-same", "type": "categorical", "value": "3"},
             {"name": "/a.b", "type": "real", "value": 0.2},
+            {"name": "/some/weird:arg.value", "type": "categorical", "value": "a"},
         ]
     )
 
@@ -462,6 +478,8 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
         "sgd",
         "--a.b",
         "0.2",
+        "--some/weird:arg.value",
+        "a",
     ]
 
     output_data = json_converter.parse(output_file)
