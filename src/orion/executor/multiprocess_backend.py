@@ -165,9 +165,13 @@ class PoolExecutor(BaseExecutor):
         loky=Pool,  # TODO: For compatibility with joblib backend. Remove in v0.4.0.
     )
 
-    def __init__(self, n_workers, backend="multiprocess", **kwargs):
-        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
+    def __init__(self, n_workers=-1, backend="multiprocess", **kwargs):
         super().__init__(n_workers, **kwargs)
+
+        if n_workers <= 0:
+            n_workers = multiprocessing.cpu_count()
+
+        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __enter__(self):
         return self
@@ -176,7 +180,10 @@ class PoolExecutor(BaseExecutor):
         self.pool.shutdown()
 
     def __del__(self):
-        self.pool.shutdown()
+        # This is necessary because if the factory constructor fails
+        # __del__ is executed right away but pool might not be set
+        if hasattr(self, "pool"):
+            self.pool.shutdown()
 
     def __getstate__(self):
         state = super(PoolExecutor, self).__getstate__()
