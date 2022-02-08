@@ -4,12 +4,7 @@ from multiprocessing import TimeoutError
 
 import pytest
 
-from orion.executor.base import (
-    AsyncException,
-    ExecutorClosed,
-    executor_factory,
-    BaseExecutor,
-)
+from orion.executor.base import AsyncException, ExecutorClosed, executor_factory
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
