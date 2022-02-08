@@ -176,7 +176,10 @@ class PoolExecutor(BaseExecutor):
         self.pool.shutdown()
 
     def __del__(self):
-        self.pool.shutdown()
+        # This is necessary because if the factory constructor fails
+        # __del__ is executed right away but pool might not be set
+        if hasattr(self, "pool"):
+            self.pool.shutdown()
 
     def __getstate__(self):
         state = super(PoolExecutor, self).__getstate__()
