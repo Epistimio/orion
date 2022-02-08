@@ -121,7 +121,10 @@ class Dask(BaseExecutor):
             raise
 
     def __del__(self):
-        self.client.close()
+        # This is necessary because if the factory constructor fails
+        # __del__ is executed right away but client might not be set
+        if hasattr(self, "client"):
+            self.client.close()
 
     def __enter__(self):
         return self

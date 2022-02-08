@@ -165,9 +165,13 @@ class PoolExecutor(BaseExecutor):
         loky=Pool,  # TODO: For compatibility with joblib backend. Remove in v0.4.0.
     )
 
-    def __init__(self, n_workers, backend="multiprocess", **kwargs):
-        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
+    def __init__(self, n_workers=-1, backend="multiprocess", **kwargs):
         super().__init__(n_workers, **kwargs)
+
+        if n_workers <= 0:
+            n_workers = multiprocessing.cpu_count()
+
+        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __enter__(self):
         return self

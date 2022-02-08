@@ -4,7 +4,12 @@ from multiprocessing import TimeoutError
 
 import pytest
 
-from orion.executor.base import AsyncException, ExecutorClosed
+from orion.executor.base import (
+    AsyncException,
+    ExecutorClosed,
+    executor_factory,
+    BaseExecutor,
+)
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
@@ -17,6 +22,8 @@ def multiprocess(n):
 def thread(n):
     return PoolExecutor(n, "threading")
 
+
+executors = ["joblib", "poolexecutor", "dask", "singleexecutor"]
 
 backends = [thread, multiprocess, Dask, SingleExecutor]
 
@@ -188,3 +195,23 @@ def test_multisubprocess(backend):
             # access the results to make sure no exception is being
             # suppressed
             r.value
+
+
+@pytest.mark.parametrize("executor", executors)
+def test_executors_have_default_args(executor):
+
+    with executor_factory.create(executor):
+        pass
+
+
+class BadInitException(Exception):
+    pass
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_executors_del_does_not_raise(backend):
+    # if executor init fails you can get very weird error messages,
+    # because of the deleter trying to close unallocated resources.
+
+    klass = type(backend(1))
+    klass.__del__(object())

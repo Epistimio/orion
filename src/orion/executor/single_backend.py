@@ -81,7 +81,8 @@ class SingleExecutor(BaseExecutor):
         self.nested = 0
 
     def __del__(self):
-        self.close()
+        if hasattr(self, "closed"):
+            self.close()
 
     def __enter__(self):
         self.nested += 1
