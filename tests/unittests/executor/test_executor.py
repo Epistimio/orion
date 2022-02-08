@@ -199,10 +199,6 @@ def test_executors_have_default_args(executor):
         pass
 
 
-class BadInitException(Exception):
-    pass
-
-
 @pytest.mark.parametrize("backend", backends)
 def test_executors_del_does_not_raise(backend):
     # if executor init fails you can get very weird error messages,
