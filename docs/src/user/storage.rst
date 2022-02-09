@@ -112,6 +112,27 @@ is applied recursively to all child experiment, but not to the parents.
    orion db set my-exp-name --version 1 status=broken status=interrupted
 
 
+.. _storage_release:
+
+``release`` algorithm lock
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The algorithm state is saved in the storage so that it can be shared across main process
+(``$ orion hunt`` or ``experiment_client.workon()``). The algorithm state is locked 
+during the time the algorithm is updated by observing completed trials or during the suggestion
+of new trials. Sometimes the process may be killed while the algorithm is locked leading to
+a dead lock. The lock can be manually released using the ``orion db release``. 
+
+
+.. code-block:: sh
+
+   orion db release my-exp-name --version 1
+
+
+Make sure you have no Orion process running with this experiment while executing this command
+or you risk having an algorithm state saved in the storage that is inconsistent with the trials
+saved in the storage.
+
 .. _storage_upgrade:
 
 ``upgrade`` Upgrade database scheme

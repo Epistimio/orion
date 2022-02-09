@@ -8,5 +8,9 @@ db commands
    :maxdepth: 1
    :caption: DB command line modules
 
-   db/test
    db/setup
+   db/test
+   db/upgrade
+   db/rm
+   db/set
+   db/release
