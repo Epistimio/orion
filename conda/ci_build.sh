@@ -6,6 +6,7 @@ export PATH="$HOME/miniconda/bin:$PATH"
 hash -r
 conda config --set always_yes yes --set changeps1 no
 conda config --add channels conda-forge
+conda config --add channels notoraptor
 conda config --set channel_priority strict
 
 pip uninstall -y setuptools
