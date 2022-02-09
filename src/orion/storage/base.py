@@ -95,12 +95,17 @@ class LockedAlgorithmState:
     ----------
     state: dict
         Dictionary representing the state of the algorithm.
+    configuration: dict
+        Configuration of the locked algorithm.
+    locked: bool
+        Whether the algorithm is locked or not. Default: True
     """
 
-    def __init__(self, state, configuration):
+    def __init__(self, state, configuration, locked=True):
         self._original_state = state
         self.configuration = configuration
         self._state = state
+        self.locked = locked
 
     @property
     def state(self):
