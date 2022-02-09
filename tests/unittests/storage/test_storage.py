@@ -23,7 +23,6 @@ from orion.core.utils.singleton import (
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
     BaseStorageProtocol,
-    BatchWrite,
     FailedUpdate,
     LockAcquisitionTimeout,
     LockedAlgorithmState,
