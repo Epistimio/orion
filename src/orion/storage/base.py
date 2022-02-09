@@ -116,7 +116,6 @@ class LockedAlgorithmState:
         self._state = self._original_state
 
 
-
 class BaseStorageProtocol:
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
@@ -485,8 +484,6 @@ class BaseStorageProtocol:
             if both experiment and uid are provided and they do not match
         """
         raise NotImplementedError()
-
-
 
     @contextlib.contextmanager
     def acquire_algorithm_lock(self, experiment, timeout=600, retry_interval=1):
