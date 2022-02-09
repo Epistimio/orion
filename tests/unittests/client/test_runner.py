@@ -139,7 +139,7 @@ def test_stop_after_max_trial_reached():
 def test_interrupted_scatter_gather():
     count = 2
 
-    runner = new_runner(2, n_workers=16)
+    runner = new_runner(2, n_workers=8)
     runner.fct = function
     client = runner.client
 
@@ -181,7 +181,7 @@ class CustomExceptionForTest(Exception):
 def test_interrupted_scatter_gather_custom_signal():
     count = 2
 
-    runner = new_runner(2, n_workers=16)
+    runner = new_runner(2, n_workers=8)
     runner.fct = function
     client = runner.client
 
@@ -207,7 +207,7 @@ def test_interrupted_scatter_gather_custom_signal():
 def test_interrupted_scatter_gather_custom_signal_restore():
     count = 2
 
-    runner = new_runner(2, n_workers=16)
+    runner = new_runner(2, n_workers=8)
     runner.fct = function
     client = runner.client
 
@@ -228,7 +228,7 @@ def test_interrupted_scatter_gather_custom_signal_restore():
 def test_interrupted_scatter_gather_now():
     count = 2
 
-    runner = new_runner(2, n_workers=16)
+    runner = new_runner(2, n_workers=8)
     runner.fct = function
     client = runner.client
 
@@ -273,7 +273,7 @@ failures = [
 
 @pytest.mark.parametrize("failure", failures)
 def test_suggest_failures_are_handled(failure):
-    runner = new_runner(0.01, n_workers=16)
+    runner = new_runner(0.01, n_workers=8)
     client = runner.client
     client.suggest_error = failure
 
@@ -287,9 +287,9 @@ def test_suggest_failures_are_handled(failure):
 def test_multi_results_with_failure():
     """Check that all results are registered before exception are raised"""
 
-    count = 10
+    count = 8
 
-    runner = new_runner(0.01, n_workers=16)
+    runner = new_runner(0.01, n_workers=8)
     runner.max_broken = 2
     runner.max_trials_per_worker = count
     runner.fct = function_raise_on_2
