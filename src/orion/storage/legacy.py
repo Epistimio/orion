@@ -144,6 +144,11 @@ class Legacy(BaseStorageProtocol):
         uid = get_uid(experiment, uid)
         return self._db.remove("experiments", query={"_id": uid})
 
+    def delete_algorithm_lock(self, experiment=None, uid=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.delete_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
+        return self._db.remove("algo", query={"experiment": uid})
+
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`orion.storage.base.BaseStorageProtocol.update_experiment`"""
         uid = get_uid(experiment, uid)
@@ -362,6 +367,22 @@ class Legacy(BaseStorageProtocol):
                 "state": None,
                 "heartbeat": datetime.datetime.utcnow(),
             },
+        )
+
+    def get_algorithm_lock_info(self, experiment=None, uid=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.get_algorithm_lock_info`"""
+        uid = get_uid(experiment, uid)
+        locks = self._db.read("algo", {"experiment": uid})
+
+        if not locks:
+            return None
+
+        algo_state_lock = locks[0]
+        return LockedAlgorithmState(
+            state=pickle.loads(algo_state_lock["state"])
+            if algo_state_lock["state"] is not None
+            else None,
+            configuration=algo_state_lock["configuration"],
         )
 
     @contextlib.contextmanager

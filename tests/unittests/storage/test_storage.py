@@ -808,7 +808,36 @@ class TestStorage:
             deserialized = pickle.loads(serialized)
             assert storage.fetch_experiments({}) == deserialized.fetch_experiments({})
 
+    def test_get_algorithm_lock_info(self, storage):
+        if storage and storage["type"] == "track":
+            pytest.xfail("Track does not support algorithm lock yet.")
+
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
+            storage = cfg.storage()
+
+            experiments = storage.fetch_experiments({})
+
+            algo_state_lock = storage.get_algorithm_lock_info(uid=experiments[0]["_id"])
+            assert isinstance(algo_state_lock, LockedAlgorithmState)
+            assert algo_state_lock.state is None
+            assert algo_state_lock.configuration == experiments[0]["algorithms"]
+
+    def test_delete_algorithm_lock(self, storage):
+        if storage and storage["type"] == "track":
+            pytest.xfail("Track does not support algorithm lock yet.")
+
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
+            storage = cfg.storage()
+
+            experiments = storage.fetch_experiments({})
+
+            assert storage.delete_algorithm_lock(uid=experiments[0]["_id"]) == 1
+            assert storage.get_algorithm_lock_info(uid=experiments[0]["_id"]) is None
+
     def test_acquire_algorithm_lock_successful(self, storage):
+        if storage and storage["type"] == "track":
+            pytest.xfail("Track does not support algorithm lock yet.")
+
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
             storage = cfg.storage()
             experiment = cfg.get_experiment("default_name", version=None)
