@@ -127,7 +127,7 @@ def upgrade_documents(storage):
         add_version(experiment)
         uid = experiment.pop("_id")
         storage.update_experiment(uid=experiment, **experiment)
-        storage.initialize_algorithm_lock(uid)
+        storage.initialize_algorithm_lock(uid, experiment["algorithms"])
 
 
 def add_version(experiment):
