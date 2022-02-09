@@ -342,6 +342,30 @@ def test_idle_worker():
     assert int(elapsed - idle_timeout) == 0, "LazyWorkers was raised after idle_timeout"
 
 
+@pytest.mark.parametrize("method", ["scatter", "gather"])
+def test_idle_worker_slow(method):
+    idle_timeout = 0.5
+    method_sleep = 1
+    count = 5
+    trials = [new_trial(i, sleep=0) for i in range(count, -1, -1)]
+
+    runner = new_runner(idle_timeout, n_workers=8)
+    runner.max_trials_per_worker = len(trials)
+    client = runner.client
+
+    client.trials.extend(trials)
+
+    def slow_method(*args, **kwargs):
+        # Sleep until some results are ready
+        time.sleep(method_sleep)
+        getattr(Runner, method)(runner, *args, **kwargs)
+
+    setattr(runner, method, slow_method)
+
+    # # Should not raise LazyWorkers
+    assert runner.run() == len(trials)
+
+
 def test_pending_idle_worker():
     """No new trials can be generated but we have a pending trial so LazyWorkers is not raised."""
     idle_timeout = 1
