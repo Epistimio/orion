@@ -22,10 +22,11 @@ from orion.core.utils.singleton import (
 )
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
-    LockedAlgorithmState,
     BaseStorageProtocol,
     BatchWrite,
     FailedUpdate,
+    LockAcquisitionTimeout,
+    LockedAlgorithmState,
     MissingArguments,
     get_storage,
     setup_storage,
@@ -33,7 +34,7 @@ from orion.storage.base import (
 )
 from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON
-from orion.testing import OrionState
+from orion.testing import OrionState, base_experiment
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
@@ -44,18 +45,6 @@ if not HAS_TRACK:
     log.warning("Track is not tested because: %s!", REASON)
 else:
     storage_backends.append({"type": "track", "uri": "file://${file}?objective=loss"})
-
-base_experiment = {
-    "name": "default_name",
-    "version": 0,
-    "metadata": {
-        "user": "default_user",
-        "user_script": "abc",
-        "priors": {"x": "uniform(0, 10)"},
-        "datetime": "2017-11-23T02:00:00",
-        "orion_version": "XYZ",
-    },
-}
 
 
 base_trial = {
@@ -110,6 +99,7 @@ def make_lost_trial(delay=2):
 all_status = ["completed", "broken", "reserved", "interrupted", "suspended", "new"]
 
 
+# TODO: Reuse the one from orion.testing
 def generate_trials(status=None, heartbeat=None):
     """Generate Trials with different configurations"""
     if status is None:
@@ -817,6 +807,62 @@ class TestStorage:
             serialized = pickle.dumps(storage)
             deserialized = pickle.loads(serialized)
             assert storage.fetch_experiments({}) == deserialized.fetch_experiments({})
+
+    def test_acquire_algorithm_lock_successful(self, storage):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+
+            with storage.acquire_algorithm_lock(
+                experiment, timeout=0.1
+            ) as locked_algo_state:
+                assert locked_algo_state.state is None
+                locked_algo_state.set_state("my new state")
+
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                assert locked_algo_state.state == "my new state"
+
+    def test_acquire_algorithm_lock_timeout(self, storage, mocker):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+
+            sleep_mock = mocker.spy(time, "sleep")
+
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                with pytest.raises(LockAcquisitionTimeout):
+                    with storage.acquire_algorithm_lock(
+                        experiment, timeout=0.2, retry_interval=0.01
+                    ):
+                        pass
+
+            sleep_mock.assert_called_with(0.01)
+
+    def test_acquire_algorithm_lock_handle_fail(self, storage):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                assert locked_algo_state.state is None
+                locked_algo_state.set_state("new original state")
+
+            with pytest.raises(RuntimeError):
+                with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                    assert locked_algo_state.state == "new original state"
+                    locked_algo_state.set_state("should not be set")
+                    raise RuntimeError
+
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                assert locked_algo_state.state == "new original state"
+
+    def test_acquire_algorithm_lock_not_initialised(self, storage):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+            experiment._id = "bad id"
+            with pytest.raises(LockAcquisitionTimeout):
+                with storage.acquire_algorithm_lock(experiment, timeout=0.1) as what:
+                    pass
 
 
 class ExperimentMock:

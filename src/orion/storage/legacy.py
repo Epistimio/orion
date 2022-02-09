@@ -6,9 +6,14 @@ Legacy storage
 Old Storage implementation.
 
 """
+import contextlib
 import datetime
 import json
 import logging
+import pickle
+import time
+
+import bson
 
 import orion.core
 import orion.core.utils.backward as backward
@@ -18,6 +23,8 @@ from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
     BaseStorageProtocol,
     FailedUpdate,
+    LockAcquisitionTimeout,
+    LockedAlgorithmState,
     MissingArguments,
     get_uid,
 )
@@ -114,6 +121,8 @@ class Legacy(BaseStorageProtocol):
         self._db.ensure_index("trials", "start_time")
         self._db.ensure_index("trials", [("end_time", Database.DESCENDING)])
 
+        self._db.ensure_index("algo", "experiment")
+
     def create_benchmark(self, config):
         """Insert a new benchmark inside the database"""
         return self._db.write("benchmarks", data=config, query=None)
@@ -124,7 +133,11 @@ class Legacy(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """See :func:`orion.storage.base.BaseStorageProtocol.create_experiment`"""
-        return self._db.write("experiments", data=config, query=None)
+        exp_rval = self._db.write("experiments", data=config, query=None)
+        self.initialize_algorithm_lock(
+            experiment_id=config["_id"], algorithm_config=config.get("algorithms", {})
+        )
+        return exp_rval
 
     def delete_experiment(self, experiment=None, uid=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.delete_experiment`"""
@@ -338,3 +351,64 @@ class Legacy(BaseStorageProtocol):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials_by_status`"""
         query = dict(experiment=experiment._id, status=status)
         return self._fetch_trials(query)
+
+    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+        return self._db.write(
+            "algo",
+            {
+                "experiment": experiment_id,
+                "configuration": algorithm_config,
+                "locked": 0,
+                "state": None,
+                "heartbeat": datetime.datetime.utcnow(),
+            },
+        )
+
+    @contextlib.contextmanager
+    def acquire_algorithm_lock(self, experiment, timeout=60, retry_interval=1):
+        """See :func:`orion.storage.base.BaseStorageProtocol.acquire_algorithm_lock`"""
+
+        algo_state_lock = None
+        start = time.perf_counter()
+        while algo_state_lock is None and time.perf_counter() - start < timeout:
+            algo_state_lock = self._db.read_and_write(
+                "algo",
+                query=dict(experiment=experiment.id, locked=0),
+                data=dict(
+                    locked=1,
+                    heartbeat=datetime.datetime.utcnow(),
+                ),
+            )
+            if algo_state_lock is None:
+                time.sleep(retry_interval)
+
+        if algo_state_lock is None:
+            raise LockAcquisitionTimeout
+
+        locked_algo_state = LockedAlgorithmState(
+            state=pickle.loads(algo_state_lock["state"])
+            if algo_state_lock["state"] is not None
+            else None,
+            configuration=algo_state_lock["configuration"],
+        )
+
+        try:
+            yield locked_algo_state
+        except Exception:
+            # Reset algo to state fetched lock time
+            locked_algo_state.reset()
+            raise
+        finally:
+            # TODO: If the write crashes, we will end up with a deadlock. We should
+            # add a heartbeat, but then if the current process looses the heartbeat it should
+            # not attempt to overwrite the DB. Maybe raise AcquiredLockIsLost
+            self._db.read_and_write(
+                "algo",
+                query=dict(experiment=experiment.id, locked=1),
+                data=dict(
+                    experiment=experiment.id,
+                    locked=0,
+                    state=pickle.dumps(locked_algo_state.state),
+                    heartbeat=datetime.datetime.utcnow(),
+                ),
+            )

@@ -20,6 +20,7 @@ When retrieving an already initialized Storage object you should use `get_storag
 raises more granular error messages.
 
 """
+import contextlib
 import copy
 import functools
 import inspect
@@ -74,6 +75,12 @@ class FailedUpdate(Exception):
 
 class MissingArguments(Exception):
     """Raised when calling a function without the minimal set of parameters"""
+
+    pass
+
+
+class LockAcquisitionTimeout(Exception):
+    """Raised when the lock acquisition timeout (not lock is granted)."""
 
     pass
 
@@ -495,6 +502,44 @@ class BaseStorageProtocol:
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
+        raise NotImplementedError()
+
+    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+        """Initialize algorithm lock for given experiment
+
+        Parameters
+        ----------
+        experiment_id: int or str
+            ID of the experiment in storage.
+        algorithm_config: dict
+            Configuration of the algorithm.
+        """
+        raise NotImplementedError()
+
+    @contextlib.contextmanager
+    def acquire_algorithm_lock(self, experiment, timeout=600, retry_interval=1):
+        """Acquire lock on algorithm in storage
+
+        This method is a contextmanager and should be called using the ``with``-clause.
+
+        Parameters
+        ----------
+        experiment: Experiment
+           experiment object to retrieve from the storage
+        timeout: int, optional
+            Timeout for the acquisition of the lock. If the lock is not
+            obtained before ``timeout``, then ``LockAcquisitionTimeout`` is raised.
+            The timeout is only for the acquisition of the lock.
+            Once the lock is obtained, it is valid until the context manager is closed.
+            Default: 600.
+        retry_interval: int, optional
+            Sleep time between each attempts at acquiring the lock. Default: 1
+
+        Raises
+        ------
+        ``orion.storage.base.LockAcquisitionTimeout``
+            The lock could not be obtained in less than ``timeout`` seconds.
+        """
         raise NotImplementedError()
 
 
