@@ -130,8 +130,7 @@ def test_rm_default_leaf(three_experiments_same_name_with_trials):
                 len(get_storage()._fetch_trials({"experiment": experiment["_id"]})) > 0
             )
             assert (
-                get_storage().get_algorithm_lock_info(uid=experiment["_id"])
-                is not None
+                get_storage().get_algorithm_lock_info(uid=experiment["_id"]) is not None
             )
 
 

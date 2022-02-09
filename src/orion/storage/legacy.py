@@ -144,11 +144,6 @@ class Legacy(BaseStorageProtocol):
         uid = get_uid(experiment, uid)
         return self._db.remove("experiments", query={"_id": uid})
 
-    def delete_algorithm_lock(self, experiment=None, uid=None):
-        """See :func:`orion.storage.base.BaseStorageProtocol.delete_algorithm_lock`"""
-        uid = get_uid(experiment, uid)
-        return self._db.remove("algo", query={"experiment": uid})
-
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`orion.storage.base.BaseStorageProtocol.update_experiment`"""
         uid = get_uid(experiment, uid)
@@ -358,15 +353,34 @@ class Legacy(BaseStorageProtocol):
         return self._fetch_trials(query)
 
     def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+        """See :func:`orion.storage.base.BaseStorageProtocol.initialize_algorithm_lock`"""
         return self._db.write(
             "algo",
             {
                 "experiment": experiment_id,
                 "configuration": algorithm_config,
-                "locked": 0,
+                "locked": False,
                 "state": None,
                 "heartbeat": datetime.datetime.utcnow(),
             },
+        )
+
+    def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.release_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
+
+        new_data = dict(
+            experiment=uid,
+            locked=0,
+            heartbeat=datetime.datetime.utcnow(),
+        )
+        if new_state is not None:
+            new_data["state"] = pickle.dumps(new_state)
+
+        self._db.read_and_write(
+            "algo",
+            query=dict(experiment=uid, locked=1),
+            data=new_data,
         )
 
     def get_algorithm_lock_info(self, experiment=None, uid=None):
@@ -383,18 +397,27 @@ class Legacy(BaseStorageProtocol):
             if algo_state_lock["state"] is not None
             else None,
             configuration=algo_state_lock["configuration"],
+            locked=algo_state_lock["locked"],
         )
 
+    def delete_algorithm_lock(self, experiment=None, uid=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.delete_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
+        return self._db.remove("algo", query={"experiment": uid})
+
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, experiment, timeout=60, retry_interval=1):
+    def acquire_algorithm_lock(
+        self, experiment=None, uid=None, timeout=60, retry_interval=1
+    ):
         """See :func:`orion.storage.base.BaseStorageProtocol.acquire_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
 
         algo_state_lock = None
         start = time.perf_counter()
         while algo_state_lock is None and time.perf_counter() - start < timeout:
             algo_state_lock = self._db.read_and_write(
                 "algo",
-                query=dict(experiment=experiment.id, locked=0),
+                query=dict(experiment=uid, locked=0),
                 data=dict(
                     locked=1,
                     heartbeat=datetime.datetime.utcnow(),
@@ -411,6 +434,7 @@ class Legacy(BaseStorageProtocol):
             if algo_state_lock["state"] is not None
             else None,
             configuration=algo_state_lock["configuration"],
+            locked=True,
         )
 
         try:
@@ -423,13 +447,4 @@ class Legacy(BaseStorageProtocol):
             # TODO: If the write crashes, we will end up with a deadlock. We should
             # add a heartbeat, but then if the current process looses the heartbeat it should
             # not attempt to overwrite the DB. Maybe raise AcquiredLockIsLost
-            self._db.read_and_write(
-                "algo",
-                query=dict(experiment=experiment.id, locked=1),
-                data=dict(
-                    experiment=experiment.id,
-                    locked=0,
-                    state=pickle.dumps(locked_algo_state.state),
-                    heartbeat=datetime.datetime.utcnow(),
-                ),
-            )
+            self.release_algorithm_lock(uid=uid, new_state=locked_algo_state.state)

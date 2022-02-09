@@ -116,94 +116,6 @@ class LockedAlgorithmState:
         self._state = self._original_state
 
 
-NOT_SET = object()
-
-# TODO: It should return futures which has their value sent during commit.
-# Return a copied version of the Storage where some methods are mocked to be queued instead.
-class BatchWrite:
-    class _Future:
-        def __init__(self):
-            self.result = NOT_SET
-
-        def get(self):
-            if self.result is NOT_SET:
-                raise RuntimeError(
-                    "Cannot access result before BatchWrite is commited."
-                )
-
-            return self.result
-
-    read_methods = [
-        "fetch_benchmark",
-        "fetch_trials",
-        "fetch_lost_trials",
-        "fetch_pending_trials",
-        "fetch_noncompleted_trials",
-        "fetch_trials_by_status",
-        "count_completed_trials",
-        "count_broken_trials",
-        "get_trial",
-    ]
-    queuable_methods = [
-        "update_experiment",
-        "update_trials",
-        "update_trial",
-        "register_trial",  # TODO: Since register_trial is queued we won't get the ID error
-        # at the time of producer.produce
-        "push_trial_results",
-        "set_trial_status",
-        "update_heartbeat",  # TODO: this can cause issue if batched_writes takes to long.
-    ]
-
-    def __init__(self, storage):
-        self.storage = storage
-        self._queue = []
-
-    def _queue_command(self, name, *args, **kwargs):
-        future = BatchWrite._Future()
-        self._queue.append((future, name, args, kwargs))
-        return future
-
-    def _cannot_queue_command(self, name, *args, **kwargs):
-        raise RuntimeError(f"Cannot execute storage.{name} during a BatchWrite")
-
-    def __enter__(self):
-        # We make a shallow copy because only read commands should be allowed directly.
-        storage = copy.copy(self.storage)
-        for name, attr in inspect.getmembers(storage):
-            if (
-                name.startswith("_")
-                or not inspect.ismethod(attr)
-                or name in self.read_methods
-            ):
-                continue
-
-            if name in self.queuable_methods:
-                setattr(storage, name, functools.partial(self._queue_command, name))
-            else:
-                print(storage)
-                print(name)
-                print(functools.partial(self._cannot_queue_command, name))
-                setattr(
-                    storage, name, functools.partial(self._cannot_queue_command, name)
-                )
-
-        return storage
-
-    def _commit(self):
-        rvals = []
-        for transaction in self._queue:
-            future, name, args, kwargs = transaction
-            rval = getattr(self.storage, name)(*args, **kwargs)
-            future.result = rval
-            rvals.append(rval)
-
-        return rvals
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is None:
-            self._commit()
-
 
 class BaseStorageProtocol:
     """Implement a generic protocol to allow Orion to communicate using
@@ -516,6 +428,65 @@ class BaseStorageProtocol:
             Configuration of the algorithm.
         """
         raise NotImplementedError()
+
+    def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
+        """Release the algorithm lock
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+        uid: str, optional
+            experiment id used to retrieve the trial object.
+        new_state: dict, optional
+             The new state of the algorithm that should be saved in the lock object.
+             If None, the previous state is preserved in the lock object in storage.
+        """
+        raise NotImplementedError()
+
+    def get_algorithm_lock_info(self, experiment=None, uid=None):
+        """Load algorithm lock info
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+        uid: str, optional
+            experiment id used to retrieve the trial object.
+
+        Returns
+        -------
+        ``orion.storage.base.LockedAlgorithmState``
+            The locked state of the algoithm. Note that the lock is not acquired by the process
+            calling ``get_algorithm_lock_info`` and the value of LockedAlgorithmState.locked
+            may not be valid if another process is running and could acquire the lock concurrently.
+        """
+        raise NotImplementedError()
+
+    def delete_algorithm_lock(self, experiment=None, uid=None):
+        """Delete experiment algorithm lock from the storage
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+        uid: str, optional
+            experiment id used to retrieve the trial object
+
+        Returns
+        -------
+        Number of algorithm lock deleted. Should 1 if successful, 0 is failed.
+
+        Raises
+        ------
+        UndefinedCall
+            if both experiment and uid are not set
+        AssertionError
+            if both experiment and uid are provided and they do not match
+        """
+        raise NotImplementedError()
+
+
 
     @contextlib.contextmanager
     def acquire_algorithm_lock(self, experiment, timeout=600, retry_interval=1):
