@@ -359,7 +359,7 @@ class Legacy(BaseStorageProtocol):
             {
                 "experiment": experiment_id,
                 "configuration": algorithm_config,
-                "locked": False,
+                "locked": 0,
                 "state": None,
                 "heartbeat": datetime.datetime.utcnow(),
             },
