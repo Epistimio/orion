@@ -308,12 +308,12 @@ def test_parallel_workers(algorithm):
         )
 
         assert best_trial.objective.name == "objective"
-        assert abs(best_trial.objective.value - 23.4) < 1.0
+        assert abs(best_trial.objective.value - 23.4) < 5.0
         assert len(best_trial.params) == 2
         fidelity = best_trial._params[0]
         assert fidelity.name == "noise"
         assert fidelity.type == "fidelity"
-        assert fidelity.value >= 2
+        assert fidelity.value >= 1
         param = best_trial._params[1]
         assert param.name == "x"
         assert param.type == "real"
