@@ -97,8 +97,9 @@ class LockedAlgorithmState:
         Dictionary representing the state of the algorithm.
     """
 
-    def __init__(self, state):
+    def __init__(self, state, configuration):
         self._original_state = state
+        self.configuration = configuration
         self._state = state
 
     @property

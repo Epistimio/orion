@@ -1005,7 +1005,7 @@ class TestLockedAlgorithmState:
     def test_reset(self):
         original = "whatever"
         new = "new state"
-        locked_algo_state = LockedAlgorithmState(original)
+        locked_algo_state = LockedAlgorithmState(original, configuration={})
         assert locked_algo_state.state == original
         locked_algo_state.set_state(new)
         assert locked_algo_state.state == new
