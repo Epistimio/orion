@@ -203,7 +203,7 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
         experiment = experiment_builder.build(name=exp_config["name"])
         if cfg.trials:
             experiment._id = cfg.trials[0]["experiment"]
-        client = ExperimentClient(experiment, Producer(experiment))
+        client = ExperimentClient(experiment)
         yield cfg, experiment, client
 
     client.close()

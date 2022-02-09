@@ -22,6 +22,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.working_dir import SetupWorkingDir
+from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
@@ -48,9 +49,6 @@ def reserve_trial(experiment, producer, pool_size, timeout=None):
     trial = experiment.reserve_trial()
 
     if trial is None and not (experiment.is_broken or experiment.is_done):
-        log.debug("#### Fetch most recent completed trials and update algorithm.")
-        producer.update()
-
         log.debug("#### Produce new trials.")
         produced = producer.produce(pool_size)
         log.debug("#### %s trials produced.", produced)
@@ -82,14 +80,11 @@ class ExperimentClient:
     ----------
     experiment: `orion.core.worker.experiment.Experiment`
         Experiment object serving for interaction with storage
-    producer: `orion.core.worker.producer.Producer`
-        Producer object used to produce new trials.
-
     """
 
-    def __init__(self, experiment, producer, executor=None, heartbeat=None):
+    def __init__(self, experiment, executor=None, heartbeat=None):
         self._experiment = experiment
-        self._producer = producer
+        self._producer = Producer(experiment)
         self._pacemakers = {}
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
@@ -492,6 +487,7 @@ class ExperimentClient:
         raise_if_unreserved = True
         try:
             self._experiment.set_trial_status(trial, status, was="reserved")
+            self._producer.observe(trial)
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise ValueError(
@@ -625,6 +621,7 @@ class ExperimentClient:
         raise_if_unreserved = True
         try:
             self._experiment.update_completed_trial(trial)
+            self._producer.observe(trial)
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise_if_unreserved = False

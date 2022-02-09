@@ -8,46 +8,46 @@ import pytest
 import orion.core.cli
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.worker.consumer import Consumer
-from orion.storage.base import get_storage, setup_storage
+from orion.testing import OrionState
 
 
 def test_interrupt(monkeypatch, capsys):
     """Test interruption from within user script."""
-    setup_storage()
-    storage = get_storage()
+    with OrionState() as cfg:
+        storage = cfg.storage()
 
-    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    user_args = ["-x~uniform(-50, 50, precision=5)"]
+        user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-    error_code = orion.core.cli.main(
-        [
-            "hunt",
-            "--config",
-            "./orion_config.yaml",
-            "--exp-max-trials",
-            "1",
-            "--worker-trials",
-            "1",
-            "python",
-            "black_box.py",
-            "interrupt_trial",
-        ]
-        + user_args
-    )
+        error_code = orion.core.cli.main(
+            [
+                "hunt",
+                "--config",
+                "./orion_config.yaml",
+                "--exp-max-trials",
+                "1",
+                "--worker-trials",
+                "1",
+                "python",
+                "black_box.py",
+                "interrupt_trial",
+            ]
+            + user_args
+        )
 
-    assert error_code == 130
+        assert error_code == 130
 
-    captured = capsys.readouterr()
-    assert captured.out == "Orion is interrupted.\n"
-    assert captured.err == ""
+        captured = capsys.readouterr()
+        assert captured.out == "Orion is interrupted.\n"
+        assert captured.err == ""
 
-    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
-    exp = exp[0]
-    exp_id = exp["_id"]
-    trials = list(storage.fetch_trials(uid=exp_id))
-    assert len(trials) == 1
-    assert trials[0].status == "interrupted"
+        exp = list(storage.fetch_experiments({"name": "voila_voici"}))
+        exp = exp[0]
+        exp_id = exp["_id"]
+        trials = list(storage.fetch_trials(uid=exp_id))
+        assert len(trials) == 1
+        assert trials[0].status == "interrupted"
 
 
 def test_interrupt_diff_code(storage, monkeypatch, capsys):

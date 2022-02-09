@@ -21,6 +21,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
+from orion.storage.base import LockAcquisitionTimeout
 from orion.testing import create_experiment
 
 
@@ -262,7 +263,12 @@ def test_interrupted_scatter_gather_now():
     assert client.status == status, "Trials did not have time to finish"
 
 
-failures = [WaitingForTrials, ReservationRaceCondition, CompletedExperiment]
+failures = [
+    WaitingForTrials,
+    ReservationRaceCondition,
+    CompletedExperiment,
+    LockAcquisitionTimeout,
+]
 
 
 @pytest.mark.parametrize("failure", failures)

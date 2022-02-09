@@ -27,6 +27,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
+from orion.storage.base import LockAcquisitionTimeout
 
 log = logging.getLogger(__name__)
 
@@ -399,6 +400,9 @@ class Runner:
                 break
 
             except ReservationRaceCondition:
+                break
+
+            except LockAcquisitionTimeout:
                 break
 
             except CompletedExperiment:

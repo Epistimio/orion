@@ -128,9 +128,15 @@ def hierarchical_space():
 
 
 @pytest.fixture(scope="function")
-def fixed_suggestion(space):
+def fixed_suggestion_value(space):
     """Return the same trial from a possible space."""
-    return format_trials.tuple_to_trial((("asdfa", 2), 0, 3.5), space)
+    return (("asdfa", 2), 0, 3.5)
+
+
+@pytest.fixture(scope="function")
+def fixed_suggestion(fixed_suggestion_value, space):
+    """Return the same trial from a possible space."""
+    return format_trials.tuple_to_trial(fixed_suggestion_value, space)
 
 
 @pytest.fixture()
