@@ -857,14 +857,16 @@ class TestStorage:
 
             with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
 
+                retry_interval = 0.2
                 sleep_mock = mocker.spy(time, "sleep")
                 with pytest.raises(LockAcquisitionTimeout):
                     with storage.acquire_algorithm_lock(
-                        experiment, timeout=0.2, retry_interval=0.01
+                        experiment, timeout=0.1, retry_interval=retry_interval
                     ):
                         pass
 
-                sleep_mock.assert_called_with(0.01)
+                sleep_mock.assert_called_with(retry_interval)
+                assert sleep_mock.call_count == 1
 
     def test_acquire_algorithm_lock_handle_fail(self, storage):
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
