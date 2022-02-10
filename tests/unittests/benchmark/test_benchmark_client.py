@@ -319,13 +319,13 @@ class TestCreateBenchmark:
             assert bm1.configuration == benchmark_config
             assert bm1.executor.n_workers == orion.core.config.worker.n_workers
             print("n=2")
-            executor = Joblib(n_workers=2, backend="threading")
-            config["executor"] = executor
-            bm2 = get_or_create_benchmark(**config)
+            with Joblib(n_workers=2, backend="threading") as executor:
+                config["executor"] = executor
+                bm2 = get_or_create_benchmark(**config)
 
-            assert bm2.configuration == benchmark_config
-            assert bm2.executor.n_workers == executor.n_workers
-            assert orion.core.config.worker.n_workers != 2
+                assert bm2.configuration == benchmark_config
+                assert bm2.executor.n_workers == executor.n_workers
+                assert orion.core.config.worker.n_workers != 2
 
     def test_experiments_parallel(self, benchmark_config_py, monkeypatch):
         import multiprocessing
