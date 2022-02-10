@@ -444,7 +444,4 @@ class Legacy(BaseStorageProtocol):
             locked_algo_state.reset()
             raise
         finally:
-            # TODO: If the write crashes, we will end up with a deadlock. We should
-            # add a heartbeat, but then if the current process looses the heartbeat it should
-            # not attempt to overwrite the DB. Maybe raise AcquiredLockIsLost
             self.release_algorithm_lock(uid=uid, new_state=locked_algo_state.state)
