@@ -77,9 +77,10 @@ class FakeClient:
         self._free_executor()
 
     def _free_executor(self):
-        self.executor.__exit__(None, None, None)
-        self.executor = None
-        self.executor_owner = False
+        if self.executor is not None:
+            self.executor.__exit__(None, None, None)
+            self.executor = None
+            self.executor_owner = False
 
 
 class InvalidResultClient(FakeClient):
