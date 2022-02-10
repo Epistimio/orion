@@ -62,13 +62,23 @@ class Benchmark:
         self.targets = targets
         self.metadata = {}
         self.storage_config = storage
-        self.executor = executor or executor_factory.create(
-            orion.core.config.worker.executor,
-            n_workers=orion.core.config.worker.n_workers,
-            **orion.core.config.worker.executor_configuration,
-        )
+        self._executor = executor
+        self._executor_owner = False
 
         self.studies = []
+
+    @property
+    def executor(self):
+        """Returns the current executor to use to run jobs in parallel"""
+        if self._executor is None:
+            self._executor_owner = True
+            self._executor = executor_factory.create(
+                orion.core.config.worker.executor,
+                n_workers=orion.core.config.worker.n_workers,
+                **orion.core.config.worker.executor_configuration,
+            )
+
+        return self._executor
 
     def setup_studies(self):
         """Setup studies to run for the benchmark.
@@ -86,8 +96,13 @@ class Benchmark:
 
     def process(self, n_workers=1):
         """Run studies experiment"""
-        for study in self.studies:
-            study.execute(n_workers)
+        if self._executor is None or self._executor_owner:
+            with self.executor:
+                for study in self.studies:
+                    study.execute(n_workers)
+        else:
+            for study in self.studies:
+                study.execute(n_workers)
 
     def status(self, silent=True):
         """Display benchmark status"""
