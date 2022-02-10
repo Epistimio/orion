@@ -148,7 +148,6 @@ def test_stop_after_max_trial_reached():
     runner.client.close()
 
 
-
 def test_interrupted_scatter_gather():
     count = 2
 
@@ -417,6 +416,7 @@ def test_pending_idle_worker():
     ), "LazyWorkers was raised after pending_trials got emptied"
 
     runner.client.close()
+
 
 def test_no_remaining_worker():
     """Runner stops if we have not more trials to run"""
