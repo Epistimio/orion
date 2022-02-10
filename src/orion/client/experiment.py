@@ -802,7 +802,13 @@ class ExperimentClient:
                 **kwargs,
             )
 
-            return runner.run()
+            if self._executor is None or self._executor_owner:
+                with self.executor:
+                    rval = runner.run()
+            else:
+                rval = runner.run()
+
+        return rval
 
     def close(self):
         """Verify that no reserved trials are remaining.
