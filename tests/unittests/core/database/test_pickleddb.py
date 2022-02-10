@@ -71,7 +71,8 @@ class TestConcurreny(object):
 
         assert orion_db.count("concurrent", {"diff": {"$gt": -1}}) == 0
 
-        Pool(10).starmap(write, (("diff", i) for i in range(10)))
+        with Pool(10) as pool:
+            pool.starmap(write, (("diff", i) for i in range(10)))
 
         assert orion_db.count("concurrent", {"diff": {"$gt": -1}}) == 10
 
@@ -81,7 +82,8 @@ class TestConcurreny(object):
 
         assert orion_db.count("concurrent", {"unique": 1}) == 0
 
-        Pool(10).starmap(write, (("unique", 1) for i in range(10)))
+        with Pool(10) as pool:
+            pool.starmap(write, (("unique", 1) for i in range(10)))
 
         assert orion_db.count("concurrent", {"unique": 1}) == 1
 
