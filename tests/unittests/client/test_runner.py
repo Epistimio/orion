@@ -70,6 +70,17 @@ class FakeClient:
         """Fake observe"""
         self.status.append("completed")
 
+    def close(self):
+        self._free_executor()
+
+    def __del__(self):
+        self._free_executor()
+
+    def _free_executor(self):
+        self.executor.__exit__(None, None, None)
+        self.executor = None
+        self.executor_owner = False
+
 
 class InvalidResultClient(FakeClient):
     """Fake client that raise InvalidResult on observe"""
@@ -134,6 +145,8 @@ def test_stop_after_max_trial_reached():
 
     status = ["completed" for i in range(max_trials)]
     assert client.status == status
+    runner.client.close()
+
 
 
 def test_interrupted_scatter_gather():
@@ -172,6 +185,7 @@ def test_interrupted_scatter_gather():
     assert (
         client.status == status
     ), "Trials had time to finish because of the slow gather"
+    runner.client.close()
 
 
 class CustomExceptionForTest(Exception):
@@ -202,6 +216,7 @@ def test_interrupted_scatter_gather_custom_signal():
             Thread(target=interrupt).start()
 
             runner.run()
+    runner.client.close()
 
 
 def test_interrupted_scatter_gather_custom_signal_restore():
@@ -223,6 +238,7 @@ def test_interrupted_scatter_gather_custom_signal_restore():
         # custom signal was restored
         with pytest.raises(CustomExceptionForTest):
             os.kill(os.getpid(), signal.SIGINT)
+    runner.client.close()
 
 
 def test_interrupted_scatter_gather_now():
@@ -261,6 +277,7 @@ def test_interrupted_scatter_gather_now():
     assert elapsed > 0.5 and elapsed < 1, "Stopped right after the 2 interrupts"
     status = ["interrupted" for i in range(count)]
     assert client.status == status, "Trials did not have time to finish"
+    runner.client.close()
 
 
 failures = [
@@ -282,6 +299,8 @@ def test_suggest_failures_are_handled(failure):
     # because not work has been queued for some time
     with pytest.raises(LazyWorkers):
         runner.run()
+
+    runner.client.close()
 
 
 def test_multi_results_with_failure():
@@ -310,6 +329,7 @@ def test_multi_results_with_failure():
 
     status = ["broken" if i % 2 == 1 else "completed" for i in range(count)]
     assert client.status == status
+    runner.client.close()
 
 
 def test_invalid_result_worker():
@@ -322,6 +342,7 @@ def test_invalid_result_worker():
         runner.run()
 
     assert client.status[0] == "broken", "Trial should be set to broken"
+    runner.client.close()
 
 
 def test_idle_worker():
@@ -340,6 +361,7 @@ def test_idle_worker():
 
     elapsed = time.time() - start
     assert int(elapsed - idle_timeout) == 0, "LazyWorkers was raised after idle_timeout"
+    runner.client.close()
 
 
 @pytest.mark.parametrize("method", ["scatter", "gather"])
@@ -364,6 +386,7 @@ def test_idle_worker_slow(method):
 
     # # Should not raise LazyWorkers
     assert runner.run() == len(trials)
+    runner.client.close()
 
 
 def test_pending_idle_worker():
@@ -393,6 +416,7 @@ def test_pending_idle_worker():
         int(elapsed - (pop_time + idle_timeout)) == 0
     ), "LazyWorkers was raised after pending_trials got emptied"
 
+    runner.client.close()
 
 def test_no_remaining_worker():
     """Runner stops if we have not more trials to run"""
@@ -420,6 +444,7 @@ def test_no_remaining_worker():
     assert (
         int(elapsed - pop_time) == 0
     ), "Runner terminated gracefully once max trials was reached"
+    runner.client.close()
 
 
 def test_is_done_worker():
@@ -446,6 +471,7 @@ def test_is_done_worker():
     assert (
         int(elapsed - pop_time) == 0
     ), "Runner terminated gracefully once experiment is done"
+    runner.client.close()
 
 
 def test_should_sample():
@@ -507,405 +533,4 @@ def test_should_sample():
     runner = make_runner(2, 5)
     runner.trials = 5
     assert runner.should_sample() == 0, "The max number of trials was reached"
-
-
-# Those tests cover Client and Workon
-#
-
-
-config = dict(
-    name="supernaekei",
-    space={"x": "uniform(0, 200)"},
-    metadata={
-        "user": "tsirif",
-        "orion_version": "XYZ",
-        "VCS": {
-            "type": "git",
-            "is_dirty": False,
-            "HEAD_sha": "test",
-            "active_branch": None,
-            "diff_sha": "diff",
-        },
-    },
-    version=1,
-    max_trials=10,
-    max_broken=5,
-    working_dir="",
-    algorithms={"random": {"seed": 1}},
-    producer={"strategy": "NoParallelStrategy"},
-    refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
-)
-
-
-base_trial = {
-    "experiment": 0,
-    "status": "new",  # new, reserved, suspended, completed, broken
-    "worker": None,
-    "start_time": None,
-    "end_time": None,
-    "heartbeat": None,
-    "results": [],
-    "params": [],
-}
-
-
-def foo_1(x):
-    return [dict(name="result", type="objective", value=x * 2)]
-
-
-def foo_2(x, y):
-    return [dict(name="result", type="objective", value=x * 2 + y)]
-
-
-default_y = 2
-default_z = "voila"
-
-
-def foo_test_workon_hierarchical_partial_with_override(a, b):
-    assert b["y"] != default_y
-    assert b["z"] == default_z
-    return [dict(name="result", type="objective", value=a["x"] * 2 + b["y"])]
-
-
-def foo_error(x):
-    raise RuntimeError()
-
-
-def foo_maybe_error(x):
-    foo_maybe_error.count += 1
-    if foo_maybe_error.count < 5:
-        raise RuntimeError()
-
-    return [dict(name="result", type="objective", value=x * 2)]
-
-
-foo_maybe_error.count = 0
-
-
-def foo_trial_args(x, my_trial_arg_name):
-    assert isinstance(my_trial_arg_name, Trial)
-    assert my_trial_arg_name.params["x"] == x
-    return [dict(name="result", type="objective", value=x * 2)]
-
-
-def foo_on_error(x, q):
-    if not q.empty():
-        raise q.get()()
-
-    return [dict(name="result", type="objective", value=x * 2)]
-
-
-def foo_reraise(x):
-    raise NotImplementedError("Do not ignore this!")
-
-
-@pytest.mark.usefixtures("version_XYZ")
-class TestWorkon:
-    """Tests for ExperimentClient.workon"""
-
-    def test_workon(self):
-        """Verify that workon processes properly"""
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            client.workon(foo_1, max_trials=5)
-            assert len(experiment.fetch_trials_by_status("completed")) == 5
-            assert client._pacemakers == {}
-
-    def test_workon_partial(self):
-        """Verify that partial is properly passed to the function"""
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            client.workon(foo_2, max_trials=10, y=2)
-            assert len(experiment.fetch_trials()) == 10
-            assert client._pacemakers == {}
-
-    def test_workon_partial_with_override(self):
-        """Verify that partial is overriden by trial.params"""
-
-        ext_config = copy.deepcopy(config)
-        ext_config["space"]["y"] = "uniform(0, 10)"
-
-        with create_experiment(
-            exp_config=ext_config, trial_config=base_trial, statuses=[]
-        ) as (cfg, experiment, client):
-            default_y = 2
-            assert len(experiment.fetch_trials()) == 0
-            client.workon(foo_2, max_trials=1, y=default_y)
-            assert len(experiment.fetch_trials_by_status("completed")) == 1
-            assert experiment.fetch_trials()[0].params["y"] != 2
-
-    def test_workon_hierarchical_partial_with_override(self):
-        """Verify that hierarchical partial is overriden by trial.params"""
-        default_y = 2
-        default_z = "voila"
-
-        ext_config = copy.deepcopy(config)
-        ext_config["space"] = {
-            "a": {"x": "uniform(0, 10, discrete=True)"},
-            "b": {"y": "loguniform(1e-08, 1)"},
-        }
-
-        with create_experiment(
-            exp_config=ext_config, trial_config=base_trial, statuses=[]
-        ) as (cfg, experiment, client):
-            assert len(experiment.fetch_trials()) == 0
-            client.workon(
-                foo_test_workon_hierarchical_partial_with_override,
-                max_trials=5,
-                b={"y": default_y, "z": default_z},
-            )
-            assert len(experiment.fetch_trials_by_status("completed")) == 5
-            params = experiment.fetch_trials()[0].params
-            assert len(params)
-            assert "x" in params["a"]
-            assert "y" in params["b"]
-
-    def test_workon_max_trials(self):
-        """Verify that workon stop when reaching max_trials"""
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            MAX_TRIALS = 5
-            assert client.max_trials > MAX_TRIALS
-            client.workon(foo_1, max_trials=MAX_TRIALS)
-            assert len(experiment.fetch_trials_by_status("completed")) == MAX_TRIALS
-
-    def test_workon_max_trials_resumed(self):
-        """Verify that workon stop when reaching max_trials after resuming"""
-
-        with create_experiment(
-            config, base_trial, statuses=["completed", "completed"]
-        ) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            MAX_TRIALS = 5
-            assert client.max_trials > MAX_TRIALS
-            assert len(experiment.fetch_trials_by_status("completed")) == 2
-            client.workon(foo_1, max_trials=MAX_TRIALS)
-            assert len(experiment.fetch_trials_by_status("completed")) == MAX_TRIALS
-
-    def test_workon_max_trials_per_worker(self):
-        """Verify that workon stop when reaching max_trials_per_worker"""
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            MAX_TRIALS = 5
-            assert client.max_trials > MAX_TRIALS
-            executed = client.workon(
-                foo_1, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS - 1
-            )
-            assert executed == MAX_TRIALS - 1
-            assert len(experiment.fetch_trials_by_status("completed")) == MAX_TRIALS - 1
-
-    def test_workon_max_trials_per_worker_resumed(self):
-        """Verify that workon stop when reaching max_trials_per_worker after resuming"""
-
-        n_completed = 2
-        statuses = ["completed"] * n_completed + ["new"]
-        n_trials = len(statuses)
-
-        with create_experiment(config, base_trial, statuses=statuses) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            MAX_TRIALS = 9
-            assert client.max_trials > MAX_TRIALS
-            assert len(experiment.fetch_trials_by_status("completed")) == n_completed
-            executed = client.workon(
-                foo_1, max_trials=MAX_TRIALS, max_trials_per_worker=2
-            )
-            assert executed == 2
-            assert (
-                len(experiment.fetch_trials_by_status("completed")) == 2 + n_completed
-            )
-            executed = client.workon(
-                foo_1, max_trials=MAX_TRIALS, max_trials_per_worker=3
-            )
-            assert executed == 3
-            assert (
-                len(experiment.fetch_trials_by_status("completed"))
-                == 3 + 2 + n_completed
-            )
-
-    def test_workon_exp_max_broken_before_worker_max_broken(self):
-        """Verify that workon stop when reaching exp.max_broken"""
-
-        MAX_TRIALS = 5
-        MAX_BROKEN = 20
-        test_config = copy.deepcopy(config)
-        test_config["max_broken"] = MAX_BROKEN // 2
-
-        with create_experiment(test_config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            with pytest.raises(BrokenExperiment):
-                client.workon(foo_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
-            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
-            n_trials = len(experiment.fetch_trials())
-            assert n_broken_trials == MAX_BROKEN // 2
-            assert n_trials - n_broken_trials < MAX_TRIALS
-
-    def test_workon_max_broken_all_broken(self):
-        """Verify that workon stop when reaching worker's max_broken"""
-
-        MAX_TRIALS = 5
-        MAX_BROKEN = 10
-
-        test_config = copy.deepcopy(config)
-        test_config["max_broken"] = MAX_BROKEN * 2
-
-        with create_experiment(test_config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            with pytest.raises(BrokenExperiment):
-                client.workon(foo_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
-            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
-            n_trials = len(experiment.fetch_trials())
-            assert n_broken_trials == MAX_BROKEN
-            assert n_trials - n_broken_trials < MAX_TRIALS
-
-    def test_workon_max_trials_before_max_broken(self):
-        """Verify that workon stop when reaching max_trials before max_broken"""
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-
-            MAX_TRIALS = 5
-            MAX_BROKEN = 10
-            assert client.max_trials > MAX_TRIALS
-            client.workon(foo_maybe_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
-            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
-            n_trials = len(experiment.fetch_trials())
-            assert n_broken_trials < MAX_BROKEN
-            assert n_trials - n_broken_trials == MAX_TRIALS
-
-    def test_workon_trial_arg(self):
-        """Verify that workon pass trial when trial_arg is defined"""
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            client.workon(foo_trial_args, max_trials=5, trial_arg="my_trial_arg_name")
-            assert len(experiment.fetch_trials()) == 5
-
-    def test_workon_on_error_ignore(self):
-        """Verify that workon on_error callback ignores some errors correctly"""
-
-        def on_error(client, trial, error, worker_broken_trials):
-            assert on_error.counter == worker_broken_trials
-            if isinstance(error, (IndexError, IOError, AttributeError)):
-                client.release(trial, "cancelled")
-                return False
-
-            on_error.counter += 1
-            return True
-
-        on_error.counter = 0
-
-        errors = [
-            IndexError,
-            ValueError,
-            IOError,
-            NotImplementedError,
-            AttributeError,
-            ImportError,
-        ]
-        MAX_TRIALS = 5
-        MAX_BROKEN = len(errors) + 1
-
-        def make_error_queue():
-            from multiprocessing import Manager
-
-            m = Manager()
-            q = m.Queue()
-            for e in errors:
-                q.put(e)
-
-            return m, q
-
-        test_config = copy.deepcopy(config)
-        test_config["max_broken"] = MAX_BROKEN * 2
-
-        manager, errors = make_error_queue()
-
-        with manager, create_experiment(test_config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-
-            client.workon(
-                foo_on_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN, q=errors
-            )
-            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
-            n_trials = len(experiment.fetch_trials())
-            assert n_broken_trials == MAX_BROKEN - 1
-            assert n_trials - n_broken_trials == MAX_TRIALS
-
-    def test_workon_on_error_raise(self):
-        """Verify that workon on_error callback can raise and stop iteration"""
-
-        def on_error(client, trial, error, worker_broken_trials):
-            raise error
-
-        with create_experiment(config, base_trial, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-            with pytest.raises(NotImplementedError) as exc:
-                client.workon(
-                    foo_reraise, max_trials=5, max_broken=5, on_error=on_error
-                )
-
-            assert exc.match("Do not ignore this!")
-
-    def test_parallel_workers(self, monkeypatch):
-        """Test parallel execution with joblib"""
-
-        with create_experiment(exp_config=config, trial_config={}, statuses=[]) as (
-            cfg,
-            experiment,
-            client,
-        ):
-
-            with client.tmp_executor("joblib", n_workers=5, backend="threading"):
-                trials = client.workon(foo_1, max_trials=5, n_workers=2)
-
-            # Because we use 2 workers to complete 5 trials
-            # at some point we are waiting for one worker to finish
-            # instead of keeping that worker idle we queue another
-            # so in case of failure we have a backup worker ready
-            assert trials == 6
-
-            with client.tmp_executor("joblib", n_workers=5, backend="threading"):
-                trials = client.workon(foo_1, max_trials=5, n_workers=3)
-
-            # we are already done
-            assert trials == 0
+    runner.client.close()
