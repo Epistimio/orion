@@ -72,6 +72,7 @@ setup_args = dict(
         ],
     },
     install_requires=[
+        "cloudpickle",
         "dataclasses",
         "PyYAML",
         "pymongo>=3",
