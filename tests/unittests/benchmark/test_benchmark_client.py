@@ -57,7 +57,7 @@ class TestCreateBenchmark:
             with pytest.raises(SingletonNotInstantiatedError):
                 get_storage()
 
-            get_or_create_benchmark(**benchmark_config_py)
+            get_or_create_benchmark(**benchmark_config_py).close()
 
             storage = get_storage()
 
