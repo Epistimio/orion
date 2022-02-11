@@ -190,7 +190,9 @@ class TestCreateBenchmark:
                 benchmark_config_py["algorithms"] = [
                     {"algorithm": {"fake_algorithm": {"seed": 1}}}
                 ]
-                get_or_create_benchmark(**benchmark_config_py).close()
+                # Pass executor to close it properly
+                with Joblib(n_workers=2, backend="threading") as executor:
+                    get_or_create_benchmark(**benchmark_config_py, executor=executor)
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
 
     def test_create_with_deterministic_algorithm(self, benchmark_config_py):
@@ -278,6 +280,7 @@ class TestCreateBenchmark:
         """Test creation from existing db configubenchmark_configre"""
         with OrionState(benchmarks=copy.deepcopy(benchmark_config)):
             bm = get_or_create_benchmark(benchmark_config["name"])
+            bm.close()
             assert bm.configuration == benchmark_config
 
     def test_create_race_condition(
@@ -305,6 +308,7 @@ class TestCreateBenchmark:
                 logging.INFO, logger="orion.benchmark.benchmark_client"
             ):
                 bm = benchmark_client.get_or_create_benchmark(**benchmark_config_py)
+                bm.close()
 
             assert (
                 "Benchmark registration failed. This is likely due to a race condition. "
@@ -322,10 +326,10 @@ class TestCreateBenchmark:
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
             bm1 = get_or_create_benchmark(**config)
+            bm1.close()
 
             assert bm1.configuration == benchmark_config
             assert bm1.executor.n_workers == orion.core.config.worker.n_workers
-            print("n=2")
             with Joblib(n_workers=2, backend="threading") as executor:
                 config["executor"] = executor
                 bm2 = get_or_create_benchmark(**config)
