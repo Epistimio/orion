@@ -81,3 +81,4 @@ def test_simple():
 
     assert len(figures) == len(benchmark.studies)
     assert type(figures[0]) is plotly.graph_objects.Figure
+    benchmark.close()

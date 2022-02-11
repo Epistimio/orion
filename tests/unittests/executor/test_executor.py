@@ -204,5 +204,12 @@ def test_executors_del_does_not_raise(backend):
     # if executor init fails you can get very weird error messages,
     # because of the deleter trying to close unallocated resources.
 
-    klass = type(backend(1))
-    klass.__del__(object())
+    executor = backend(1)
+    if hasattr(executor, "pool"):
+        executor.pool.shutdown()
+        del executor.pool
+    elif hasattr(executor, "client"):
+        executor.client.close()
+        del executor.client
+
+    del executor

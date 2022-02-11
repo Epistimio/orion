@@ -27,6 +27,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
+from orion.storage.base import LockAcquisitionTimeout
 
 log = logging.getLogger(__name__)
 
@@ -228,13 +229,13 @@ class Runner:
 
                     # Scatter the new trials to our free workers
                     with self.stat.time("scatter"):
-                        self.scatter(new_trials)
+                        scattered = self.scatter(new_trials)
 
                     # Gather the results of the workers that have finished
                     with self.stat.time("gather"):
-                        self.gather()
+                        gathered = self.gather()
 
-                    if self.is_idle:
+                    if scattered == 0 and gathered == 0 and self.is_idle:
                         idle_end = time.time()
                         idle_time += idle_end - idle_start
                         idle_start = idle_end
@@ -306,6 +307,7 @@ class Runner:
 
         self.futures.extend(new_futures)
         log.debug("Scheduled new trials")
+        return len(new_futures)
 
     def gather(self):
         """Gather the results from each worker asynchronously"""
@@ -399,6 +401,9 @@ class Runner:
                 break
 
             except ReservationRaceCondition:
+                break
+
+            except LockAcquisitionTimeout:
                 break
 
             except CompletedExperiment:

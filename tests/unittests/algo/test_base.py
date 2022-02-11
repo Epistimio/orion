@@ -45,7 +45,7 @@ def test_state_dict(dumbalgo):
     space.register(dim)
 
     nested_algo = {"DumbAlgo": dict(value=6, scoring=5)}
-    algo = dumbalgo(space, value=1)
+    algo = dumbalgo(space, value=(1, 1))
     algo.suggest(1)
     assert not algo.state_dict["_trials_info"]
     backward.algo_observe(

@@ -674,7 +674,7 @@ class TestSuggest:
 
         def opt_out(num=1):
             """Never suggest a new trial"""
-            return None
+            return []
 
         monkeypatch.setattr(orion.core.config.worker, "reservation_timeout", -1)
 
