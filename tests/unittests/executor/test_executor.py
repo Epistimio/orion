@@ -205,9 +205,11 @@ def test_executors_del_does_not_raise(backend):
     # because of the deleter trying to close unallocated resources.
 
     executor = backend(1)
-    if hasattr(executor, 'pool'):
+    if hasattr(executor, "pool"):
+        executor.pool.shutdown()
         del executor.pool
-    elif hasattr(executor, 'client'):
+    elif hasattr(executor, "client"):
+        executor.client.close()
         del executor.client
 
     del executor
