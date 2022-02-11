@@ -232,6 +232,13 @@ class Benchmark:
 
         return copy.deepcopy(config)
 
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        if self._executor_owner:
+            self._executor.close()
+
 
 class Study:
     """
