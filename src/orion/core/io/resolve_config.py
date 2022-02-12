@@ -189,6 +189,7 @@ def fetch_config(args):
             )
             local_config["worker.max_trials"] = worker_trials
 
+        # TODO: Remove for v0.3
         producer = tmp_config.pop("producer", None)
         if producer is not None:
             log.warning(
@@ -199,6 +200,7 @@ def fetch_config(args):
             )
             local_config["experiment.strategy"] = producer["strategy"]
 
+        # TODO: Remove for v0.3
         producer = tmp_config.get("experiment", {}).pop("producer", None)
         if producer is not None:
             log.warning(

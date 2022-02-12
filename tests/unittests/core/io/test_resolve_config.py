@@ -223,7 +223,6 @@ def test_fetch_config(config_file):
         "max_broken": 5,
         "name": "voila_voici",
         "algorithms": "random",
-        "strategy": "NoParallelStrategy",
     }
 
     assert config == {}
@@ -258,6 +257,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert exp_config.pop("max_broken") == orion.core.config.experiment.max_broken
     assert exp_config.pop("working_dir") == orion.core.config.experiment.working_dir
     assert exp_config.pop("algorithms") == orion.core.config.experiment.algorithms
+    # TODO: Remove for v0.4
     assert exp_config.pop("strategy") == orion.core.config.experiment.strategy
 
     assert exp_config == {}
@@ -279,6 +279,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
         worker_config.pop("reservation_timeout")
         == orion.core.config.worker.reservation_timeout
     )
+    assert worker_config.pop("idle_timeout") == orion.core.config.worker.idle_timeout
     assert (
         worker_config.pop("interrupt_signal_code")
         == orion.core.config.worker.interrupt_signal_code

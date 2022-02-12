@@ -11,6 +11,7 @@ import pytest
 from orion.algo.hyperband import Hyperband, HyperbandBracket, compute_budgets
 from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
+from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, phase
 from orion.testing.trial import compare_trials, create_trial
 
@@ -749,12 +750,22 @@ class TestHyperband:
         mock_samples(hyperband, copy.deepcopy(sample_trials))
 
         # Fill all brackets' first rung
+        first_rung = hyperband.suggest(100)
+        first_bracket_first_rung = first_rung[6:]
+        second_bracket_first_rung = first_rung[3:6]
+        third_bracket_first_rung = first_rung[:3]
 
-        trials = hyperband.suggest(100)
-
-        compare_trials(trials[:3], [create_trial_for_hb((9, i)) for i in range(3)])
-        compare_trials(trials[3:6], [create_trial_for_hb((3, i)) for i in range(3, 6)])
-        compare_trials(trials[6:], [create_trial_for_hb((1, i)) for i in range(6, 15)])
+        compare_trials(
+            first_bracket_first_rung,
+            [create_trial_for_hb((1, i)) for i in range(6, 15)],
+        )
+        compare_trials(
+            second_bracket_first_rung,
+            [create_trial_for_hb((3, i)) for i in range(3, 6)],
+        )
+        compare_trials(
+            third_bracket_first_rung, [create_trial_for_hb((9, i)) for i in range(3)]
+        )
 
         assert hyperband.brackets[0].has_rung_filled(0)
         assert not hyperband.brackets[0].is_ready()
@@ -762,18 +773,22 @@ class TestHyperband:
         assert hyperband.suggest(100) == []
 
         # Observe first bracket first rung
-
-        for i in range(9):
-            hyperband.observe([create_trial_for_hb((1, i + 3 + 3), objective=16 - i)])
+        for i, trial in enumerate(first_bracket_first_rung):
+            trial.status = "completed"
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=16 - i)
+            )
+        hyperband.observe(first_bracket_first_rung)
 
         assert hyperband.brackets[0].is_ready()
         assert not hyperband.brackets[1].is_ready()
         assert not hyperband.brackets[2].is_ready()
 
         # Promote first bracket first rung
-        trials = hyperband.suggest(100)
+        first_bracket_second_rung = hyperband.suggest(100)
         compare_trials(
-            trials, [create_trial_for_hb((3, 3 + 3 + 9 - 1 - i)) for i in range(3)]
+            first_bracket_second_rung,
+            [create_trial_for_hb((3, 3 + 3 + 9 - 1 - i)) for i in range(3)],
         )
 
         assert hyperband.brackets[0].has_rung_filled(1)
@@ -782,18 +797,20 @@ class TestHyperband:
         assert not hyperband.brackets[2].is_ready()
 
         # Observe first bracket second rung
-        for i in range(3):
-            hyperband.observe(
-                [create_trial_for_hb((3, 3 + 3 + 9 - 1 - i), objective=8 - i)]
+        for i, trial in enumerate(first_bracket_second_rung):
+            trial.status = "completed"
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=8 - i)
             )
+        hyperband.observe(first_bracket_second_rung)
 
         assert hyperband.brackets[0].is_ready()
         assert not hyperband.brackets[1].is_ready()
         assert not hyperband.brackets[2].is_ready()
 
         # Promote first bracket second rung
-        trials = hyperband.suggest(100)
-        compare_trials(trials, [create_trial_for_hb((9, 12))])
+        first_bracket_third_rung = hyperband.suggest(100)
+        compare_trials(first_bracket_third_rung, [create_trial_for_hb((9, 12))])
 
         assert hyperband.brackets[0].has_rung_filled(2)
         assert not hyperband.brackets[0].is_ready()
@@ -801,16 +818,20 @@ class TestHyperband:
         assert not hyperband.brackets[2].is_ready()
 
         # Observe second bracket first rung
-        for i in range(3):
-            hyperband.observe([create_trial_for_hb((3, i + 3), objective=8 - i)])
+        for i, trial in enumerate(second_bracket_first_rung):
+            trial.status = "completed"
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=8 - i)
+            )
+        hyperband.observe(second_bracket_first_rung)
 
         assert not hyperband.brackets[0].is_ready()
         assert hyperband.brackets[1].is_ready()
         assert not hyperband.brackets[2].is_ready()
 
         # Promote second bracket first rung
-        trials = hyperband.suggest(100)
-        compare_trials(trials, [create_trial_for_hb((9, 5))])
+        second_bracket_second_rung = hyperband.suggest(100)
+        compare_trials(second_bracket_second_rung, [create_trial_for_hb((9, 5))])
 
         assert not hyperband.brackets[0].is_ready()
         assert hyperband.brackets[1].has_rung_filled(1)
@@ -818,8 +839,12 @@ class TestHyperband:
         assert not hyperband.brackets[2].is_ready()
 
         # Observe third bracket first rung
-        for i in range(3):
-            hyperband.observe([create_trial_for_hb((9, i), objective=3 - i)])
+        for i, trial in enumerate(third_bracket_first_rung):
+            trial.status = "completed"
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=3 - i)
+            )
+        hyperband.observe(third_bracket_first_rung)
 
         assert not hyperband.brackets[0].is_ready(2)
         assert not hyperband.brackets[1].is_ready(1)
@@ -827,17 +852,18 @@ class TestHyperband:
         assert hyperband.brackets[2].is_done
 
         # Observe second bracket second rung
-        for i in range(1):
-            hyperband.observe(
-                [create_trial_for_hb((9, 3 + 3 - 1 - i), objective=5 - i)]
+        for i, trial in enumerate(second_bracket_second_rung):
+            trial.status = "completed"
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=5 - i)
             )
+        hyperband.observe(second_bracket_second_rung)
 
         assert not hyperband.brackets[0].is_ready(2)
         assert hyperband.brackets[1].is_ready(1)
         assert hyperband.brackets[1].is_done
 
-        # Observe first bracket third rung
-        hyperband.observe(trials)
+        hyperband.observe(first_bracket_third_rung)
 
         assert hyperband.is_done
         assert hyperband.brackets[0].is_done
@@ -965,7 +991,7 @@ class TestGenericHyperband(BaseAlgoTests):
         if num == 0:
             return
 
-        repetition_id, rung_id = self.infer_repetition_and_rung(num)
+        repetition_id, rung_id = self.infer_repetition_and_rung(num - 1)
 
         brackets = algo.algorithm.brackets
 

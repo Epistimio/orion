@@ -192,8 +192,10 @@ class Hyperband(BaseAlgorithm):
                 params={self.fidelity_index: bracket.rungs[0]["resources"]}
             )
 
-            full_id = self.get_id(trial, ignore_fidelity=False)
-            id_wo_fidelity = self.get_id(trial, ignore_fidelity=True)
+            full_id = self.get_id(trial, ignore_fidelity=False, ignore_parent=False)
+            id_wo_fidelity = self.get_id(
+                trial, ignore_fidelity=True, ignore_parent=True
+            )
 
             bracket_id = self.trial_to_brackets.get(id_wo_fidelity, None)
             if bracket_id is not None:
@@ -262,7 +264,7 @@ class Hyperband(BaseAlgorithm):
 
     def register_samples(self, bracket, samples):
         for sample in samples:
-            full_id = self.get_id(sample, ignore_fidelity=False)
+            full_id = self.get_id(sample, ignore_fidelity=False, ignore_parent=False)
             if self.has_observed(sample):
                 raise RuntimeError(
                     "Hyperband resampling a trial that was already completed. "
@@ -273,9 +275,12 @@ class Hyperband(BaseAlgorithm):
             self.register(sample)
             bracket.register(sample)
 
-            if self.get_id(sample, ignore_fidelity=True) not in self.trial_to_brackets:
+            if (
+                self.get_id(sample, ignore_fidelity=True, ignore_parent=True)
+                not in self.trial_to_brackets
+            ):
                 self.trial_to_brackets[
-                    self.get_id(sample, ignore_fidelity=True)
+                    self.get_id(sample, ignore_fidelity=True, ignore_parent=True)
                 ] = self.brackets.index(bracket)
 
     def promote(self, num):
@@ -340,7 +345,7 @@ class Hyperband(BaseAlgorithm):
                 self.space.cardinality,
             )
         else:
-            logger.warning(
+            logger.debug(
                 f"{self.__class__.__name__} cannot suggest new samples and must wait "
                 "for trials to complete."
             )
@@ -384,7 +389,7 @@ class Hyperband(BaseAlgorithm):
 
     def _get_bracket(self, trial):
         """Get the bracket of a trial"""
-        _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True)
+        _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True, ignore_parent=True)
         return self.brackets[self.trial_to_brackets[_id_wo_fidelity]]
 
     def observe(self, trials):
@@ -474,7 +479,9 @@ class HyperbandBracket:
     def get_trial_max_resource(self, trial):
         """Return the max resource value that has been tried for a trial"""
         max_resource = 0
-        _id_wo_fidelity = self.hyperband.get_id(trial, ignore_fidelity=True)
+        _id_wo_fidelity = self.hyperband.get_id(
+            trial, ignore_fidelity=True, ignore_parent=True
+        )
         for rung in self.rungs:
             if _id_wo_fidelity in rung["results"]:
                 max_resource = rung["resources"]
@@ -511,7 +518,9 @@ class HyperbandBracket:
 
     def register(self, trial):
         """Register a trial in the corresponding rung"""
-        self._get_results(trial)[self.hyperband.get_id(trial, ignore_fidelity=True)] = (
+        self._get_results(trial)[
+            self.hyperband.get_id(trial, ignore_fidelity=True, ignore_parent=True)
+        ] = (
             trial.objective.value if trial.objective else None,
             copy.deepcopy(trial),
         )
@@ -562,7 +571,7 @@ class HyperbandBracket:
         while len(trials) + len(next_rung) < should_have_n_trials:
             objective, trial = rung[i]
             assert objective is not None
-            _id = self.hyperband.get_id(trial, ignore_fidelity=True)
+            _id = self.hyperband.get_id(trial, ignore_fidelity=True, ignore_parent=True)
             if _id not in next_rung:
                 trials.append(trial)
             i += 1

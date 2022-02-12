@@ -20,6 +20,7 @@ from orion.algo.space import (
     check_random_state,
 )
 from orion.core.utils import format_trials
+from orion.core.worker.transformer import Precision
 from orion.core.worker.trial import Trial
 
 
@@ -207,6 +208,11 @@ class TestDimension(object):
         dim = Dimension("yolo", "reciprocal", 1e-10, 1)
         assert dim.get_prior_string() == "loguniform(1e-10, 1)"
 
+    def test_get_prior_string_normal(self):
+        """Test that special norm prior name is replaced properly."""
+        dim = Dimension("yolo", "norm", 1e-10, 1)
+        assert dim.get_prior_string() == "normal(1e-10, 1)"
+
     def test_prior_name(self):
         """Test prior name is correct in dimension"""
         dim = Dimension("yolo", "reciprocal", 1e-10, 1)
@@ -231,6 +237,16 @@ class TestDimension(object):
 
 class TestReal(object):
     """Test methods of a `Real` object."""
+
+    def test_get_prior_string_precision(self):
+        """Test that precision is included."""
+        dim = Real("yolo", "uniform", 1, 2, precision=5)
+        assert dim.get_prior_string() == "uniform(1, 3, precision=5)"
+
+    def test_get_prior_string_no_precision(self):
+        """Test that default precision is not included."""
+        dim = Real("yolo", "uniform", 1, 2, precision=4)
+        assert dim.get_prior_string() == "uniform(1, 3)"
 
     def test_simple_instance(self, seed):
         """Test Real.__init__."""
@@ -671,6 +687,16 @@ class TestFidelity(object):
         assert dim.type == "fidelity"
         assert dim.shape is None
 
+    def test_fidelity_omit_base(self):
+        """Test that default base is not included."""
+        dim = Fidelity("epoch", 1, 2, base=2)
+        assert dim.get_prior_string() == "fidelity(1, 2)"
+
+    def test_fidelity_set_base(self):
+        """Test that base is included."""
+        dim = Fidelity("epoch", 1, 2, base=3)
+        assert dim.get_prior_string() == "fidelity(1, 2, base=3)"
+
     def test_min_resources(self):
         """Test that an error is raised if min is smaller than 1"""
         with pytest.raises(AttributeError) as exc:
@@ -960,7 +986,7 @@ class TestSpace(object):
         assert space.configuration == {
             "yolo1": "uniform(-3, 3, shape=(2,), discrete=True)",
             "yolo2": "uniform(-3, 3, shape=(2,), discrete=True)",
-            "yolo3": "norm(0.9)",
+            "yolo3": "normal(0.9)",
             "yolo4": "choices(['asdfa', 2])",
         }
 

@@ -88,7 +88,10 @@ def get_or_create_benchmark(
                 "Benchmark registration failed. This is likely due to a race condition. "
                 "Now rolling back and re-attempting building it."
             )
-            get_or_create_benchmark(name, algorithms, targets, storage, executor, debug)
+            benchmark.close()
+            benchmark = get_or_create_benchmark(
+                name, algorithms, targets, storage, executor, debug
+            )
 
     return benchmark
 

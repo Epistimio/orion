@@ -50,7 +50,7 @@ def basic_keys():
 @pytest.fixture
 def to_format():
     """Return a commandline to format"""
-    return "python 1 --arg value --args value1 value2 --boolean"
+    return "python 1 --arg value --args value1 value2 --boolean --a.b 123 --some:weird-arg_name 123"
 
 
 def test_key_to_arg():

@@ -10,6 +10,76 @@ Base executor class for the parallelisation of experiments.
 from orion.core.utils import GenericFactory
 
 
+class ExecutorClosed(Exception):
+    """Raised when submitting to a closed executor"""
+
+
+class AsyncResult:
+    """Result of an async computation"""
+
+    def __init__(self, future, v):
+        self.future = future
+        self.value = v
+
+
+class AsyncException:
+    """Exception raised by a remote worker during computation"""
+
+    def __init__(self, future, exception, traceback):
+        self.future = future
+        self.exception = exception
+        self.traceback = traceback
+
+    @property
+    def value(self):
+        """Raise the exception"""
+        raise self.exception
+
+
+class Future:
+    """Generic Future interface that is used to harmonized different future interface"""
+
+    def get(self, timeout=None):
+        """Return the result when it arrives.
+        If the remote call raised an exception then that exception will be reraised by get().
+
+        Parameters
+        ----------
+        timeout: int
+            time in second to wait, if none will wait forever
+
+        Raises
+        ------
+        multiprocessing.TimeoutError
+            when the timeout expires
+
+        Exception
+            if the remote called raised an exception
+
+        """
+        pass
+
+    def wait(self, timeout=None):
+        """Wait until the result is available or until timeout seconds pass."""
+        pass
+
+    def ready(self):
+        """Return whether the call has completed."""
+        pass
+
+    def successful(self):
+        """Return whether the call completed without raising an exception.
+        Will raise ValueError if the result is not ready.
+
+        Raises
+        ------
+        ValueError
+            if the result is not yet ready
+
+        """
+        pass
+
+
 class BaseExecutor:
     """Base executor class
 
@@ -38,6 +108,25 @@ class BaseExecutor:
         ----------
         futures: `concurrent.futures.Futures` or equivalent interface
             The objects returned by ``submit()`` of the executor.
+
+        """
+        pass
+
+    def async_get(self, futures, timeout=None):
+        """Retrieve futures that completed, removes them from the list of pending futures
+        and return their results
+
+        Parameters
+        ----------
+        futures: `concurrent.futures.Futures` or equivalent interface
+            The objects returned by ``submit()`` of the executor.
+
+        timeout: int
+            time to wait before checking the other future
+
+        Returns
+        -------
+        returns a list of results
 
         """
         pass

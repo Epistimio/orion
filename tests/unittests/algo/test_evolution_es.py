@@ -473,7 +473,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
         if num == 0:
             return
 
-        repetition_id, rung_id = self.infer_repetition_and_rung(num)
+        repetition_id, rung_id = self.infer_repetition_and_rung(num - 1)
 
         brackets = algo.algorithm.brackets
 

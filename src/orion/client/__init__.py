@@ -129,7 +129,8 @@ def build_experiment(
     algorithms: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
-        Parallel strategy to use to parallelize the algorithm.
+        Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
+        directly if it supports it.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
@@ -200,7 +201,7 @@ def build_experiment(
         ``(name, x)`` already has a child ``(name, x+1)``. If you really need to branch from version
         ``x``, give it a new name to branch to with ``branching={'branch_to': <new_name>}``.
     `NotImplementedError`
-        If the algorithm, storage or strategy specified is not properly installed.
+        If the algorithm or storage specified is not properly installed.
 
     """
     if max_idle_time:
@@ -247,9 +248,7 @@ def build_experiment(
                 "repository."
             ) from e
 
-    producer = Producer(experiment)
-
-    return ExperimentClient(experiment, producer, executor, heartbeat)
+    return ExperimentClient(experiment, executor, heartbeat)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
@@ -268,7 +267,6 @@ def get_experiment(name, version=None, mode="r", storage=None):
         'r': read access only
         'w': can read and write to database
         Default is 'r'
-
     storage: dict, optional
         Configuration of the storage backend.
 
@@ -284,7 +282,7 @@ def get_experiment(name, version=None, mode="r", storage=None):
     setup_storage(storage)
     assert mode in set("rw")
     experiment = experiment_builder.load(name, version, mode)
-    return ExperimentClient(experiment, None)
+    return ExperimentClient(experiment)
 
 
 def workon(
@@ -336,7 +334,6 @@ def workon(
             version=1,
             space=space,
             algorithms=algorithms,
-            strategy="NoParallelStrategy",
             max_trials=max_trials,
             max_broken=max_broken,
         )

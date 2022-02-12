@@ -8,7 +8,6 @@ Experiment Version Control
    :maxdepth: 1
    :caption: Modules
 
-   evc/tree
    evc/experiment
    evc/adapters
    evc/conflicts

@@ -9,6 +9,7 @@ import sys
 import textwrap
 
 import orion
+import orion.core
 from orion.core.io.database import DatabaseError
 from orion.core.utils.exceptions import (
     BranchingEvent,
@@ -17,6 +18,8 @@ from orion.core.utils.exceptions import (
     NoConfigurationError,
     NoNameError,
 )
+
+logger = logging.getLogger(__name__)
 
 CLI_DOC_HEADER = "Oríon CLI for asynchronous distributed optimization"
 
@@ -71,6 +74,7 @@ class OrionArgsParser:
             format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
             level=levels.get(verbose, logging.DEBUG),
         )
+        logger.debug("Orion version : %s", orion.core.__version__)
 
         if args["command"] is None:
             self.parser.parse_args(["--help"])

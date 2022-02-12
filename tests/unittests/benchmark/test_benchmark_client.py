@@ -11,6 +11,7 @@ import orion.core
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
+from orion.client import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
@@ -56,7 +57,7 @@ class TestCreateBenchmark:
             with pytest.raises(SingletonNotInstantiatedError):
                 get_storage()
 
-            get_or_create_benchmark(**benchmark_config_py)
+            get_or_create_benchmark(**benchmark_config_py).close()
 
             storage = get_storage()
 
@@ -72,6 +73,7 @@ class TestCreateBenchmark:
         with OrionState(storage=storage):
             config["storage"] = storage
             bm = get_or_create_benchmark(**config)
+            bm.close()
 
             assert bm.storage_config == config["storage"]
 
@@ -86,7 +88,7 @@ class TestCreateBenchmark:
                 "type": "legacy",
                 "database": {"type": "idontexist"},
             }
-            get_or_create_benchmark(**benchmark_config_py)
+            get_or_create_benchmark(**benchmark_config_py).close()
 
         assert "Could not find implementation of Database, type = 'idontexist'" in str(
             exc.value
@@ -104,7 +106,7 @@ class TestCreateBenchmark:
             "database": {"type": "pickleddb", "host": conf_file},
         }
 
-        get_or_create_benchmark(**config)
+        get_or_create_benchmark(**config).close()
 
         storage = get_storage()
 
@@ -114,7 +116,7 @@ class TestCreateBenchmark:
         update_singletons()
         config["storage"] = {"type": "legacy", "database": {"type": "pickleddb"}}
         config["debug"] = True
-        get_or_create_benchmark(**config)
+        get_or_create_benchmark(**config).close()
 
         storage = get_storage()
 
@@ -125,8 +127,10 @@ class TestCreateBenchmark:
         """Test creation with valid configuration"""
         with OrionState():
             bm1 = get_or_create_benchmark(**benchmark_config_py)
+            bm1.close()
 
             bm2 = get_or_create_benchmark("bm00001")
+            bm2.close()
 
             assert bm1.configuration == benchmark_config
 
@@ -137,7 +141,7 @@ class TestCreateBenchmark:
         with OrionState():
             name = "bm00001"
             with pytest.raises(NoConfigurationError) as exc:
-                get_or_create_benchmark(name)
+                get_or_create_benchmark(name).close()
 
             assert "Benchmark {} does not exist in DB".format(name) in str(exc.value)
 
@@ -146,6 +150,7 @@ class TestCreateBenchmark:
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
             bm1 = get_or_create_benchmark(**config)
+            bm1.close()
 
             config = copy.deepcopy(benchmark_config_py)
             config["targets"][0]["assess"] = [AverageResult(2)]
@@ -154,6 +159,7 @@ class TestCreateBenchmark:
                 logging.WARNING, logger="orion.benchmark.benchmark_client"
             ):
                 bm2 = get_or_create_benchmark(**config)
+                bm2.close()
 
             assert bm2.configuration == bm1.configuration
             assert (
@@ -168,6 +174,7 @@ class TestCreateBenchmark:
                 logging.WARNING, logger="orion.benchmark.benchmark_client"
             ):
                 bm3 = get_or_create_benchmark(**config)
+                bm3.close()
 
             assert bm3.configuration == bm1.configuration
             assert (
@@ -183,7 +190,9 @@ class TestCreateBenchmark:
                 benchmark_config_py["algorithms"] = [
                     {"algorithm": {"fake_algorithm": {"seed": 1}}}
                 ]
-                get_or_create_benchmark(**benchmark_config_py)
+                # Pass executor to close it properly
+                with Joblib(n_workers=2, backend="threading") as executor:
+                    get_or_create_benchmark(**benchmark_config_py, executor=executor)
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
 
     def test_create_with_deterministic_algorithm(self, benchmark_config_py):
@@ -195,6 +204,7 @@ class TestCreateBenchmark:
             config = copy.deepcopy(benchmark_config_py)
             config["algorithms"] = algorithms
             bm = get_or_create_benchmark(**config)
+            bm.close()
 
             for study in bm.studies:
                 for status in study.status():
@@ -213,7 +223,7 @@ class TestCreateBenchmark:
                 config["targets"] = [
                     {"assess": [AverageResult(2)], "task": [DummyTask]}
                 ]
-                get_or_create_benchmark(**config)
+                get_or_create_benchmark(**config).close()
 
             assert "type object '{}' has no attribute ".format("DummyTask") in str(
                 exc.value
@@ -224,7 +234,7 @@ class TestCreateBenchmark:
                 config["targets"] = [
                     {"assess": [DummyAssess], "task": [RosenBrock(25, dim=3)]}
                 ]
-                get_or_create_benchmark(**config)
+                get_or_create_benchmark(**config).close()
 
             assert "type object '{}' has no attribute ".format("DummyAssess") in str(
                 exc.value
@@ -238,7 +248,7 @@ class TestCreateBenchmark:
 
         with OrionState(benchmarks=cfg_invalid_assess):
             with pytest.raises(NotImplementedError) as exc:
-                get_or_create_benchmark(benchmark_config["name"])
+                get_or_create_benchmark(benchmark_config["name"]).close()
             assert "Could not find implementation of BenchmarkAssessment" in str(
                 exc.value
             )
@@ -270,6 +280,7 @@ class TestCreateBenchmark:
         """Test creation from existing db configubenchmark_configre"""
         with OrionState(benchmarks=copy.deepcopy(benchmark_config)):
             bm = get_or_create_benchmark(benchmark_config["name"])
+            bm.close()
             assert bm.configuration == benchmark_config
 
     def test_create_race_condition(
@@ -297,6 +308,7 @@ class TestCreateBenchmark:
                 logging.INFO, logger="orion.benchmark.benchmark_client"
             ):
                 bm = benchmark_client.get_or_create_benchmark(**benchmark_config_py)
+                bm.close()
 
             assert (
                 "Benchmark registration failed. This is likely due to a race condition. "
@@ -314,41 +326,70 @@ class TestCreateBenchmark:
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
             bm1 = get_or_create_benchmark(**config)
+            bm1.close()
 
             assert bm1.configuration == benchmark_config
             assert bm1.executor.n_workers == orion.core.config.worker.n_workers
-            print("n=2")
-            executor = Joblib(n_workers=2, backend="threading")
-            config["executor"] = executor
-            bm2 = get_or_create_benchmark(**config)
+            with Joblib(n_workers=2, backend="threading") as executor:
+                config["executor"] = executor
+                bm2 = get_or_create_benchmark(**config)
 
-            assert bm2.configuration == benchmark_config
-            assert bm2.executor.n_workers == executor.n_workers
-            assert orion.core.config.worker.n_workers != 2
+                assert bm2.configuration == benchmark_config
+                assert bm2.executor.n_workers == executor.n_workers
+                assert orion.core.config.worker.n_workers != 2
 
     def test_experiments_parallel(self, benchmark_config_py, monkeypatch):
-        def optimize(*args, **kwargs):
-            optimize.count += 1
-            return 1
+        import multiprocessing
+
+        class FakeFuture:
+            def __init__(self, value):
+                self.value = value
+
+            def wait(self, timeout=None):
+                return
+
+            def ready(self):
+                return True
+
+            def get(self, timeout=None):
+                return self.value
+
+            def successful(self):
+                return True
+
+        count = multiprocessing.Value("i", 0)
+        is_done_value = multiprocessing.Value("i", 0)
+
+        def is_done(self):
+            return count.value > 0
+
+        def submit(*args, c=count, **kwargs):
+            # because worker == 2 only 2 jobs were submitted
+            # we now set is_done to True so when runner checks
+            # for adding more jobs it will stop right away
+            c.value += 1
+            return FakeFuture([dict(name="v", type="objective", value=1)])
 
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
 
-            executor = Joblib(n_workers=5, backend="threading")
-            config["executor"] = executor
-            bm1 = get_or_create_benchmark(**config)
+            with Joblib(n_workers=5, backend="threading") as executor:
+                monkeypatch.setattr(ExperimentClient, "is_done", property(is_done))
+                monkeypatch.setattr(executor, "submit", submit)
 
-            client = bm1.studies[0].experiments_info[0][1]
-            monkeypatch.setattr(client, "_optimize", optimize)
+                config["executor"] = executor
+                bm1 = get_or_create_benchmark(**config)
+                client = bm1.studies[0].experiments_info[0][1]
 
-            optimize.count = 0
-            bm1.process(n_workers=2)
-            assert optimize.count == 2
-            assert executor.n_workers == 5
-            assert orion.core.config.worker.n_workers != 2
+                count.value = 0
+                bm1.process(n_workers=2)
+                assert count.value == 2
+                assert executor.n_workers == 5
+                assert orion.core.config.worker.n_workers != 2
 
-            optimize.count = 0
-            bm1.process(n_workers=3)
-            assert optimize.count == 3
-            assert executor.n_workers == 5
-            assert orion.core.config.worker.n_workers != 3
+                is_done.done = False
+                count.value = 0
+                bm1.process(n_workers=3)
+                assert count.value == 3
+                assert executor.n_workers == 5
+                assert orion.core.config.worker.n_workers != 3

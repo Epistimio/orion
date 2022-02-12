@@ -144,6 +144,13 @@ def process_exp_rm(storage, root):
             node.item.name,
             node.item.version,
         )
+        count = storage.delete_algorithm_lock(uid=node.item.id)
+        logger.debug(
+            "%s algorithm lock for experiment %s-v%d deleted",
+            count,
+            node.item.name,
+            node.item.version,
+        )
         count = storage.delete_experiment(uid=node.item.id)
         logger.debug(
             "%s experiment %s-v%d deleted", count, node.item.name, node.item.version

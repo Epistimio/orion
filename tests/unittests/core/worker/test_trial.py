@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
+import copy
+import os
+
 import bson
 import numpy
 import pytest
@@ -14,7 +17,55 @@ def base_trial():
     y = {"name": "/y", "value": [1, 2], "type": "integer"}
     objective = {"name": "objective", "value": 10, "type": "objective"}
 
-    return Trial(experiment=1, status="completed", params=[x, y], results=[objective])
+    return Trial(
+        experiment=1,
+        status="completed",
+        params=[x, y],
+        results=[objective],
+        exp_working_dir="/some/path",
+    )
+
+
+@pytest.fixture
+def params():
+    return [
+        dict(
+            name="/decoding_layer",
+            type="categorical",
+            value="lstm_with_attention",
+        ),
+        dict(name="/encoding_layer", type="categorical", value="gru"),
+    ]
+
+
+@pytest.fixture
+def trial_config(params):
+    return dict(
+        _id="ebcf6c6c8604f96444af1c3e519aea7f",
+        id_override=None,
+        experiment="supernaedo2-dendi",
+        exp_working_dir=None,
+        status="completed",
+        worker="23415151",
+        submit_time="2017-11-22T23:00:00",
+        start_time=150,
+        end_time="2017-11-23T00:00:00",
+        heartbeat=None,
+        results=[
+            dict(
+                name="objective-name",
+                type="objective",
+                value=2,
+            ),
+            dict(
+                name="gradient-name",
+                type="gradient",
+                value=[-0.1, 2],
+            ),
+        ],
+        params=params,
+        parent=None,
+    )
 
 
 class TestTrial(object):
@@ -31,25 +82,23 @@ class TestTrial(object):
         assert t.end_time is None
         assert t.results == []
         assert t.params == {}
-        assert t.working_dir is None
+        assert t.exp_working_dir is None
 
-    def test_init_full(self, exp_config):
+    def test_init_full(self, trial_config):
         """Initialize with a dictionary with complete specification."""
-        t = Trial(**exp_config[1][1])
-        assert t.experiment == exp_config[1][1]["experiment"]
-        assert t.status == exp_config[1][1]["status"]
-        assert t.worker == exp_config[1][1]["worker"]
-        assert t.submit_time == exp_config[1][1]["submit_time"]
-        assert t.start_time == exp_config[1][1]["start_time"]
-        assert t.end_time == exp_config[1][1]["end_time"]
-        assert (
-            list(map(lambda x: x.to_dict(), t.results)) == exp_config[1][1]["results"]
-        )
-        assert t.results[0].name == exp_config[1][1]["results"][0]["name"]
-        assert t.results[0].type == exp_config[1][1]["results"][0]["type"]
-        assert t.results[0].value == exp_config[1][1]["results"][0]["value"]
-        assert list(map(lambda x: x.to_dict(), t._params)) == exp_config[1][1]["params"]
-        assert t.working_dir is None
+        t = Trial(**trial_config)
+        assert t.experiment == trial_config["experiment"]
+        assert t.status == trial_config["status"]
+        assert t.worker == trial_config["worker"]
+        assert t.submit_time == trial_config["submit_time"]
+        assert t.start_time == trial_config["start_time"]
+        assert t.end_time == trial_config["end_time"]
+        assert list(map(lambda x: x.to_dict(), t.results)) == trial_config["results"]
+        assert t.results[0].name == trial_config["results"][0]["name"]
+        assert t.results[0].type == trial_config["results"][0]["type"]
+        assert t.results[0].value == trial_config["results"][0]["value"]
+        assert list(map(lambda x: x.to_dict(), t._params)) == trial_config["params"]
+        assert t.exp_working_dir is None
 
     def test_higher_shapes_not_ndarray(self):
         """Test that `numpy.ndarray` values are converted to list."""
@@ -111,10 +160,10 @@ class TestTrial(object):
         with pytest.raises(ValueError):
             v.type = "asfda"
 
-    def test_conversion_to_dict(self, exp_config):
+    def test_conversion_to_dict(self, trial_config):
         """Convert to dictionary form for database using ``dict``."""
-        t = Trial(**exp_config[1][1])
-        assert t.to_dict() == exp_config[1][1]
+        t = Trial(**trial_config)
+        assert t.to_dict() == trial_config
 
     def test_build_trials(self, exp_config):
         """Convert to objects form using `Trial.build`."""
@@ -128,25 +177,25 @@ class TestTrial(object):
         assert trials[0]._params[0] == Trial.Param(**exp_config[1][0]["params"][0])
         assert trials[0]._params[1] != Trial.Param(**exp_config[1][0]["params"][0])
 
-    def test_str_trial(self, exp_config):
+    def test_str_trial(self, trial_config):
         """Test representation of `Trial`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**trial_config)
         assert (
             str(t) == "Trial(experiment='supernaedo2-dendi', status='completed', "
             "params=/decoding_layer:lstm_with_attention,/encoding_layer:gru)"
         )
 
-    def test_str_value(self, exp_config):
+    def test_str_value(self, trial_config):
         """Test representation of `Trial.Value`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**trial_config)
         assert (
             str(t._params[1])
             == "Param(name='/encoding_layer', type='categorical', value='gru')"
         )
 
-    def test_invalid_result(self, exp_config):
+    def test_invalid_result(self, trial_config):
         """Test that invalid objectives cannot be set"""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**trial_config)
 
         # Make sure valid ones pass
         t.results = [
@@ -292,9 +341,9 @@ class TestTrial(object):
 
         assert expected == trial.statistics
 
-    def test_params_repr_property(self, exp_config):
+    def test_params_repr_property(self, trial_config):
         """Check property `Trial.params_repr`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**trial_config)
         assert (
             Trial.format_params(t._params)
             == "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
@@ -307,9 +356,9 @@ class TestTrial(object):
         t = Trial()
         assert Trial.format_params(t._params) == ""
 
-    def test_hash_name_property(self, exp_config):
+    def test_hash_name_property(self, trial_config):
         """Check property `Trial.hash_name`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**trial_config)
         assert t.hash_name == "ebcf6c6c8604f96444af1c3e519aea7f"
 
         t = Trial()
@@ -317,49 +366,63 @@ class TestTrial(object):
             t.hash_name
         assert "params" in str(exc.value)
 
-    def test_param_name_property(self, exp_config):
+    def test_param_name_property(self, trial_config):
         """Check property `Trial.hash_params`."""
-        exp_config[1][1]["params"].append(
+        trial_config["params"].append(
             {"name": "/max_epoch", "type": "fidelity", "value": "1"}
         )
-        t1 = Trial(**exp_config[1][1])
-        exp_config[1][1]["params"][-1]["value"] = "2"  # changing the fidelity
-        t2 = Trial(**exp_config[1][1])
+        t1 = Trial(**trial_config)
+        trial_config["params"][-1]["value"] = "2"  # changing the fidelity
+        t2 = Trial(**trial_config)
         assert t1.hash_name != t2.hash_name
         assert t1.hash_params == t2.hash_params
 
-    def test_hash_ignore_experiment(self, exp_config):
+    def test_hash_ignore_experiment(self, trial_config):
         """Check property `Trial.compute_trial_hash(ignore_experiment=True)`."""
-        exp_config[1][1]["params"].append(
+        trial_config["params"].append(
             {"name": "/max_epoch", "type": "fidelity", "value": "1"}
         )
-        t1 = Trial(**exp_config[1][1])
-        exp_config[1][1]["experiment"] = "test"  # changing the experiment name
-        t2 = Trial(**exp_config[1][1])
+        t1 = Trial(**trial_config)
+        trial_config["experiment"] = "test"  # changing the experiment name
+        t2 = Trial(**trial_config)
         assert t1.hash_name != t2.hash_name
         assert t1.hash_params != t2.hash_params
         assert Trial.compute_trial_hash(
             t1, ignore_experiment=True
         ) == Trial.compute_trial_hash(t2, ignore_experiment=True)
 
-    def test_hash_ignore_lie(self, exp_config):
+    def test_hash_ignore_lie(self, trial_config):
         """Check property `Trial.compute_trial_hash(ignore_lie=True)`."""
-        exp_config[1][1]["params"].append(
+        trial_config["params"].append(
             {"name": "/max_epoch", "type": "fidelity", "value": "1"}
         )
-        t1 = Trial(**exp_config[1][1])
+        t1 = Trial(**trial_config)
         # Add a lie
-        exp_config[1][1]["results"].append({"name": "lie", "type": "lie", "value": 1})
-        t2 = Trial(**exp_config[1][1])
+        trial_config["results"].append({"name": "lie", "type": "lie", "value": 1})
+        t2 = Trial(**trial_config)
         assert t1.hash_name != t2.hash_name
         assert t1.hash_params == t2.hash_params
         assert Trial.compute_trial_hash(
             t1, ignore_lie=True
         ) == Trial.compute_trial_hash(t2, ignore_lie=True)
 
-    def test_full_name_property(self, exp_config):
+    def test_hash_ignore_parent(self, trial_config):
+        """Check property `Trial.compute_trial_hash(ignore_parent=True)`."""
+        trial_config["params"].append(
+            {"name": "/max_epoch", "type": "fidelity", "value": "1"}
+        )
+        t1 = Trial(**trial_config)
+        trial_config["parent"] = 0
+        t2 = Trial(**trial_config)
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params == t2.hash_params
+        assert Trial.compute_trial_hash(
+            t1, ignore_parent=True
+        ) == Trial.compute_trial_hash(t2, ignore_parent=True)
+
+    def test_full_name_property(self, trial_config):
         """Check property `Trial.full_name`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**trial_config)
         assert t.full_name == ".decoding_layer:lstm_with_attention-.encoding_layer:gru"
 
         t = Trial()
@@ -375,6 +438,54 @@ class TestTrial(object):
             trial.id == Trial(**bson.BSON.decode(bson.BSON.encode(trial.to_dict()))).id
         )
 
+    def test_equal(self, trial_config):
+        """Check that two trials are equal based on id"""
+
+        trial_config["params"].append(
+            {"name": "/max_epoch", "type": "fidelity", "value": "1"}
+        )
+        t1 = Trial(**trial_config)
+
+        def change_attr(attrname, attrvalue):
+            t2 = Trial(**trial_config)
+            assert t1 == t2
+            setattr(t2, attrname, attrvalue)
+            return t2
+
+        t2 = change_attr("parent", 0)
+        assert t1 != t2
+
+        params = copy.deepcopy(t1._params)
+        params[-1].value = "2"
+        t2 = change_attr("_params", params)
+        assert t1 != t2
+
+        t2 = change_attr("exp_working_dir", "whatever")
+        assert t1 == t2
+
+        t2 = change_attr("status", "broken")
+        assert t1 == t2
+
+    def test_no_exp_working_dir(self):
+        trial = Trial()
+
+        with pytest.raises(RuntimeError, match="Cannot infer trial's working_dir"):
+            trial.working_dir
+
+    def test_working_dir(self, tmp_path, params):
+        trial = Trial(experiment=0, exp_working_dir=tmp_path, params=params, parent=1)
+        assert trial.working_dir == os.path.join(tmp_path, trial.id)
+        assert trial.get_working_dir() == os.path.join(tmp_path, trial.id)
+
+        trial._params.append(Trial.Param(name="/epoch", type="fidelity", value=1))
+
+        assert trial.id != trial.hash_params
+        assert trial.get_working_dir(
+            ignore_fidelity=True, ignore_lie=True, ignore_parent=True
+        ) == os.path.join(tmp_path, trial.hash_params)
+
+        assert trial.get_working_dir(ignore_parent=True) != trial.working_dir
+
     def test_branch_empty(self, base_trial):
         """Test that branching with no args is only copying"""
         branched_trial = base_trial.branch()
@@ -386,6 +497,9 @@ class TestTrial(object):
         assert branched_trial.heartbeat is None
         assert branched_trial.params == base_trial.params
         assert branched_trial.objective is None
+        assert branched_trial.parent == base_trial.id
+        assert branched_trial.exp_working_dir == base_trial.exp_working_dir
+        assert branched_trial.id != base_trial.id
 
     def test_branch_base_attr(self, base_trial):
         """Test branching with base attributes (not params)"""
@@ -393,6 +507,9 @@ class TestTrial(object):
         assert branched_trial.status != base_trial.status
         assert branched_trial.status == "interrupted"
         assert branched_trial.params == base_trial.params
+        assert branched_trial.parent == base_trial.id
+        assert branched_trial.exp_working_dir == base_trial.exp_working_dir
+        assert branched_trial.id != base_trial.id
 
     def test_branch_params(self, base_trial):
         """Test branching with params"""
@@ -401,6 +518,9 @@ class TestTrial(object):
         assert branched_trial.status == "interrupted"
         assert branched_trial.params != base_trial.params
         assert branched_trial.params == {"/x": [1, 2], "/y": [3, 0]}
+        assert branched_trial.parent == base_trial.id
+        assert branched_trial.exp_working_dir == base_trial.exp_working_dir
+        assert branched_trial.id != base_trial.id
 
     def test_branch_new_params(self, base_trial):
         """Test branching with params that are not in base trial"""

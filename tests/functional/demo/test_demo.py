@@ -543,6 +543,7 @@ def test_run_with_name_only_with_trailing_whitespace(storage, monkeypatch):
     assert len(trials) == 20
 
 
+# TODO: Remove for v0.4
 @pytest.mark.parametrize("strategy", ["MaxParallelStrategy", "MeanParallelStrategy"])
 def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
     """Test hunt can be executed with max parallel strategies"""
@@ -574,7 +575,7 @@ def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
     exp = list(storage.fetch_experiments({"name": "strategy_demo"}))
     assert len(exp) == 1
     exp = exp[0]
-    assert exp["producer"]["strategy"] == {strategy: {"default_result": float("inf")}}
+    assert "producer" not in exp
     assert "_id" in exp
     exp_id = exp["_id"]
     trials = list(storage.fetch_trials(uid=exp_id))
