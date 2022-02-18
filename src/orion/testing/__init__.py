@@ -169,9 +169,7 @@ def create_study_experiments(
             experiment = experiment_builder.build("experiment-name-{}".format(i))
 
             executor = Joblib(n_workers=workers[i], backend="threading")
-            client = ExperimentClient(
-                experiment, executor=executor
-            )
+            client = ExperimentClient(experiment, executor=executor)
             experiments.append(client)
 
         for index, exp in enumerate(experiments):
