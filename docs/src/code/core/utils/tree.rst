@@ -1,5 +1,5 @@
 Generic Tree
 ============
 
-.. automodule:: orion.core.evc.tree
+.. automodule:: orion.core.utils.tree
    :members:

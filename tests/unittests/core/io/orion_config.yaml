@@ -6,8 +6,6 @@ experiment:
 
     algorithms: 'random'
 
-    strategy: NoParallelStrategy
-
 database:
   type: 'mongodb'
   name: 'orion_test'

@@ -9,6 +9,7 @@ Utilities
    utils/format_trials
    utils/format_terminal
    utils/singleton
+   utils/tree
 
 .. automodule:: orion.core.utils
    :members:

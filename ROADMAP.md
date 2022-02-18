@@ -1,25 +1,14 @@
 # Roadmap
-Last update Nov 23rd, 2021
+Last update Feb 11th, 2022
 
 ## Next releases - Short-Term
 
-### v0.2.2
-
-- New master process to enhance parallelisation efficiency.
-- [PBT](https://arxiv.org/abs/1711.09846)
-
 ### v0.2.3
 
-- Use shared algo serialization instead of replications to enhance parallelisation efficiency.
 - [DEBH](https://arxiv.org/abs/2105.09821)
-
-### v0.2.4
-
 - [HEBO](https://github.com/huawei-noah/HEBO/tree/master/HEBO/archived_submissions/hebo)
-
-### v0.2.5
-
 - [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
+- Integration with Hydra
 
 ## Next releases - Mid-Term
 

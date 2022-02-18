@@ -4,7 +4,7 @@ Plotly backend for plotting methods
 
 """
 import functools
-from collections import Iterable
+from collections.abc import Iterable
 
 import numpy
 import pandas as pd

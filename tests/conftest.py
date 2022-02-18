@@ -14,10 +14,12 @@ from pymongo import MongoClient
 import orion.core
 import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 from orion.core.io import resolve_config
 from orion.core.io.database import database_factory
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils import format_trials
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, setup_storage, storage_factory
@@ -75,7 +77,7 @@ class DumbAlgo(BaseAlgorithm):
     def __init__(
         self,
         space,
-        value=5,
+        value=(5,),
         scoring=0,
         judgement=None,
         suspend=False,
@@ -150,6 +152,8 @@ class DumbAlgo(BaseAlgorithm):
                 min(self._index, len(self.possible_values) - 1)
             ]
             self._index += 1
+            if isinstance(self.space, Space) and not isinstance(value, Trial):
+                value = format_trials.tuple_to_trial(value, self.space)
             rval.append(value)
 
         self._suggested = rval

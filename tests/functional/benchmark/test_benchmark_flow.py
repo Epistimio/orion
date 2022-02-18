@@ -88,3 +88,4 @@ def test_simple():
     figures = benchmark.analysis()
 
     assert_benchmark_figures(figures, 4, assessments, tasks)
+    benchmark.close()

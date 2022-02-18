@@ -4,6 +4,7 @@ import copy
 import functools
 import inspect
 import itertools
+import logging
 from collections import defaultdict
 
 import numpy
@@ -13,12 +14,14 @@ import orion.algo.base
 from orion.algo.asha import ASHA
 from orion.algo.gridsearch import GridSearch
 from orion.algo.hyperband import Hyperband
+from orion.algo.parallel_strategy import strategy_factory
 from orion.algo.random import Random
 from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.trial import Trial
 from orion.testing.space import build_space
 
 algorithms = {
@@ -335,7 +338,7 @@ class BaseAlgoTests:
         assert trials[0] in space
         spy.call_count == 1
         self.observe_trials(trials, algo, 1)
-        self.assert_callbacks(spy, num, algo)
+        self.assert_callbacks(spy, num + 1, algo)
 
     def test_configuration(self):
         """Test that configuration property attribute contains all class arguments."""
@@ -406,7 +409,7 @@ class BaseAlgoTests:
         self.force_observe(algo.n_observed, new_algo)
         assert trials[0].id == new_algo.suggest(1)[0].id
 
-        self.assert_callbacks(spy, num, new_algo)
+        self.assert_callbacks(spy, num + 1, new_algo)
 
     @phase
     def test_seed_rng_init(self, mocker, num, attr):
@@ -425,7 +428,7 @@ class BaseAlgoTests:
         self.force_observe(algo.n_observed, new_algo)
         assert new_algo.suggest(1)[0].id == trials[0].id
 
-        self.assert_callbacks(spy, num, new_algo)
+        self.assert_callbacks(spy, num + 1, new_algo)
 
     @phase
     def test_state_dict(self, mocker, num, attr):
@@ -444,7 +447,7 @@ class BaseAlgoTests:
         new_algo.set_state(state)
         assert a.id == new_algo.suggest(1)[0].id
 
-        self.assert_callbacks(spy, num, algo)
+        self.assert_callbacks(spy, num + 1, algo)
 
     @phase
     def test_suggest_n(self, mocker, num, attr):
@@ -548,6 +551,7 @@ class BaseAlgoTests:
         assert algo.n_observed == num
         trials = algo.suggest(1)
         assert algo.n_observed == num
+        assert len(trials) == 1
         self.observe_trials(trials, algo)
         assert algo.n_observed == num + 1
 
@@ -655,3 +659,134 @@ class BaseAlgoTests:
 
         assert algo.is_done
         assert min(objectives) <= 10
+
+
+class BaseParallelStrategyTests:
+    """Generic Test-suite for parallel strategies.
+
+    This test-suite follow the same logic than  BaseAlgoTests, but applied for ParallelStrategy
+    classes.
+    """
+
+    parallel_strategy_name = None
+    config = {}
+    expected_value = None
+    default_value = None
+
+    def create_strategy(self, config=None, **kwargs):
+        """Create the parallel strategy based on config.
+
+        Parameters
+        ----------
+        config: dict, optional
+            The configuration for the parallel strategy. ``self.config`` will be used
+            if ``config`` is ``None``.
+        kwargs: dict
+            Values to override strategy configuration.
+        """
+        config = copy.deepcopy(config or self.config)
+        config.update(kwargs)
+        return strategy_factory.create(**self.config)
+
+    def get_trials(self):
+        """10 objective observations"""
+        trials = []
+        for i in range(10):
+            trials.append(
+                Trial(
+                    params=[{"name": "x", "type": "real", "value": i}],
+                    results=[{"name": "objective", "type": "objective", "value": i}],
+                    status="completed",
+                )
+            )
+
+        return trials
+
+    def get_noncompleted_trial(self, status="reserved"):
+        """Return a single trial without results"""
+        return Trial(
+            params=[{"name": "a", "type": "integer", "value": 6}], status=status
+        )
+
+    def get_corrupted_trial(self):
+        """Return a corrupted trial with results but status reserved"""
+        return Trial(
+            params=[{"name": "a", "type": "integer", "value": 6}],
+            results=[{"name": "objective", "type": "objective", "value": 1}],
+            status="reserved",
+        )
+
+    def test_configuration(self):
+        """Test that configuration property attribute contains all class arguments."""
+        strategy = self.create_strategy()
+        assert strategy.configuration != self.create_strategy(config={})
+        assert strategy.configuration == self.config
+
+    def test_state_dict(self):
+        """Verify state is restored properly"""
+        strategy = self.create_strategy()
+
+        strategy.observe(self.get_trials())
+
+        new_strategy = self.create_strategy()
+        assert strategy.state_dict != new_strategy.state_dict
+
+        new_strategy.set_state(strategy.state_dict)
+        assert strategy.state_dict == new_strategy.state_dict
+
+        noncompleted_trial = self.get_noncompleted_trial()
+
+        if strategy.infer(noncompleted_trial) is None:
+            assert strategy.infer(noncompleted_trial) == new_strategy.infer(
+                noncompleted_trial
+            )
+        else:
+            assert (
+                strategy.infer(noncompleted_trial).objective.value
+                == new_strategy.infer(noncompleted_trial).objective.value
+            )
+
+    def test_infer_no_history(self):
+        """Test that strategy can infer even without having seen trials"""
+        noncompleted_trial = self.get_noncompleted_trial()
+        trial = self.create_strategy().infer(noncompleted_trial)
+        if self.expected_value is None:
+            assert trial is None
+        elif self.default_value is None:
+            assert trial.objective.value == self.expected_value
+        else:
+            assert trial.objective.value == self.default_value
+
+    def test_handle_corrupted_trials(self, caplog):
+        """Test that strategy can handle trials that has objective but status is not
+        properly set to completed."""
+        corrupted_trial = self.get_corrupted_trial()
+        with caplog.at_level(logging.WARNING, logger="orion.algo.parallel_strategy"):
+            trial = self.create_strategy().infer(corrupted_trial)
+
+        match = "Trial `{}` has an objective but status is not completed".format(
+            corrupted_trial.id
+        )
+        assert match in caplog.text
+
+        assert trial is not None
+        assert trial.objective.value == corrupted_trial.objective.value
+
+    def test_handle_noncompleted_trials(self, caplog):
+        with caplog.at_level(logging.WARNING, logger="orion.algo.parallel_strategy"):
+            self.create_strategy().infer(self.get_noncompleted_trial())
+
+        assert (
+            "Trial `{}` has an objective but status is not completed" not in caplog.text
+        )
+
+    def test_strategy_value(self):
+        """Test that ParallelStrategy returns the expected value"""
+        strategy = self.create_strategy()
+        strategy.observe(self.get_trials())
+        trial = strategy.infer(self.get_noncompleted_trial())
+
+        if self.expected_value is None:
+            assert trial is None
+        else:
+            assert trial.objective.value == self.expected_value

@@ -32,9 +32,10 @@ def benchmark(benchmark_algorithms):
 @pytest.fixture
 def study(benchmark, benchmark_algorithms):
     """Return a study instance"""
-    return Study(
-        benchmark, benchmark_algorithms, AverageResult(2), RosenBrock(25, dim=3)
-    )
+    with benchmark.executor:
+        yield Study(
+            benchmark, benchmark_algorithms, AverageResult(2), RosenBrock(25, dim=3)
+        )
 
 
 class TestBenchmark:

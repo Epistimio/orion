@@ -49,6 +49,9 @@ class Gradient_Descent(BaseAlgorithm):
         Save current point and gradient corresponding to this point.
 
         """
+        if trials[-1].status != "completed":
+            return
+
         self.current_point = numpy.asarray(
             format_trials.trial_to_tuple(trials[-1], self.space)
         )

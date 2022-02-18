@@ -63,15 +63,14 @@ def build_experiment_response(
     -------
     A JSON-serializable experiment response object representing the given experiment.
     """
-    return {
+
+    data = {
         "name": experiment.name,
         "version": experiment.version,
         "status": status,
-        "trialsCompleted": experiment.stats["trials_completed"]
-        if experiment.stats
-        else 0,
-        "startTime": str(experiment.stats["start_time"]) if experiment.stats else None,
-        "endTime": str(experiment.stats["finish_time"]) if experiment.stats else None,
+        "trialsCompleted": 0,
+        "startTime": None,
+        "endTime": None,
         "user": experiment.metadata["user"],
         "orionVersion": experiment.metadata["orion_version"],
         "config": {
@@ -82,6 +81,14 @@ def build_experiment_response(
         },
         "bestTrial": build_trial_response(best_trial) if best_trial else {},
     }
+
+    stats = experiment.stats
+    if stats:
+        data["trialsCompleted"] = stats.trials_completed
+        data["startTime"] = str(stats.start_time)
+        data["endTime"] = str(stats.finish_time)
+
+    return data
 
 
 def build_experiments_response(experiments: dict):
