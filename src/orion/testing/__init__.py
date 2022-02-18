@@ -170,7 +170,7 @@ def create_study_experiments(
 
             executor = Joblib(n_workers=workers[i], backend="threading")
             client = ExperimentClient(
-                experiment, Producer(experiment), executor=executor
+                experiment, executor=executor
             )
             experiments.append(client)
 

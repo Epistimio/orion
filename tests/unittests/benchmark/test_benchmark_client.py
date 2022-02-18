@@ -355,7 +355,6 @@ class TestCreateBenchmark:
             def get(self, timeout=None):
                 return self.value
 
-
             def successful(self):
                 return True
 
