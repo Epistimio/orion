@@ -84,8 +84,8 @@ class TestAverageResult:
 
         with create_experiment(experiment_config, trial_config, ["completed"]) as (
             _,
-            experiment,
             _,
+            experiment,
         ):
             figure = ar1.analysis("task_name", [(0, experiment)])
 

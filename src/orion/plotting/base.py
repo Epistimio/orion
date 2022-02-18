@@ -273,7 +273,14 @@ def parallel_assessment(experiments, with_evc_tree=True):
         If no experiment is provided.
 
     """
-    return backend.parallel_assessment(experiments, with_evc_tree=with_evc_tree)
+    return backend.regrets(
+        experiments,
+        with_evc_tree=with_evc_tree,
+        order_by="objective",
+        build_frame_fn=backend.build_parallel_frame,
+        return_var=False,
+        title="Parallel Assessment",
+    )
 
 
 def durations(experiments, with_evc_tree=True):
@@ -308,7 +315,14 @@ def durations(experiments, with_evc_tree=True):
         If no experiment is provided.
 
     """
-    return backend.durations(experiments, with_evc_tree=with_evc_tree)
+    return backend.regrets(
+        experiments,
+        with_evc_tree=with_evc_tree,
+        order_by="completed",
+        build_frame_fn=backend.build_durations_frame,
+        return_var=False,
+        title="Time to result",
+    )
 
 
 def regret(
@@ -408,7 +422,11 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
 
     """
     return backend.regrets(
-        experiments, with_evc_tree=with_evc_tree, order_by=order_by, **kwargs
+        experiments,
+        with_evc_tree=with_evc_tree,
+        order_by=order_by,
+        build_frame_fn=backend.build_regrets_frame,
+        return_var=True,
     )
 
 
