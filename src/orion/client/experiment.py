@@ -379,8 +379,10 @@ class ExperimentClient:
             self._experiment.register_trial(trial, status="reserved")
             self._maintain_reservation(trial)
         except DuplicateKeyError as e:
-            message = "A trial with params {} already exist for experiment {}-v{}".format(
-                params, self.name, self.version
+            message = (
+                "A trial with params {} already exist for experiment {}-v{}".format(
+                    params, self.name, self.version
+                )
             )
             raise DuplicateKeyError(message) from e
 

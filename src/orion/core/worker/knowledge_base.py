@@ -14,16 +14,17 @@ log = getLogger(__file__)
 
 
 class AbstractKnowledgeBase(ABC):
-    """ Abstract Base Class for the KnowledgeBase, which currently isn't part of the
+    """Abstract Base Class for the KnowledgeBase, which currently isn't part of the
     Orion codebase.
     """
+
     @abstractmethod
     def get_related_trials(
         self,
         target_experiment: Union[Experiment, ExperimentClient],
         max_trials: int = None,
     ) -> Dict["ExperimentInfo", List[Trial]]:
-        """ Retrieve experiments 'similar' to `target_experiment` and their trials.
+        """Retrieve experiments 'similar' to `target_experiment` and their trials.
 
         When `max_trials` is given, only up to `max_trials` are returned in total for
         all experiments.
@@ -34,7 +35,7 @@ class AbstractKnowledgeBase(ABC):
             The target experiment, or experiment client.
         max_trials : int, optional
             Maximum total number of trials to fetch. By default `None`, in which case
-            all trials from all 'related' experiments are returned. 
+            all trials from all 'related' experiments are returned.
 
         Returns
         -------

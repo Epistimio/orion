@@ -5,17 +5,17 @@ import inspect
 import textwrap
 import warnings
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from logging import getLogger
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, Union
-from contextlib import contextmanager
 
 import numpy as np
+
 from orion.algo.base import BaseAlgorithm, infer_trial_id
 from orion.algo.space import Categorical, Space
 from orion.client import ExperimentClient
-from orion.core.utils.format_trials import trial_to_tuple, tuple_to_trial, dict_to_trial
+from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple, tuple_to_trial
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 
@@ -26,20 +26,19 @@ except ImportError:
 
 from .algo_wrapper import AlgoWrapper, Point, Results
 
-
 log = getLogger(__file__)
 
 from .knowledge_base import AbstractKnowledgeBase
 
 
 class WarmStarteable(ABC):
-    """ Base class for Algorithms which can leverage 'related' past trials to bootstrap
+    """Base class for Algorithms which can leverage 'related' past trials to bootstrap
     their optimization process.
     """
 
     @abstractmethod
     def warm_start(self, warm_start_trials: Dict["ExperimentInfo", List[Trial]]):
-        """ Use the given trials to warm-start the algorithm.
+        """Use the given trials to warm-start the algorithm.
 
         These experiments and their trials were fetched from some knowledge base, and
         are believed to be somewhat similar to the current on-going experiment.
@@ -63,17 +62,18 @@ class WarmStarteable(ABC):
     #     pass
 
 
+from functools import lru_cache, singledispatch
+
 import pkg_resources
 from pkg_resources import EntryPoint
+
 from orion.algo.base import OptimizationAlgorithm
-from functools import lru_cache
-from functools import singledispatch
 
 
 @lru_cache()
 def get_all_algos() -> Dict[str, Type[OptimizationAlgorithm]]:
-    """ Retrieve a dictionary mapping from name to algorithm class.
-    
+    """Retrieve a dictionary mapping from name to algorithm class.
+
     NOTE: Caching this because it's relatively expensive to perform, and because the
     available algos can't possibly change over the course of a run (as far as I can tell).
     """
@@ -147,8 +147,7 @@ def _(algo: Dict[str, Any]) -> bool:
 
 
 class MultiTaskAlgo(AlgoWrapper):
-    """Wrapper that makes the algo "multi-task" by concatenating the task ids to the inputs.
-    """
+    """Wrapper that makes the algo "multi-task" by concatenating the task ids to the inputs."""
 
     def __init__(
         self,
@@ -192,7 +191,9 @@ class MultiTaskAlgo(AlgoWrapper):
         # experiments in the KB, in case some get added in the future?
         max_task_id = self.knowledge_base.n_stored_experiments + 1
         task_label_dimension = Categorical(
-            "task_id", list(range(0, max_task_id)), default_value=0,
+            "task_id",
+            list(range(0, max_task_id)),
+            default_value=0,
         )
         space_without_task_ids = Space(space.copy())
         space_with_task_ids = Space(space.copy())
@@ -259,7 +260,7 @@ class MultiTaskAlgo(AlgoWrapper):
         return self.algorithm.observe(points, results)
 
     def warm_start(self, warm_start_trials: Dict[Mapping, List[Trial]]) -> None:
-        """ Use the given trials to warm-start the algorithm.
+        """Use the given trials to warm-start the algorithm.
 
         These experiments and their trials were fetched from some knowledge base, and
         are believed to be somewhat similar to the current on-going experiment.
@@ -470,7 +471,7 @@ class MultiTaskAlgo(AlgoWrapper):
 
     @contextmanager
     def in_task(self, task_id: int):
-        """ Contextmanager that temporarily changes the value of `self.current_task_id`
+        """Contextmanager that temporarily changes the value of `self.current_task_id`
         to `task_id` and restores the original value after exiting the with block.
         """
         previous_task_id = self.current_task_id

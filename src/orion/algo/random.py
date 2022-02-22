@@ -6,8 +6,10 @@ Random sampler as optimization algorithm
 Draw and deliver samples from prior defined in problem's domain.
 
 """
-import numpy
 from contextlib import contextmanager
+
+import numpy
+
 from orion.algo.base import BaseAlgorithm
 
 

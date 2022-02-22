@@ -183,7 +183,9 @@ def build(name, version=None, branching=None, knowledge_base=None, **config):
         raise NoConfigurationError("No prior found. Please include at least one.")
 
     experiment = create_experiment(
-        mode="x", knowledge_base=knowledge_base, **copy.deepcopy(config),
+        mode="x",
+        knowledge_base=knowledge_base,
+        **copy.deepcopy(config),
     )
 
     if experiment.id is None:

@@ -15,13 +15,10 @@ Examples
 
 """
 import copy
-import hashlib
 import logging
-from abc import ABCMeta, abstractmethod
-
-from orion.algo.space import Fidelity
+from abc import abstractmethod
 from contextlib import contextmanager
-from orion.core.utils import Factory
+
 from orion.core.utils import GenericFactory, format_trials
 
 log = logging.getLogger(__name__)
@@ -129,7 +126,6 @@ class BaseAlgorithm:
 
         .. note:: This methods does nothing if the algorithm is deterministic.
         """
-        pass
 
     @property
     def state_dict(self):
@@ -238,7 +234,6 @@ class BaseAlgorithm:
         New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
         """
-        pass
 
     def observe(self, trials):
         """Observe the `results` of the evaluation of the `trials` in the
@@ -326,7 +321,7 @@ class BaseAlgorithm:
 
     @contextmanager
     def warm_start_mode(self):
-        """ Context manager that is used while using points from similar experiments to
+        """Context manager that is used while using points from similar experiments to
         bootstrap (warm-start) the algorithm.
 
         The idea behing this is that we don't want the algorithm to modify its state the

@@ -145,6 +145,7 @@ def get_algo_requirements(algorithm):
     if isinstance(algorithm, str):
         # TODO: Confusing error when passed an unknown algo!
         from orion.core.worker.multi_task_algo import get_all_algos
+
         algorithm = get_all_algos()[algorithm]
     return dict(
         type_requirement=algorithm.requires_type,

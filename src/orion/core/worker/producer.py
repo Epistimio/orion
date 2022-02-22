@@ -6,16 +6,16 @@ Produce and register samples to try
 Suggest new parameter sets which optimize the objective.
 
 """
-from typing import Optional, List, Dict, Mapping
 import copy
 import logging
+from typing import Dict, List, Mapping, Optional
 
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
+from orion.core.worker.knowledge_base import AbstractKnowledgeBase
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
-from orion.core.worker.knowledge_base import AbstractKnowledgeBase
 
 log = logging.getLogger(__name__)
 

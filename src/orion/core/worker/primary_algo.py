@@ -7,8 +7,10 @@ Performs checks and organizes required transformations of points.
 
 """
 import textwrap
+
 import orion.core.utils.backward as backward
 from orion.core.worker.transformer import build_required_space
+
 from .algo_wrapper import AlgoWrapper
 
 

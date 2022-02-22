@@ -1,22 +1,23 @@
 """ ABC for a wrapper around an Algorithm. """
 from abc import ABC
 from contextlib import contextmanager
-from typing import Optional, List, Dict, Tuple, Union, Any, TypeVar, Generic
+from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar, Union
+
 import numpy as np
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
-
 # Type aliases
 Point = Union[Tuple, List[float], np.ndarray]
 Results = List[Dict]
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
+
 class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
-    """Base class for a Wrapper around an algorithm.
-    """
+    """Base class for a Wrapper around an algorithm."""
+
     def __init__(self, space: Space, **kwargs):
         # NOTE: This field is created automatically in the BaseAlgorithm class.
         self._algorithm: AlgoType
@@ -49,7 +50,9 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """
         _algorithm = getattr(self, "_algorithm", None)
         if _algorithm is not None and value is not _algorithm:
-            raise RuntimeError("Can't change the value of `algorithm` after it's been set!")
+            raise RuntimeError(
+                "Can't change the value of `algorithm` after it's been set!"
+            )
         self._algorithm = value
 
     @property
@@ -62,7 +65,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
             The unwrapped `BaseAlgorithm` instance.
         """
         return self.algorithm.unwrapped
-    
+
     def seed_rng(self, seed: Optional[int]) -> None:
         """Seed the state of the algorithm's random number generator."""
         self.algorithm.seed_rng(seed)
@@ -89,7 +92,9 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """
         return self.algorithm.suggest(num)
 
-    def observe(self, points: List[Union[List, Tuple, np.ndarray]], results: List[Dict]):
+    def observe(
+        self, points: List[Union[List, Tuple, np.ndarray]], results: List[Dict]
+    ):
         """Observe evaluation `results` corresponding to list of `points` in
         space.
 
@@ -148,7 +153,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
 
     @contextmanager
     def warm_start_mode(self):
-        """ Context manager that is used while using points from similar experiments to
+        """Context manager that is used while using points from similar experiments to
         bootstrap (warm-start) the algorithm.
 
         The idea behing this is that we don't want the algorithm to modify its state the
@@ -164,13 +169,12 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
 
     @property
     def trials_info(self) -> Dict[str, Tuple[Point, Results]]:
-        """ "read-only" property for the dict of points/trials of the wrapped algorithm.
-        """
+        """ "read-only" property for the dict of points/trials of the wrapped algorithm."""
         return self._trials_info
 
     @property
     def _trials_info(self) -> Dict[str, Tuple[Point, Results]]:
-        """ Proxy for the `_trials_info` field of the wrapped algorithm.
+        """Proxy for the `_trials_info` field of the wrapped algorithm.
 
         NOTE: Adding this property just to make sure that if an algo wrapper doesn't
         override a BaseAlgorithm method (for example when new methods / properties get
