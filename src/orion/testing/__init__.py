@@ -8,6 +8,7 @@ Common testing support module providing defaults, functions and mocks.
 """
 # pylint: disable=protected-access
 
+import contextlib
 import copy
 import datetime
 import os
@@ -16,9 +17,33 @@ from contextlib import contextmanager
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.producer import Producer
 from orion.testing.state import OrionState
+
+base_experiment = {
+    "name": "default_name",
+    "version": 0,
+    "metadata": {
+        "user": "default_user",
+        "user_script": "abc",
+        "priors": {"x": "uniform(0, 10)"},
+        "datetime": "2017-11-23T02:00:00",
+        "orion_version": "XYZ",
+    },
+    "algorithms": {"random": {"seed": 1}},
+}
+
+base_trial = {
+    "experiment": "default_name",
+    "status": "new",  # new, reserved, suspended, completed, broken
+    "worker": None,
+    "submit_time": "2017-11-23T02:00:00",
+    "start_time": None,
+    "end_time": None,
+    "heartbeat": None,
+    "results": [],
+    "params": [],
+}
 
 
 def default_datetime():
@@ -26,8 +51,16 @@ def default_datetime():
     return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
-def generate_trials(trial_config, statuses, exp_config=None):
+all_status = ["completed", "broken", "reserved", "interrupted", "suspended", "new"]
+
+
+def generate_trials(trial_config=None, statuses=None, exp_config=None, max_attemtps=50):
     """Generate Trials with different configurations"""
+    if trial_config is None:
+        trial_config = base_trial
+
+    if statuses is None:
+        statuses = all_status
 
     def _generate(obj, *args, value):
         if obj is None:
@@ -62,11 +95,25 @@ def generate_trials(trial_config, statuses, exp_config=None):
         space = SpaceBuilder().build({"x": "uniform(0, 200)"})
 
     # make each trial unique
-    for i, trial in enumerate(new_trials):
+    sampled = set()
+    i = 0
+    for trial in new_trials:
         if trial["status"] == "completed":
             trial["results"].append({"name": "loss", "type": "objective", "value": i})
 
-        trial_stub = tuple_to_trial(space.sample(seed=i)[0], space)
+        trial_stub = space.sample(seed=i)[0]
+        attempts = 0
+        while trial_stub.id in sampled and attempts < max_attemtps:
+            trial_stub = space.sample(seed=i)[0]
+            attempts += 1
+            i += 1
+
+        if attempts >= max_attemtps:
+            raise RuntimeError(
+                f"Cannot sample unique trials in less than {max_attemtps}"
+            )
+
+        sampled.add(trial_stub.id)
         trial["params"] = trial_stub.to_dict()["params"]
 
     return new_trials
@@ -127,17 +174,21 @@ def mock_space_iterate(monkeypatch):
     sample = orion.algo.space.Space.sample
 
     def iterate(self, seed, *args, **kwargs):
-        """Return the points with seed value instead of sampling"""
-        points = []
-        for point in sample(self, seed=seed, *args, **kwargs):
-            points.append([seed] * len(point))
-        return points
+        """Return the trials with seed value instead of sampling"""
+        trials = []
+        for trial in sample(self, seed=seed, *args, **kwargs):
+            trials.append(
+                trial.branch(params={param: seed for param in trial.params.keys()})
+            )
+        return trials
 
     monkeypatch.setattr("orion.algo.space.Space.sample", iterate)
 
 
 @contextmanager
-def create_experiment(exp_config=None, trial_config=None, statuses=None, knowledge_base=None):
+def create_experiment(
+    exp_config=None, trial_config=None, statuses=None, knowledge_base=None
+):
     """Context manager for the creation of an ExperimentClient and storage init"""
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")
@@ -155,7 +206,7 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None, knowled
         experiment = experiment_builder.build(name=exp_config["name"])
         if cfg.trials:
             experiment._id = cfg.trials[0]["experiment"]
-        client = ExperimentClient(experiment, Producer(experiment, knowledge_base=knowledge_base))
+        client = ExperimentClient(experiment)
         yield cfg, experiment, client
 
     client.close()
@@ -168,6 +219,15 @@ class MockDatetime(datetime.datetime):
     def utcnow(cls):
         """Return our random/fixed datetime"""
         return default_datetime()
+
+
+@contextlib.contextmanager
+def mocked_datetime(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    with monkeypatch.context() as m:
+        m.setattr(datetime, "datetime", MockDatetime)
+
+        yield MockDatetime
 
 
 class AssertNewFile:

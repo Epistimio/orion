@@ -99,16 +99,16 @@ experiment.plot.partial_dependencies(params=["gamma", "learning_rate"])
 import time
 
 experiment = get_experiment("2-dim-exp", storage=storage)
-start = time.clock()
+start = time.perf_counter()
 fig = experiment.plot.partial_dependencies(n_grid_points=5)
-print(time.clock() - start, "seconds to compute")
+print(time.perf_counter() - start, "seconds to compute")
 fig
 
 #%%
 # With more points the grid is finer.
-start = time.clock()
+start = time.perf_counter()
 fig = experiment.plot.partial_dependencies(n_grid_points=50)
-print(time.clock() - start, "seconds to compute")
+print(time.perf_counter() - start, "seconds to compute")
 fig
 
 #%%
@@ -118,17 +118,17 @@ fig
 # for a small 2-D search space but likely unsufficient for 5 dimensions or more.
 # Here is an example with only 5 samples.
 
-start = time.clock()
+start = time.perf_counter()
 fig = experiment.plot.partial_dependencies(n_samples=5)
-print(time.clock() - start, "seconds to compute")
+print(time.perf_counter() - start, "seconds to compute")
 fig
 
 #%%
 # And now with 200 samples.
 
-start = time.clock()
+start = time.perf_counter()
 fig = experiment.plot.partial_dependencies(n_samples=200)
-print(time.clock() - start, "seconds to compute")
+print(time.perf_counter() - start, "seconds to compute")
 fig
 
 #%%

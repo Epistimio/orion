@@ -12,5 +12,3 @@ Databases
 .. automodule:: orion.core.io.database
    :members:
    :show-inheritance:
-
-

@@ -100,13 +100,9 @@ def fetch_config_from_cmdargs(cmdargs):
         cmdargs_config["worker.max_trials"] = cmdargs.pop("worker_trials")
 
     mappings = dict(
-        experiment=dict(exp_max_broken="max_broken", exp_max_trials="max_trials"),
-        worker=dict(worker_max_broken="max_broken", worker_max_trials="max_trials"),
-    )
-
-    mappings = dict(
         experiment=dict(max_broken="exp_max_broken", max_trials="exp_max_trials"),
         worker=dict(max_broken="worker_max_broken", max_trials="worker_max_trials"),
+        evc=dict(enable="enable_evc"),
     )
 
     global_config = orion.core.config.to_dict()
@@ -193,6 +189,7 @@ def fetch_config(args):
             )
             local_config["worker.max_trials"] = worker_trials
 
+        # TODO: Remove for v0.3
         producer = tmp_config.pop("producer", None)
         if producer is not None:
             log.warning(
@@ -203,6 +200,7 @@ def fetch_config(args):
             )
             local_config["experiment.strategy"] = producer["strategy"]
 
+        # TODO: Remove for v0.3
         producer = tmp_config.get("experiment", {}).pop("producer", None)
         if producer is not None:
             log.warning(
@@ -415,6 +413,13 @@ def infer_versioning_metadata(user_script):
     git_repo = fetch_user_repo(user_script)
     if not git_repo:
         return {}
+    if not git_repo.head.is_valid():
+        logging.warning(
+            f"Repository at {git_repo.git.rev_parse('--show-toplevel')} has an invalid HEAD. "
+            "No commits maybe?"
+        )
+        return {}
+
     vcs = {}
     vcs["type"] = "git"
     vcs["is_dirty"] = git_repo.is_dirty()

@@ -7,6 +7,7 @@ import getpass
 import os
 
 import pytest
+import yaml
 
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
@@ -14,8 +15,9 @@ from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
-from orion.testing import MockDatetime, default_datetime
+from orion.testing import MockDatetime
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, "sample_config.yml")
@@ -125,10 +127,16 @@ def hierarchical_space():
     return space
 
 
-@pytest.fixture(scope="module")
-def fixed_suggestion():
-    """Return the same tuple/sample from a possible space."""
+@pytest.fixture(scope="function")
+def fixed_suggestion_value(space):
+    """Return the same trial from a possible space."""
     return (("asdfa", 2), 0, 3.5)
+
+
+@pytest.fixture(scope="function")
+def fixed_suggestion(fixed_suggestion_value, space):
+    """Return the same trial from a possible space."""
+    return format_trials.tuple_to_trial(fixed_suggestion_value, space)
 
 
 @pytest.fixture()
@@ -147,13 +155,6 @@ def with_user_bouthilx(monkeypatch):
 def with_user_dendi(monkeypatch):
     """Make ``getpass.getuser()`` return ``'dendi'``."""
     monkeypatch.setattr(getpass, "getuser", lambda: "dendi")
-
-
-@pytest.fixture()
-def random_dt(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    monkeypatch.setattr(datetime, "datetime", MockDatetime)
-    return default_datetime()
 
 
 dendi_exp_config = dict(
@@ -194,7 +195,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
             {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "completed",
@@ -215,7 +216,7 @@ dendi_base_trials = [
             },
             {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "completed",
@@ -231,7 +232,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
             {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "new",
@@ -244,7 +245,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
             {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "new",
@@ -261,7 +262,7 @@ dendi_base_trials = [
             },
             {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "interrupted",
@@ -278,7 +279,7 @@ dendi_base_trials = [
             },
             {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "suspended",
@@ -291,7 +292,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
             {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
         ],
-        "parents": [],
+        "parent": None,
     },
 ]
 
@@ -335,6 +336,39 @@ def new_config():
     backward.populate_space(config)
 
     return config
+
+
+@pytest.fixture
+def old_config_with_script_conf(old_config, tmp_path):
+    """Generate a old experiment configuration with a config file"""
+
+    old_config = copy.deepcopy(old_config)
+
+    config_path = tmp_path / "old_config.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump({"config-hp": "uniform(0, 10)", "dropped": "uniform(-1, 5)"}, f)
+    old_config["metadata"]["user_args"] += ["--config", str(config_path)]
+
+    backward.populate_space(old_config, force_update=True)
+
+    return old_config
+
+
+@pytest.fixture
+def new_config_with_script_conf(new_config, tmp_path):
+    """Generate a new experiment configuration with a different config file"""
+
+    new_config = copy.deepcopy(new_config)
+
+    config_path = tmp_path / "new_config.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump({"config-hp": "uniform(0, 5)", "dropped": {"hp": "value"}}, f)
+
+    new_config["metadata"]["user_args"] += ["--config", str(config_path)]
+
+    backward.populate_space(new_config, force_update=True)
+
+    return new_config
 
 
 @pytest.fixture
@@ -410,12 +444,37 @@ def changed_dimension_conflict(old_config, new_config):
 
 
 @pytest.fixture
+def changed_dimension_shape_conflict(old_config, new_config):
+    """Generate a changed shape dimension conflict"""
+    name = "changed_shape"
+    old_prior = "uniform(-10, 10)"
+    new_prior = "uniform(-10, 10, shape=2)"
+    dimension = DimensionBuilder().build(name, old_prior)
+    return conflicts.ChangedDimensionConflict(
+        old_config, new_config, dimension, old_prior, new_prior
+    )
+
+
+@pytest.fixture
 def missing_dimension_conflict(old_config, new_config):
     """Generate a missing dimension conflict"""
     name = "missing"
     prior = "uniform(-10, 10)"
     dimension = DimensionBuilder().build(name, prior)
     return conflicts.MissingDimensionConflict(old_config, new_config, dimension, prior)
+
+
+@pytest.fixture
+def missing_dimension_from_config_conflict(
+    old_config_with_script_conf, new_config_with_script_conf
+):
+    """Generate a missing dimension conflict in the config file"""
+    name = "dropped"
+    prior = "uniform(-1, 5)"
+    dimension = DimensionBuilder().build(name, prior)
+    return conflicts.MissingDimensionConflict(
+        old_config_with_script_conf, new_config_with_script_conf, dimension, prior
+    )
 
 
 @pytest.fixture
@@ -451,14 +510,16 @@ def cli_conflict(old_config, new_config):
     new_config = copy.deepcopy(new_config)
     new_config["metadata"]["user_args"].append("--some-new=args")
     new_config["metadata"]["user_args"].append("--bool-arg")
-    backward.populate_space(new_config)
+    backward.populate_space(new_config, force_update=True)
     return conflicts.CommandLineConflict(old_config, new_config)
 
 
 @pytest.fixture
-def config_conflict(old_config, new_config):
+def config_conflict(old_config_with_script_conf, new_config_with_script_conf):
     """Generate a script config conflict"""
-    return conflicts.ScriptConfigConflict(old_config, new_config)
+    return conflicts.ScriptConfigConflict(
+        old_config_with_script_conf, new_config_with_script_conf
+    )
 
 
 @pytest.fixture

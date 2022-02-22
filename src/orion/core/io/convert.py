@@ -6,7 +6,7 @@ Parse and generate user script's configuration
 Defines and instantiates a converter for configuration file types.
 
 Given a file path infer which configuration file parser/emitter it corresponds to.
-Define `Converter` classes with a common interface for many popular configuration
+Define `BaseConverter` classes with a common interface for many popular configuration
 file types.
 
 Currently supported:
@@ -23,7 +23,7 @@ import os
 from abc import ABC, abstractmethod
 from collections import deque
 
-from orion.core.utils import Factory, nesteddict
+from orion.core.utils import GenericFactory, nesteddict
 
 
 def infer_converter_from_file_type(config_path, regex=None, default_keyword=""):
@@ -31,7 +31,7 @@ def infer_converter_from_file_type(config_path, regex=None, default_keyword=""):
     converter.
     """
     _, ext_type = os.path.splitext(os.path.abspath(config_path))
-    for klass in Converter.types.values():
+    for klass in config_converter_factory.get_classes().values():
         if ext_type in klass.file_extensions:
             return klass()
 
@@ -145,7 +145,7 @@ class GenericConverter(BaseConverter):
     generic text parser, semantics are going to be tied to their consequent
     usage. A template document is going to be created on `parse` and filled
     with values on `read`. This template document consists the state of this
-    `Converter` object.
+    `BaseConverter` object.
 
     Dimension should be defined for instance as:
     ``meaningful_name~uniform(0, 4)``
@@ -228,7 +228,7 @@ class GenericConverter(BaseConverter):
         )
         self.template = substituted
 
-        # Wrap it in style of what the rest of `Converter`s return
+        # Wrap it in style of what the rest of `BaseConverter`s return
         ret_nested = nesteddict()
         for namespace, expression in ret.items():
             keys = namespace.split("/")
@@ -271,19 +271,10 @@ class GenericConverter(BaseConverter):
                 name = namespace[0]
                 unnested_data[self.has_leading.get(name, "") + name] = stuff
 
-        print(self.template)
-        print(unnested_data)
         document = self.template.format(**unnested_data)
 
         with open(filepath, "w") as f:
             f.write(document)
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Converter(BaseConverter, metaclass=Factory):
-    """Class used to inject dependency on a configuration file parser/generator.
-
-    .. seealso:: :class:`orion.core.utils.Factory` metaclass and `BaseConverter` interface.
-    """
-
-    pass
+config_converter_factory = GenericFactory(BaseConverter)

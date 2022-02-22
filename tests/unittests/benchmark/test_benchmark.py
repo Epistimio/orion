@@ -32,9 +32,10 @@ def benchmark(benchmark_algorithms):
 @pytest.fixture
 def study(benchmark, benchmark_algorithms):
     """Return a study instance"""
-    return Study(
-        benchmark, benchmark_algorithms, AverageResult(2), RosenBrock(25, dim=3)
-    )
+    with benchmark.executor:
+        yield Study(
+            benchmark, benchmark_algorithms, AverageResult(2), RosenBrock(25, dim=3)
+        )
 
 
 class TestBenchmark:
@@ -232,6 +233,8 @@ class TestStudy:
             study.execute()
             name = "benchmark007_AverageResult_RosenBrock_0_0"
             experiment = experiment_builder.build(name)
+
+            assert len(experiment.fetch_trials()) == study.task.max_trials
 
             assert experiment is not None
 

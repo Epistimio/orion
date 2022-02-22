@@ -42,7 +42,7 @@ Executor backends
 It is also possible to execute multiple workers using the argument ``--n-workers`` in commandline
 or ``experiment.workon(n_workers)`` using the python API. The workers will work together
 using the same mechanisms explained above, but an
-:class:`orion.executor.base.Executor` backend will be used in addition
+:class:`orion.executor.base.BaseExecutor` backend will be used in addition
 to spawn the workers and maintain them alive. The default backend is :ref:`executor-joblib`.
 
 You can configure it

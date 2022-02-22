@@ -222,6 +222,7 @@ def test_insert_with_version(storage, monkeypatch, script_path):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "experiment",
             "-c",

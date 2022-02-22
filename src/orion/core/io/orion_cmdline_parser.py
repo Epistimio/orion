@@ -24,6 +24,7 @@ from collections import OrderedDict, defaultdict
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
+from orion.core.utils.flatten import flatten
 
 log = logging.getLogger(__name__)
 
@@ -507,7 +508,7 @@ class OrionCmdlineParser:
     def _build_configuration(self, trial):
         configuration = copy.deepcopy(self.parser.arguments)
 
-        for name, value in trial.params.items():
+        for name, value in flatten(trial.params).items():
             name = name.lstrip("/")
             configuration[name] = value
 

@@ -9,16 +9,13 @@ Suggest new parameter sets which optimize the objective.
 from typing import Optional, List, Dict, Mapping
 import copy
 import logging
-import random
-import time
 
-import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
-# from orion.core.worker.knowledge_base import AbstractKnowledgeBase
+from orion.core.worker.knowledge_base import AbstractKnowledgeBase
 
 log = logging.getLogger(__name__)
 
@@ -26,15 +23,13 @@ log = logging.getLogger(__name__)
 class Producer(object):
     """Produce suggested sets of problem's parameter space to try out.
 
-    It uses an `Experiment` object to poll for not yet observed trials which
-    have been already evaluated and to register new suggestions (points of
-    the parameter `Space`) to be evaluated.
+    It uses an `Experiment`s `BaseAlgorithm` object to observe trial results
+    and suggest new trials of the parameter `Space` to be evaluated. The producer
+    is the bridge between the storage and the algorithm.
 
     """
 
-    def __init__(
-        self, experiment, max_idle_time=None, knowledge_base: "KnowledgeBase" = None
-    ):
+    def __init__(self, experiment, knowledge_base: AbstractKnowledgeBase = None):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -42,275 +37,38 @@ class Producer(object):
         """
         log.debug("Creating Producer object.")
         self.experiment = experiment
-        self.space = experiment.space
-        if self.space is None:
-            raise RuntimeError(
-                "Experiment object provided to Producer has not yet completed"
-                " initialization."
-            )
-        self.algorithm = experiment.algorithms
-        if max_idle_time is None:
-            max_idle_time = orion.core.config.worker.max_idle_time
-        self.max_idle_time = max_idle_time
-        self.strategy = experiment.producer["strategy"]
-        """ # BUG: self.strategy is a dict, and some things below don't like it:
-        File "/home/fabrice/repos/orion/src/orion/core/worker/producer.py", line 258, in _update_algorithm
-            self.strategy.observe(points, results)
-        AttributeError: 'dict' object has no attribute 'observe'
-        """
-        if isinstance(self.strategy, dict):
-            from orion.core.io.experiment_builder import _instantiate_strategy
-            self.strategy = _instantiate_strategy(self.strategy)
-        self.naive_algorithm = None
-        # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
-        #       Strategist and Scheduler.
-        self.trials_history = TrialsHistory()
-        self.params_hashes = set()
-        self.naive_trials_history = None
-        self.failure_count = 0
-        self.num_trials = 0
-        self.num_broken = 0
-
-        from orion.core.worker.knowledge_base import AbstractKnowledgeBase
         self.knowledge_base: Optional[AbstractKnowledgeBase] = knowledge_base
         # Indicates wether the algo has been warm-started with the knowledge base.
         self.warm_started = False
 
-    @property
-    def pool_size(self):
-        """Pool-size of the experiment"""
-        return self.experiment.pool_size
+    def observe(self, trial):
+        """Observe a trial to update algorithm's status"""
+        # algorithm = self.experiment.algorithms
+        # if True:
+        with self.experiment.acquire_algorithm_lock() as algorithm:
+            algorithm.observe([trial])
 
-    def backoff(self):
-        """Wait some time and update algorithm."""
-        waiting_time = max(0, random.gauss(1, 0.2))
-        log.info("Waiting %d seconds", waiting_time)
-        time.sleep(waiting_time)
-        log.info("Updating algorithm.")
-        self.update()
-        self.failure_count += 1
-
-    def _sample_guard(self, start):
-        """Check that the time taken sampling is less than max_idle_time"""
-        if time.time() - start > self.max_idle_time:
-            raise SampleTimeout(
-                "Algorithm could not sample new points in less than {} seconds."
-                "Failed to sample points {} times".format(
-                    self.max_idle_time, self.failure_count
-                )
-            )
-
-    @property
-    def is_done(self):
-        """Whether experiment or naive algorithm is done"""
-        return self.experiment.is_done or (
-            self.naive_algorithm is not None and self.naive_algorithm.is_done
-        )
-
-    def suggest(self):
-        """Try suggesting new points with the naive algorithm"""
-        num_pending = self.num_trials - self.num_broken
-        num = max(self.experiment.max_trials - num_pending, 1)
-        return self.naive_algorithm.suggest(num)
-
-    def produce(self):
+    def produce(self, pool_size, timeout=60, retry_interval=1):
         """Create and register new trials."""
-        sampled_points = 0
+        log.debug("### Algorithm attempts suggesting %s new trials.", pool_size)
 
-        # reset the number of time we failed to sample points
-        self.failure_count = 0
-        start = time.time()
+        n_suggested_trials = 0
+        with self.experiment.acquire_algorithm_lock(
+            timeout=timeout, retry_interval=retry_interval
+        ) as algorithm:
+            new_trials = algorithm.suggest(pool_size)
 
-        while sampled_points < self.pool_size and not self.is_done:
-            self._sample_guard(start)
-
-            log.debug("### Algorithm suggests new points.")
-            new_points = self.suggest()
-
-            # Sync state of original algo so that state continues evolving.
-            self.algorithm.set_state(self.naive_algorithm.state_dict)
-
-            if not new_points:
-                if self.algorithm.is_done:
-                    return
-
-                raise WaitingForTrials(
+            if not new_trials and not algorithm.is_done:
+                log.info(
                     "Algo does not have more trials to sample."
                     "Waiting for current trials to finish"
                 )
 
-            registered_trials = self.register_trials(new_points)
-
-            if registered_trials == 0:
-                self.backoff()
-
-            sampled_points += registered_trials
-
-    def register_trials(self, new_points):
-        """Register new sets of sampled parameters into the DB
-        guaranteeing their uniqueness
-        """
-        registered_trials = 0
-        for new_point in new_points:
-            registered_trials += self.register_trial(new_point)
-
-        return registered_trials
-
-    def register_trial(self, new_point):
-        """Register a new set of sampled parameters into the DB
-        guaranteeing their uniqueness
-
-        Parameters
-        ----------
-        new_point: tuple
-            tuple of values representing the hyperparameters values
-
-        """
-        # FIXME: Relying on DB to guarantee uniqueness
-        # when the trial history will be held by that algo we can move that logic out of the DB
-
-        log.debug("#### Convert point to `Trial` object.")
-        new_trial = format_trials.tuple_to_trial(new_point, self.space)
-
-        try:
-            self._prevalidate_trial(new_trial)
-            new_trial.parents = self.naive_trials_history.children
-            log.debug("#### Register new trial to database: %s", new_trial)
-            self.experiment.register_trial(new_trial)
-            self._update_params_hashes([new_trial])
-            return 1
-
-        except DuplicateKeyError:
-            log.debug("#### Duplicate sample: %s", new_trial)
-            return 0
-
-    def _prevalidate_trial(self, new_trial):
-        """Verify if trial is not in parent history"""
-        if (
-            Trial.compute_trial_hash(new_trial, ignore_experiment=True)
-            in self.params_hashes
-        ):
-            raise DuplicateKeyError
-
-    def _update_params_hashes(self, trials):
-        """Register locally all param hashes of trials"""
-        for trial in trials:
-            self.params_hashes.add(
-                Trial.compute_trial_hash(trial, ignore_experiment=True, ignore_lie=True)
-            )
-
-    def update(self):
-        """Pull all trials to update model with completed ones and naive model with non completed
-        ones.
-        """
-        trials = self.experiment.fetch_trials(with_evc_tree=True)
-        self.num_trials = len(trials)
-        self.num_broken = len([trial for trial in trials if trial.status == "broken"])
-
-        if self.knowledge_base and not self.warm_started:
-            # TODO: Dont use the KB when we have enough points in the target task.
-            ## Option 1:
-            # Get the trials from other 'similar' experiments.
-            related_trials: Dict[
-                Mapping, List[Trial]
-            ] = self.knowledge_base.get_related_trials(self.experiment)
-            if related_trials:
-                log.debug("### Warm starting")
-                self.algorithm.warm_start(related_trials)
-                self.warm_started = True
-            # ## Option 2:
-
-            # from orion.client import ExperimentClient
-            # closest_experiment_clients: List[ExperimentClient] = self.knowledge_base.get_closest_experiment_clients(self.experiment)
-
-            # print("Closest experiment clients: ")
-            # for experiment_client in closest_experiment_clients:
-            #     print(f"exp client: {experiment_client}")
-            #     warm_start_trials: List[Trial] = experiment_client.fetch_trials()
-            #     print(f"Found {len(warm_start_trials)} trials.")
-
-        self._update_algorithm(
-            [trial for trial in trials if trial.status == "completed"]
-        )
-        self._update_naive_algorithm(
-            [trial for trial in trials if trial.status != "completed"]
-        )
-
-    def _update_algorithm(self, completed_trials):
-        """Pull newest completed trials to update local model."""
-        log.debug("### Fetch completed trials to observe:")
-
-        new_completed_trials = []
-        for trial in completed_trials:
-            # if trial not in self.trials_history:
-            if not self.algorithm.has_observed(
-                format_trials.trial_to_tuple(trial, self.space)
-            ):
-                new_completed_trials.append(trial)
-
-        log.debug("### %s", new_completed_trials)
-
-        if new_completed_trials:
-            log.debug("### Convert them to list of points and their results.")
-            points = list(
-                map(
-                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                    new_completed_trials,
-                )
-            )
-            results = list(map(format_trials.get_trial_results, new_completed_trials))
-
-            log.debug("### Observe them.")
-            self.trials_history.update(new_completed_trials)
-            self.algorithm.observe(points, results)
-            self.strategy.observe(points, results)
-            self._update_params_hashes(new_completed_trials)
-
-    def _produce_lies(self, incomplete_trials):
-        """Add fake objective results to incomplete trials
-
-        Then register the trials in the db
-        """
-        log.debug("### Fetch active trials to observe:")
-        lying_trials = []
-        log.debug("### %s", incomplete_trials)
-
-        for trial in incomplete_trials:
-            log.debug("### Use defined ParallelStrategy to assign them fake results.")
-            lying_result = self.strategy.lie(trial)
-            if lying_result is not None:
-                lying_trial = copy.deepcopy(trial)
-                lying_trial.results.append(lying_result)
-                lying_trials.append(lying_trial)
-                log.debug("### Register lie to database: %s", lying_trial)
-                lying_trial.parents = self.trials_history.children
+            for new_trial in new_trials:
                 try:
-                    self.experiment.register_lie(lying_trial)
+                    self.experiment.register_trial(new_trial)
+                    n_suggested_trials += 1
                 except DuplicateKeyError:
-                    log.debug(
-                        "#### Duplicate lie. No need to register a duplicate in DB."
-                    )
+                    log.debug("Algo suggested duplicate trial %s", new_trial)
 
-        return lying_trials
-
-    def _update_naive_algorithm(self, incomplete_trials):
-        """Pull all non completed trials to update naive model."""
-        self.naive_algorithm = copy.deepcopy(self.algorithm)
-        self.naive_trials_history = copy.deepcopy(self.trials_history)
-        log.debug("### Create fake trials to observe:")
-        lying_trials = self._produce_lies(incomplete_trials)
-        log.debug("### %s", lying_trials)
-        if lying_trials:
-            log.debug("### Convert them to list of points and their results.")
-            points = list(
-                map(
-                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                    lying_trials,
-                )
-            )
-            results = list(map(format_trials.get_trial_results, lying_trials))
-
-            log.debug("### Observe them.")
-            self.naive_trials_history.update(lying_trials)
-            self.naive_algorithm.observe(points, results)
-            self._update_params_hashes(lying_trials)
+        return n_suggested_trials

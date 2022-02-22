@@ -4,6 +4,7 @@
 
 import copy
 import datetime
+import inspect
 import logging
 import os
 import pickle
@@ -21,15 +22,18 @@ from orion.core.utils.singleton import (
 )
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
+    BaseStorageProtocol,
     FailedUpdate,
+    LockAcquisitionTimeout,
+    LockedAlgorithmState,
     MissingArguments,
-    Storage,
     get_storage,
     setup_storage,
+    storage_factory,
 )
 from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON
-from orion.testing import OrionState
+from orion.testing import OrionState, base_experiment
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
@@ -40,18 +44,6 @@ if not HAS_TRACK:
     log.warning("Track is not tested because: %s!", REASON)
 else:
     storage_backends.append({"type": "track", "uri": "file://${file}?objective=loss"})
-
-base_experiment = {
-    "name": "default_name",
-    "version": 0,
-    "metadata": {
-        "user": "default_user",
-        "user_script": "abc",
-        "priors": {"x": "uniform(0, 10)"},
-        "datetime": "2017-11-23T02:00:00",
-        "orion_version": "XYZ",
-    },
-}
 
 
 base_trial = {
@@ -106,6 +98,7 @@ def make_lost_trial(delay=2):
 all_status = ["completed", "broken", "reserved", "interrupted", "suspended", "new"]
 
 
+# TODO: Reuse the one from orion.testing
 def generate_trials(status=None, heartbeat=None):
     """Generate Trials with different configurations"""
     if status is None:
@@ -136,7 +129,7 @@ def test_setup_storage_default():
     """Test that storage is setup using default config"""
     update_singletons()
     setup_storage()
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
 
@@ -156,7 +149,7 @@ def test_setup_storage_custom():
     setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == os.path.abspath("test.pkl")
@@ -166,7 +159,7 @@ def test_setup_storage_custom_type_missing():
     """Test setup with local configuration with type missing"""
     update_singletons()
     setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == os.path.abspath("test.pkl")
@@ -177,7 +170,7 @@ def test_setup_storage_custom_legacy_emtpy():
     """Test setup with local configuration with legacy but no config"""
     update_singletons()
     setup_storage({"type": "legacy"})
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == orion.core.config.storage.database.host
@@ -189,13 +182,13 @@ def test_setup_storage_bad_override():
     setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
         setup_storage({"type": "track"})
 
-    assert exc.match("A singleton instance of \(type: Storage\)")
+    assert exc.match("A singleton instance of \(type: BaseStorageProtocol\)")
 
 
 @pytest.mark.xfail(reason="Fix this when introducing #135 in v0.2.0")
@@ -203,7 +196,7 @@ def test_setup_storage_bad_config_override():
     """Test setup with different config than existing singleton"""
     update_singletons()
     setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError):
@@ -225,7 +218,9 @@ def test_get_storage_uninitiated():
     with pytest.raises(SingletonNotInstantiatedError) as exc:
         get_storage()
 
-    assert exc.match("No singleton instance of \(type: Storage\) was created")
+    assert exc.match(
+        "No singleton instance of \(type: BaseStorageProtocol\) was created"
+    )
 
 
 def test_get_storage():
@@ -355,22 +350,6 @@ class TestStorage:
 
             with pytest.raises(DuplicateKeyError):
                 storage.register_trial(Trial(**base_trial))
-
-    def test_register_lie(self, storage):
-        """Test register lie"""
-        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.storage()
-            storage.register_lie(Trial(**base_trial))
-
-    def test_register_lie_fail(self, storage):
-        """Test register lie"""
-        with OrionState(
-            experiments=[base_experiment], lies=[base_trial], storage=storage
-        ) as cfg:
-            storage = cfg.storage()
-
-            with pytest.raises(DuplicateKeyError):
-                storage.register_lie(Trial(**cfg.lies[0]))
 
     def test_update_trials(self, storage):
         """Test update many trials"""
@@ -827,3 +806,91 @@ class TestStorage:
             serialized = pickle.dumps(storage)
             deserialized = pickle.loads(serialized)
             assert storage.fetch_experiments({}) == deserialized.fetch_experiments({})
+
+    def test_get_algorithm_lock_info(self, storage):
+        if storage and storage["type"] == "track":
+            pytest.xfail("Track does not support algorithm lock yet.")
+
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
+            storage = cfg.storage()
+
+            experiments = storage.fetch_experiments({})
+
+            algo_state_lock = storage.get_algorithm_lock_info(uid=experiments[0]["_id"])
+            assert isinstance(algo_state_lock, LockedAlgorithmState)
+            assert algo_state_lock.state is None
+            assert algo_state_lock.configuration == experiments[0]["algorithms"]
+
+    def test_delete_algorithm_lock(self, storage):
+        if storage and storage["type"] == "track":
+            pytest.xfail("Track does not support algorithm lock yet.")
+
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
+            storage = cfg.storage()
+
+            experiments = storage.fetch_experiments({})
+
+            assert storage.delete_algorithm_lock(uid=experiments[0]["_id"]) == 1
+            assert storage.get_algorithm_lock_info(uid=experiments[0]["_id"]) is None
+
+    def test_acquire_algorithm_lock_successful(self, storage):
+        if storage and storage["type"] == "track":
+            pytest.xfail("Track does not support algorithm lock yet.")
+
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+
+            with storage.acquire_algorithm_lock(
+                experiment, timeout=0.1
+            ) as locked_algo_state:
+                assert locked_algo_state.state is None
+                locked_algo_state.set_state("my new state")
+
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                assert locked_algo_state.state == "my new state"
+
+    def test_acquire_algorithm_lock_timeout(self, storage, mocker):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+
+                retry_interval = 0.2
+                sleep_mock = mocker.spy(time, "sleep")
+                with pytest.raises(LockAcquisitionTimeout):
+                    with storage.acquire_algorithm_lock(
+                        experiment, timeout=0.05, retry_interval=retry_interval
+                    ):
+                        pass
+
+                # TODO: Add back when PR #791 is merged
+                # assert sleep_mock.call_count == 1
+                # sleep_mock.assert_called_with(retry_interval)
+
+    def test_acquire_algorithm_lock_handle_fail(self, storage):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                assert locked_algo_state.state is None
+                locked_algo_state.set_state("new original state")
+
+            with pytest.raises(RuntimeError):
+                with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                    assert locked_algo_state.state == "new original state"
+                    locked_algo_state.set_state("should not be set")
+                    raise RuntimeError
+
+            with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
+                assert locked_algo_state.state == "new original state"
+
+    def test_acquire_algorithm_lock_not_initialised(self, storage):
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+            experiment._id = "bad id"
+            with pytest.raises(LockAcquisitionTimeout):
+                with storage.acquire_algorithm_lock(experiment, timeout=0.1) as what:
+                    pass

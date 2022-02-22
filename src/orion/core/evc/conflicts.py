@@ -83,10 +83,13 @@ def _build_extended_user_args(config):
     parser = OrionCmdlineParser()
     parser.set_state_dict(config["metadata"]["parser"])
 
-    return user_args + [
-        standard_param_name(key) + value
-        for key, value in parser.config_file_data.items()
-    ]
+    for key, value in parser.config_file_data.items():
+        if not isinstance(value, str) or "~" not in value:
+            continue
+
+        user_args.append(standard_param_name(key) + value)
+
+    return user_args
 
 
 def _build_space(config):
@@ -1169,9 +1172,15 @@ class CodeConflict(Conflict):
         old_hash_commit = old_config["metadata"].get("VCS", None)
         new_hash_commit = new_config["metadata"].get("VCS")
 
-        ignore_code_changes = branching_config is not None and branching_config.get(
-            "ignore_code_changes", False
-        )
+        # Will be overriden by global config if not set in branching_config
+        ignore_code_changes = None
+        # Try using user defined ignore_code_changes
+        if branching_config is not None:
+            ignore_code_changes = branching_config.get("ignore_code_changes", None)
+        # Otherwise use global conf's ignore_code_changes
+        if ignore_code_changes is None:
+            ignore_code_changes = orion.core.config.evc.ignore_code_changes
+
         if ignore_code_changes:
             log.debug("Ignoring code changes")
         if (
@@ -1302,23 +1311,25 @@ class CommandLineConflict(Conflict):
 
     # pylint: disable=unused-argument
     @classmethod
-    def get_nameless_args(
-        cls, config, user_script_config=None, non_monitored_arguments=None, **kwargs
-    ):
+    def get_nameless_args(cls, config, non_monitored_arguments=None, **kwargs):
         """Get user's commandline arguments which are not dimension definitions"""
         # Used python API
         if "parser" not in config["metadata"]:
             return ""
 
-        if user_script_config is None:
+        user_script_config = (
+            config.get("metadata", {}).get("parser", {}).get("config_prefix")
+        )
+        if not user_script_config:
             user_script_config = orion.core.config.worker.user_script_config
+
         if non_monitored_arguments is None:
             non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
 
         log.debug("User script config: %s", user_script_config)
         log.debug("Non monitored arguments: %s", non_monitored_arguments)
 
-        parser = OrionCmdlineParser(user_script_config)
+        parser = OrionCmdlineParser(user_script_config, allow_non_existing_files=True)
         parser.set_state_dict(config["metadata"]["parser"])
         priors = parser.priors_to_normal()
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
@@ -1469,16 +1480,21 @@ class ScriptConfigConflict(Conflict):
 
     # pylint:disable=unused-argument
     @classmethod
-    def get_nameless_config(cls, config, user_script_config=None, **branching_kwargs):
+    def get_nameless_config(cls, config, **branching_kwargs):
         """Get configuration dict of user's script without dimension definitions"""
         # Used python API
         if "parser" not in config["metadata"]:
             return ""
 
-        if user_script_config is None:
+        user_script_config = (
+            config.get("metadata", {}).get("parser", {}).get("config_prefix")
+        )
+        if not user_script_config:
             user_script_config = orion.core.config.worker.user_script_config
 
-        parser = OrionCmdlineParser(user_script_config)
+        log.debug("User script config: %s", user_script_config)
+
+        parser = OrionCmdlineParser(user_script_config, allow_non_existing_files=True)
         parser.set_state_dict(config["metadata"]["parser"])
 
         nameless_config = dict(

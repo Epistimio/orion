@@ -6,18 +6,25 @@ Legacy storage
 Old Storage implementation.
 
 """
+import contextlib
 import datetime
 import json
 import logging
+import pickle
+import time
+
+import bson
 
 import orion.core
 import orion.core.utils.backward as backward
-from orion.core.io.database import Database, OutdatedDatabaseError
+from orion.core.io.database import Database, OutdatedDatabaseError, database_factory
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
     BaseStorageProtocol,
     FailedUpdate,
+    LockAcquisitionTimeout,
+    LockedAlgorithmState,
     MissingArguments,
     get_uid,
 )
@@ -42,7 +49,7 @@ def get_database():
     with the appropriate arguments for the chosen backend
 
     """
-    return Database()
+    return database_factory.create()
 
 
 def setup_database(config=None):
@@ -63,11 +70,7 @@ def setup_database(config=None):
     dbtype = db_opts.pop("type")
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
-    try:
-        Database(of_type=dbtype, **db_opts)
-    except ValueError:
-        if Database().__class__.__name__.lower() != dbtype.lower():
-            raise
+    return database_factory.create(dbtype, **db_opts)
 
 
 class Legacy(BaseStorageProtocol):
@@ -88,7 +91,7 @@ class Legacy(BaseStorageProtocol):
         if database is not None:
             setup_database(database)
 
-        self._db = Database()
+        self._db = database_factory.create()
 
         if setup:
             self._setup_db()
@@ -118,6 +121,8 @@ class Legacy(BaseStorageProtocol):
         self._db.ensure_index("trials", "start_time")
         self._db.ensure_index("trials", [("end_time", Database.DESCENDING)])
 
+        self._db.ensure_index("algo", "experiment")
+
     def create_benchmark(self, config):
         """Insert a new benchmark inside the database"""
         return self._db.write("benchmarks", data=config, query=None)
@@ -128,7 +133,11 @@ class Legacy(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """See :func:`orion.storage.base.BaseStorageProtocol.create_experiment`"""
-        return self._db.write("experiments", data=config, query=None)
+        exp_rval = self._db.write("experiments", data=config, query=None)
+        self.initialize_algorithm_lock(
+            experiment_id=config["_id"], algorithm_config=config.get("algorithms", {})
+        )
+        return exp_rval
 
     def delete_experiment(self, experiment=None, uid=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.delete_experiment`"""
@@ -190,10 +199,6 @@ class Legacy(BaseStorageProtocol):
         if uid is not None:
             where["experiment"] = uid
         return self._db.remove("trials", query=where)
-
-    def register_lie(self, trial):
-        """See :func:`orion.storage.base.BaseStorageProtocol.register_lie`"""
-        return self._db.write("lying_trials", trial.to_dict())
 
     def retrieve_result(self, trial, **kwargs):
         """Do nothing for the legacy backend.
@@ -346,3 +351,97 @@ class Legacy(BaseStorageProtocol):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials_by_status`"""
         query = dict(experiment=experiment._id, status=status)
         return self._fetch_trials(query)
+
+    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+        """See :func:`orion.storage.base.BaseStorageProtocol.initialize_algorithm_lock`"""
+        return self._db.write(
+            "algo",
+            {
+                "experiment": experiment_id,
+                "configuration": algorithm_config,
+                "locked": 0,
+                "state": None,
+                "heartbeat": datetime.datetime.utcnow(),
+            },
+        )
+
+    def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.release_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
+
+        new_data = dict(
+            experiment=uid,
+            locked=0,
+            heartbeat=datetime.datetime.utcnow(),
+        )
+        if new_state is not None:
+            new_data["state"] = pickle.dumps(new_state)
+
+        self._db.read_and_write(
+            "algo",
+            query=dict(experiment=uid, locked=1),
+            data=new_data,
+        )
+
+    def get_algorithm_lock_info(self, experiment=None, uid=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.get_algorithm_lock_info`"""
+        uid = get_uid(experiment, uid)
+        locks = self._db.read("algo", {"experiment": uid})
+
+        if not locks:
+            return None
+
+        algo_state_lock = locks[0]
+        return LockedAlgorithmState(
+            state=pickle.loads(algo_state_lock["state"])
+            if algo_state_lock["state"] is not None
+            else None,
+            configuration=algo_state_lock["configuration"],
+            locked=algo_state_lock["locked"],
+        )
+
+    def delete_algorithm_lock(self, experiment=None, uid=None):
+        """See :func:`orion.storage.base.BaseStorageProtocol.delete_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
+        return self._db.remove("algo", query={"experiment": uid})
+
+    @contextlib.contextmanager
+    def acquire_algorithm_lock(
+        self, experiment=None, uid=None, timeout=60, retry_interval=1
+    ):
+        """See :func:`orion.storage.base.BaseStorageProtocol.acquire_algorithm_lock`"""
+        uid = get_uid(experiment, uid)
+
+        algo_state_lock = None
+        start = time.perf_counter()
+        while algo_state_lock is None and time.perf_counter() - start < timeout:
+            algo_state_lock = self._db.read_and_write(
+                "algo",
+                query=dict(experiment=uid, locked=0),
+                data=dict(
+                    locked=1,
+                    heartbeat=datetime.datetime.utcnow(),
+                ),
+            )
+            if algo_state_lock is None:
+                time.sleep(retry_interval)
+
+        if algo_state_lock is None:
+            raise LockAcquisitionTimeout
+
+        locked_algo_state = LockedAlgorithmState(
+            state=pickle.loads(algo_state_lock["state"])
+            if algo_state_lock["state"] is not None
+            else None,
+            configuration=algo_state_lock["configuration"],
+            locked=True,
+        )
+
+        try:
+            yield locked_algo_state
+        except Exception:
+            # Reset algo to state fetched lock time
+            locked_algo_state.reset()
+            raise
+        finally:
+            self.release_algorithm_lock(uid=uid, new_state=locked_algo_state.state)

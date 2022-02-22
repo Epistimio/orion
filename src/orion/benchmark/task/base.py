@@ -7,10 +7,10 @@ Base definition of Task
 
 from abc import ABC, abstractmethod
 
-from orion.core.utils import Factory
+from orion.core.utils import GenericFactory
 
 
-class BaseTask(ABC):
+class BenchmarkTask(ABC):
     """Base class describing what a task can do.
     A task will define the objective function and search space of it.
 
@@ -59,8 +59,4 @@ class BaseTask(ABC):
         return {self.__class__.__qualname__: self._param_names}
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class BenchmarkTask(BaseTask, metaclass=Factory):
-    """Class used to inject dependency on an task implementation."""
-
-    pass
+bench_task_factory = GenericFactory(BenchmarkTask)

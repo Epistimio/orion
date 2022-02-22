@@ -35,7 +35,8 @@ import numbers
 import numpy
 from scipy.stats import distributions
 
-from orion.core.utils.points import flatten_dims, regroup_dims
+from orion.core.utils import float_to_digits_list, format_trials
+from orion.core.utils.flatten import flatten
 
 logger = logging.getLogger(__name__)
 
@@ -263,12 +264,17 @@ class Dimension:
 
         if self._shape is not None:
             args += ["shape={}".format(self._shape)]
+
         if self.default_value is not self.NO_DEFAULT_VALUE:
             args += ["default_value={}".format(repr(self.default_value))]
 
         prior_name = self._prior_name
         if prior_name == "reciprocal":
             prior_name = "loguniform"
+
+        if prior_name == "norm":
+            prior_name = "normal"
+
         return "{prior_name}({args})".format(
             prior_name=prior_name, args=", ".join(args)
         )
@@ -319,7 +325,7 @@ class Dimension:
         _, _, _, size = self.prior._parse_args_rvs(
             *self._args,  # pylint:disable=protected-access
             size=self._shape,
-            **self._kwargs
+            **self._kwargs,
         )
         return size
 
@@ -418,6 +424,15 @@ class Real(Dimension):
 
         return numpy.all(point_ >= low) and numpy.all(point_ <= high)
 
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        prior_string = super(Real, self).get_prior_string()
+
+        if self.precision != 4:
+            return prior_string[:-1] + f", precision={self.precision})"
+
+        return prior_string
+
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
 
@@ -470,14 +485,61 @@ class Real(Dimension):
         return casted_point
 
     @staticmethod
-    def get_cardinality(shape, interval):
+    def get_cardinality(shape, interval, precision, prior_name):
         """Return the number of all the possible points based and shape and interval"""
-        return numpy.inf
+        if precision is None or prior_name not in ["loguniform", "reciprocal"]:
+            return numpy.inf
+
+        # If loguniform, compute every possible combinations based on precision
+        # for each orders of magnitude.
+
+        def format_number(number):
+            """Turn number into an array of digits, the size of the precision"""
+
+            formated_number = numpy.zeros(precision)
+            digits_list = float_to_digits_list(number)
+            lenght = min(len(digits_list), precision)
+            formated_number[:lenght] = digits_list[:lenght]
+
+            return formated_number
+
+        min_number = format_number(interval[0])
+        max_number = format_number(interval[1])
+
+        # Compute the number of orders of magnitude spanned by lower and upper bounds
+        # (if lower and upper bounds on same order of magnitude, span is equal to 1)
+        lower_order = numpy.floor(numpy.log10(numpy.abs(interval[0])))
+        upper_order = numpy.floor(numpy.log10(numpy.abs(interval[1])))
+        order_span = upper_order - lower_order + 1
+
+        # Total number of possibilities for an order of magnitude
+        full_cardinality = 9 * 10 ** (precision - 1)
+
+        def num_below(number):
+
+            return (
+                numpy.clip(number, a_min=0, a_max=9)
+                * 10 ** numpy.arange(precision - 1, -1, -1)
+            ).sum()
+
+        # Number of values out of lower bound on lowest order of magnitude
+        cardinality_below = num_below(min_number)
+        # Number of values out of upper bound on highest order of magnitude.
+        # Remove 1 to be inclusive.
+        cardinality_above = full_cardinality - num_below(max_number) - 1
+
+        # Full cardinality on all orders of magnitude, minus those out of bounds.
+        cardinality = (
+            full_cardinality * order_span - cardinality_below - cardinality_above
+        )
+        return int(cardinality) ** int(numpy.prod(shape) if shape else 1)
 
     @property
     def cardinality(self):
         """Return the number of all the possible points from Integer `Dimension`"""
-        return Real.get_cardinality(self.shape, self.interval())
+        return Real.get_cardinality(
+            self.shape, self.interval(), self.precision, self._prior_name
+        )
 
 
 class _Discrete(Dimension):
@@ -674,7 +736,7 @@ class Categorical(Dimension):
 
         """
         rng = check_random_state(seed)
-        cat_ndarray = numpy.array(self.categories, dtype=numpy.object)
+        cat_ndarray = numpy.array(self.categories, dtype=object)
         samples = [
             rng.choice(cat_ndarray, p=self._probs, size=self._shape)
             for _ in range(n_samples)
@@ -692,7 +754,7 @@ class Categorical(Dimension):
         :type point: numeric or array-like
 
         """
-        point_ = numpy.asarray(point, dtype=numpy.object)
+        point_ = numpy.asarray(point, dtype=object)
         if point_.shape != self.shape:
             return False
         _check = numpy.vectorize(lambda x: x in self.categories)
@@ -739,6 +801,8 @@ class Categorical(Dimension):
 
         args = [prior]
 
+        if self._shape is not None:
+            args += ["shape={}".format(self._shape)]
         if self.default_value is not self.NO_DEFAULT_VALUE:
             args += ["default_value={}".format(repr(self.default_value))]
 
@@ -775,8 +839,8 @@ class Categorical(Dimension):
 
             return categorical_strings[str(value)]
 
-        point_ = numpy.asarray(point, dtype=numpy.object)
-        cast = numpy.vectorize(get_category, otypes=[numpy.object])
+        point_ = numpy.asarray(point, dtype=object)
+        cast = numpy.vectorize(get_category, otypes=[object])
         casted_point = cast(point_)
 
         if not isinstance(point, numpy.ndarray):
@@ -851,7 +915,12 @@ class Fidelity(Dimension):
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        return "fidelity({}, {}, {})".format(self.low, self.high, self.base)
+        args = [str(self.low), str(self.high)]
+
+        if self.base != 2:
+            args += [f"base={self.base}"]
+
+        return "fidelity({})".format(", ".join(args))
 
     def validate(self):
         """Do not do anything."""
@@ -916,16 +985,14 @@ class Space(dict):
 
         Returns
         -------
-        points : list of tuples of array-likes
-           Each element is a separate sample of this space, a list containing
-           values associated with the corresponding dimension. Values are in the
-           same order as the contained dimensions. Their shape is determined
-           by ``dimension.shape``.
+        trials: list of `orion.core.worker.trial.Trial`
+           Each element is a separate sample of this space, a trial containing
+           values associated with the corresponding dimension.
 
         """
         rng = check_random_state(seed)
         samples = [dim.sample(n_samples, rng) for dim in self.values()]
-        return list(zip(*samples))
+        return [format_trials.tuple_to_trial(point, self) for point in zip(*samples)]
 
     def interval(self, alpha=1.0):
         """Return a list with the intervals for each contained dimension."""
@@ -968,36 +1035,29 @@ class Space(dict):
             )
         super(Space, self).__setitem__(key, value)
 
-    def __contains__(self, value):
-        """Check whether `value` is within the bounds of the space.
+    def __contains__(self, key_or_trial):
+        """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
 
         Parameters
         ----------
-        value: list
-            List of values associated with the dimensions contained or a string indicating a
-            dimension's name.
-
+        key_or_trial: str or `orion.core.worker.trial.Trial`
+            If str, test if the string is a dimension part of the search space.
+            If a Trial, test if trial's hyperparameters fit the current search space.
         """
-        if isinstance(value, str):
-            return super(Space, self).__contains__(value)
+        if isinstance(key_or_trial, str):
+            return super(Space, self).__contains__(key_or_trial)
 
-        try:
-            len(value)
-        except TypeError as exc:
-            raise TypeError(
-                "Can check only for dimension names or "
-                "for tuples with parameter values."
-            ) from exc
-
-        if not self:
-            return False
-
-        for component, dim in zip(value, self.values()):
-            if component not in dim:
+        trial = key_or_trial
+        flattened_params = flatten(trial.params)
+        keys = set(flattened_params.keys())
+        for dim_name, dim in self.items():
+            if dim_name not in keys or flattened_params[dim_name] not in dim:
                 return False
 
-        return True
+            keys.remove(dim_name)
+
+        return len(keys) == 0
 
     def __repr__(self):
         """Represent as a string the space and the dimensions it contains."""
@@ -1032,29 +1092,3 @@ class Space(dict):
         for dim in self.values():
             capacities *= dim.cardinality
         return capacities
-
-
-def pack_point(point, space):
-    """Take a list of points and pack it appropriately as a point from `space`.
-
-    This function is deprecated and will be removed in v0.2.0. Use
-    `orion.core.utils.points.regroup_dims` instead.
-    """
-    logger.warning(
-        "`pack_point` is deprecated and will be removed in v0.2.0. Use "
-        "`orion.core.utils.points.regroup_dims` instead."
-    )
-    return regroup_dims(point, space)
-
-
-def unpack_point(point, space):
-    """Flatten `point` in `space` and convert it to a 1D list.
-
-    This function is deprecated and will be removed in v0.2.0. Use
-    `orion.core.utils.points.flatten_dims` instead.
-    """
-    logger.warning(
-        "`unpack_point` is deprecated and will be removed in v0.2.0. Use "
-        "`orion.core.utils.points.regroup_dims` instead."
-    )
-    return flatten_dims(point, space)

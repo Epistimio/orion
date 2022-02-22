@@ -3,12 +3,13 @@
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
 import copy
 import datetime
+import logging
 
 import pytest
 
+import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -20,6 +21,7 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
 )
 from orion.core.utils.singleton import update_singletons
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -67,7 +69,6 @@ def python_api_config():
                 "value": 5,
             }
         },
-        producer={"strategy": "NoParallelStrategy"},
         _id="fasdfasfa",
         something_to_be_ignored="asdfa",
         refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
@@ -79,14 +80,6 @@ def python_api_config():
 @pytest.fixture()
 def algo_unavailable_config(python_api_config):
     python_api_config["algorithms"] = {"idontreallyexist": {"but": "iwishiwould"}}
-    return python_api_config
-
-
-@pytest.fixture()
-def strategy_unavailable_config(python_api_config):
-    python_api_config["producer"]["strategy"] = {
-        "idontreallyexist": {"but": "iwishiwould"}
-    }
     return python_api_config
 
 
@@ -111,7 +104,6 @@ def new_config(random_dt, script_path):
             },
         },
         version=1,
-        pool_size=10,
         max_trials=1000,
         max_broken=5,
         working_dir="",
@@ -125,7 +117,6 @@ def new_config(random_dt, script_path):
                 "value": 5,
             }
         },
-        producer={"strategy": "NoParallelStrategy"},
         # attrs starting with '_' also
         _id="fasdfasfa",
         # and in general anything which is not in Experiment's slots
@@ -187,11 +178,9 @@ def test_get_cmd_config(config_file):
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
     assert local_config["algorithms"] == "random"
-    assert local_config["strategy"] == "NoParallelStrategy"
     assert local_config["max_trials"] == 100
     assert local_config["max_broken"] == 5
     assert local_config["name"] == "voila_voici"
-    assert local_config["pool_size"] == 1
     assert local_config["storage"] == {
         "database": {
             "host": "mongodb://user:pass@localhost",
@@ -215,7 +204,6 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     assert "algorithms" not in local_config
     assert "max_trials" not in local_config
     assert "max_broken" not in local_config
-    assert "pool_size" not in local_config
     assert "name" not in local_config["storage"]["database"]
     assert (
         local_config["storage"]["database"]["host"] == "mongodb://user:pass@localhost"
@@ -242,7 +230,6 @@ def test_fetch_config_from_db_hit(new_config):
     assert db_config["name"] == new_config["name"]
     assert db_config["refers"] == new_config["refers"]
     assert db_config["metadata"] == new_config["metadata"]
-    assert db_config["pool_size"] == new_config["pool_size"]
     assert db_config["max_trials"] == new_config["max_trials"]
     assert db_config["max_broken"] == new_config["max_broken"]
     assert db_config["algorithms"] == new_config["algorithms"]
@@ -274,7 +261,6 @@ def test_get_from_args_hit(config_file, random_dt, new_config):
     assert exp_view.name == new_config["name"]
     assert exp_view.configuration["refers"] == new_config["refers"]
     assert exp_view.metadata == new_config["metadata"]
-    assert exp_view.pool_size == new_config["pool_size"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
     assert exp_view.algorithms.configuration == new_config["algorithms"]
@@ -298,7 +284,6 @@ def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
     assert exp_view.name == new_config["name"]
     assert exp_view.configuration["refers"] == new_config["refers"]
     assert exp_view.metadata == new_config["metadata"]
-    assert exp_view.pool_size == new_config["pool_size"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
     assert exp_view.algorithms.configuration == new_config["algorithms"]
@@ -322,20 +307,19 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
-    assert exp.name == cmdargs["name"]
-    assert exp.configuration["refers"] == {
-        "adapter": [],
-        "parent_id": None,
-        "root_id": exp._id,
-    }
-    assert exp.metadata["datetime"] == random_dt
-    assert exp.metadata["user"] == "dendi"
-    assert exp.metadata["user_script"] == cmdargs["user_args"][0]
-    assert exp.metadata["user_args"] == cmdargs["user_args"]
-    assert exp.pool_size == 1
-    assert exp.max_trials == 100
-    assert exp.max_broken == 5
-    assert exp.algorithms.configuration == {"random": {"seed": None}}
+        assert exp.name == cmdargs["name"]
+        assert exp.configuration["refers"] == {
+            "adapter": [],
+            "parent_id": None,
+            "root_id": exp._id,
+        }
+        assert exp.metadata["datetime"] == random_dt
+        assert exp.metadata["user"] == "dendi"
+        assert exp.metadata["user_script"] == cmdargs["user_args"][0]
+        assert exp.metadata["user_args"] == cmdargs["user_args"]
+        assert exp.max_trials == 100
+        assert exp.max_broken == 5
+        assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
 @pytest.mark.usefixtures(
@@ -453,22 +437,22 @@ def test_build_no_hit(config_file, random_dt, script_path):
             name, space=space, max_trials=max_trials, max_broken=max_broken
         )
 
-    assert exp.name == name
-    assert exp.configuration["refers"] == {
-        "adapter": [],
-        "parent_id": None,
-        "root_id": exp._id,
-    }
-    assert exp.metadata == {
-        "datetime": random_dt,
-        "user": "tsirif",
-        "orion_version": "XYZ",
-    }
-    assert exp.configuration["space"] == space
-    assert exp.max_trials == max_trials
-    assert exp.max_broken == max_broken
-    assert not exp.is_done
-    assert exp.algorithms.configuration == {"random": {"seed": None}}
+        assert exp.name == name
+        assert exp.configuration["refers"] == {
+            "adapter": [],
+            "parent_id": None,
+            "root_id": exp._id,
+        }
+        assert exp.metadata == {
+            "datetime": random_dt,
+            "user": "tsirif",
+            "orion_version": "XYZ",
+        }
+        assert exp.configuration["space"] == space
+        assert exp.max_trials == max_trials
+        assert exp.max_broken == max_broken
+        assert not exp.is_done
+        assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
 def test_build_no_commandline_config():
@@ -546,7 +530,44 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
+# TODO: Remove for v0.4
+class TestStrategyDeprecated:
+    def test_strategy_not_defined(self, caplog, space):
+        """Verify there is no warning"""
+        with OrionState():
+            with caplog.at_level(logging.WARNING):
+                exp = experiment_builder.build(name="whatever", space=space)
+            assert "`strategy` option is not supported anymore." not in caplog.text
+
+    def test_strategy_defined_in_global_config(self, caplog, space, monkeypatch):
+        """Verify there is a warning"""
+
+        with monkeypatch.context() as m:
+            m.setattr(
+                orion.core.config.experiment,
+                "strategy",
+                {"this is deprecated": "and should be ignored"},
+            )
+            with OrionState():
+                with caplog.at_level(logging.WARNING):
+                    exp = experiment_builder.build(name="whatever", space=space)
+                assert "`strategy` option is not supported anymore." in caplog.text
+
+    def test_strategy_defined_in_config(self, caplog, space):
+        """Verify there is a warning"""
+        with OrionState():
+            with caplog.at_level(logging.WARNING):
+                exp = experiment_builder.build(
+                    name="whatever",
+                    space=space,
+                    strategy={"this is deprecated": "and should be ignored"},
+                )
+            assert "`strategy` option is not supported anymore." in caplog.text
+
+
+@pytest.mark.usefixtures(
+    "with_user_tsirif", "version_XYZ", "mock_infer_versioning_metadata"
+)
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
@@ -566,12 +587,46 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 1
 
+    def test_experiment_overwritten_evc_disabled(self, parent_version_config, caplog):
+        """Build an existing experiment with different config, overwritting previous config."""
+        parent_version_config.pop("version")
+        with OrionState(experiments=[parent_version_config]):
+
+            with caplog.at_level(logging.WARNING):
+
+                exp = experiment_builder.build(name=parent_version_config["name"])
+                assert "Running experiment in a different state" not in caplog.text
+
+            assert exp.version == 1
+            assert exp.configuration["algorithms"] == {"random": {"seed": None}}
+
+            with caplog.at_level(logging.WARNING):
+
+                exp = experiment_builder.build(
+                    name=parent_version_config["name"], algorithms="gradient_descent"
+                )
+                assert "Running experiment in a different state" in caplog.text
+
+            assert exp.version == 1
+            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+
+                exp = experiment_builder.load(name=parent_version_config["name"])
+                assert "Running experiment in a different state" not in caplog.text
+
+            assert exp.version == 1
+            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+
     def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""
         parent_version_config.pop("version")
         with OrionState(experiments=[parent_version_config]):
             exp = experiment_builder.build(
-                name=parent_version_config["name"], space={"y": "uniform(0, 10)"}
+                name=parent_version_config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
             )
 
         assert exp.version == 2
@@ -643,7 +698,6 @@ class TestBuild(object):
         new_config["algorithms"]["dumbalgo"]["suspend"] = False
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
-        new_config["producer"]["strategy"] = "NoParallelStrategy"
         new_config.pop("something_to_be_ignored")
         assert exp.configuration == new_config
 
@@ -678,7 +732,6 @@ class TestBuild(object):
         assert exp.name == new_config["name"]
         assert exp.configuration["refers"] == new_config["refers"]
         assert exp.metadata == new_config["metadata"]
-        assert exp.pool_size == new_config["pool_size"]
         assert exp.max_trials == new_config["max_trials"]
         assert exp.max_broken == new_config["max_broken"]
         assert exp.working_dir == new_config["working_dir"]
@@ -735,7 +788,6 @@ class TestBuild(object):
         new_config["algorithms"]["dumbalgo"]["suspend"] = False
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
-        new_config["producer"]["strategy"] = "NoParallelStrategy"
         new_config.pop("something_to_be_ignored")
         assert exp.configuration == new_config
 
@@ -744,7 +796,7 @@ class TestBuild(object):
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build(**new_config)
 
-        assert isinstance(exp.algorithms, BaseAlgorithm)
+        assert isinstance(exp.algorithms, SpaceTransformAlgoWrapper)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 
@@ -835,7 +887,7 @@ class TestBuild(object):
                 "judgement": None,
                 "scoring": 0,
                 "suspend": False,
-                "value": 5,
+                "value": (5,),
                 "seed": None,
             }
         }
@@ -854,7 +906,7 @@ class TestBuild(object):
             child_name = "child"
 
             child = experiment_builder.build(
-                name=name, branching={"branch_to": child_name}
+                name=name, branching={"branch_to": child_name, "enable": True}
             )
 
             assert child.name == child_name
@@ -864,7 +916,7 @@ class TestBuild(object):
             child_name = "child2"
 
             child = experiment_builder.build(
-                name=child_name, branching={"branch_from": name}
+                name=child_name, branching={"branch_from": name, "enable": True}
             )
 
             assert child.name == child_name
@@ -878,14 +930,19 @@ class TestBuild(object):
 
         with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name=name, space=space)
-            child = experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+            child = experiment_builder.build(
+                name=name, space={"x": "loguniform(1,10)"}, branching={"enable": True}
+            )
             assert child.name == parent.name
             assert parent.version == 1
             assert child.version == 2
 
             with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(
-                    name=name, version=1, space={"x": "loguniform(1,10)"}
+                    name=name,
+                    version=1,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
                 )
             assert "Configuration is different and generates a branching" in str(
                 exc_info.value
@@ -900,7 +957,9 @@ class TestBuild(object):
 
         with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name, space=space)
-            child = experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+            child = experiment_builder.build(
+                name=name, space={"x": "loguniform(1,10)"}, branching={"enable": True}
+            )
             assert child.name == parent.name
             assert parent.version == 1
             assert child.version == 2
@@ -939,7 +998,11 @@ class TestBuild(object):
             )
 
             with pytest.raises(RaceCondition) as exc_info:
-                experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+                experiment_builder.build(
+                    name=name,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
+                )
             assert "There was likely a race condition during version" in str(
                 exc_info.value
             )
@@ -968,7 +1031,11 @@ class TestBuild(object):
             )
 
             with pytest.raises(RaceCondition) as exc_info:
-                experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+                experiment_builder.build(
+                    name=name,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
+                )
             assert "There was a race condition during branching." in str(exc_info.value)
 
     def test_race_condition_w_version(self, monkeypatch):
@@ -985,7 +1052,9 @@ class TestBuild(object):
 
         with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name, space=space)
-            child = experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+            child = experiment_builder.build(
+                name=name, space={"x": "loguniform(1,10)"}, branching={"enable": True}
+            )
             assert child.name == parent.name
             assert parent.version == 1
             assert child.version == 2
@@ -1025,7 +1094,10 @@ class TestBuild(object):
 
             with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(
-                    name=name, version=1, space={"x": "loguniform(1,10)"}
+                    name=name,
+                    version=1,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
                 )
             assert "Configuration is different and generates" in str(exc_info.value)
 
@@ -1054,7 +1126,10 @@ class TestBuild(object):
 
             with pytest.raises(RaceCondition) as exc_info:
                 experiment_builder.build(
-                    name=name, version=1, space={"x": "loguniform(1,10)"}
+                    name=name,
+                    version=1,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
                 )
             assert "There was a race condition during branching." in str(exc_info.value)
 
@@ -1078,27 +1153,6 @@ def test_load_unavailable_algo(algo_unavailable_config, capsys):
         with pytest.raises(NotImplementedError) as exc:
             experiment_builder.build("supernaekei")
         exc.match("Could not find implementation of BaseAlgorithm")
-
-
-def test_load_unavailable_strategy(strategy_unavailable_config, capsys):
-    with OrionState(experiments=[strategy_unavailable_config]):
-        experiment = experiment_builder.load("supernaekei", mode="r")
-        assert experiment.producer == strategy_unavailable_config["producer"]
-        assert (
-            experiment.configuration["producer"]
-            == strategy_unavailable_config["producer"]
-        )
-
-        experiment = experiment_builder.load("supernaekei", mode="w")
-        assert experiment.producer == strategy_unavailable_config["producer"]
-        assert (
-            experiment.configuration["producer"]
-            == strategy_unavailable_config["producer"]
-        )
-
-        with pytest.raises(NotImplementedError) as exc:
-            experiment_builder.build("supernaekei")
-        exc.match("Could not find implementation of BaseParallelStrategy")
 
 
 class TestInitExperimentReadWrite(object):

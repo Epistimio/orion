@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
+import contextlib
 import copy
 import datetime
 import inspect
@@ -19,14 +20,20 @@ import orion.core.worker.experiment
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
+from orion.storage.base import LockedAlgorithmState, get_storage
 from orion.testing import OrionState
 
 
 @pytest.fixture()
-def new_config(random_dt):
+def algorithm(dumbalgo, space):
+    """Build a dumb algo object"""
+    return SpaceTransformAlgoWrapper(dumbalgo, space=space)
+
+
+@pytest.fixture()
+def new_config(random_dt, algorithm):
     """Create a configuration that will not hit the database."""
     new_config = dict(
         name="supernaekei",
@@ -46,12 +53,10 @@ def new_config(random_dt):
             },
         },
         version=1,
-        pool_size=10,
         max_trials=1000,
         max_broken=5,
         working_dir=None,
-        algorithms={"dumbalgo": {}},
-        producer={"strategy": "NoParallelStrategy"},
+        algorithms=algorithm.configuration,
         # attrs starting with '_' also
         # _id='fasdfasfa',
         # and in general anything which is not in Experiment's slots
@@ -170,12 +175,6 @@ def count_experiment(exp):
 def space():
     """Build a space object"""
     return SpaceBuilder().build({"/index": "uniform(0, 10)"})
-
-
-@pytest.fixture()
-def algorithm(space):
-    """Build a dumb algo object"""
-    return PrimaryAlgo(space, "dumbalgo")
 
 
 class TestReserveTrial(object):
@@ -319,6 +318,67 @@ class TestReserveTrial(object):
             assert len(exp.fetch_trials_by_status("reserved")) == 0
 
 
+class TestAcquireAlgorithmLock:
+    def test_acquire_algorithm_lock_successful(self, new_config, algorithm):
+        with OrionState(experiments=[new_config]) as cfg:
+            exp = Experiment("supernaekei", mode="x")
+            exp._id = 0
+            exp.algorithms = algorithm
+
+            state_dict = algorithm.state_dict
+            # No state_dict in DB
+            with exp.acquire_algorithm_lock(
+                timeout=0.2, retry_interval=0.1
+            ) as locked_algorithm:
+                assert locked_algorithm is algorithm
+
+                assert algorithm.state_dict == state_dict
+                algorithm.suggest(1)
+                assert algorithm.state_dict != state_dict
+                new_state_dict = algorithm.state_dict
+
+            algorithm.set_state(state_dict)
+            assert algorithm.configuration != new_state_dict
+
+            # State_dict in DB used to set algorithm state.
+            with exp.acquire_algorithm_lock(timeout=0.2, retry_interval=0.1):
+                assert algorithm.state_dict == new_state_dict
+
+    def test_acquire_algorithm_lock_with_different_config(self, new_config, algorithm):
+        with OrionState(experiments=[new_config]) as cfg:
+            exp = Experiment("supernaekei", mode="x")
+            exp._id = 0
+            algorithm_original_config = algorithm.configuration
+            exp.algorithms = algorithm
+            # Setting attribute to algorithm inside the wrapper
+            algorithm.algorithm.seed = 10
+
+            assert algorithm.configuration != algorithm_original_config
+
+            with pytest.raises(
+                RuntimeError, match="Algorithm configuration changed since"
+            ):
+                with exp.acquire_algorithm_lock(timeout=0.2, retry_interval=0.1):
+                    pass
+
+    def test_acquire_algorithm_lock_timeout(self, new_config, algorithm, mocker):
+        with OrionState(experiments=[new_config]) as cfg:
+            exp = Experiment("supernaekei", mode="x")
+            exp._id = 0
+            exp.algorithms = algorithm
+
+            storage_acquisition_mock = mocker.spy(
+                cfg.storage(), "acquire_algorithm_lock"
+            )
+
+            with exp.acquire_algorithm_lock(timeout=0.2, retry_interval=0.1):
+                pass
+
+            storage_acquisition_mock.assert_called_with(
+                experiment=exp, timeout=0.2, retry_interval=0.1
+            )
+
+
 def test_update_completed_trial(random_dt):
     """Successfully push a completed trial into database."""
     with OrionState(trials=generate_trials(["new"])) as cfg:
@@ -349,11 +409,12 @@ def test_update_completed_trial(random_dt):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_register_trials(random_dt):
+def test_register_trials(tmp_path, random_dt):
     """Register a list of newly proposed trials/parameters."""
     with OrionState():
         exp = Experiment("supernaekei", mode="x")
         exp._id = 0
+        exp.working_dir = tmp_path
 
         trials = [
             Trial(params=[{"name": "a", "type": "integer", "value": 5}]),
@@ -370,6 +431,8 @@ def test_register_trials(random_dt):
         assert yo[1]["status"] == "new"
         assert yo[0]["submit_time"] == random_dt
         assert yo[1]["submit_time"] == random_dt
+        assert yo[0]["exp_working_dir"] == tmp_path
+        assert yo[1]["exp_working_dir"] == tmp_path
 
 
 class TestToPandas:
@@ -426,6 +489,22 @@ def test_fetch_all_trials():
 
         trials = list(map(lambda trial: trial.to_dict(), exp.fetch_trials({})))
         assert trials == cfg.trials
+
+
+def test_fetch_pending_trials():
+    """Fetch a list of the trials that are pending
+
+    trials.status in ['new', 'interrupted', 'suspended']
+    """
+    pending_stati = ["new", "interrupted", "suspended"]
+    stati = pending_stati + ["completed", "broken", "reserved"]
+    with OrionState(trials=generate_trials(stati)) as cfg:
+        exp = Experiment("supernaekei", mode="x")
+        exp._id = cfg.trials[0]["experiment"]
+
+        trials = exp.fetch_pending_trials()
+        assert len(trials) == 3
+        assert set(trial.status for trial in trials) == set(pending_stati)
 
 
 def test_fetch_non_completed_trials():
@@ -539,13 +618,12 @@ def test_experiment_stats():
         exp._id = cfg.trials[0]["experiment"]
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
         stats = exp.stats
-        assert stats["trials_completed"] == NUM_COMPLETED
-        assert stats["best_trials_id"] == cfg.trials[3]["_id"]
-        assert stats["best_evaluation"] == 0
-        assert stats["start_time"] == exp.metadata["datetime"]
-        assert stats["finish_time"] == cfg.trials[0]["end_time"]
-        assert stats["duration"] == stats["finish_time"] - stats["start_time"]
-        assert len(stats) == 6
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[3]["_id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[0]["end_time"]
+        assert stats.duration == stats.finish_time - stats.start_time
 
 
 def test_experiment_pickleable():
@@ -559,6 +637,8 @@ def test_experiment_pickleable():
 
         assert len(exp_trials) > 0
 
+        from orion.storage.base import storage_factory
+
         exp_bytes = pickle.dumps(exp)
 
         new_exp = pickle.loads(exp_bytes)
@@ -571,6 +651,8 @@ def test_experiment_pickleable():
 read_only_methods = [
     "algorithms",
     "configuration",
+    "fetch_lost_trials",
+    "fetch_pending_trials",
     "fetch_noncompleted_trials",
     "fetch_trials",
     "fetch_trials_by_status",
@@ -582,8 +664,6 @@ read_only_methods = [
     "max_trials",
     "metadata",
     "name",
-    "pool_size",
-    "producer",
     "refers",
     "retrieve_result",
     "space",
@@ -594,10 +674,11 @@ read_only_methods = [
 ]
 read_write_only_methods = [
     "fix_lost_trials",
-    "register_lie",
     "register_trial",
     "set_trial_status",
     "update_completed_trial",
+    "duplicate_pending_trials",
+    "acquire_algorithm_lock",
 ]
 execute_only_methods = [
     "reserve_trial",
@@ -615,10 +696,10 @@ kwargs = {
     "fetch_trials_by_status": {"status": "completed"},
     "get_trial": {"uid": 0},
     "retrieve_result": {"trial": dummy_trial},
-    "register_lie": {"lying_trial": dummy_trial},
     "register_trial": {"trial": dummy_trial},
-    "set_trial_status": {"trial": dummy_trial, "status": "interrupted"},
+    "set_trial_status": {"trial": running_trial, "status": "interrupted"},
     "update_completed_trial": {"trial": running_trial},
+    "acquire_algorithm_lock": {"timeout": 0, "retry_interval": 0},
 }
 
 
@@ -654,9 +735,17 @@ def compare_unsupported(attr_name, restricted_exp, execution_exp):
     assert inspect.ismethod(restricted_attr), attr_name
 
     execution_attr = execution_attr(**kwargs.get(attr_name, {}))
-    with pytest.raises(UnsupportedOperation) as exc:
-        restricted_attr = restricted_attr(**kwargs.get(attr_name, {}))
-    assert exc.match(f"to execute `{attr_name}()")
+
+    if hasattr(execution_attr, "__enter__"):
+        with execution_attr:
+            pass
+
+    with pytest.raises(UnsupportedOperation, match=f"to execute `{attr_name}()") as exc:
+        if hasattr(execution_attr, "__enter__"):
+            with restricted_attr(**kwargs.get(attr_name, {})):
+                pass
+        else:
+            restricted_attr(**kwargs.get(attr_name, {}))
 
 
 def create_experiment(mode, space, algorithm):
@@ -668,39 +757,50 @@ def create_experiment(mode, space, algorithm):
     return experiment
 
 
+def disable_algo_lock(monkeypatch, storage):
+    @contextlib.contextmanager
+    def no_lock(experiment, timeout, retry_interval):
+        yield LockedAlgorithmState(
+            state=experiment.algorithms.state_dict,
+            configuration=experiment.algorithms.configuration,
+        )
+
+    monkeypatch.setattr(storage, "acquire_algorithm_lock", no_lock)
+
+
 class TestReadOnly:
     """Test Experiment access rights in readonly mode"""
 
-    def test_read_only_methods(self, space, algorithm):
+    @pytest.mark.parametrize("method", read_only_methods)
+    def test_read_only_methods(self, space, algorithm, method):
         with OrionState(trials=trials) as cfg:
             read_only_exp = create_experiment("r", space, algorithm)
             execution_exp = create_experiment("x", space, algorithm)
+            compare_supported(method, read_only_exp, execution_exp)
 
-            for method in read_only_methods:
-                compare_supported(method, read_only_exp, execution_exp)
-
-    def test_read_write_methods(self):
+    @pytest.mark.parametrize("method", read_write_only_methods + execute_only_methods)
+    def test_read_write_methods(self, space, algorithm, method, monkeypatch):
         with OrionState(trials=trials) as cfg:
+            disable_algo_lock(monkeypatch, cfg.storage())
             read_only_exp = create_experiment("r", space, algorithm)
             execution_exp = create_experiment("x", space, algorithm)
-            for method in read_write_only_methods + execute_only_methods:
-                compare_unsupported(method, read_only_exp, execution_exp)
+            compare_unsupported(method, read_only_exp, execution_exp)
 
 
 class TestReadWriteOnly:
     """Test Experiment access rights in read/write only mode"""
 
-    def test_read_only_methods(self, space, algorithm):
+    @pytest.mark.parametrize("method", read_only_methods)
+    def test_read_only_methods(self, space, algorithm, method):
         with OrionState(trials=trials) as cfg:
             read_only_exp = create_experiment("w", space, algorithm)
             execution_exp = create_experiment("x", space, algorithm)
+            compare_supported(method, read_only_exp, execution_exp)
 
-            for method in read_only_methods:
-                compare_supported(method, read_only_exp, execution_exp)
-
-    def test_execution_methods(self):
+    @pytest.mark.parametrize("method", execute_only_methods)
+    def test_execution_methods(self, space, algorithm, method, monkeypatch):
         with OrionState(trials=trials) as cfg:
+            disable_algo_lock(monkeypatch, cfg.storage())
             read_only_exp = create_experiment("w", space, algorithm)
             execution_exp = create_experiment("x", space, algorithm)
-            for method in execute_only_methods:
-                compare_unsupported(method, read_only_exp, execution_exp)
+            compare_unsupported(method, read_only_exp, execution_exp)

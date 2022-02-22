@@ -11,7 +11,7 @@ from tabulate import tabulate
 
 import orion.core
 from orion.client import create_experiment
-from orion.executor.base import Executor
+from orion.executor.base import executor_factory
 
 
 class Benchmark:
@@ -51,7 +51,7 @@ class Benchmark:
 
     storage: dict, optional
         Configuration of the storage backend.
-    executor: `orion.executor.base.Executor`, optional
+    executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     """
 
@@ -62,13 +62,23 @@ class Benchmark:
         self.targets = targets
         self.metadata = {}
         self.storage_config = storage
-        self.executor = executor or Executor(
-            orion.core.config.worker.executor,
-            n_workers=orion.core.config.worker.n_workers,
-            **orion.core.config.worker.executor_configuration,
-        )
+        self._executor = executor
+        self._executor_owner = False
 
         self.studies = []
+
+    @property
+    def executor(self):
+        """Returns the current executor to use to run jobs in parallel"""
+        if self._executor is None:
+            self._executor_owner = True
+            self._executor = executor_factory.create(
+                orion.core.config.worker.executor,
+                n_workers=orion.core.config.worker.n_workers,
+                **orion.core.config.worker.executor_configuration,
+            )
+
+        return self._executor
 
     def setup_studies(self):
         """Setup studies to run for the benchmark.
@@ -86,8 +96,13 @@ class Benchmark:
 
     def process(self, n_workers=1):
         """Run studies experiment"""
-        for study in self.studies:
-            study.execute(n_workers)
+        if self._executor is None or self._executor_owner:
+            with self.executor:
+                for study in self.studies:
+                    study.execute(n_workers)
+        else:
+            for study in self.studies:
+                study.execute(n_workers)
 
     def status(self, silent=True):
         """Display benchmark status"""
@@ -139,7 +154,7 @@ class Benchmark:
                 ]
                 exp_column["Experiment Name"] = exp.name
                 exp_column["Number Trial"] = len(exp.fetch_trials())
-                exp_column["Best Evaluation"] = stats["best_evaluation"]
+                exp_column["Best Evaluation"] = stats.best_evaluation
                 experiment_table.append(exp_column)
 
         if not silent:
@@ -216,6 +231,13 @@ class Benchmark:
             config["_id"] = self.id
 
         return copy.deepcopy(config)
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        if self._executor_owner:
+            self._executor.close()
 
 
 class Study:

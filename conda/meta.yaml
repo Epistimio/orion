@@ -17,6 +17,8 @@ requirements:
     - pytest-runner
     - appdirs
   run:
+    - cloudpickle
+    - dataclasses
     - python
     - numpy
     - scipy

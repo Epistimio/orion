@@ -14,6 +14,7 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 
+from orion.core.utils import format_trials
 from orion.core.worker.transformer import build_required_space
 
 _regressors_ = {
@@ -169,8 +170,17 @@ def to_numpy(trials, space):
 
 def flatten_numpy(trials_array, flattened_space):
     """Flatten dimensions"""
+
     flattened_points = numpy.array(
-        [flattened_space.transform(point[:-1]) for point in trials_array]
+        [
+            format_trials.trial_to_tuple(
+                flattened_space.transform(
+                    format_trials.tuple_to_trial(point[:-1], flattened_space.original)
+                ),
+                flattened_space,
+            )
+            for point in trials_array
+        ]
     )
 
     return numpy.concatenate((flattened_points, trials_array[:, -1:]), axis=1)

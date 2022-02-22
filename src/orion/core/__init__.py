@@ -35,7 +35,7 @@ __license__ = "BSD-3-Clause"
 __author__ = u"Epistímio"
 __author_short__ = u"Epistímio"
 __author_email__ = "xavier.bouthillier@umontreal.ca"
-__copyright__ = u"2017-2020, Epistímio"
+__copyright__ = u"2017-2022, Epistímio"
 __url__ = "https://github.com/epistimio/orion"
 
 DIRS = AppDirs(__name__, __author_short__)
@@ -134,7 +134,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "max_trials",
         option_type=int,
-        default=1000,
+        default=int(10e8),
         env_var="ORION_EXP_MAX_TRIALS",
         help="number of trials to be completed for the experiment. This value "
         "will be saved within the experiment configuration and reused "
@@ -144,7 +144,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "worker_trials",
         option_type=int,
-        default=1000,
+        default=int(10e8),
         deprecate=dict(
             version="v0.3",
             alternative="worker.max_trials",
@@ -170,14 +170,6 @@ def define_experiment_config(config):
     )
 
     experiment_config.add_option(
-        "pool_size",
-        option_type=int,
-        default=1,
-        deprecate=dict(version="v0.3", alternative=None, name="experiment.pool_size"),
-        help="This argument will be removed in v0.3.",
-    )
-
-    experiment_config.add_option(
         "algorithms",
         option_type=dict,
         default={"random": {"seed": None}},
@@ -187,8 +179,11 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "strategy",
         option_type=dict,
-        default={"MaxParallelStrategy": {}},
-        help="Parallel strategy to use with the algorithm.",
+        default={},
+        help=(
+            "This option is deprecated and will be removed in v0.4.0. Parallel strategies may "
+            "now be set in algorithm configuration."
+        ),
     )
 
     config.experiment = experiment_config
@@ -207,6 +202,20 @@ def define_worker_config(config):
             "Number of workers to run in parallel. "
             "It is possible to run many ``orion hunt`` in parallel, and each will spawn "
             "``n_workers``."
+        ),
+    )
+
+    worker_config.add_option(
+        "pool_size",
+        option_type=int,
+        default=0,
+        env_var="ORION_POOL_SIZE",
+        help=(
+            "Number of trials to sample at a time. "
+            "If 0, will default to number of executor workers. "
+            "Increase it to improve the sampling speed if workers spend too much time "
+            "waiting for algorithms to sample points. An algorithm will try sampling "
+            "`pool-size` trials but may return less."
         ),
     )
 
@@ -265,11 +274,43 @@ def define_worker_config(config):
         option_type=int,
         default=60,
         env_var="ORION_MAX_IDLE_TIME",
+        deprecate=dict(
+            version="v0.3",
+            alternative="worker.reservation_timeout",
+            name="worker.max_idle_time",
+        ),
         help=(
-            "Maximum time the producer can spend trying to generate a new suggestion."
+            "This argument will be removed in v0.3.0. Use reservation_timeout instead."
+        ),
+    )
+
+    worker_config.add_option(
+        "reservation_timeout",
+        option_type=int,
+        default=60,
+        env_var="ORION_RESERVATION_TIMEOUT",
+        deprecate=dict(
+            version="v0.4",
+            alternative="worker.idle_timeout",
+            name="worker.reservation_timeout",
+        ),
+        help=(
+            "Maximum time the experiment can spend trying to reserve a new suggestion."
             "Such timeout are generally caused by slow database, large number of "
             "concurrent workers leading to many race conditions or small search spaces "
             "with integer/categorical dimensions that may be fully explored."
+        ),
+    )
+
+    worker_config.add_option(
+        "idle_timeout",
+        option_type=int,
+        default=60,
+        env_var="ORION_IDLE_TIMEOUT",
+        help=(
+            "Maximum time the workers can spend without work."
+            "Such timeout generally occur when reaching the end of the optimization"
+            "when no new trials can be scheduled"
         ),
     )
 
@@ -299,6 +340,14 @@ def define_evc_config(config):
 
     # TODO: This should be built automatically like get_branching_args_group
     #       After this, the cmdline parser should be built based on config.
+
+    evc_config.add_option(
+        "enable",
+        option_type=bool,
+        default=False,
+        env_var="ORION_EVC_ENABLE",
+        help="Enable the Experiment Version Control. Defaults to False.",
+    )
 
     evc_config.add_option(
         "auto_resolution",

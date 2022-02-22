@@ -10,11 +10,8 @@ from pymongo import MongoClient
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
-from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
-from orion.storage.base import Storage, get_storage
-from orion.storage.legacy import Legacy
+from orion.core.io.database import database_factory
+from orion.storage.base import get_storage, storage_factory
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,12 +24,28 @@ with open(os.path.join(DIRNAME, "versions.txt"), "r") as f:
     VERSIONS = [version.strip() for version in f.read().split("\n") if version.strip()]
 
 
+def function(x):
+    """Evaluate partial information of a quadratic."""
+    z = x - 34.56789
+    return [dict(name="example_objective", type="objective", value=4 * z ** 2 + 23.4)]
+
+
 def get_branch_argument(version):
     """Get argument to branch.
 
     Before v0.1.8 it was --branch. From v0.1.8 and forward it is now --branch-to.
     """
     return "--branch" if version in ["0.1.6", "0.1.7"] else "--branch-to"
+
+
+def get_evc_argument(version):
+    """Get argument to enable EVC
+
+    Before v0.1.16 EVC was enabled by default. Starting from v0.1.16 it must be enabled with
+    --enable-evc.
+    """
+    major, minor, patch = list(map(int, version.split(".")))
+    return "--enable-evc" if (major > 0 or minor > 1 or patch > 15) else ""
 
 
 def has_python_api(version):
@@ -134,6 +147,7 @@ def fill_from_cmdline_api(orion_script, version):
                     "init_only",
                     "--name",
                     "init-cmdline",
+                    get_evc_argument(version),
                     get_branch_argument(version),
                     "init-cmdline-branch-old",
                     "--config",
@@ -170,6 +184,7 @@ def fill_from_cmdline_api(orion_script, version):
                     "hunt",
                     "--name",
                     "hunt-cmdline",
+                    get_evc_argument(version),
                     get_branch_argument(version),
                     "hunt-cmdline-branch-old",
                     "--config",
@@ -214,11 +229,8 @@ def fill_db(request):
 
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Storage.instance = None
-    Legacy.instance = None
-    Database.instance = None
-    MongoDB.instance = None
-    PickledDB.instance = None
+    storage_factory.instance = None
+    database_factory.instance = None
 
 
 def build_storage():
@@ -244,7 +256,6 @@ class TestBackwardCompatibility:
 
         experiments = storage.fetch_experiments({})
         assert "version" in experiments[0]
-        assert "priors" in experiments[0]["metadata"]
 
     def test_db_test(self):
         """Verify db test command"""
@@ -329,15 +340,6 @@ class TestBackwardCompatibility:
         version = fill_db
         if not has_python_api(version):
             pytest.skip("Python API not supported by {}".format(version))
-
-        def function(x):
-            """Evaluate partial information of a quadratic."""
-            z = x - 34.56789
-            return [
-                dict(
-                    name="example_objective", type="objective", value=4 * z ** 2 + 23.4
-                )
-            ]
 
         exp = create_experiment(
             "hunt-python", branching={"branch-to": "hunt-python-branch"}

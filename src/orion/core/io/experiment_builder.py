@@ -82,8 +82,9 @@ import sys
 
 import orion.core
 import orion.core.utils.backward as backward
+from orion.algo.base import algo_factory
 from orion.algo.space import Space
-from orion.core.evc.adapters import Adapter
+from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
@@ -97,8 +98,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import PrimaryAlgo
-from orion.core.worker.strategy import Strategy
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -129,7 +129,8 @@ def build(name, version=None, branching=None, knowledge_base=None, **config):
     algorithms: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
-        Parallel strategy to use to parallelize the algorithm.
+        Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
+        directly if it supports it.
     max_trials: int, optional
         Maximum number of trials before the experiment is considered done.
     max_broken: int, optional
@@ -203,28 +204,14 @@ def build(name, version=None, branching=None, knowledge_base=None, **config):
 
     conflicts = _get_conflicts(experiment, branching)
     must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
-    if must_branch:
-        if len(conflicts.get()) > 1:
-            log.debug("Experiment must branch because of conflicts")
-        else:
-            assert branching.get("branch_to")
-            log.debug("Experiment branching forced with ``branch_to``")
-        branched_experiment = _branch_experiment(
-            experiment, conflicts, version, branching
-        )
-        log.debug("Now attempting registration of branched experiment in DB.")
-        try:
-            _register_experiment(branched_experiment)
-            log.debug("Branched experiment successfully registered in DB.")
-        except DuplicateKeyError as e:
-            log.debug(
-                "Experiment registration failed. This is likely due to a race condition "
-                "during branching. Now rolling back and re-attempting building "
-                "the branched experiment."
-            )
-            raise RaceCondition("There was a race condition during branching.") from e
 
-        return branched_experiment
+    if must_branch and branching.get("enable", orion.core.config.evc.enable):
+        return _attempt_branching(conflicts, experiment, version, branching)
+    elif must_branch:
+        log.warning(
+            "Running experiment in a different state:\n%s",
+            _get_branching_status_string(conflicts, branching),
+        )
 
     log.debug("No branching required.")
 
@@ -242,6 +229,7 @@ def clean_config(name, config, branching):
             log.debug(f"Ignoring field {key}")
             config.pop(key)
 
+    # TODO: Remove for v0.4
     if "strategy" in config:
         config["producer"] = {"strategy": config.pop("strategy")}
 
@@ -280,6 +268,7 @@ def consolidate_config(name, version, config):
     resolve_config.update_metadata(config["metadata"])
 
     merge_algorithm_config(config, new_config)
+    # TODO: Remove for v0.4
     merge_producer_config(config, new_config)
 
     config.setdefault("name", name)
@@ -300,9 +289,9 @@ def merge_algorithm_config(config, new_config):
         config["algorithms"] = new_config["algorithms"]
 
 
+# TODO: Remove for v0.4
 def merge_producer_config(config, new_config):
     """Merge given producer configuration with db config"""
-    # TODO: Find a better solution
     if (
         isinstance(config.get("producer", {}).get("strategy"), dict)
         and len(config["producer"]["strategy"]) > 1
@@ -397,11 +386,6 @@ def create_experiment(name, version, mode, space, **kwargs):
     """
     experiment = Experiment(name=name, version=version, mode=mode)
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
-    experiment.pool_size = kwargs.get("pool_size")
-    if experiment.pool_size is None:
-        experiment.pool_size = orion.core.config.experiment.get(
-            "pool_size", deprecated="ignore"
-        )
     experiment.max_trials = kwargs.get(
         "max_trials", orion.core.config.experiment.max_trials
     )
@@ -417,10 +401,8 @@ def create_experiment(name, version, mode, space, **kwargs):
         ignore_unavailable=mode != "x",
         knowledge_base=knowledge_base,
     )
-    experiment.producer = kwargs.get("producer", {})
-    experiment.producer["strategy"] = _instantiate_strategy(
-        experiment.producer.get("strategy"), ignore_unavailable=mode != "x"
-    )
+    # TODO: Remove for v0.4
+    _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
     experiment.working_dir = kwargs.get(
         "working_dir", orion.core.config.experiment.working_dir
     )
@@ -490,7 +472,7 @@ def _instantiate_adapters(config):
          List of adapter configurations to build a CompositeAdapter for the EVC.
 
     """
-    return Adapter.build(config)
+    return BaseAdapter.build(config)
 
 
 def _instantiate_space(config):
@@ -522,24 +504,28 @@ def _instantiate_algo(
         (orion.core.config.experiment.algorithms).
     ignore_unavailable: bool, optional
         If True and algorithm is not available (plugin not installed), return the configuration.
-        Otherwise, raise Factory error from PrimaryAlgo
+        Otherwise, raise Factory error.
 
     """
     if not config:
         config = orion.core.config.experiment.algorithms
 
     try:
+        backported_config = backward.port_algo_config(config)
+        algo_constructor = algo_factory.get_class(backported_config.pop("of_type"))
+        # TODO: Adapt this bit:
         if knowledge_base is not None:
             from orion.core.worker.multi_task_algo import MultiTaskAlgo
+
             algo = MultiTaskAlgo(
                 space=space, algorithm_config=config, knowledge_base=knowledge_base
             )
         else:
-            algo = PrimaryAlgo(space, config)
-        algo.unwrapped.max_trials = max_trials
-        # from orion.core.worker.multi_task_algo import MultiTaskAlgo
-        # algo = MultiTaskAlgo(space, config)
-        # algo.unwrapped.max_trials = max_trials
+            # algo = PrimaryAlgo(space, config)
+            algo = SpaceTransformAlgoWrapper(
+                algo_constructor, space=space, **backported_config
+            )
+        algo.algorithm.max_trials = max_trials
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
@@ -550,7 +536,7 @@ def _instantiate_algo(
     return algo
 
 
-def _instantiate_strategy(config=None, ignore_unavailable=False):
+def _instantiate_strategy(config=None):
     """Instantiate the strategy object
 
     Parameters
@@ -558,32 +544,15 @@ def _instantiate_strategy(config=None, ignore_unavailable=False):
     config: dict, optional
         Configuration of the strategy. If None of empty, system's defaults are used
         (orion.core.config.producer.strategy).
-    ignore_unavailable: bool, optional
-        If True and algorithm is not available (plugin not installed), return the configuration.
-        Otherwise, raise Factory error from PrimaryAlgo
-
 
     """
-    if not config:
-        config = orion.core.config.experiment.strategy
+    if config or orion.core.config.experiment.strategy != {}:
+        log.warning(
+            "`strategy` option is not supported anymore. It should be set in "
+            "algorithm configuration directly."
+        )
 
-    if isinstance(config, str):
-        strategy_type = config
-        config = {}
-    else:
-        config = copy.deepcopy(config)
-        strategy_type, config = next(iter(config.items()))
-
-    try:
-        strategy = Strategy(of_type=strategy_type, **config)
-    except NotImplementedError as e:
-        if not ignore_unavailable:
-            raise e
-        log.warning(str(e))
-        log.warning("Strategy will not be instantiated.")
-        strategy = {strategy_type: config}
-
-    return strategy
+    return None
 
 
 def _register_experiment(experiment):
@@ -624,6 +593,41 @@ def _update_experiment(experiment):
     get_storage().update_experiment(experiment, **config)
 
     log.debug("Experiment configuration successfully updated in DB.")
+
+
+def _attempt_branching(conflicts, experiment, version, branching):
+    if len(conflicts.get()) > 1:
+        log.debug("Experiment must branch because of conflicts")
+    else:
+        assert branching.get("branch_to")
+        log.debug("Experiment branching forced with ``branch_to``")
+    branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
+    log.debug("Now attempting registration of branched experiment in DB.")
+    try:
+        _register_experiment(branched_experiment)
+        log.debug("Branched experiment successfully registered in DB.")
+    except DuplicateKeyError as e:
+        log.debug(
+            "Experiment registration failed. This is likely due to a race condition "
+            "during branching. Now rolling back and re-attempting building "
+            "the branched experiment."
+        )
+        raise RaceCondition(
+            "There was a race condition during branching. This error can "
+            "also occur if you try branching from a specific version that already "
+            "has a child experiment with the same name. Change the name of the new "
+            "experiment and use `branch-from` to specify the parent experiment."
+        ) from e
+
+    return branched_experiment
+
+
+def _get_branching_status_string(conflicts, branching_arguments):
+    experiment_brancher = ExperimentBranchBuilder(
+        conflicts, enabled=False, **branching_arguments
+    )
+    branching_prompt = BranchingPrompt(experiment_brancher)
+    return branching_prompt.get_status()
 
 
 def _branch_experiment(experiment, conflicts, version, branching_arguments):
@@ -737,6 +741,7 @@ def build_from_args(cmdargs):
         :func:`orion.core.io.experiment_builder.build` for more information on experiment creation.
 
     """
+
     cmd_config = get_cmd_config(cmdargs)
 
     if "name" not in cmd_config:

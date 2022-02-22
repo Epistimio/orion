@@ -3,41 +3,70 @@
 """Collection of tests for :mod:`orion.core.utils.working_dir`."""
 import os
 import shutil
+from pathlib import Path
 
 import pytest
 
-from orion.core.utils.working_dir import WorkingDir
+from orion.core.utils.working_dir import SetupWorkingDir
 
 
-@pytest.fixture
-def path(tmp_path):
-    """Return a path as a string."""
-    return str(tmp_path) + "/hi_hello"
+class ExperimentStub:
+    def __init__(self, working_dir=None):
+        self.name = "exp-name"
+        self.version = 1
+        self.working_dir = working_dir
 
 
-def test_create_permanent_dir(tmp_path, path):
+def test_exp_with_new_working_dir(tmp_path):
     """Check if a permanent directory is created."""
-    with WorkingDir(tmp_path, temp=False, prefix="hi", suffix="_hello"):
-        assert os.path.exists(path)
+    tmp_path = os.path.join(tmp_path, "orion")
 
-    assert os.path.exists(path)
+    experiment = ExperimentStub(tmp_path)
+
+    assert not os.path.exists(tmp_path)
+
+    with SetupWorkingDir(experiment):
+        assert os.path.exists(tmp_path)
+
+    assert experiment.working_dir == tmp_path
+    assert os.path.exists(tmp_path)
+
+    shutil.rmtree(tmp_path)
 
 
-def test_temp_dir_when_exists(tmp_path, path):
+def test_exp_with_existing_working_dir(tmp_path):
+    """Check if an existing permanent directory is not overwritten."""
+    tmp_path = os.path.join(tmp_path, "orion")
+
+    experiment = ExperimentStub(tmp_path)
+
+    os.makedirs(tmp_path)
+
+    assert os.path.exists(tmp_path)
+
+    file_path = os.path.join(tmp_path, "some_file")
+    Path(file_path).touch()
+
+    assert os.path.exists(file_path)
+
+    with SetupWorkingDir(experiment):
+        assert os.path.exists(tmp_path)
+
+    assert experiment.working_dir == tmp_path
+    assert os.path.exists(tmp_path)
+    assert os.path.exists(file_path)
+
+    shutil.rmtree(tmp_path)
+
+
+def test_exp_with_no_working_dir():
     """Check if a permanent directory is deleted."""
-    os.mkdir(path)
+    experiment = ExperimentStub(None)
 
-    with WorkingDir(tmp_path, temp=True, prefix="hi", suffix="_hello"):
-        assert os.path.exists(path)
+    with SetupWorkingDir(experiment):
+        assert experiment.working_dir is not None
+        assert os.path.exists(experiment.working_dir)
+        tmp_path = experiment.working_dir
 
-    assert os.path.exists(path)
-
-    shutil.rmtree(path)
-
-
-def test_create_temp_dir(tmp_path):
-    """Check if a temporary directory is created."""
-    with WorkingDir(tmp_path, prefix="hi", suffix="_hello") as w:
-        assert os.path.exists(w)
-
-    assert not os.path.exists(w)
+    assert experiment.working_dir is None
+    assert not os.path.exists(tmp_path)

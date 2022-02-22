@@ -1,21 +1,16 @@
 # Roadmap
-Last update May 19th, 2021
+Last update Feb 11th, 2022
 
 ## Next releases - Short-Term
 
-### v0.1.16
+### v0.2.3
 
-#### Quick release for bug fixes
-
-### v0.2
-
-#### Generic `Optimizer` interface supporting various types of algorithms
-
-Change interface to support trial object instead of curated lists. This is necessary to support algorithms such as PBT.
-
-#### More Optimizers
-- [PBT](https://arxiv.org/abs/1711.09846)
+- [DEBH](https://arxiv.org/abs/2105.09821)
+- [HEBO](https://github.com/huawei-noah/HEBO/tree/master/HEBO/archived_submissions/hebo)
 - [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
+- Integration with Hydra
+
+## Next releases - Mid-Term
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
@@ -23,7 +18,7 @@ Change interface to support trial object instead of curated lists. This is neces
 
 #### Leveraging previous experiences
 Leveraging the knowledge base contained in the EVC of previous trials to optimize and drive new
- trials.
+trials.
 
 ## Next releases - Long-Term
 

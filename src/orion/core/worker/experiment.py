@@ -7,21 +7,52 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
+import contextlib
 import copy
 import datetime
 import inspect
 import logging
+from dataclasses import dataclass, field
 
 import pandas
 
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
 from orion.storage.base import FailedUpdate, get_storage
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class ExperimentStats:
+    """
+    Parameters
+    ----------
+    trials_completed : int
+       Number of completed trials
+    best_trials_id : int
+       Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
+       which achieved the best known objective result.
+    best_evaluation : float
+       Evaluation score of the best trial
+    start_time : `datetime.datetime`
+       When Experiment was first dispatched and started running.
+    finish_time : `datetime.datetime`
+       When Experiment reached terminating condition and stopped running.
+    duration : `datetime.timedelta`
+       Elapsed time.
+    """
+
+    trials_completed: int
+    best_trials_id: int
+    best_evaluation: float
+    start_time: datetime.datetime = field(default_factory=datetime.datetime)
+    finish_time: datetime.datetime = field(default_factory=datetime.datetime)
+    duration: datetime.timedelta = field(default_factory=datetime.timedelta)
 
 
 # pylint: disable=too-many-public-methods
@@ -44,8 +75,6 @@ class Experiment:
         Current version of this experiment.
     metadata : dict
        Contains managerial information about this `Experiment`.
-    pool_size : int
-       How many workers can participate asynchronously in this `Experiment`.
     max_trials : int
        How many trials must be evaluated, before considering this `Experiment` done.
        This attribute can be updated if the rest of the experiment configuration
@@ -58,7 +87,7 @@ class Experiment:
        it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
-    algorithms : `PrimaryAlgo` object.
+    algorithms : `BaseAlgorithm` object or a wrapper.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
@@ -89,20 +118,18 @@ class Experiment:
         "name",
         "refers",
         "metadata",
-        "pool_size",
         "max_trials",
         "max_broken",
         "version",
         "space",
         "algorithms",
-        "producer",
         "working_dir",
         "_id",
         "_storage",
         "_node",
         "_mode",
     )
-    non_branching_attrs = ("pool_size", "max_trials", "max_broken")
+    non_branching_attrs = ("max_trials", "max_broken")
 
     def __init__(self, name, version=None, mode="r"):
         self._id = None
@@ -112,13 +139,11 @@ class Experiment:
         self._node = None
         self.refers = {}
         self.metadata = {}
-        self.pool_size = None
         self.max_trials = None
         self.max_broken = None
         self.space = None
         self.algorithms = None
         self.working_dir = None
-        self.producer = {}
 
         self._storage = get_storage()
 
@@ -240,11 +265,13 @@ class Experiment:
 
         self.fix_lost_trials()
 
+        self.duplicate_pending_trials()
+
         selected_trial = self._storage.reserve_trial(self)
         log.debug("reserved trial (trial: %s)", selected_trial)
         return selected_trial
 
-    def fix_lost_trials(self):
+    def fix_lost_trials(self, with_evc_tree=True):
         """Find lost trials and set them to interrupted.
 
         A lost trial is defined as a trial whose heartbeat as not been updated since two times
@@ -254,7 +281,18 @@ class Experiment:
 
         """
         self._check_if_writable()
-        trials = self._storage.fetch_lost_trials(self)
+
+        if self._node is not None and with_evc_tree:
+            for experiment in self._node.root:
+                if experiment.item is self:
+                    continue
+
+                # Ugly hack to allow resetting parent's lost trials.
+                experiment.item._mode = "w"
+                experiment.item.fix_lost_trials(with_evc_tree=False)
+                experiment.item._mode = "r"
+
+        trials = self.fetch_lost_trials(with_evc_tree=False)
 
         for trial in trials:
             log.debug("Setting lost trial %s status to interrupted...", trial.id)
@@ -264,6 +302,43 @@ class Experiment:
                 log.debug("success")
             except FailedUpdate:
                 log.debug("failed")
+
+    def duplicate_pending_trials(self):
+        """Find pending trials in EVC and duplicate them in current experiment.
+
+        An experiment cannot execute trials from parent experiments otherwise some trials
+        may have been executed in different environements of different experiment although they
+        belong to the same experiment. Instead, trials that are pending in parent and child
+        experiment are copied over to current experiment so that it can be reserved and executed.
+        The parent or child experiment will only see their original copy of the trial, and
+        the current experiment will only see the new copy of the trial.
+        """
+        self._check_if_writable()
+        evc_pending_trials = self._select_evc_call(
+            with_evc_tree=True, function="fetch_pending_trials"
+        )
+        exp_pending_trials = self._select_evc_call(
+            with_evc_tree=False, function="fetch_pending_trials"
+        )
+
+        exp_trials_ids = set(
+            trial.compute_trial_hash(trial, ignore_experiment=True)
+            for trial in exp_pending_trials
+        )
+
+        for trial in evc_pending_trials:
+            if (
+                trial.compute_trial_hash(trial, ignore_experiment=True)
+                in exp_trials_ids
+            ):
+                continue
+
+            trial.experiment = self.id
+            # Danger danger, race conditions!
+            try:
+                self._storage.register_trial(trial)
+            except DuplicateKeyError:
+                log.debug("Race condition while trying to duplicate trial %s", trial.id)
 
     # pylint:disable=unused-argument
     def update_completed_trial(self, trial, results_file=None):
@@ -284,33 +359,6 @@ class Experiment:
         # push trial results updates the entire trial status included
         log.debug("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
-
-    def register_lie(self, lying_trial):
-        """Register a *fake* trial created by the strategist.
-
-        The main difference between fake trial and orignal ones is the addition of a fake objective
-        result, and status being set to completed. The id of the fake trial is different than the id
-        of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See :mod:`orion.core.worker.strategy` for more information and the
-        Strategist object and generation of fake trials.
-
-        Parameters
-        ----------
-        trials: `Trial` object
-            Fake trial to register in the database
-
-        Raises
-        ------
-        orion.core.io.database.DuplicateKeyError
-            If a trial with the same id already exist in the database. Since the id is computed
-            based on a hashing of the trial, this should mean that an identical trial already exist
-            in the database.
-
-        """
-        self._check_if_writable()
-        lying_trial.status = "completed"
-        lying_trial.end_time = datetime.datetime.utcnow()
-        self._storage.register_lie(lying_trial)
 
     def register_trial(self, trial, status="new"):
         """Register new trial in the database.
@@ -336,8 +384,63 @@ class Experiment:
         trial.experiment = self._id
         trial.status = status
         trial.submit_time = stamp
+        trial.exp_working_dir = self.working_dir
 
         self._storage.register_trial(trial)
+
+    @contextlib.contextmanager
+    def acquire_algorithm_lock(self, timeout=60, retry_interval=1):
+        """Acquire lock on algorithm
+
+        This method should be called using a ``with``-clause.
+
+        The context manager returns the algorithm object with its state updated
+        based on the state loaded from storage.
+
+        Upon leaving the context manager, the new state of the algorithm is saved back
+        to the storage before releasing the lock.
+
+        Parameters
+        ----------
+        timeout: int, optional
+            Timeout for the acquisition of the lock. If the lock is not
+            obtained before ``timeout``, then ``LockAcquisitionTimeout`` is raised.
+            The timeout is only for the acquisition of the lock.
+            Once the lock is obtained, it is valid until the context manager is closed.
+            Default: 600.
+        retry_interval: int, optional
+            Sleep time between each attempts at acquiring the lock. Default: 1
+
+        Raises
+        ------
+        ``RuntimeError``
+            The algorithm configuration is different then the one during last execution of that
+            same experiment.
+        ``orion.storage.base.LockAcquisitionTimeout``
+            The lock could not be obtained in less than ``timeout`` seconds.
+        """
+
+        self._check_if_writable()
+
+        with self._storage.acquire_algorithm_lock(
+            experiment=self, timeout=timeout, retry_interval=retry_interval
+        ) as locked_algorithm_state:
+            if locked_algorithm_state.configuration != self.algorithms.configuration:
+                log.warning(
+                    "Saved configuration: %s", locked_algorithm_state.configuration
+                )
+                log.warning("Current configuration: %s", self.algorithms.configuration)
+                raise RuntimeError(
+                    "Algorithm configuration changed since last experiment execution. "
+                    "Algorithm cannot be resumed with a different configuration. "
+                )
+
+            if locked_algorithm_state.state:
+                self.algorithms.set_state(locked_algorithm_state.state)
+
+            yield self.algorithms
+
+            locked_algorithm_state.set_state(self.algorithms.state_dict)
 
     def _select_evc_call(self, with_evc_tree, function, *args, **kwargs):
         if self._node is not None and with_evc_tree:
@@ -353,6 +456,24 @@ class Experiment:
         :return: list of `Trial` objects
         """
         return self._select_evc_call(with_evc_tree, "fetch_trials_by_status", status)
+
+    def fetch_pending_trials(self, with_evc_tree=False):
+        """Fetch all trials with status new, interrupted or suspended
+
+        Trials are sorted based on `Trial.submit_time`
+
+        :return: list of `Trial` objects
+        """
+        return self._select_evc_call(with_evc_tree, "fetch_pending_trials")
+
+    def fetch_lost_trials(self, with_evc_tree=False):
+        """Fetch all reserved trials that are lost (old heartbeat)
+
+        Trials are sorted based on `Trial.submit_time`
+
+        :return: list of `Trial` objects
+        """
+        return self._select_evc_call(with_evc_tree, "fetch_lost_trials")
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
@@ -449,14 +570,6 @@ class Experiment:
                 attribute.get("adapter"), BaseAdapter
             ):
                 config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-            elif (
-                attrname == "producer"
-                and attribute.get("strategy")
-                and not isinstance(attribute["strategy"], dict)
-            ):
-                config[attrname]["strategy"] = config[attrname][
-                    "strategy"
-                ].configuration
 
         if self.id is not None:
             config["_id"] = self.id
@@ -465,53 +578,39 @@ class Experiment:
 
     @property
     def stats(self):
-        """Calculate a stats dictionary for this particular experiment.
-
-        Returns
-        -------
-        stats : dict
-
-        Stats
-        -----
-        trials_completed : int
-           Number of completed trials
-        best_trials_id : int
-           Unique identifier of the `Trial` object in the database which achieved
-           the best known objective result.
-        best_evaluation : float
-           Evaluation score of the best trial
-        start_time : `datetime.datetime`
-           When Experiment was first dispatched and started running.
-        finish_time : `datetime.datetime`
-           When Experiment reached terminating condition and stopped running.
-        duration : `datetime.timedelta`
-           Elapsed time.
-
+        """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
+        experiment.
         """
         completed_trials = self.fetch_trials_by_status("completed")
 
         if not completed_trials:
             return dict()
-        stats = dict()
-        stats["trials_completed"] = len(completed_trials)
-        stats["best_trials_id"] = None
+        trials_completed = len(completed_trials)
+        best_trials_id = None
         trial = completed_trials[0]
-        stats["best_evaluation"] = trial.objective.value
-        stats["best_trials_id"] = trial.id
-        stats["start_time"] = self.metadata["datetime"]
-        stats["finish_time"] = stats["start_time"]
+        best_evaluation = trial.objective.value
+        best_trials_id = trial.id
+        start_time = self.metadata["datetime"]
+        finish_time = start_time
         for trial in completed_trials:
             # All trials are going to finish certainly after the start date
             # of the experiment they belong to
-            if trial.end_time > stats["finish_time"]:  # pylint:disable=no-member
-                stats["finish_time"] = trial.end_time
+            if trial.end_time > finish_time:  # pylint:disable=no-member
+                finish_time = trial.end_time
             objective = trial.objective.value
-            if objective < stats["best_evaluation"]:
-                stats["best_evaluation"] = objective
-                stats["best_trials_id"] = trial.id
-        stats["duration"] = stats["finish_time"] - stats["start_time"]
+            if objective < best_evaluation:
+                best_evaluation = objective
+                best_trials_id = trial.id
+        duration = finish_time - start_time
 
-        return stats
+        return ExperimentStats(
+            trials_completed=trials_completed,
+            best_trials_id=best_trials_id,
+            best_evaluation=best_evaluation,
+            start_time=start_time,
+            finish_time=finish_time,
+            duration=duration,
+        )
 
     def __repr__(self):
         """Represent the object as a string."""

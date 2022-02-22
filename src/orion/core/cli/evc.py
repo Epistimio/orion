@@ -10,6 +10,15 @@ from orion.core.evc import adapters
 from orion.core.evc.conflicts import Resolution
 
 
+def _add_enable_argument(parser):
+    parser.add_argument(
+        "--enable-evc",
+        action="store_true",
+        default=None,
+        help="Enable the Experiment Version Control.",
+    )
+
+
 def _add_auto_resolution_argument(parser):
     parser.add_argument(
         "--auto-resolution",
@@ -106,6 +115,7 @@ def _add_branch_to_argument(parser, resolution_class):
 
 
 resolution_arguments = {
+    "enable": _add_enable_argument,
     "auto_resolution": _add_auto_resolution_argument,
     "manual_resolution": _add_manual_resolution_argument,
     "non_monitored_arguments": _add_non_monitored_arguments_argument,
@@ -133,6 +143,7 @@ def get_branching_args_group(parser):
         description="Arguments to automatically resolved branching events.",
     )
 
+    _add_enable_argument(branching_args_group)
     _add_manual_resolution_argument(branching_args_group)
     _add_non_monitored_arguments_argument(branching_args_group)
     _add_ignore_code_changes_argument(branching_args_group)

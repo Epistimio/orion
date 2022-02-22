@@ -3,20 +3,21 @@
 Wrappers for database frameworks
 ================================
 
-Contains :class:`AbstractDB`, an interface for databases.
-Currently, implemented wrappers:
+Contains :class:`Database`, an interface for databases.
 
-   - :class:`orion.core.io.database.mongodb.MongoDB`
+Database objects can be created using ``database_factory.create()``.
+See :py:class:`orion.core.utils.GenericFactory` for more information on the factory.
 
 """
+# :obj:`database_factory`.
 import logging
 from abc import abstractmethod, abstractproperty
 
-from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
+from orion.core.utils.singleton import GenericSingletonFactory
 
 
 # pylint: disable=too-many-public-methods
-class AbstractDB(object, metaclass=AbstractSingletonType):
+class Database(object):
     """Base class for database framework wrappers.
 
     Attributes
@@ -42,7 +43,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
     def __init__(
         self, host=None, name=None, port=None, username=None, password=None, **kwargs
     ):
-        """Init method, see attributes of :class:`AbstractDB`."""
+        """Init method, see attributes of :class:`Database`."""
         defaults = self.get_defaults()
         host = defaults.get("host", None) if host is None or host == "" else host
         name = defaults.get("name", None) if name is None or name == "" else name
@@ -65,7 +66,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
     @abstractmethod
     def initiate_connection(self):
-        """Connect to database, unless `AbstractDB` `is_connected`.
+        """Connect to database, unless `Database` `is_connected`.
 
         Raises
         ------
@@ -77,7 +78,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
     @abstractmethod
     def close_connection(self):
-        """Disconnect from database, if `AbstractDB` `is_connected`."""
+        """Disconnect from database, if `Database` `is_connected`."""
         pass
 
     @abstractmethod
@@ -91,8 +92,8 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         keys: str or list of tuples
            Can be a string representing a key to index, or a list of tuples
            with the structure `[(key_name, sort_order)]`. `key_name` must be a
-           string and sort_order can be either ``AbstractDB.ASCENDING`` or
-           ``AbstractDB.DESCENDING``.
+           string and sort_order can be either ``Database.ASCENDING`` or
+           ``Database.DESCENDING``.
         unique: bool, optional
            Ensure each document have a different key value. If not, operations
            like `write()` and `read_and_write()` will raise
@@ -170,7 +171,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         ------
         DuplicateKeyError
             If the operation is creating duplicate keys in two different documents. Only occurs if
-            the keys have unique indexes. See :meth:`AbstractDB.ensure_index` for more information
+            the keys have unique indexes. See :meth:`Database.ensure_index` for more information
             about indexes.
 
         """
@@ -225,7 +226,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         ------
         DuplicateKeyError
             If the operation is creating duplicate keys in two different documents. Only occurs if
-            the keys have unique indexes. See :meth:`AbstractDB.ensure_index` for more information
+            the keys have unique indexes. See :meth:`Database.ensure_index` for more information
             about indexes.
 
         """
@@ -297,7 +298,7 @@ class ReadOnlyDB(object):
     )
 
     def __init__(self, database):
-        """Init method, see attributes of :class:`AbstractDB`."""
+        """Init method, see attributes of :class:`Database`."""
         self._database = database
 
     def __getattr__(self, attr):
@@ -338,11 +339,7 @@ class OutdatedDatabaseError(DatabaseError):
     pass
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Database(AbstractDB, metaclass=SingletonFactory):
-    """Class used to inject dependency on a database framework."""
-
-    pass
+database_factory = GenericSingletonFactory(Database)
 
 
 # set per-module log level

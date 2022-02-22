@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.tpe`."""
 import itertools
+import timeit
 
 import numpy
 import pytest
@@ -16,8 +17,9 @@ from orion.algo.tpe import (
     compute_max_ei_point,
     ramp_up_weights,
 )
+from orion.core.utils import backward, format_trials
 from orion.core.worker.transformer import build_required_space
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, phase
 
 
 @pytest.fixture()
@@ -330,6 +332,27 @@ class TestGMMSampler:
         assert numpy.all(hist[0].argsort() == numpy.array(weights).argsort())
         assert numpy.all(points >= -11)
         assert numpy.all(points < 9)
+
+    def test_sample_narrow_space(self, tpe):
+        """Test that sampling in a narrow space does not fail to fast"""
+        mus = numpy.ones(12) * 0.5
+        sigmas = [0.5] * 12
+
+        times = []
+        for bounds in [(0.4, 0.6), (0.49, 0.51), (0.499, 0.501), (0.49999, 0.50001)]:
+            gmm_sampler = GMMSampler(tpe, mus, sigmas, *bounds)
+            times.append(timeit.timeit(lambda: gmm_sampler.sample(2), number=100))
+
+        # Test that easy sampling takes less time.
+        assert sorted(times) == times
+
+        gmm_sampler = GMMSampler(
+            tpe, mus, sigmas, 0.05, 0.04, attempts_factor=1, max_attempts=10
+        )
+        with pytest.raises(RuntimeError) as exc:
+            gmm_sampler.sample(1, attempts=10)
+
+        assert exc.match("Failed to sample in interval")
 
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
@@ -696,6 +719,17 @@ class TestTPE(BaseAlgoTests):
         "equal_weight": True,
         "prior_weight": 0.8,
         "full_weight_num": 10,
+        "max_retry": 100,
+        "parallel_strategy": {
+            "of_type": "StatusBasedParallelStrategy",
+            "strategy_configs": {
+                "broken": {"of_type": "MaxParallelStrategy", "default_result": 100},
+            },
+            "default_strategy": {
+                "of_type": "meanparallelstrategy",
+                "default_result": 50,
+            },
+        },
     }
 
     def test_suggest_init(self, mocker):
@@ -742,23 +776,20 @@ class TestTPE(BaseAlgoTests):
         original_sample = GMMSampler.sample
 
         low = 0.5
-        high = 0.50001
+        high = 0.5000001
 
-        def sample(self, num):
+        def sample(self, num, attempts=None):
+            self.attempts_factor = 1
+            self.max_attempts = 10
             self.low = low
             self.high = high
-            return original_sample(self, num)
+            return original_sample(self, num, attempts=attempts)
 
         monkeypatch.setattr(GMMSampler, "sample", sample)
         with pytest.raises(RuntimeError) as exc:
             algo.suggest(1)
 
         assert exc.match(f"Failed to sample in interval \({low}, {high}\)")
-
-    def test_int_data(self, mocker, num, attr):
-        if num > 0:
-            pytest.skip("See https://github.com/Epistimio/orion/issues/600")
-        super(TestTPE, self).test_int_data(mocker, num, attr)
 
     def test_is_done_cardinality(self):
         # TODO: Support correctly loguniform(discrete=True)
@@ -777,12 +808,68 @@ class TestTPE(BaseAlgoTests):
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
             n = algo.n_suggested
-            algo.observe([[x, y, z]], [dict(objective=i)])
+            backward.algo_observe(
+                algo,
+                [format_trials.tuple_to_trial([x, y, z], space)],
+                [dict(objective=i)],
+            )
             assert algo.n_suggested == n + 1
 
         assert i + 1 == space.cardinality
 
         assert algo.is_done
+
+    def test_log_integer(self, monkeypatch):
+        """Verify that log integer dimensions do not go out of bound."""
+        RANGE = 100
+        algo = self.create_algo(
+            space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
+        )
+        algo.algorithm.max_trials = RANGE * 2
+
+        values = set(range(1, RANGE + 1))
+
+        # Mock sampling so that it quickly samples all possible integers in given bounds
+        def sample(self, n_samples=1, seed=None):
+            return [
+                format_trials.tuple_to_trial(
+                    (numpy.log(values.pop()),), algo.transformed_space
+                )
+                for _ in range(n_samples)
+            ]
+
+        def _suggest_random(self, num):
+            return self._suggest(num, sample)
+
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_random", _suggest_random)
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+        self.force_observe(RANGE, algo)
+        assert algo.n_observed == RANGE
+        assert algo.n_suggested == RANGE
+
+    @phase
+    def test_stuck_exploiting(self, mocker, num, attr):
+        """Test that algo drops out when exploiting an already explored region."""
+        algo = self.create_algo()
+        spy = self.spy_phase(mocker, 0, algo, "space.sample")
+
+        points = algo.space.sample(1)
+
+        # Mock sampling so that always returns the same point
+        def sample(self, n_samples=1, seed=None):
+            return points
+
+        def _suggest_random(self, num):
+            return self._suggest(num, sample)
+
+        mocker.patch("orion.algo.tpe.TPE._suggest_random", _suggest_random)
+        mocker.patch("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+
+        with pytest.raises(RuntimeError):
+            self.force_observe(2, algo)
+
+        assert algo.n_observed == 1
+        assert algo.n_suggested == 1
 
 
 TestTPE.set_phases([("random", 0, "space.sample"), ("bo", N_INIT + 1, "_suggest_bo")])

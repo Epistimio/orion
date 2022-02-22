@@ -54,7 +54,9 @@ class ExperimentBranchBuilder:
 
     """
 
-    def __init__(self, conflicts, manual_resolution=None, **branching_arguments):
+    def __init__(
+        self, conflicts, enabled=True, manual_resolution=None, **branching_arguments
+    ):
         # TODO: handle all other arguments
         if manual_resolution is None:
             manual_resolution = orion.core.config.evc.manual_resolution
@@ -69,7 +71,8 @@ class ExperimentBranchBuilder:
         self.branching_arguments = branching_arguments
 
         self.conflicting_config.update(branching_arguments)
-        self.resolve_conflicts()
+        if enabled:
+            self.resolve_conflicts()
 
     @property
     def experiment_config(self):

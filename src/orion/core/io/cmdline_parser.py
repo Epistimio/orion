@@ -94,6 +94,18 @@ class CmdlineParser(object):
         for item in self.template:
             if item.startswith("-"):
                 formatted.append(item)
+            elif (
+                item.startswith("{")
+                and item.endswith("}")
+                and any(item == f"{{{key}}}" for key in configuration)
+            ):
+                # The argument has an entry with exactly matching name in the configuration.
+                # Extract it from the configuration, rather than try to use `str.format`.
+                # This solves bugs that arise from using strings that are invalid python expressions
+                # (e.g. names with ".", "/", or ":").
+                key = [key for key in configuration if item == f"{{{key}}}"][0]
+                value = configuration[key]
+                formatted.append(str(value))
             else:
                 formatted.append(item.format(**configuration))
 

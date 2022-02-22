@@ -16,6 +16,7 @@ tests_require = ["pytest>=3.0.0", "scikit-learn"]
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.pbt",
     "orion.analysis",
     "orion.benchmark",
     "orion.client",
@@ -46,24 +47,33 @@ setup_args = dict(
         "console_scripts": [
             "orion = orion.core.cli:main",
         ],
-        "OptimizationAlgorithm": [
+        "BaseAlgorithm": [
             "random = orion.algo.random:Random",
             "gridsearch = orion.algo.gridsearch:GridSearch",
             "asha = orion.algo.asha:ASHA",
             "hyperband = orion.algo.hyperband:Hyperband",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
+            "pbt = orion.algo.pbt.pbt:PBT",
         ],
-        "Storage": [
+        "Database": [
+            "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
+            "pickleddb = orion.core.io.database.pickleddb:PickledDB",
+            "mongodb = orion.core.io.database.mongodb:MongoDB",
+        ],
+        "BaseStorageProtocol": [
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",
         ],
-        "Executor": [
+        "BaseExecutor": [
+            "singleexecutor = orion.executor.single_backend:SingleExecutor",
             "joblib = orion.executor.joblib_backend:Joblib",
             "dask = orion.executor.dask_backend:Dask",
         ],
     },
     install_requires=[
+        "cloudpickle",
+        "dataclasses",
         "PyYAML",
         "pymongo>=3",
         "numpy",

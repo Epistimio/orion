@@ -49,7 +49,6 @@ config = dict(
     max_broken=5,
     working_dir="",
     algorithms={"random": {"seed": 1}},
-    producer={"strategy": "NoParallelStrategy"},
     refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
 )
 
@@ -60,7 +59,6 @@ def user_config():
     user_config = copy.deepcopy(config)
     user_config.pop("metadata")
     user_config.pop("version")
-    user_config["strategy"] = user_config.pop("producer")["strategy"]
     user_config.pop("refers")
     user_config.pop("pool_size")
     return user_config
@@ -192,9 +190,8 @@ class TestCreateExperiment:
                 storage={"type": "legacy", "database": {"type": "idontexist"}},
             )
 
-        assert (
-            "Could not find implementation of AbstractDB, type = 'idontexist'"
-            in str(exc.value)
+        assert "Could not find implementation of Database, type = 'idontexist'" in str(
+            exc.value
         )
 
     def test_create_experiment_new_default(self):
@@ -211,9 +208,6 @@ class TestCreateExperiment:
             assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
             assert experiment.algorithms.configuration == {"random": {"seed": None}}
-            assert experiment.configuration["producer"] == {
-                "strategy": {"MaxParallelStrategy": {"default_result": float("inf")}}
-            }
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""
@@ -227,7 +221,6 @@ class TestCreateExperiment:
             assert exp_config["max_broken"] == config["max_broken"]
             assert exp_config["working_dir"] == config["working_dir"]
             assert exp_config["algorithms"] == config["algorithms"]
-            assert exp_config["producer"] == config["producer"]
 
     def test_create_experiment_hit_no_branch(self, user_config):
         """Test creating an existing experiment by specifying all identical attributes."""
@@ -243,7 +236,6 @@ class TestCreateExperiment:
             assert exp_config["max_broken"] == config["max_broken"]
             assert exp_config["working_dir"] == config["working_dir"]
             assert exp_config["algorithms"] == config["algorithms"]
-            assert exp_config["producer"] == config["producer"]
 
     def test_create_experiment_hit_no_config(self):
         """Test creating an existing experiment by specifying the name only."""
@@ -257,16 +249,14 @@ class TestCreateExperiment:
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
             assert experiment.working_dir == config["working_dir"]
-            assert (
-                experiment.producer["strategy"].configuration
-                == config["producer"]["strategy"]
-            )
 
     def test_create_experiment_hit_branch(self):
         """Test creating a differing experiment that cause branching."""
         with OrionState(experiments=[config]):
             experiment = create_experiment(
-                config["name"], space={"y": "uniform(0, 10)"}
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
             )
 
             assert experiment.name == config["name"]
@@ -276,10 +266,6 @@ class TestCreateExperiment:
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
             assert experiment.working_dir == config["working_dir"]
-            assert (
-                experiment.producer["strategy"].configuration
-                == config["producer"]["strategy"]
-            )
 
     def test_create_experiment_race_condition(self, monkeypatch):
         """Test that a single race condition is handled seemlessly
@@ -289,7 +275,11 @@ class TestCreateExperiment:
         """
         with OrionState(experiments=[config]):
             parent = create_experiment(config["name"])
-            child = create_experiment(config["name"], space={"y": "uniform(0, 10)"})
+            child = create_experiment(
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
+            )
 
             def insert_race_condition(self, query):
                 is_auto_version_query = query == {
@@ -315,7 +305,9 @@ class TestCreateExperiment:
             )
 
             experiment = create_experiment(
-                config["name"], space={"y": "uniform(0, 10)"}
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
             )
 
             assert insert_race_condition.count == 1
@@ -326,7 +318,11 @@ class TestCreateExperiment:
         """Test that two or more race condition leads to raise"""
         with OrionState(experiments=[config]):
             parent = create_experiment(config["name"])
-            child = create_experiment(config["name"], space={"y": "uniform(0, 10)"})
+            child = create_experiment(
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
+            )
 
             def insert_race_condition(self, query):
                 is_auto_version_query = query == {
@@ -350,7 +346,11 @@ class TestCreateExperiment:
             )
 
             with pytest.raises(RaceCondition) as exc:
-                create_experiment(config["name"], space={"y": "uniform(0, 10)"})
+                create_experiment(
+                    config["name"],
+                    space={"y": "uniform(0, 10)"},
+                    branching={"enable": True},
+                )
 
             assert insert_race_condition.count == 2
             assert "There was a race condition during branching and new version" in str(
@@ -361,10 +361,17 @@ class TestCreateExperiment:
         """Test creating a differing experiment that cause branching."""
         new_space = {"y": "uniform(0, 10)"}
         with OrionState(experiments=[config]):
-            create_experiment(config["name"], space=new_space)
+            create_experiment(
+                config["name"], space=new_space, branching={"enable": True}
+            )
 
             with pytest.raises(BranchingEvent) as exc:
-                create_experiment(config["name"], version=1, space=new_space)
+                create_experiment(
+                    config["name"],
+                    version=1,
+                    space=new_space,
+                    branching={"enable": True},
+                )
 
             assert "Configuration is different and generates" in str(exc.value)
 

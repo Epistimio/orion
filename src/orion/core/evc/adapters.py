@@ -31,15 +31,44 @@ Adapters can be build using the factory class `Adapter(**kwargs)` or using
 
 """
 import copy
+import logging
 from abc import ABCMeta, abstractmethod
 
+from orion.algo.space import Dimension
 from orion.core.io.space_builder import DimensionBuilder
-from orion.core.utils import Factory
+from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
+
+log = logging.getLogger(__name__)
 
 
 class BaseAdapter(object, metaclass=ABCMeta):
     """Base class describing what an adapter can do."""
+
+    @classmethod
+    def build(cls, adapter_dicts):
+        """Builder method for a list of adapters.
+
+        Parameters
+        ----------
+        adapter_dicts: list of `dict`
+            List of adapter representation in dictionary form as expected to be saved in a database.
+
+        Returns
+        -------
+        `orion.core.evc.adapters.CompositeAdapter`
+            An adapter which may contain many adapters
+
+        """
+        adapters = []
+        for adapter_dict in adapter_dicts:
+            if isinstance(adapter_dict, (list, tuple)):
+                adapter = BaseAdapter.build(adapter_dict)
+            else:
+                adapter = adapter_factory.create(**adapter_dict)
+            adapters.append(adapter)
+
+        return CompositeAdapter(*adapters)
 
     @abstractmethod
     def forward(self, trials):
@@ -278,6 +307,9 @@ class DimensionAddition(BaseAdapter):
 
             :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
+        if self.param.value is Dimension.NO_DEFAULT_VALUE:
+            return []
+
         adapted_trials = []
 
         for trial in trials:
@@ -443,8 +475,9 @@ class DimensionPriorChange(BaseAdapter):
         self.new_dimension = DimensionBuilder().build("new", new_prior)
 
         if self.old_dimension.shape != self.new_dimension.shape:
-            raise NotImplementedError(
-                "Oríon does not support yet adaptations on prior " "shape changes."
+            log.warning(
+                "Oríon does not support yet adaptations on prior shape changes. All trials "
+                "of different shapes will be ignored."
             )
 
     def forward(self, trials):
@@ -898,34 +931,4 @@ class OrionVersionChange(BaseAdapter):
         return ret
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Adapter(BaseAdapter, metaclass=Factory):
-    """Class used to inject dependency on an adapter implementation.
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
-    """
-
-    @classmethod
-    def build(cls, adapter_dicts):
-        """Builder method for a list of adapters.
-
-        Parameters
-        ----------
-        adapter_dicts: list of `dict`
-            List of adapter representation in dictionary form as expected to be saved in a database.
-
-        Returns
-        -------
-        `orion.core.evc.adapters.CompositeAdapter`
-            An adapter which may contain many adapters
-
-        """
-        adapters = []
-        for adapter_dict in adapter_dicts:
-            if isinstance(adapter_dict, (list, tuple)):
-                adapter = Adapter.build(adapter_dict)
-            else:
-                adapter = cls(**adapter_dict)
-            adapters.append(adapter)
-
-        return CompositeAdapter(*adapters)
+adapter_factory = GenericFactory(BaseAdapter)

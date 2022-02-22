@@ -10,7 +10,8 @@ could pre-train on all prior data resulting in a much more efficient optimizatio
 advantage of the EVC system is that it provides a systematic way to organize research and the
 possibility to go back in time and compare the evolution of performance throughout your research.
 
-Experiments inside the EVC are organized by version. By default, every time an experiment has
+Experiments inside the EVC are organized by version. When enabled (See :ref:`config_evc_enable`),
+every time an experiment has
 changed but has not been explicitly renamed, its version number will automatically increment and
 this new version will appear as a new branch for that experiment.
 

@@ -5,13 +5,30 @@ Generic Storage Protocol
 
 Implement a generic protocol to allow Orion to communicate using different storage backend.
 
+Storage protocol is a generic way of allowing Orion to interface with different storage.
+MongoDB, track, cometML, MLFLow, etc...
+
+Examples
+--------
+>>> storage_factory.create('track', uri='file://orion_test.json')
+>>> storage_factory.create('legacy', experiment=...)
+
+Notes
+-----
+When retrieving an already initialized Storage object you should use `get_storage`.
+`storage_factory.create()` should only be used for initialization purposes as `get_storage`
+raises more granular error messages.
+
 """
+import contextlib
 import copy
+import functools
+import inspect
 import logging
 
 import orion.core
 from orion.core.io import resolve_config
-from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
+from orion.core.utils.singleton import GenericSingletonFactory
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +79,49 @@ class MissingArguments(Exception):
     pass
 
 
-class BaseStorageProtocol(metaclass=AbstractSingletonType):
+class LockAcquisitionTimeout(Exception):
+    """Raised when the lock acquisition timeout (not lock is granted)."""
+
+    pass
+
+
+class LockedAlgorithmState:
+    """Locked state of the algorithm from the storage.
+
+    This class helps handle setting the state of the algorithm or resetting it in case
+    the execution crashes during the lock.
+
+    Parameters
+    ----------
+    state: dict
+        Dictionary representing the state of the algorithm.
+    configuration: dict
+        Configuration of the locked algorithm.
+    locked: bool
+        Whether the algorithm is locked or not. Default: True
+    """
+
+    def __init__(self, state, configuration, locked=True):
+        self._original_state = state
+        self.configuration = configuration
+        self._state = state
+        self.locked = locked
+
+    @property
+    def state(self):
+        """State of the algorithm"""
+        return self._state
+
+    def set_state(self, state):
+        """Update the state of the algorithm that should be saved back in storage."""
+        self._state = state
+
+    def reset(self):
+        """Set back algorithm state to original state found in storage."""
+        self._state = self._original_state
+
+
+class BaseStorageProtocol:
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
 
@@ -143,23 +202,6 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
     def register_trial(self, trial):
         """Create a new trial to be executed"""
-        raise NotImplementedError()
-
-    def register_lie(self, trial):
-        """Register a *fake* trial created by the strategist.
-
-        The main difference between fake trial and orignal ones is the addition of a fake objective
-        result, and status being set to completed. The id of the fake trial is different than the id
-        of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
-        Strategist object and generation of fake trials.
-
-        Parameters
-        ----------
-        trial: `Trial` object
-            Fake trial to register in the database
-
-        """
         raise NotImplementedError()
 
     def delete_trials(self, experiment=None, uid=None, where=None):
@@ -379,26 +421,103 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Update trial's heartbeat"""
         raise NotImplementedError()
 
+    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+        """Initialize algorithm lock for given experiment
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
-    """Storage protocol is a generic way of allowing Orion to interface with different storage.
-    MongoDB, track, cometML, MLFLow, etc...
+        Parameters
+        ----------
+        experiment_id: int or str
+            ID of the experiment in storage.
+        algorithm_config: dict
+            Configuration of the algorithm.
+        """
+        raise NotImplementedError()
 
-    Examples
-    --------
-    >>> Storage('track', uri='file://orion_test.json')
-    >>> Storage('legacy', experiment=...)
+    def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
+        """Release the algorithm lock
 
-    Notes
-    -----
-    When retrieving an already initialized Storage object you should use `get_storage`.
-    `Storage()` should only be used for initialization purposes as `get_storage`
-    raises more granular error messages.
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+        uid: str, optional
+            experiment id used to retrieve the trial object.
+        new_state: dict, optional
+             The new state of the algorithm that should be saved in the lock object.
+             If None, the previous state is preserved in the lock object in storage.
+        """
+        raise NotImplementedError()
 
-    """
+    def get_algorithm_lock_info(self, experiment=None, uid=None):
+        """Load algorithm lock info
 
-    pass
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+        uid: str, optional
+            experiment id used to retrieve the trial object.
+
+        Returns
+        -------
+        ``orion.storage.base.LockedAlgorithmState``
+            The locked state of the algoithm. Note that the lock is not acquired by the process
+            calling ``get_algorithm_lock_info`` and the value of LockedAlgorithmState.locked
+            may not be valid if another process is running and could acquire the lock concurrently.
+        """
+        raise NotImplementedError()
+
+    def delete_algorithm_lock(self, experiment=None, uid=None):
+        """Delete experiment algorithm lock from the storage
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+        uid: str, optional
+            experiment id used to retrieve the trial object
+
+        Returns
+        -------
+        Number of algorithm lock deleted. Should 1 if successful, 0 is failed.
+
+        Raises
+        ------
+        UndefinedCall
+            if both experiment and uid are not set
+        AssertionError
+            if both experiment and uid are provided and they do not match
+        """
+        raise NotImplementedError()
+
+    @contextlib.contextmanager
+    def acquire_algorithm_lock(self, experiment, timeout=600, retry_interval=1):
+        """Acquire lock on algorithm in storage
+
+        This method is a contextmanager and should be called using the ``with``-clause.
+
+        Parameters
+        ----------
+        experiment: Experiment
+           experiment object to retrieve from the storage
+        timeout: int, optional
+            Timeout for the acquisition of the lock. If the lock is not
+            obtained before ``timeout``, then ``LockAcquisitionTimeout`` is raised.
+            The timeout is only for the acquisition of the lock.
+            Once the lock is obtained, it is valid until the context manager is closed.
+            Default: 600.
+        retry_interval: int, optional
+            Sleep time between each attempts at acquiring the lock. Default: 1
+
+        Raises
+        ------
+        ``orion.storage.base.LockAcquisitionTimeout``
+            The lock could not be obtained in less than ``timeout`` seconds.
+        """
+        raise NotImplementedError()
+
+
+storage_factory = GenericSingletonFactory(BaseStorageProtocol)
 
 
 def get_storage():
@@ -418,7 +537,7 @@ def get_storage():
     with the appropriate arguments for the chosen backend
 
     """
-    return Storage()
+    return storage_factory.create()
 
 
 def setup_storage(storage=None, debug=False):
@@ -457,9 +576,9 @@ def setup_storage(storage=None, debug=False):
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
-        Storage(of_type=storage_type, **storage)
+        storage_factory.create(of_type=storage_type, **storage)
     except ValueError:
-        if Storage().__class__.__name__.lower() != storage_type.lower():
+        if storage_factory.create().__class__.__name__.lower() != storage_type.lower():
             raise
 
 

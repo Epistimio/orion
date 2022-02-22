@@ -2,8 +2,6 @@
 Algorithm modules
 *****************
 
-TODO
-
 .. automodule:: orion.algo
    :members:
 
@@ -17,4 +15,6 @@ TODO
    algo/gridsearch
    algo/hyperband
    algo/asha
+   algo/pbt
    algo/tpe
+   algo/parallel_strategy

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
+import datetime
 import getpass
 import os
 import tempfile
@@ -12,16 +13,18 @@ from pymongo import MongoClient
 
 import orion.core
 import orion.core.utils.backward as backward
-from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
+from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 from orion.core.io import resolve_config
-from orion.core.io.database import Database
+from orion.core.io.database import database_factory
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils import format_trials
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import Storage, get_storage, setup_storage
+from orion.storage.base import get_storage, setup_storage, storage_factory
 from orion.storage.legacy import Legacy
-from orion.testing import OrionState
+from orion.testing import OrionState, mocked_datetime
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
@@ -74,7 +77,7 @@ class DumbAlgo(BaseAlgorithm):
     def __init__(
         self,
         space,
-        value=5,
+        value=(5,),
         scoring=0,
         judgement=None,
         suspend=False,
@@ -87,11 +90,10 @@ class DumbAlgo(BaseAlgorithm):
         self._times_called_is_done = 0
         self._num = 0
         self._index = 0
-        self._points = []
+        self._trials = []
         self._suggested = None
-        self._results = []
-        self._score_point = None
-        self._judge_point = None
+        self._score_trial = None
+        self._judge_trial = None
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
@@ -150,32 +152,33 @@ class DumbAlgo(BaseAlgorithm):
                 min(self._index, len(self.possible_values) - 1)
             ]
             self._index += 1
+            if isinstance(self.space, Space) and not isinstance(value, Trial):
+                value = format_trials.tuple_to_trial(value, self.space)
             rval.append(value)
 
         self._suggested = rval
 
         return rval
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """Log inputs."""
-        super(DumbAlgo, self).observe(points, results)
-        self._points += points
-        self._results += results
+        super(DumbAlgo, self).observe(trials)
+        self._trials += trials
 
-    def score(self, point):
+    def score(self, trial):
         """Log and return stab."""
-        self._score_point = point
+        self._score_trial = trial
         return self.scoring
 
-    def judge(self, point, measurements):
+    def judge(self, trial, measurements):
         """Log and return stab."""
-        self._judge_point = point
+        self._judge_trial = trial
         self._measurements = measurements
         return self.judgement
 
-    @property
-    def should_suspend(self):
+    def should_suspend(self, trial):
         """Cound how many times it has been called and return `suspend`."""
+        self._suspend_trial = trial
         self._times_called_suspend += 1
         return self.suspend
 
@@ -303,11 +306,8 @@ def clean_db(database, exp_config):
 @pytest.fixture()
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Storage.instance = None
-    Legacy.instance = None
-    Database.instance = None
-    MongoDB.instance = None
-    PickledDB.instance = None
+    storage_factory.instance = None
+    database_factory.instance = None
 
 
 @pytest.fixture(scope="function")
@@ -390,3 +390,10 @@ def storage(setup_pickleddb_database):
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""
     monkeypatch.setattr(getpass, "getuser", lambda: "userxyz")
+
+
+@pytest.fixture()
+def random_dt(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    with mocked_datetime(monkeypatch) as datetime:
+        yield datetime.utcnow()

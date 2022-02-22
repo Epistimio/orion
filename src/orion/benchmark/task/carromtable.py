@@ -6,10 +6,10 @@ Task for CarromTable Function
 """
 import numpy
 
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 
 
-class CarromTable(BaseTask):
+class CarromTable(BenchmarkTask):
     """`CarromTable function <http://infinity77.net/global_optimization/test_functions_nd_C.html#go_benchmark.CarromTable>`_
     as benchmark task"""
 

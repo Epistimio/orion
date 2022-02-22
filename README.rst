@@ -118,18 +118,19 @@ If you use Oríon for published work, please cite our work using the following b
 
 .. code-block:: bibtex
 
-   @software{xavier_bouthillier_2021_0_1_15,
+   @software{xavier_bouthillier_2022_0_2_2,
      author       = {Xavier Bouthillier and
                      Christos Tsirigotis and
                      François Corneau-Tremblay and
                      Thomas Schweizer and
                      Lin Dong and
                      Pierre Delaunay and
+                     Fabrice Normandin and
                      Mirko Bronzi and
                      Dendi Suhubdy and
                      Reyhane Askari and
                      Michael Noukhovitch and
-                     Chao Xua and
+                     Chao Xue and
                      Satya Ortiz-Gagné and
                      Olivier Breuleux and
                      Arnaud Bergeron and
@@ -142,10 +143,10 @@ If you use Oríon for published work, please cite our work using the following b
                      Pascal Lamblin and
                      Christopher Beckham},
      title        = {{Epistimio/orion: Asynchronous Distributed Hyperparameter Optimization}},
-     month        = may,
-     year         = 2021,
+     month        = feb,
+     year         = 2022,
      publisher    = {Zenodo},
-     version      = {v0.1.15},
+     version      = {v0.2.2},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }

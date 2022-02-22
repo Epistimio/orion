@@ -6,10 +6,10 @@ Task for RosenBrock Function
 """
 import numpy
 
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 
 
-class RosenBrock(BaseTask):
+class RosenBrock(BenchmarkTask):
     """`RosenBrock function <http://infinity77.net/global_optimization/test_functions_nd_R.html#go_benchmark.Rosenbrock>`_
     as benchmark task"""
 

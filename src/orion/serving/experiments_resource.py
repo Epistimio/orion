@@ -91,4 +91,4 @@ def _retrieve_best_trial(experiment: Experiment) -> Optional[Trial]:
     if not experiment.stats:
         return None
 
-    return experiment.get_trial(uid=experiment.stats["best_trials_id"])
+    return experiment.get_trial(uid=experiment.stats.best_trials_id)

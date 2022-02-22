@@ -257,7 +257,6 @@ def format_commandline(experiment):
 
 CONFIG_TEMPLATE = """\
 {title}
-pool size: {experiment.pool_size}
 max trials: {experiment.max_trials}
 max broken: {experiment.max_broken}
 working dir: {experiment.working_dir}
@@ -363,15 +362,15 @@ def format_refers(experiment):
 STATS_TEMPLATE = """\
 {title}
 completed: {is_done}
-trials completed: {stats[trials_completed]}
+trials completed: {stats.trials_completed}
 best trial:
-  id: {stats[best_trials_id]}
-  evaluation: {stats[best_evaluation]}
+  id: {stats.best_trials_id}
+  evaluation: {stats.best_evaluation}
   params:
 {best_params}
-start time: {stats[start_time]}
-finish time: {stats[finish_time]}
-duration: {stats[duration]}
+start time: {stats.start_time}
+finish time: {stats.finish_time}
+duration: {stats.duration}
 """
 
 
@@ -396,7 +395,7 @@ def format_stats(experiment):
     if not stats:
         return NO_STATS_TEMPLATE.format(title=format_title("Stats"))
 
-    best_params = get_trial_params(stats["best_trials_id"], experiment)
+    best_params = get_trial_params(stats.best_trials_id, experiment)
 
     stats_string = STATS_TEMPLATE.format(
         title=format_title("Stats"),
