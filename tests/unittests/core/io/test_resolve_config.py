@@ -321,7 +321,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
 
     # Test remaining config
     assert config.pop("debug") is False
-    assert config.pop("frontends") == []
+    assert config.pop("frontends_uri") == []
 
     # Confirm that all fields were tested.
     assert config == {}
