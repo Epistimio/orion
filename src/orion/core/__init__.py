@@ -32,10 +32,10 @@ del get_versions
 __descr__ = "Asynchronous [black-box] Optimization"
 __version__ = VERSIONS["version"]
 __license__ = "BSD-3-Clause"
-__author__ = u"Epistímio"
-__author_short__ = u"Epistímio"
+__author__ = "Epistímio"
+__author_short__ = "Epistímio"
 __author_email__ = "xavier.bouthillier@umontreal.ca"
-__copyright__ = u"2017-2022, Epistímio"
+__copyright__ = "2017-2022, Epistímio"
 __url__ = "https://github.com/epistimio/orion"
 
 DIRS = AppDirs(__name__, __author_short__)

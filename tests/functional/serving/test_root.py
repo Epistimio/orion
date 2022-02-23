@@ -43,19 +43,25 @@ def test_cors_with_custom_frontends_uri(client_with_frontends_uri):
     assert response.status == "200 OK"
 
     # Allowed address, should pass
-    response = client_with_frontends_uri.simulate_get("/", headers={
-        "Origin": "http://123.456"})
+    response = client_with_frontends_uri.simulate_get(
+        "/", headers={"Origin": "http://123.456"}
+    )
     assert response.status == "200 OK"
 
     # Another allowed address, should pass
-    response = client_with_frontends_uri.simulate_get("/", headers={
-        "Origin": "http://example.com"})
+    response = client_with_frontends_uri.simulate_get(
+        "/", headers={"Origin": "http://example.com"}
+    )
     assert response.status == "200 OK"
 
     # Any other origin should fail
 
-    response = client_with_frontends_uri.simulate_get("/", headers={"Origin": "http://localhost"})
+    response = client_with_frontends_uri.simulate_get(
+        "/", headers={"Origin": "http://localhost"}
+    )
     assert response.status == "403 Forbidden"
 
-    response = client_with_frontends_uri.simulate_get("/", headers={"Origin": "http://google.com"})
+    response = client_with_frontends_uri.simulate_get(
+        "/", headers={"Origin": "http://google.com"}
+    )
     assert response.status == "403 Forbidden"
