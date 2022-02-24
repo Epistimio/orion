@@ -14,3 +14,18 @@ def client():
     storage = {"type": "legacy", "database": {"type": "EphemeralDB"}}
     with OrionState(storage=storage):
         yield testing.TestClient(WebApi({"storage": storage}))
+
+
+@pytest.fixture()
+def client_with_frontends_uri():
+    """Mock the falcon.API instance for testing with custom frontend_uri"""
+    storage = {"type": "legacy", "database": {"type": "EphemeralDB"}}
+    with OrionState(storage=storage):
+        yield testing.TestClient(
+            WebApi(
+                {
+                    "storage": storage,
+                    "frontends_uri": ["http://123.456", "http://example.com"],
+                }
+            )
+        )
