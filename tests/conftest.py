@@ -397,3 +397,45 @@ def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
     with mocked_datetime(monkeypatch) as datetime:
         yield datetime.utcnow()
+
+
+@pytest.fixture(autouse=True)
+def ensure_no_lost_process(monkeypatch):
+    """Detect if a test did not close properly its sub-processes"""
+    from multiprocessing import Process
+
+    original_init = Process.__init__
+
+    processes = []
+
+    def mocked_init(self, *args, **kwargs):
+        processes.append(self)
+        original_init(self, *args, **kwargs)
+
+    monkeypatch.setattr(Process, "__init__", mocked_init)
+
+    yield
+
+    for process in processes:
+        assert not process.is_alive()
+
+
+@pytest.fixture(autouse=True)
+def ensure_no_lost_thread(monkeypatch):
+    """Detect if a test did not close properly its threads"""
+    from threading import Thread
+
+    original_init = Thread.__init__
+
+    threads = []
+
+    def mocked_init(self, *args, **kwargs):
+        threads.append(self)
+        original_init(self, *args, **kwargs)
+
+    monkeypatch.setattr(Thread, "__init__", mocked_init)
+
+    yield
+
+    for thread in threads:
+        assert not thread.is_alive()
