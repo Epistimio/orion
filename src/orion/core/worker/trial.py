@@ -7,11 +7,17 @@ Container class for `Trial` entity
 Describe a particular training run, parameters and results.
 
 """
+from __future__ import annotations
+
 import copy
+import dataclasses
 import hashlib
 import logging
 import os
+from dataclasses import dataclass
+from typing import Any, ClassVar, Literal, SupportsFloat
 
+import numpy as np
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
 
@@ -24,7 +30,10 @@ class AlreadyReleased(Exception):
     pass
 
 
-def validate_status(status):
+_Status = Literal["new", "reserved", "suspended", "completed", "interrupted", "broken"]
+
+
+def validate_status(status: _Status | None) -> None:
     """
     Verify if given status is valid. Can be one of ``new``, ``reserved``, ``suspended``,
     ``completed``, ``interrupted``, or ``broken``.
@@ -84,7 +93,7 @@ class Trial:
     """
 
     @classmethod
-    def build(cls, trial_entries):
+    def build(cls, trial_entries: list[dict]) -> list[Trial]:
         """Builder method for a list of trials.
 
         :param trial_entries: List of trial representation in dictionary form,
@@ -97,8 +106,10 @@ class Trial:
             trials.append(cls(**entry))
         return trials
 
+    # TODO: Make this (and subclasses) frozen, and adapt code/tests.
+    @dataclass
     class Value:
-        """Container for a value object.
+        """Container for a value.
 
         Attributes
         ----------
@@ -112,73 +123,63 @@ class Trial:
 
         """
 
-        __slots__ = ("name", "_type", "value")
-        allowed_types = ()
+        name: str
+        type: str
+        value: str | SupportsFloat
+        allowed_types: ClassVar[tuple[str, ...]] = ()
 
-        def __init__(self, **kwargs):
-            """See attributes of `Value` for possible argument for `kwargs`."""
-            for attrname in self.__slots__:
-                setattr(self, attrname, None)
-            for attrname, value in kwargs.items():
-                setattr(self, attrname, value)
-
+        def __post_init__(self):
+            """Post-processing of attributes."""
             self._ensure_no_ndarray()
+            if self.allowed_types:
+                # TODO: Maybe use only the Literal annotation, and remove this check? Is it actually
+                # required anywhere?
+                if self.type not in self.allowed_types:
+                    raise ValueError(
+                        f"Given type, {self.type}, not one of: {self.allowed_types}"
+                    )
 
         def _ensure_no_ndarray(self):
             """Make sure the current value is not a `numpy.ndarray`."""
-            if hasattr(self, "value") and hasattr(self.value, "tolist"):
+            if self.value is not None and isinstance(self.value, np.ndarray):
+                # Would be better, since we could have frozen/immutable Value/result/etc objects:
+                # raise ValueError(f"Value shouldn't be a numpy array!")
                 self.value = self.value.tolist()
 
-        def to_dict(self):
+        def to_dict(self) -> dict[str, Any]:
             """Needed to be able to convert `Value` to `dict` form."""
-            ret = dict(name=self.name, type=self.type, value=self.value)
-            return ret
+            return dataclasses.asdict(self)
 
-        def __eq__(self, other):
-            """Test equality based on self.to_dict()"""
-            return (
-                self.name == other.name
-                and self.type == other.type
-                and self.value == other.value
-            )
-
-        def __str__(self):
-            """Represent partially with a string."""
-            ret = "{0}(name={1}, type={2}, value={3})".format(
-                type(self).__name__, repr(self.name), repr(self.type), repr(self.value)
-            )
-            return ret
-
-        __repr__ = __str__
-
-        @property
-        def type(self):
-            """For meaning of property type, see `Value.type`."""
-            return self._type
-
-        @type.setter
-        def type(self, type_):
-            if type_ is not None and type_ not in self.allowed_types:
-                raise ValueError(
-                    "Given type, {0}, not one of: {1}".format(type_, self.allowed_types)
-                )
-            self._type = type_
-
+    @dataclass
     class Result(Value):
         """Types for a `Result` can be either an evaluation of an 'objective'
         function or of an 'constraint' expression.
         """
 
-        __slots__ = ()
-        allowed_types = ("objective", "constraint", "gradient", "statistic", "lie")
+        type: Literal["objective", "constraint", "gradient", "statistic", "lie"]
 
+        allowed_types: ClassVar[tuple[str, ...]] = (
+            "objective",
+            "constraint",
+            "gradient",
+            "statistic",
+            "lie",
+        )
+
+    @dataclass
     class Param(Value):
         """Types for a `Param` can be either an integer (discrete value),
         floating precision numerical or a categorical expression (e.g. a string).
         """
 
-        __slots__ = ()
-        allowed_types = ("integer", "real", "categorical", "fidelity")
+        type: Literal["integer", "real", "categorical", "fidelity"]
+
+        allowed_types: ClassVar[tuple[str, ...]] = (
+            "integer",
+            "real",
+            "categorical",
+            "fidelity",
+        )
 
     __slots__ = (
         "experiment",
