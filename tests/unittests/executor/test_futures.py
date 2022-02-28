@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from orion.executor.dask_backend import Dask
+from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
 
@@ -17,7 +17,17 @@ def thread(n):
     return PoolExecutor(n, "threading")
 
 
-backends = [thread, multiprocess, Dask, SingleExecutor]
+backends = [
+    thread,
+    multiprocess,
+    SingleExecutor,
+    pytest.param(
+        Dask,
+        marks=pytest.mark.xfail(
+            condition=not HAS_DASK, reason="Test requires dask.", raises=ImportError
+        ),
+    ),
+]
 
 
 class FunctionException(Exception):
