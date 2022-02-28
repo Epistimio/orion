@@ -122,17 +122,17 @@ class TestTrial(object):
 
     def test_value_bad_init(self):
         """Other than `Trial.Value.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError):
             Trial.Value(ispii="iela")
 
     def test_param_bad_init(self):
         """Other than `Trial.Param.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError):
             Trial.Param(ispii="iela")
 
     def test_result_bad_init(self):
         """Other than `Trial.Result.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError):
             Trial.Result(ispii="iela")
 
     def test_not_allowed_status(self):
@@ -149,16 +149,14 @@ class TestTrial(object):
         Same for `Trial.Param`.
         """
         with pytest.raises(ValueError):
-            v = Trial.Result(name="asfda", type="hoho")
-        v = Trial.Result()
-        with pytest.raises(ValueError):
-            v.type = "asfda"
+            v = Trial.Result(name="asfda", type="hoho", value=123)
+        with pytest.raises(TypeError):
+            v = Trial.Result()
 
         with pytest.raises(ValueError):
-            v = Trial.Param(name="asfda", type="hoho")
-        v = Trial.Param()
-        with pytest.raises(ValueError):
-            v.type = "asfda"
+            v = Trial.Param(name="asfda", type="hoho", value=123)
+        with pytest.raises(TypeError):
+            v = Trial.Param()
 
     def test_conversion_to_dict(self, trial_config):
         """Convert to dictionary form for database using ``dict``."""
@@ -187,10 +185,10 @@ class TestTrial(object):
 
     def test_str_value(self, trial_config):
         """Test representation of `Trial.Value`."""
-        t = Trial(**trial_config)
+        trial = Trial(**trial_config)
         assert (
-            str(t._params[1])
-            == "Param(name='/encoding_layer', type='categorical', value='gru')"
+            str(trial._params[1])
+            == "Trial.Param(name='/encoding_layer', type='categorical', value='gru')"
         )
 
     def test_invalid_result(self, trial_config):

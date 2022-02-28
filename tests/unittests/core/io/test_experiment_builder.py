@@ -601,7 +601,10 @@ class TestExperimentVersioning(object):
             assert exp.configuration["algorithms"] == {"random": {"seed": None}}
 
             with caplog.at_level(logging.WARNING):
-
+                _ = pytest.importorskip(
+                    "orion.algo.gradient_descent",
+                    reason="Needs the gradient descent example to be installed.",
+                )
                 exp = experiment_builder.build(
                     name=parent_version_config["name"], algorithms="gradient_descent"
                 )

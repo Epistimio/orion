@@ -143,10 +143,8 @@ class TestDimensionAdditionInit(object):
         """Test initialization of :class:`orion.core.evc.adapters.DimensionAddition`
         with a dictionary which is a bad definition of a param
         """
-        with pytest.raises(AttributeError) as exc_info:
+        with pytest.raises(TypeError, match="unexpected keyword argument 'bad'"):
             DimensionAddition({"bad": "dict"})
-
-        assert "'Param' object has no attribute 'bad'" in str(exc_info.value)
 
 
 class TestDimensionDeletionInit(object):
@@ -179,10 +177,8 @@ class TestDimensionDeletionInit(object):
         """Test initialization of :class:`orion.core.evc.adapters.DimensionDeletion`
         with a dictionary which is a bad definition of a param
         """
-        with pytest.raises(AttributeError) as exc_info:
+        with pytest.raises(TypeError, match="unexpected keyword argument 'bad'"):
             print(DimensionDeletion({"bad": "dict"}).param)
-
-        assert "'Param' object has no attribute 'bad'" in str(exc_info.value)
 
 
 class TestDimensionPriorChangeInit(object):
