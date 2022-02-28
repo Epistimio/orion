@@ -7,18 +7,26 @@ Backward compatibility utils
 Helper functions to support backward compatibility.
 
 """
+from __future__ import annotations
 import copy
 import logging
 import pprint
+from typing import Any, Sequence, Type
+import typing
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.worker.trial import Trial
 
+if typing.TYPE_CHECKING:
+    from orion.algo.base import BaseAlgorithm
+    from orion.core.io.database import Database
+    from orion.client.experiment import ExperimentClient
+
 log = logging.getLogger(__name__)
 
 
-def update_user_args(metadata):
+def update_user_args(metadata: dict[str, Any]) -> None:
     """Make sure user script is not removed from metadata"""
     if (
         "user_script" in metadata
@@ -29,7 +37,7 @@ def update_user_args(metadata):
         log.debug(pprint.pformat(metadata["user_args"]))
 
 
-def populate_priors(metadata):
+def populate_priors(metadata: dict[str, Any]) -> None:
     """Compute parser state and priors based on user_args and populate metadata."""
     if "user_args" not in metadata:
         return
@@ -53,7 +61,7 @@ def populate_priors(metadata):
     log.debug(pprint.pformat(metadata["priors"]))
 
 
-def update_max_broken(config):
+def update_max_broken(config: dict[str, Any]) -> None:
     """Set default max_broken if None (in v <= v0.1.9)"""
     if not config.get("max_broken", None):
         config["max_broken"] = orion.core.config.experiment.max_broken
@@ -62,7 +70,7 @@ def update_max_broken(config):
         )
 
 
-def populate_space(config, force_update=True):
+def populate_space(config: dict[str, Any], force_update: bool = True) -> None:
     """Add the space definition at the root of config."""
     if "space" in config and not force_update:
         return
@@ -75,7 +83,7 @@ def populate_space(config, force_update=True):
         config["space"] = config["metadata"]["priors"]
 
 
-def db_is_outdated(database):
+def db_is_outdated(database: Database) -> bool:
     """Return True if the database scheme is outdated."""
     deprecated_indices = [
         ("name", "metadata.user"),
@@ -88,7 +96,7 @@ def db_is_outdated(database):
     return any(index in deprecated_indices for index in index_information.keys())
 
 
-def update_db_config(config):
+def update_db_config(config: dict[str, Any]) -> None:
     """Merge DB config back into storage config"""
     config.setdefault("storage", orion.core.config.storage.to_dict())
     if "database" in config:
@@ -98,59 +106,55 @@ def update_db_config(config):
         log.debug(pprint.pformat(config["storage"]))
 
 
-def get_algo_requirements(algorithm):
+def get_algo_requirements(algorithm: type[BaseAlgorithm]) -> dict[str, str | None]:
     """Return a dict() of requirements of the algorithm based on interface < v0.1.10"""
-    if hasattr(algorithm, "requires"):
-        log.warning(
-            "Algorithm.requires is deprecated and will stop being supporting in v0.3."
-        )
-        requirements = algorithm.requires
-        requirements = (
-            requirements if isinstance(requirements, list) else [requirements]
+    if not hasattr(algorithm, "requires"):
+        return dict(
+            type_requirement=algorithm.requires_type,
+            shape_requirement=algorithm.requires_shape,
+            dist_requirement=algorithm.requires_dist,
         )
 
-        log.debug("Algorithm requirements: %s", requirements)
+    log.warning(
+        "Algorithm.requires is deprecated and will stop being supporting in v0.3."
+    )
+    requirements = algorithm.requires  # type: ignore
+    requirements = requirements if isinstance(requirements, list) else [requirements]
 
-        requirements = copy.deepcopy(requirements)
+    log.debug("Algorithm requirements: %s", requirements)
 
-        if "linear" in requirements:
-            dist_requirement = "linear"
-            del requirements[requirements.index("linear")]
-        else:
-            dist_requirement = None
+    requirements = copy.deepcopy(requirements)
 
-        if "flattened" in requirements:
-            shape_requirement = "flattened"
-            del requirements[requirements.index("flattened")]
-        else:
-            shape_requirement = None
+    if "linear" in requirements:
+        dist_requirement: str | None = "linear"
+        del requirements[requirements.index("linear")]
+    else:
+        dist_requirement = None
 
-        if requirements:
-            assert len(requirements) == 1
-            type_requirement = requirements[0]
-        else:
-            type_requirement = None
+    if "flattened" in requirements:
+        shape_requirement: str | None = "flattened"
+        del requirements[requirements.index("flattened")]
+    else:
+        shape_requirement = None
 
-        requirements = dict(
-            type_requirement=type_requirement,
-            shape_requirement=shape_requirement,
-            dist_requirement=dist_requirement,
-        )
+    if requirements:
+        assert len(requirements) == 1
+        type_requirement: str | None = requirements[0]
+    else:
+        type_requirement = None
 
-        log.debug(
-            "Algorithm requirements in new format:\n%s", pprint.pformat(requirements)
-        )
-
-        return requirements
-
-    return dict(
-        type_requirement=algorithm.requires_type,
-        shape_requirement=algorithm.requires_shape,
-        dist_requirement=algorithm.requires_dist,
+    requirements = dict(
+        type_requirement=type_requirement,
+        shape_requirement=shape_requirement,
+        dist_requirement=dist_requirement,
     )
 
+    log.debug("Algorithm requirements in new format:\n%s", pprint.pformat(requirements))
 
-def port_algo_config(config):
+    return requirements
+
+
+def port_algo_config(config: str | dict[str, Any]) -> dict[str, Any]:
     """Convert algorithm configuration to be compliant with factory interface
 
     Examples
@@ -164,17 +168,20 @@ def port_algo_config(config):
 
     """
     config = copy.deepcopy(config)
+    new_config: dict[str, Any]
     if isinstance(config, dict) and len(config) == 1:
         algo_name, algo_config = next(iter(config.items()))
-        config = algo_config
-        config["of_type"] = algo_name
+        assert isinstance(algo_config, dict)
+        new_config = algo_config
+        new_config["of_type"] = algo_name
     elif isinstance(config, str):
-        config = {"of_type": config}
+        new_config = {"of_type": config}
+    else:
+        new_config = config
+    return new_config
 
-    return config
 
-
-def algo_observe(algo, trials, results):
+def algo_observe(algo: BaseAlgorithm, trials: Sequence[Trial], results: Sequence[dict]):
     """Convert trials so that algo can observe with legacy format (trials, results)."""
     for trial, trial_results in zip(trials, results):
         for name, trial_result in trial_results.items():
@@ -186,7 +193,7 @@ def algo_observe(algo, trials, results):
     algo.observe(trials)
 
 
-def ensure_trial_working_dir(experiment, trial):
+def ensure_trial_working_dir(experiment: ExperimentClient, trial: Trial) -> None:
     """If the trial's exp working dir is not set, set it to current experiment's working dir."""
     if not trial.exp_working_dir:
         trial.exp_working_dir = experiment.working_dir
