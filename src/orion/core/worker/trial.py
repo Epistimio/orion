@@ -11,15 +11,27 @@ from __future__ import annotations
 
 import copy
 import dataclasses
+import datetime
 import hashlib
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, ClassVar, Literal, SupportsFloat
+from typing import Any, ClassVar, Iterable, Sequence, SupportsFloat
+import typing
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal  # type: ignore
 
 import numpy as np
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
+
+if typing.TYPE_CHECKING:
+    from orion.core.worker.experiment import Experiment
+    from orion.client.experiment import ExperimentClient
+
 
 log = logging.getLogger(__name__)
 
@@ -156,7 +168,10 @@ class Trial:
         function or of an 'constraint' expression.
         """
 
-        type: Literal["objective", "constraint", "gradient", "statistic", "lie"]
+        Type: ClassVar = Literal[
+            "objective", "constraint", "gradient", "statistic", "lie"
+        ]
+        type: Trial.Result.Type
 
         allowed_types: ClassVar[tuple[str, ...]] = (
             "objective",
@@ -172,7 +187,8 @@ class Trial:
         floating precision numerical or a categorical expression (e.g. a string).
         """
 
-        type: Literal["integer", "real", "categorical", "fidelity"]
+        Type: ClassVar = Literal["integer", "real", "categorical", "fidelity"]
+        type: Trial.Param.Type
 
         allowed_types: ClassVar[tuple[str, ...]] = (
             "integer",
@@ -196,7 +212,17 @@ class Trial:
         "parent",
         "id_override",
     )
-    allowed_stati = (
+
+    Status: ClassVar = Literal[
+        "new",
+        "reserved",
+        "suspended",
+        "completed",
+        "interrupted",
+        "broken",
+    ]
+
+    allowed_stati: ClassVar[tuple[str, ...]] = (
         "new",
         "reserved",
         "suspended",
@@ -205,7 +231,24 @@ class Trial:
         "broken",
     )
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        experiment: Experiment | None = None,
+        id: str | None = None,
+        status: Trial.Status | None = None,
+        worker: Any | None = None,
+        exp_working_dir: str | None = None,
+        heartbeat: datetime.datetime | None = None,
+        submit_time: datetime.datetime | None = None,
+        start_time: datetime.datetime | None = None,
+        end_time: datetime.datetime | None = None,
+        results: list[Trial.Result] | None = None,
+        params: list[Trial.Param] | list[dict[str, Any]] | None = None,
+        parent: str | None = None,
+        id_override: str | None = None,
+        parents: str | None = None,
+        _id: str | None = None,  # NOTE: only seems to be used in tests.
+    ):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
             if attrname in ("_results", "_params"):
@@ -213,25 +256,35 @@ class Trial:
             else:
                 setattr(self, attrname, None)
 
-        self.status = "new"
+        results = results or []
+        params = params or []
+
+        if parents is not None:
+            log.info("Trial.parents attribute is deprecated. Value is ignored.")
 
         # Store the id as an override to support different backends
-        self.id_override = kwargs.pop("_id", None)
+        self.id_override: str | None = id_override or id
+        self.experiment: Experiment | None = experiment
+        self._id: str | None = _id or id
+        self._status: Trial.Status = "new"
+        self.status = status or "new"  # Use the setter, which validates the status.
+        self.worker: Any | None = worker
+        self._exp_working_dir: str | None = exp_working_dir
+        self.heartbeat: datetime.datetime | None = heartbeat
+        self.submit_time: datetime.datetime | None = submit_time
+        self.start_time: datetime.datetime | None = start_time
+        self.end_time: datetime.datetime | None = end_time
+        self._results: list[Trial.Result] = [
+            self.Result(**item) if isinstance(item, dict) else item for item in results
+        ]
+        self._params: list[Trial.Param] = [
+            self.Param(**item) if isinstance(item, dict) else item for item in params
+        ]
+        self.parent: str | None = parent
 
-        for attrname, value in kwargs.items():
-            if attrname == "parents":
-                log.info("Trial.parents attribute is deprecated. Value is ignored.")
-            elif attrname == "results":
-                attr = getattr(self, attrname)
-                for item in value:
-                    attr.append(self.Result(**item))
-            elif attrname == "params":
-                for item in value:
-                    self._params.append(self.Param(**item))
-            else:
-                setattr(self, attrname, value)
-
-    def branch(self, status="new", params=None):
+    def branch(
+        self, status: Trial.Status = "new", params: dict[str, Any] | None = None
+    ) -> Trial:
         """Copy the trial and modify given attributes
 
         The status attributes will be reset as if trial was new.
@@ -274,7 +327,7 @@ class Trial:
             exp_working_dir=self.exp_working_dir,
         )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         """Needed to be able to convert `Trial` to `dict` form."""
         trial_dictionary = dict()
 
@@ -300,12 +353,12 @@ class Trial:
     __repr__ = __str__
 
     @property
-    def params(self):
+    def params(self) -> dict[str, Any]:
         """Parameters of the trial"""
         return unflatten({param.name: param.value for param in self._params})
 
     @property
-    def results(self):
+    def results(self) -> list[Trial.Result]:
         """List of results of the trial"""
         return self._results
 
@@ -361,12 +414,12 @@ class Trial:
         self._exp_working_dir = value
 
     @property
-    def status(self):
+    def status(self) -> Trial.Status:
         """For meaning of property type, see `Trial.status`."""
         return self._status
 
     @status.setter
-    def status(self, status):
+    def status(self, status: Trial.Status) -> None:
         validate_status(status)
         self._status = status
 
@@ -487,12 +540,12 @@ class Trial:
 
     @staticmethod
     def compute_trial_hash(
-        trial,
-        ignore_fidelity=False,
-        ignore_experiment=False,
-        ignore_lie=False,
-        ignore_parent=False,
-    ):
+        trial: Trial,
+        ignore_fidelity: bool = False,
+        ignore_experiment: bool = False,
+        ignore_lie: bool = False,
+        ignore_parent: bool = False,
+    ) -> str:
         """Generate a unique param md5sum hash for a given `Trial`"""
         if not trial._params and not trial.experiment:
             raise ValueError(
@@ -520,11 +573,17 @@ class Trial:
             (params + experiment_repr + lie_repr + parent_repr).encode("utf-8")
         ).hexdigest()
 
-    def _fetch_results(self, type, results):
+    def _fetch_results(
+        self, type: Trial.Result.Type, results: Iterable[Trial.Result]
+    ) -> list[Trial.Result]:
         """Fetch results for the given type"""
         return [result for result in results if result.type == type]
 
-    def _fetch_one_result_of_type(self, result_type, results=None):
+    def _fetch_one_result_of_type(
+        self,
+        result_type: Trial.Result.Type,
+        results: Iterable[Trial.Result] | None = None,
+    ) -> Trial.Result | None:
         if results is None:
             results = self.results
 
@@ -547,25 +606,27 @@ class Trial:
 class TrialCM:
     __slots__ = ("_cm_experiment", "_cm_trial")
 
-    def __init__(self, experiment, trial):
-        self._cm_experiment = experiment
-        self._cm_trial = trial
+    def __init__(self, experiment: ExperimentClient, trial: Trial):
+        self._cm_experiment: ExperimentClient = experiment
+        self._cm_trial: Trial = trial
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         if name in {"_cm_experiment", "_cm_trial", "__enter__", "__exit__"}:
             return object.__getattribute__(self, name)
         return getattr(self._cm_trial, name)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if name not in {"_cm_experiment", "_cm_trial"}:
             setattr(self._cm_trial, name, value)
         else:
             object.__setattr__(self, name, value)
 
-    def __enter__(self):
+    def __enter__(self) -> Trial:
         return self._cm_trial
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self, exc_type: type[Exception], exc_value: Exception, traceback: bool
+    ) -> None:
         try:
             if exc_type is KeyboardInterrupt:
                 self._cm_experiment.release(self._cm_trial, "interrupted")

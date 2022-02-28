@@ -117,22 +117,22 @@ class TestTrial(object):
 
     def test_bad_init(self):
         """Other than `Trial.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError, match="unexpected keyword argument 'ispii'"):
             Trial(ispii="iela")
 
     def test_value_bad_init(self):
         """Other than `Trial.Value.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="unexpected keyword argument 'ispii'"):
             Trial.Value(ispii="iela")
 
     def test_param_bad_init(self):
         """Other than `Trial.Param.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="unexpected keyword argument 'ispii'"):
             Trial.Param(ispii="iela")
 
     def test_result_bad_init(self):
         """Other than `Trial.Result.__slots__` are not allowed in __init__ too."""
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="unexpected keyword argument 'ispii'"):
             Trial.Result(ispii="iela")
 
     def test_not_allowed_status(self):
