@@ -8,11 +8,12 @@ Helper functions to support backward compatibility.
 
 """
 from __future__ import annotations
+
 import copy
 import logging
 import pprint
-from typing import Any, Sequence, Type
 import typing
+from typing import Any, Sequence, Type
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
@@ -20,8 +21,8 @@ from orion.core.worker.trial import Trial
 
 if typing.TYPE_CHECKING:
     from orion.algo.base import BaseAlgorithm
-    from orion.core.io.database import Database
     from orion.client.experiment import ExperimentClient
+    from orion.core.io.database import Database
 
 log = logging.getLogger(__name__)
 

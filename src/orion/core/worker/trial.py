@@ -15,9 +15,9 @@ import datetime
 import hashlib
 import logging
 import os
+import typing
 from dataclasses import dataclass
 from typing import Any, ClassVar, Iterable, Sequence, SupportsFloat
-import typing
 
 try:
     from typing import Literal
@@ -25,12 +25,13 @@ except ImportError:
     from typing_extensions import Literal  # type: ignore
 
 import numpy as np
+
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
 
 if typing.TYPE_CHECKING:
-    from orion.core.worker.experiment import Experiment
     from orion.client.experiment import ExperimentClient
+    from orion.core.worker.experiment import Experiment
 
 
 log = logging.getLogger(__name__)
