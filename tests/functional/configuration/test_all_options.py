@@ -557,7 +557,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "worker": {
             "n_workers": 2,
             "pool_size": 2,
-            "executor": "dask",
+            "executor": "singleexecutor",
             "executor_configuration": {"threads_per_worker": 1},
             "heartbeat": 30,
             "max_trials": 10,
@@ -588,7 +588,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "worker": {
             "n_workers": 4,
             "pool_size": 5,
-            "executor": "dask",
+            "executor": "singleexecutor",
             "executor_configuration": {"threads_per_worker": 2},
             "heartbeat": 50,
             "max_trials": 30,
@@ -604,7 +604,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
     cmdargs = {
         "n-workers": 1,
         "pool-size": 6,
-        "executor": "dask",
+        "executor": "singleexecutor",
         "heartbeat": 70,
         "worker-max-trials": 0,
         "worker-max-broken": 8,
@@ -745,7 +745,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         self._mock(monkeypatch)
 
         # Override executor so that executor and configuration are coherent in global config
-        os.environ["ORION_EXECUTOR"] = "dask"
+        os.environ["ORION_EXECUTOR"] = "singleexecutor"
 
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
@@ -771,7 +771,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         self._mock(monkeypatch)
 
         # Override executor so that executor and configuration are coherent in global config
-        os.environ["ORION_EXECUTOR"] = "dask"
+        os.environ["ORION_EXECUTOR"] = "singleexecutor"
 
         command = f"hunt -c {conf_file} -n cmd-test"
         command += " " + " ".join(
