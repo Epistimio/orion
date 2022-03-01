@@ -6,7 +6,7 @@ import os
 import signal
 import time
 from contextlib import contextmanager
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from threading import Thread
 
 import pytest
@@ -21,8 +21,8 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
+from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.storage.base import LockAcquisitionTimeout
-from orion.testing import create_experiment
 
 
 def new_trial(value, sleep=0.01):
@@ -535,3 +535,99 @@ def test_should_sample():
     runner.trials = 5
     assert runner.should_sample() == 0, "The max number of trials was reached"
     runner.client.close()
+
+
+def run_runner():
+    try:
+        count = 10
+        max_trials = 10
+        workers = 2
+
+        runner = new_runner(0.1, n_workers=workers)
+        runner.max_trials_per_worker = max_trials
+        client = runner.client
+
+        client.trials.extend([new_trial(i) for i in range(count)])
+
+        runner.run()
+        runner.client.close()
+        print("done")
+        return 0
+    except:
+        return 1
+
+
+def test_runner_inside_process():
+    """Runner can execute inside a process"""
+
+    queue = Queue()
+
+    def get_result(results):
+        results.put(run_runner())
+
+    p = Process(target=get_result, args=(queue,))
+    p.start()
+    p.join()
+
+    assert queue.get() == 0
+    assert p.exitcode == 0
+
+
+def test_runner_inside_childprocess():
+    """Runner can execute inside a child process"""
+    pid = os.fork()
+
+    # execute runner in the child process
+    if pid == 0:
+        run_runner()
+        os._exit(0)
+    else:
+        # parent process wait for child process to end
+        wpid, exit_status = os.wait()
+        assert wpid == pid
+        assert exit_status == 0
+
+
+def test_runner_inside_subprocess():
+    """Runner can execute inside a subprocess"""
+
+    import subprocess
+
+    dir = os.path.dirname(__file__)
+
+    result = subprocess.run(
+        ["python", f"{dir}/runner_subprocess.py"], capture_output=True
+    )
+
+    assert result.stdout.decode("utf-8") == "done\n"
+    assert result.stderr.decode("utf-8") == ""
+    assert result.returncode == 0
+
+
+def test_runner_inside_thread():
+    """Runner can execute inside a thread"""
+
+    class GetResult:
+        def __init__(self) -> None:
+            self.r = None
+
+        def run(self):
+            self.r = run_runner()
+
+    result = GetResult()
+    thread = Thread(target=result.run)
+    thread.start()
+    thread.join()
+
+    assert result.r == 0
+
+
+@pytest.mark.skipif(not HAS_DASK, reason="Running without dask")
+def test_runner_inside_dask():
+    """Runner can execute inside a dask"""
+
+    client = Dask()
+
+    future = client.submit(run_runner)
+
+    assert future.get() == 0
