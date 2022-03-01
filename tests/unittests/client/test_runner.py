@@ -538,7 +538,7 @@ def test_should_sample():
     runner.client.close()
 
 
-def run_runner():
+def run_runner(reraise=False):
     try:
         count = 10
         max_trials = 10
@@ -555,6 +555,9 @@ def run_runner():
         print("done")
         return 0
     except:
+        if reraise:
+            raise
+
         traceback.print_exc()
         return 1
 
@@ -630,6 +633,6 @@ def test_runner_inside_dask():
 
     client = Dask()
 
-    future = client.submit(run_runner)
+    future = client.submit(run_runner, True)
 
     assert future.get() == 0
