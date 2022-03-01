@@ -207,7 +207,7 @@ class Configuration:
                 self._deprecate(key, value)
 
         elif key in ["_config", "_subconfigs"]:
-            super(Configuration, self).__setattr__(key, value)
+            super().__setattr__(key, value)
 
         elif key in self._subconfigs:
             raise ValueError(

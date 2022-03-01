@@ -198,7 +198,7 @@ class BranchingPrompt(cmd.Cmd):
     def cmdloop(self):
         """Start cmdloop of the prompt"""
         intro = self.intro % self.get_status()
-        super(BranchingPrompt, self).cmdloop(intro)
+        super().cmdloop(intro)
 
     def get_status(self, options=None):
         """Return a string representing the status"""

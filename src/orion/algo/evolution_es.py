@@ -128,7 +128,7 @@ class EvolutionES(Hyperband):
         mutate=None,
         max_retries=1000,
     ):
-        super(EvolutionES, self).__init__(space, seed=seed, repetitions=repetitions)
+        super().__init__(space, seed=seed, repetitions=repetitions)
         pair = nums_population // 2
         mutate_ratio = 0.3
         self.nums_population = nums_population
@@ -169,7 +169,7 @@ class EvolutionES(Hyperband):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(EvolutionES, self).state_dict
+        state_dict = super().state_dict
         state_dict["population"] = copy.deepcopy(self.population)
         state_dict["performance"] = copy.deepcopy(self.performance)
         state_dict["hurdles"] = copy.deepcopy(self.hurdles)
@@ -177,7 +177,7 @@ class EvolutionES(Hyperband):
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict"""
-        super(EvolutionES, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.population = state_dict["population"]
         self.performance = state_dict["performance"]
         self.hurdles = state_dict["hurdles"]
@@ -202,7 +202,7 @@ class BracketEVES(HyperbandBracket):
     """
 
     def __init__(self, evolution_es, budgets, repetition_id):
-        super(BracketEVES, self).__init__(evolution_es, budgets, repetition_id)
+        super().__init__(evolution_es, budgets, repetition_id)
         self.eves = self.hyperband
         self.search_space_without_fidelity = []
         self._candidates = {}
@@ -229,12 +229,12 @@ class BracketEVES(HyperbandBracket):
 
     @property
     def state_dict(self):
-        state_dict = super(BracketEVES, self).state_dict
+        state_dict = super().state_dict
         state_dict["candidates"] = copy.deepcopy(self._candidates)
         return state_dict
 
     def set_state(self, state_dict):
-        super(BracketEVES, self).set_state(state_dict)
+        super().set_state(state_dict)
         self._candidates = state_dict["candidates"]
 
     def _get_teams(self, rung_id):

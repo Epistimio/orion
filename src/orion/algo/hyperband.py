@@ -147,7 +147,7 @@ class Hyperband(BaseAlgorithm):
 
     def __init__(self, space, seed=None, repetitions=numpy.inf):
         self.brackets = []
-        super(Hyperband, self).__init__(space, seed=seed, repetitions=repetitions)
+        super().__init__(space, seed=seed, repetitions=repetitions)
 
         self.trial_to_brackets = {}  # Stores Point id (with no fidelity) -> Bracket
         self._trials_info = {}

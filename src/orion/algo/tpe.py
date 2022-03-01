@@ -226,7 +226,7 @@ class TPE(BaseAlgorithm):
 
         self.strategy = strategy_factory.create(**parallel_strategy)
 
-        super(TPE, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             n_initial_points=n_initial_points,
@@ -281,7 +281,7 @@ class TPE(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(TPE, self).state_dict
+        _state_dict = super().state_dict
 
         _state_dict["rng_state"] = self.rng.get_state()
         _state_dict["seed"] = self.seed
@@ -293,7 +293,7 @@ class TPE(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(TPE, self).set_state(state_dict)
+        super().set_state(state_dict)
 
         self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])

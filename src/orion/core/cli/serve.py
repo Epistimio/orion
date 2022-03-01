@@ -52,7 +52,7 @@ class GunicornApp(BaseApplication):
     def __init__(self, app, options=None):
         self.options = options or {}
         self.application = app
-        super(GunicornApp, self).__init__()
+        super().__init__()
 
     def init(self, parser, opts, args):
         """Pre-run initialization"""

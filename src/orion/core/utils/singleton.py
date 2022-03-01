@@ -38,14 +38,14 @@ class SingletonType(type):
 
     def __init__(cls, name, bases, dictionary):
         """Create a class instance variable and initiate it to None object."""
-        super(SingletonType, cls).__init__(name, bases, dictionary)
+        super().__init__(name, bases, dictionary)
         cls.instance = None
 
     def __call__(cls, *args, **kwargs):
         """Create an object if does not already exist, otherwise return what there is."""
         if cls.instance is None:
             try:
-                cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
+                cls.instance = super().__call__(*args, **kwargs)
             except TypeError as exception:
                 raise SingletonNotInstantiatedError(cls.__name__) from exception
 
@@ -98,7 +98,7 @@ class GenericSingletonFactory(GenericFactory):
     """
 
     def __init__(self, base):
-        super(GenericSingletonFactory, self).__init__(base=base)
+        super().__init__(base=base)
         self.instance = None
 
     def create(self, of_type=None, *args, **kwargs):
@@ -136,9 +136,7 @@ class GenericSingletonFactory(GenericFactory):
             raise SingletonNotInstantiatedError(self.base.__name__)
         elif self.instance is None:
             try:
-                self.instance = super(GenericSingletonFactory, self).create(
-                    of_type, *args, **kwargs
-                )
+                self.instance = super().create(of_type, *args, **kwargs)
             except TypeError as exception:
                 raise SingletonNotInstantiatedError(self.base.__name__) from exception
 

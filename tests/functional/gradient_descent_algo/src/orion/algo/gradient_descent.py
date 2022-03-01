@@ -21,9 +21,7 @@ class Gradient_Descent(BaseAlgorithm):
 
     def __init__(self, space, learning_rate=1.0, dx_tolerance=1e-5):
         """Declare `learning_rate` as a hyperparameter of this algorithm."""
-        super(Gradient_Descent, self).__init__(
-            space, learning_rate=learning_rate, dx_tolerance=dx_tolerance
-        )
+        super().__init__(space, learning_rate=learning_rate, dx_tolerance=dx_tolerance)
         self.has_observed_once = False
         self.current_point = None
         self.gradient = numpy.array([numpy.inf])

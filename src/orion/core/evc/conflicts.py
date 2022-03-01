@@ -567,7 +567,7 @@ class NewDimensionConflict(Conflict):
 
     def __init__(self, old_config, new_config, dimension, prior):
         """Initialize conflict as non-resolved"""
-        super(NewDimensionConflict, self).__init__(old_config, new_config)
+        super().__init__(old_config, new_config)
         self.dimension = dimension
         self.prior = prior
 
@@ -633,7 +633,7 @@ class NewDimensionConflict(Conflict):
                 If default_value is invalid for the corresponding dimension.
 
             """
-            super(NewDimensionConflict.AddDimensionResolution, self).__init__(conflict)
+            super().__init__(conflict)
             if default_value is Dimension.NO_DEFAULT_VALUE:
                 default_value = conflict.dimension.default_value
             else:
@@ -709,7 +709,7 @@ class ChangedDimensionConflict(Conflict):
 
     def __init__(self, old_config, new_config, dimension, old_prior, new_prior):
         """Initialize conflict as non-resolved"""
-        super(ChangedDimensionConflict, self).__init__(old_config, new_config)
+        super().__init__(old_config, new_config)
         self.dimension = dimension
         self.old_prior = old_prior
         self.new_prior = new_prior
@@ -793,7 +793,7 @@ class MissingDimensionConflict(Conflict):
 
     def __init__(self, old_config, new_config, dimension, prior):
         """Initialize conflict as non-resolved"""
-        super(MissingDimensionConflict, self).__init__(old_config, new_config)
+        super().__init__(old_config, new_config)
         self.dimension = dimension
         self.prior = prior
 
@@ -956,9 +956,7 @@ class MissingDimensionConflict(Conflict):
                 Dimension used for a rename resolution.
 
             """
-            super(MissingDimensionConflict.RenameDimensionResolution, self).__init__(
-                conflict
-            )
+            super().__init__(conflict)
 
             self.new_dimension_conflict = new_dimension_conflict
             new_dimension_conflict.resolution = self
@@ -1049,9 +1047,7 @@ class MissingDimensionConflict(Conflict):
                 If default_value is invalid for the corresponding dimension.
 
             """
-            super(MissingDimensionConflict.RemoveDimensionResolution, self).__init__(
-                conflict
-            )
+            super().__init__(conflict)
             if default_value is Dimension.NO_DEFAULT_VALUE:
                 default_value = conflict.dimension.default_value
             else:
@@ -1280,7 +1276,7 @@ class CodeConflict(Conflict):
                 If change_type is not in ``orion.core.evc.adapters.CodeChange.types``.
 
             """
-            super(CodeConflict.CodeResolution, self).__init__(conflict)
+            super().__init__(conflict)
 
             self.validate(change_type)
             self.type = change_type
@@ -1449,7 +1445,7 @@ class CommandLineConflict(Conflict):
                 If change_type is not in ``orion.core.evc.adapters.CommandLineChange.types``.
 
             """
-            super(CommandLineConflict.CommandLineResolution, self).__init__(conflict)
+            super().__init__(conflict)
 
             self.validate(change_type)
             self.type = change_type
@@ -1604,7 +1600,7 @@ class ScriptConfigConflict(Conflict):
                 If change_type is not in ``orion.core.evc.adapters.ScriptConfigChange.types``.
 
             """
-            super(ScriptConfigConflict.ScriptConfigResolution, self).__init__(conflict)
+            super().__init__(conflict)
 
             self.validate(change_type)
             self.type = change_type
@@ -1728,9 +1724,7 @@ class ExperimentNameConflict(Conflict):
                 If name already exists in database with a direct child for current version.
 
             """
-            super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(
-                conflict
-            )
+            super().__init__(conflict)
 
             self.new_name = new_name
             self.old_name = self.conflict.old_config["name"]
@@ -1789,7 +1783,7 @@ class ExperimentNameConflict(Conflict):
             """Reset conflict set experiment name back to old one in new configuration"""
             self.conflict.new_config["name"] = self.old_name
             self.conflict.new_config["version"] = self.old_version
-            return super(ExperimentNameConflict.ExperimentNameResolution, self).revert()
+            return super().revert()
 
         def get_adapters(self):
             """Return no adapters, trials need to adaptation to new experiment name"""

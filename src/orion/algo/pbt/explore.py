@@ -131,7 +131,7 @@ class PipelineExplore(BaseExplore):
     @property
     def configuration(self):
         """Configuration of the exploit object"""
-        configuration = super(PipelineExplore, self).configuration
+        configuration = super().configuration
         configuration["explore_configs"] = [
             explore.configuration for explore in self.pipeline
         ]
@@ -297,7 +297,7 @@ class PerturbExplore(BaseExplore):
     @property
     def configuration(self):
         """Configuration of the exploit object"""
-        configuration = super(PerturbExplore, self).configuration
+        configuration = super().configuration
         configuration["factor"] = self.factor
         configuration["volatility"] = self.volatility
         return configuration
@@ -355,7 +355,7 @@ class ResampleExplore(BaseExplore):
     @property
     def configuration(self):
         """Configuration of the exploit object"""
-        configuration = super(ResampleExplore, self).configuration
+        configuration = super().configuration
         configuration["probability"] = self.probability
         return configuration
 

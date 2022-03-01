@@ -25,7 +25,7 @@ class Random(BaseAlgorithm):
     """
 
     def __init__(self, space, seed=None):
-        super(Random, self).__init__(space, seed=seed)
+        super().__init__(space, seed=seed)
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -37,7 +37,7 @@ class Random(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(Random, self).state_dict
+        _state_dict = super().state_dict
         _state_dict["rng_state"] = self.rng.get_state()
         return _state_dict
 
@@ -46,7 +46,7 @@ class Random(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(Random, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.seed_rng(0)
         self.rng.set_state(state_dict["rng_state"])
 

@@ -400,7 +400,7 @@ class Real(Dimension):
                 "instead was {} of type {}.".format(precision, type(precision))
             )
 
-        super(Real, self).__init__(name, prior, *args, **kwargs)
+        super().__init__(name, prior, *args, **kwargs)
 
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
@@ -426,7 +426,7 @@ class Real(Dimension):
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        prior_string = super(Real, self).get_prior_string()
+        prior_string = super().get_prior_string()
 
         if self.precision != 4:
             return prior_string[:-1] + f", precision={self.precision})"
@@ -443,7 +443,7 @@ class Real(Dimension):
         .. note:: Both lower and upper bounds are inclusive.
 
         """
-        prior_low, prior_high = super(Real, self).interval(alpha)
+        prior_low, prior_high = super().interval(alpha)
         return (max(prior_low, self._low), min(prior_high, self._high))
 
     def sample(self, n_samples=1, seed=None):
@@ -455,7 +455,7 @@ class Real(Dimension):
         samples = []
         for _ in range(n_samples):
             for _ in range(4):
-                sample = super(Real, self).sample(1, seed)
+                sample = super().sample(1, seed)
                 if sample[0] not in self:
                     nice = False
                     continue
@@ -554,7 +554,7 @@ class _Discrete(Dimension):
            works.
 
         """
-        samples = super(_Discrete, self).sample(n_samples, seed)
+        samples = super().sample(n_samples, seed)
         # Making discrete by ourselves because scipy does not use **floor**
         return list(map(self.cast, samples))
 
@@ -570,7 +570,7 @@ class _Discrete(Dimension):
         .. note:: Both lower and upper bounds are inclusive.
 
         """
-        low, high = super(_Discrete, self).interval(alpha)
+        low, high = super().interval(alpha)
         try:
             int_low = int(numpy.floor(low))
         except OverflowError:  # infinity cannot be converted to Python int type
@@ -627,7 +627,7 @@ class Integer(Real, _Discrete):
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
 
-        return super(Integer, self).__contains__(point)
+        return super().__contains__(point)
 
     def cast(self, point):
         """Cast a point to int
@@ -656,13 +656,13 @@ class Integer(Real, _Discrete):
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        prior_string = super(Integer, self).get_prior_string()
+        prior_string = super().get_prior_string()
         return prior_string[:-1] + ", discrete=True)"
 
     @property
     def prior_name(self):
         """Return the name of the prior"""
-        return "int_{}".format(super(Integer, self).prior_name)
+        return "int_{}".format(super().prior_name)
 
     @staticmethod
     def get_cardinality(shape, interval):
@@ -717,7 +717,7 @@ class Categorical(Dimension):
         prior = distributions.rv_discrete(
             values=(list(range(len(self.categories))), self._probs)
         )
-        super(Categorical, self).__init__(name, prior, **kwargs)
+        super().__init__(name, prior, **kwargs)
 
     @staticmethod
     def get_cardinality(shape, categories):
@@ -1007,7 +1007,7 @@ class Space(dict):
     def __getitem__(self, key):
         """Wrap __getitem__ to allow searching with position."""
         if isinstance(key, str):
-            return super(Space, self).__getitem__(key)
+            return super().__getitem__(key)
 
         values = list(self.values())
         return values[key]
@@ -1033,7 +1033,7 @@ class Space(dict):
                 "There is already a Dimension registered with this name. "
                 "Register it with another name. Provided: {}".format(key)
             )
-        super(Space, self).__setitem__(key, value)
+        super().__setitem__(key, value)
 
     def __contains__(self, key_or_trial):
         """Check whether `trial` is within the bounds of the space.
@@ -1046,7 +1046,7 @@ class Space(dict):
             If a Trial, test if trial's hyperparameters fit the current search space.
         """
         if isinstance(key_or_trial, str):
-            return super(Space, self).__contains__(key_or_trial)
+            return super().__contains__(key_or_trial)
 
         trial = key_or_trial
         flattened_params = flatten(trial.params)
@@ -1078,7 +1078,7 @@ class Space(dict):
 
     def __iter__(self):
         """Return sorted keys"""
-        return iter(sorted(super(Space, self).keys()))
+        return iter(sorted(super().keys()))
 
     @property
     def configuration(self):

@@ -97,7 +97,7 @@ class DumbAlgo(BaseAlgorithm):
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
-        super(DumbAlgo, self).__init__(
+        super().__init__(
             space,
             value=value,
             scoring=scoring,
@@ -119,7 +119,7 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(DumbAlgo, self).state_dict
+        _state_dict = super().state_dict
         _state_dict.update(
             {
                 "index": self._index,
@@ -135,7 +135,7 @@ class DumbAlgo(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(DumbAlgo, self).set_state(state_dict)
+        super().set_state(state_dict)
         self._index = state_dict["index"]
         self._suggested = state_dict["suggested"]
         self._num = state_dict["num"]
@@ -162,7 +162,7 @@ class DumbAlgo(BaseAlgorithm):
 
     def observe(self, trials):
         """Log inputs."""
-        super(DumbAlgo, self).observe(trials)
+        super().observe(trials)
         self._trials += trials
 
     def score(self, trial):

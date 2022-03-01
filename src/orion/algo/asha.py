@@ -126,7 +126,7 @@ class ASHA(Hyperband):
         num_brackets=1,
         repetitions=numpy.inf,
     ):
-        super(ASHA, self).__init__(space, seed=seed, repetitions=repetitions)
+        super().__init__(space, seed=seed, repetitions=repetitions)
 
         self.num_rungs = num_rungs
         self.num_brackets = num_brackets
@@ -194,7 +194,7 @@ class ASHA(Hyperband):
         return samples
 
     def suggest(self, num):
-        return super(ASHA, self).suggest(num)
+        return super().suggest(num)
 
     def create_bracket(self, i, budgets, iteration):
         return ASHABracket(self, budgets, iteration)

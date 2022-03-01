@@ -53,7 +53,7 @@ class _Future(Future):
 
 class Dask(BaseExecutor):
     def __init__(self, n_workers=-1, client=None, **config):
-        super(Dask, self).__init__(n_workers=n_workers)
+        super().__init__(n_workers=n_workers)
 
         if not HAS_DASK:
             raise ImportError("Dask must be installed to use Dask executor.")
@@ -65,10 +65,10 @@ class Dask(BaseExecutor):
         self.client = client
 
     def __getstate__(self):
-        return super(Dask, self).__getstate__()
+        return super().__getstate__()
 
     def __setstate__(self, state):
-        super(Dask, self).__setstate__(state)
+        super().__setstate__(state)
         self.client = get_client()
 
     @property
@@ -131,4 +131,4 @@ class Dask(BaseExecutor):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.client.close()
-        super(Dask, self).__exit__(exc_type, exc_value, traceback)
+        super().__exit__(exc_type, exc_value, traceback)

@@ -12,4 +12,4 @@ class Joblib(PoolExecutor):
             "Use PoolExecutor instead.",
             DeprecationWarning,
         )
-        super(Joblib, self).__init__(n_workers=n_workers, backend=backend)
+        super().__init__(n_workers=n_workers, backend=backend)

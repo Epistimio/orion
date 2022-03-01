@@ -15,7 +15,7 @@ class RosenBrock(BenchmarkTask):
 
     def __init__(self, max_trials=20, dim=2):
         self.dim = dim
-        super(RosenBrock, self).__init__(max_trials=max_trials, dim=dim)
+        super().__init__(max_trials=max_trials, dim=dim)
 
     def call(self, x):
         """Evaluate a n-D rosenbrock function."""

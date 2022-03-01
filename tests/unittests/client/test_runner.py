@@ -87,7 +87,7 @@ class InvalidResultClient(FakeClient):
     """Fake client that raise InvalidResult on observe"""
 
     def __init__(self, n_workers):
-        super(InvalidResultClient, self).__init__(n_workers)
+        super().__init__(n_workers)
         self.trials.append(new_trial(1))
 
     def observe(self, trial, value):

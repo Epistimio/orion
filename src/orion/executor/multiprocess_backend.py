@@ -189,11 +189,11 @@ class PoolExecutor(BaseExecutor):
             self.pool.shutdown()
 
     def __getstate__(self):
-        state = super(PoolExecutor, self).__getstate__()
+        state = super().__getstate__()
         return state
 
     def __setstate__(self, state):
-        super(PoolExecutor, self).__setstate__(state)
+        super().__setstate__(state)
 
     def submit(self, function, *args, **kwargs):
         try:

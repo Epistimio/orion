@@ -718,7 +718,7 @@ class ReshapedDimension(TransformedDimension):
     """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality."""
 
     def __init__(self, transformer, original_dimension, index, name=None):
-        super(ReshapedDimension, self).__init__(transformer, original_dimension)
+        super().__init__(transformer, original_dimension)
         if name is None:
             name = original_dimension.name
         self._name = name
@@ -748,7 +748,7 @@ class ReshapedDimension(TransformedDimension):
     @property
     def cardinality(self):
         """Compute cardinality"""
-        cardinality = super(ReshapedDimension, self).cardinality
+        cardinality = super().cardinality
         if isinstance(self.transformer, View):
             cardinality /= numpy.prod(self.transformer.shape)
 
@@ -782,7 +782,7 @@ class TransformedSpace(Space):
     contains = TransformedDimension
 
     def __init__(self, space, *args, **kwargs):
-        super(TransformedSpace, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._original_space = space
 
     def transform(self, trial):
@@ -827,7 +827,7 @@ class ReshapedSpace(Space):
     contains = ReshapedDimension
 
     def __init__(self, original_space, *args, **kwargs):
-        super(ReshapedSpace, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._original_space = original_space
 
     @property
@@ -883,7 +883,7 @@ class ReshapedSpace(Space):
 
         """
         if isinstance(key_or_trial, str):
-            return super(ReshapedSpace, self).__contains__(key_or_trial)
+            return super().__contains__(key_or_trial)
 
         return self.restore_shape(key_or_trial) in self.original
 

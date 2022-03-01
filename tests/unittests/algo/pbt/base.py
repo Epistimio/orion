@@ -254,7 +254,7 @@ class ExploitStub(BaseExploit):
 
     @property
     def configuration(self):
-        configuration = super(ExploitStub, self).configuration
+        configuration = super().configuration
         configuration["rval"] = self.rval
         configuration["skip"] = self.skip
         configuration["should_receive"] = self.should_receive
@@ -279,7 +279,7 @@ class ExploreStub(BaseExplore):
 
     @property
     def configuration(self):
-        configuration = super(ExploreStub, self).configuration
+        configuration = super().configuration
         configuration["rval"] = self.rval
         configuration["no_call"] = self.no_call
         configuration.update(self.kwargs)

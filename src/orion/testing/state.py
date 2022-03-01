@@ -213,7 +213,7 @@ class LegacyOrionState(BaseOrionState):
     """See :func:`~orion.testing.state.BaseOrionState`"""
 
     def __init__(self, *args, **kwargs):
-        super(LegacyOrionState, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.initialized = False
 
     @property

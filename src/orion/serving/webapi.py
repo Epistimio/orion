@@ -104,7 +104,7 @@ class WebApi(falcon.API):
             )
         )
         cors = MyCORS(allow_origins_list=frontends_uri)
-        super(WebApi, self).__init__(middleware=[cors.middleware])
+        super().__init__(middleware=[cors.middleware])
         self.config = config
 
         setup_storage(config.get("storage"))

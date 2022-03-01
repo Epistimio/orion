@@ -143,7 +143,7 @@ class NoParallelStrategy(ParallelStrategy):
 
     def lie(self, trial):
         """See ParallelStrategy.lie"""
-        result = super(NoParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 
@@ -164,7 +164,7 @@ class StatusBasedParallelStrategy(ParallelStrategy):
     """
 
     def __init__(self, strategy_configs=None, default_strategy=None):
-        super(StatusBasedParallelStrategy, self).__init__()
+        super().__init__()
         if strategy_configs is None:
             strategy_configs = {"broken": {"of_type": "maxparallelstrategy"}}
 
@@ -179,7 +179,7 @@ class StatusBasedParallelStrategy(ParallelStrategy):
 
     @property
     def configuration(self):
-        configuration = super(StatusBasedParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["strategy_configs"] = {
             status: strategy.configuration
             for status, strategy in self.strategies.items()
@@ -190,7 +190,7 @@ class StatusBasedParallelStrategy(ParallelStrategy):
 
     @property
     def state_dict(self):
-        state_dict = super(StatusBasedParallelStrategy, self).state_dict
+        state_dict = super().state_dict
         state_dict["strategies"] = {
             status: strategy.state_dict for status, strategy in self.strategies.items()
         }
@@ -198,7 +198,7 @@ class StatusBasedParallelStrategy(ParallelStrategy):
         return state_dict
 
     def set_state(self, state_dict):
-        super(StatusBasedParallelStrategy, self).set_state(state_dict)
+        super().set_state(state_dict)
         for status in self.strategies.keys():
             self.strategies[status].set_state(state_dict["strategies"][status])
         self.default_strategy.set_state(state_dict["default_strategy"])
@@ -229,13 +229,13 @@ class MaxParallelStrategy(ParallelStrategy):
 
     def __init__(self, default_result=float("inf")):
         """Initialize the maximum result used to lie"""
-        super(MaxParallelStrategy, self).__init__()
+        super().__init__()
         self.default_result = default_result
 
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        configuration = super(MaxParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["default_result"] = self.default_result
         return configuration
 
@@ -252,7 +252,7 @@ class MaxParallelStrategy(ParallelStrategy):
 
     def lie(self, trial):
         """See ParallelStrategy.lie"""
-        result = super(MaxParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 
@@ -264,13 +264,13 @@ class MeanParallelStrategy(ParallelStrategy):
 
     def __init__(self, default_result=float("inf")):
         """Initialize the mean result used to lie"""
-        super(MeanParallelStrategy, self).__init__()
+        super().__init__()
         self.default_result = default_result
 
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        configuration = super(MeanParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["default_result"] = self.default_result
         return configuration
 
@@ -287,7 +287,7 @@ class MeanParallelStrategy(ParallelStrategy):
 
     def lie(self, trial):
         """See ParallelStrategy.lie"""
-        result = super(MeanParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 
@@ -299,19 +299,19 @@ class StubParallelStrategy(ParallelStrategy):
 
     def __init__(self, stub_value=None):
         """Initialize the stub value"""
-        super(StubParallelStrategy, self).__init__()
+        super().__init__()
         self.stub_value = stub_value
 
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        configuration = super(StubParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["stub_value"] = self.stub_value
         return configuration
 
     def lie(self, trial):
         """See ParallelStrategy.lie"""
-        result = super(StubParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 

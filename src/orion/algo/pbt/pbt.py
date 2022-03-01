@@ -205,7 +205,7 @@ class PBT(BaseAlgorithm):
         self.lineages = Lineages()
         self._lineage_dropped_head = {}
 
-        super(PBT, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             population_size=population_size,
@@ -243,7 +243,7 @@ class PBT(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(PBT, self).state_dict
+        state_dict = super().state_dict
         state_dict["random_search"] = self.random_search.state_dict
         state_dict["lineages"] = copy.deepcopy(self.lineages)
         state_dict["queue"] = copy.deepcopy(self._queue)
@@ -251,7 +251,7 @@ class PBT(BaseAlgorithm):
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict"""
-        super(PBT, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.random_search.set_state(state_dict["random_search"])
         self.lineages = state_dict["lineages"]
         self._queue = state_dict["queue"]
@@ -284,7 +284,7 @@ class PBT(BaseAlgorithm):
             Trial from a `orion.algo.space.Space`.
 
         """
-        super(PBT, self).register(trial)
+        super().register(trial)
         self.lineages.register(trial)
 
     def suggest(self, num):

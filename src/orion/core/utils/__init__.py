@@ -159,7 +159,7 @@ class Factory(ABCMeta):
     """Deprecated, will be removed in v0.3.0. See GenericFactory instead"""
 
     def __init__(cls, names, bases, dictionary):
-        super(Factory, cls).__init__(names, bases, dictionary)
+        super().__init__(names, bases, dictionary)
         cls.types = {}
         try:
             _import_modules(cls)

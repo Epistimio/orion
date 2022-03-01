@@ -14,7 +14,7 @@ class CarromTable(BenchmarkTask):
     as benchmark task"""
 
     def __init__(self, max_trials=20):
-        super(CarromTable, self).__init__(max_trials=max_trials)
+        super().__init__(max_trials=max_trials)
 
     def call(self, x):
         """Evaluate a 2-D CarromTable function."""

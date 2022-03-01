@@ -56,7 +56,7 @@ class ExperimentNode(TreeNode):
         .. seealso::
             :class:`orion.core.utils.tree.TreeNode` for information about the attributes
         """
-        super(ExperimentNode, self).__init__(experiment, parent, children)
+        super().__init__(experiment, parent, children)
         self.name = name
         self.version = version
 
