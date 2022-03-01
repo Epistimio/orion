@@ -538,7 +538,7 @@ def test_should_sample():
     runner.client.close()
 
 
-def run_runner(reraise=False):
+def run_runner(reraise=False, executor=None):
     try:
         count = 10
         max_trials = 10
@@ -550,8 +550,12 @@ def run_runner(reraise=False):
 
         client.trials.extend([new_trial(i) for i in range(count)])
 
-        runner.run()
-        runner.client.close()
+        if executor is None:
+            executor = client.executor
+
+        with executor:
+            runner.run()
+
         print("done")
         return 0
     except:
@@ -631,8 +635,8 @@ def test_runner_inside_thread():
 def test_runner_inside_dask():
     """Runner can execute inside a dask worker"""
 
-    client = Dask()
+    executor = Dask()
 
-    future = client.submit(run_runner, True)
+    future = executor.submit(run_runner, executor=executor, reraise=True)
 
     assert future.get() == 0
