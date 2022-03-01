@@ -604,8 +604,8 @@ def test_runner_inside_subprocess():
 
     dir = os.path.dirname(__file__)
 
-    result = subprocess.run(
-        ["python", f"{dir}/runner_subprocess.py"], capture_output=True
+    result = subprocess.check_call(
+        ["python", f"{dir}/runner_subprocess.py"]
     )
 
     assert result.stderr.decode("utf-8") == ""
