@@ -5,10 +5,10 @@ import copy
 import os
 import signal
 import time
+import traceback
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
-import traceback
 
 import pytest
 
