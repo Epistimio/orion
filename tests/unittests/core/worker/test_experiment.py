@@ -618,6 +618,7 @@ def test_experiment_stats():
         exp._id = cfg.trials[0]["experiment"]
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
         stats = exp.stats
+        assert stats is not None
         assert stats.trials_completed == NUM_COMPLETED
         assert stats.best_trials_id == cfg.trials[3]["_id"]
         assert stats.best_evaluation == 0

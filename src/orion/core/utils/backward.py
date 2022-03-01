@@ -13,7 +13,7 @@ import copy
 import logging
 import pprint
 import typing
-from typing import Any, Sequence, Type
+from typing import Any, Sequence
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser

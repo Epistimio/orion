@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.cli.info`."""
+import datetime
 import itertools
+import typing
 
 import pytest
 
@@ -21,7 +23,7 @@ from orion.core.utils.format_terminal import (
     format_title,
     get_trial_params,
 )
-from orion.core.worker.experiment import ExperimentStats
+from orion.core.worker.experiment import ExperimentStats, Experiment
 from orion.core.worker.trial import Trial
 
 
@@ -565,19 +567,20 @@ def test_get_trial_params(dummy_trial):
 def test_format_stats(dummy_trial):
     """Test stats section formatting"""
     experiment = DummyExperiment()
+    _yesterday = datetime.datetime(2022, 2, 27)
+    _today = datetime.datetime(2022, 2, 28)
     experiment.stats = ExperimentStats(
         best_trials_id="dummy",
         trials_completed=10,
         best_evaluation=0.1,
-        start_time="yesterday",
-        finish_time="now",
-        duration="way too long",
+        start_time=_yesterday,
+        finish_time=_today,
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
     assert (
         format_stats(experiment)
-        == """\
+        == f"""\
 Stats
 =====
 completed: False
@@ -589,16 +592,16 @@ best trial:
     a: 0.0
     b: 1
     c: Some
-start time: yesterday
-finish time: now
-duration: way too long
+start time: {_yesterday}
+finish time: {_today}
+duration: {_today - _yesterday}
 """
     )
 
 
 def test_format_info(algorithm_dict, dummy_trial):
     """Test full formatting string"""
-    experiment = DummyExperiment()
+    experiment: Experiment = typing.cast(Experiment, DummyExperiment())
     commandline = [
         "executing.sh",
         '--some~choices(["random", "or", "not"])',

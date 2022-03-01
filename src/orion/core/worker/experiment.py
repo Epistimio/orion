@@ -7,13 +7,15 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
+from __future__ import annotations
 import contextlib
 import copy
 import datetime
 import inspect
 import logging
 from dataclasses import dataclass, field
-
+from typing import Any, Callable
+import typing
 import pandas
 
 from orion.core.evc.adapters import BaseAdapter
@@ -22,7 +24,18 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
-from orion.storage.base import FailedUpdate, get_storage
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_storage
+
+if typing.TYPE_CHECKING:
+    from orion.algo.space import Space
+    from orion.algo.base import BaseAlgorithm
+    from orion.core.worker.trial import Trial
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 
 log = logging.getLogger(__name__)
 
@@ -50,10 +63,15 @@ class ExperimentStats:
     trials_completed: int
     best_trials_id: int
     best_evaluation: float
-    start_time: datetime.datetime = field(default_factory=datetime.datetime)
-    finish_time: datetime.datetime = field(default_factory=datetime.datetime)
-    duration: datetime.timedelta = field(default_factory=datetime.timedelta)
+    start_time: datetime.datetime
+    finish_time: datetime.datetime
+    duration: datetime.timedelta = field(init=False)
 
+    def __post_init__(self):
+        self.duration = self.finish_time - self.start_time
+
+
+Mode = Literal["r", "w", "x"]
 
 # pylint: disable=too-many-public-methods
 class Experiment:
@@ -131,21 +149,21 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
-    def __init__(self, name, version=None, mode="r"):
-        self._id = None
-        self.name = name
-        self.version = version if version else 1
-        self._mode = mode
-        self._node = None
-        self.refers = {}
-        self.metadata = {}
-        self.max_trials = None
-        self.max_broken = None
-        self.space = None
-        self.algorithms = None
-        self.working_dir = None
+    def __init__(self, name: str, version: int | None = None, mode: Mode = "r"):
+        self._id: str | None = None
+        self.name: str = name
+        self.version: int = version if version is not None else 1
+        self._mode: Mode = mode
+        self._node: ExperimentNode | None = None
+        self.refers: dict[str, Any] = {}
+        self.metadata: dict[str, Any] = {}
+        self.max_trials: int | None = None
+        self.max_broken: int | None = None
+        self.space: Space | None = None
+        self.algorithms: BaseAlgorithm | None = None
+        self.working_dir: str | None = None
 
-        self._storage = get_storage()
+        self._storage: BaseStorageProtocol = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 
@@ -227,15 +245,19 @@ class Experiment:
 
         return pandas.DataFrame(data, columns=columns)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree: bool = False) -> list[Trial]:
         """Fetch all trials of the experiment"""
-        return self._select_evc_call(with_evc_tree, "fetch_trials")
+        if self._node is not None and with_evc_tree:
+            return self._node.fetch_trials()
+        return self._storage.fetch_trials(experiment=self)
 
-    def get_trial(self, trial=None, uid=None):
+    def get_trial(
+        self, trial: Trial | None = None, uid: str | None = None
+    ) -> Trial | None:
         """Fetch a single Trial, see :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
         return self._storage.get_trial(trial, uid)
 
-    def retrieve_result(self, trial, *args, **kwargs):
+    def retrieve_result(self, trial: Trial, *args, **kwargs):
         """See :meth:`orion.storage.base.BaseStorageProtocol.retrieve_result`"""
         return self._storage.retrieve_result(trial, *args, **kwargs)
 
@@ -244,7 +266,7 @@ class Experiment:
         self._check_if_writable()
         return self._storage.set_trial_status(*args, **kwargs)
 
-    def reserve_trial(self, score_handle=None):
+    def reserve_trial(self, score_handle: Callable | None = None) -> Trial | None:
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
@@ -271,7 +293,7 @@ class Experiment:
         log.debug("reserved trial (trial: %s)", selected_trial)
         return selected_trial
 
-    def fix_lost_trials(self, with_evc_tree=True):
+    def fix_lost_trials(self, with_evc_tree: bool = True) -> None:
         """Find lost trials and set them to interrupted.
 
         A lost trial is defined as a trial whose heartbeat as not been updated since two times
@@ -303,7 +325,7 @@ class Experiment:
             except FailedUpdate:
                 log.debug("failed")
 
-    def duplicate_pending_trials(self):
+    def duplicate_pending_trials(self) -> None:
         """Find pending trials in EVC and duplicate them in current experiment.
 
         An experiment cannot execute trials from parent experiments otherwise some trials
@@ -314,12 +336,12 @@ class Experiment:
         the current experiment will only see the new copy of the trial.
         """
         self._check_if_writable()
-        evc_pending_trials = self._select_evc_call(
-            with_evc_tree=True, function="fetch_pending_trials"
-        )
-        exp_pending_trials = self._select_evc_call(
-            with_evc_tree=False, function="fetch_pending_trials"
-        )
+
+        if self._node is not None:
+            evc_pending_trials = self._node.fetch_pending_trials()
+        else:
+            evc_pending_trials = self._storage.fetch_pending_trials(experiment=self)
+        exp_pending_trials = self._storage.fetch_pending_trials(experiment=self)
 
         exp_trials_ids = set(
             trial.compute_trial_hash(trial, ignore_experiment=True)
@@ -341,7 +363,9 @@ class Experiment:
                 log.debug("Race condition while trying to duplicate trial %s", trial.id)
 
     # pylint:disable=unused-argument
-    def update_completed_trial(self, trial, results_file=None):
+    def update_completed_trial(
+        self, trial: Trial, results_file: str | None = None
+    ) -> None:
         """Inform database about an evaluated `trial` with results.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
@@ -360,7 +384,7 @@ class Experiment:
         log.info("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
 
-    def register_trial(self, trial, status="new"):
+    def register_trial(self, trial: Trial, status: Trial.Status = "new") -> None:
         """Register new trial in the database.
 
         Inform database about *new* suggested trial with specific parameter values. Trials may only
@@ -389,7 +413,7 @@ class Experiment:
         self._storage.register_trial(trial)
 
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, timeout=60, retry_interval=1):
+    def acquire_algorithm_lock(self, timeout: int = 60, retry_interval: int = 1):
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
@@ -442,40 +466,48 @@ class Experiment:
 
             locked_algorithm_state.set_state(self.algorithms.state_dict)
 
-    def _select_evc_call(self, with_evc_tree, function, *args, **kwargs):
+    def _select_evc_call(self, with_evc_tree: bool, function: str, *args, **kwargs):
         if self._node is not None and with_evc_tree:
             return getattr(self._node, function)(*args, **kwargs)
 
         return getattr(self._storage, function)(self, *args, **kwargs)
 
-    def fetch_trials_by_status(self, status, with_evc_tree=False):
+    def fetch_trials_by_status(
+        self, status: Trial.Status, with_evc_tree: bool = False
+    ) -> list[Trial]:
         """Fetch all trials with the given status
 
         Trials are sorted based on `Trial.submit_time`
 
         :return: list of `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, "fetch_trials_by_status", status)
+        if self._node is not None and with_evc_tree:
+            return self._node.fetch_trials_by_status(status)
+        return self._storage.fetch_trials_by_status(experiment=self, status=status)
 
-    def fetch_pending_trials(self, with_evc_tree=False):
+    def fetch_pending_trials(self, with_evc_tree: bool = False) -> list[Trial]:
         """Fetch all trials with status new, interrupted or suspended
 
         Trials are sorted based on `Trial.submit_time`
 
         :return: list of `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, "fetch_pending_trials")
+        if self._node is not None and with_evc_tree:
+            return self._node.fetch_pending_trials()
+        return self._storage.fetch_pending_trials(experiment=self)
 
-    def fetch_lost_trials(self, with_evc_tree=False):
+    def fetch_lost_trials(self, with_evc_tree: bool = False) -> list[Trial]:
         """Fetch all reserved trials that are lost (old heartbeat)
 
         Trials are sorted based on `Trial.submit_time`
 
         :return: list of `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, "fetch_lost_trials")
+        if self._node is not None and with_evc_tree:
+            return self._node.fetch_lost_trials()
+        return self._storage.fetch_lost_trials(experiment=self)
 
-    def fetch_noncompleted_trials(self, with_evc_tree=False):
+    def fetch_noncompleted_trials(self, with_evc_tree: bool = False) -> list[Trial]:
         """Fetch non-completed trials of this `Experiment` instance.
 
         Trials are sorted based on `Trial.submit_time`
@@ -487,11 +519,13 @@ class Experiment:
 
         :return: list of non-completed `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, "fetch_noncompleted_trials")
+        if self._node is not None and with_evc_tree:
+            return self._node.fetch_noncompleted_trials()
+        return self._storage.fetch_noncompleted_trials(experiment=self)
 
     # pylint: disable=invalid-name
     @property
-    def id(self):
+    def id(self) -> str | None:
         """Id of the experiment in the database if configured.
 
         Value is `None` if the experiment is not configured.
@@ -499,7 +533,7 @@ class Experiment:
         return self._id
 
     @property
-    def mode(self):
+    def mode(self) -> Mode:
         """Return the access right of the experiment
 
         {'r': read, 'w': read/write, 'x': read/write/execute}
@@ -507,7 +541,7 @@ class Experiment:
         return self._mode
 
     @property
-    def node(self):
+    def node(self) -> ExperimentNode | None:
         """Node of the experiment in the version control tree.
 
         Value is `None` if the experiment is not connected to the version control tree.
@@ -516,7 +550,7 @@ class Experiment:
         return self._node
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with ``max_trials``.
@@ -542,7 +576,7 @@ class Experiment:
         )
 
     @property
-    def is_broken(self):
+    def is_broken(self) -> bool:
         """Return True, if this experiment is considered to be broken.
 
         Count how many trials are broken and return True if that number has reached
@@ -554,7 +588,7 @@ class Experiment:
         return num_broken_trials >= self.max_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict[str, Any]:
         """Return a copy of an `Experiment` configuration as a dictionary."""
         config = dict()
         for attrname in self.__slots__:
@@ -577,14 +611,14 @@ class Experiment:
         return copy.deepcopy(config)
 
     @property
-    def stats(self):
+    def stats(self) -> ExperimentStats | None:
         """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
         experiment.
         """
         completed_trials = self.fetch_trials_by_status("completed")
 
         if not completed_trials:
-            return dict()
+            return None
         trials_completed = len(completed_trials)
         best_trials_id = None
         trial = completed_trials[0]
@@ -601,7 +635,6 @@ class Experiment:
             if objective < best_evaluation:
                 best_evaluation = objective
                 best_trials_id = trial.id
-        duration = finish_time - start_time
 
         return ExperimentStats(
             trials_completed=trials_completed,
@@ -609,13 +642,9 @@ class Experiment:
             best_evaluation=best_evaluation,
             start_time=start_time,
             finish_time=finish_time,
-            duration=duration,
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent the object as a string."""
-        return "Experiment(name=%s, metadata.user=%s, version=%s)" % (
-            self.name,
-            self.metadata.get("user", "n/a"),
-            self.version,
-        )
+        user_str = self.metadata.get("user", "n/a")
+        return f"Experiment(name={self.name}, metadata.user={user_str}, version={self.version})"
