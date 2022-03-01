@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
+import traceback
 
 import pytest
 
@@ -554,6 +555,7 @@ def run_runner():
         print("done")
         return 0
     except:
+        traceback.print_exc()
         return 1
 
 
@@ -599,8 +601,8 @@ def test_runner_inside_subprocess():
         ["python", f"{dir}/runner_subprocess.py"], capture_output=True
     )
 
-    assert result.stdout.decode("utf-8") == "done\n"
     assert result.stderr.decode("utf-8") == ""
+    assert result.stdout.decode("utf-8") == "done\n"
     assert result.returncode == 0
 
 
@@ -624,7 +626,7 @@ def test_runner_inside_thread():
 
 @pytest.mark.skipif(not HAS_DASK, reason="Running without dask")
 def test_runner_inside_dask():
-    """Runner can execute inside a dask"""
+    """Runner can execute inside a dask worker"""
 
     client = Dask()
 
