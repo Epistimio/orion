@@ -23,7 +23,7 @@ from orion.core.utils.format_terminal import (
     format_title,
     get_trial_params,
 )
-from orion.core.worker.experiment import ExperimentStats, Experiment
+from orion.core.worker.experiment import Experiment, ExperimentStats
 from orion.core.worker.trial import Trial
 
 

@@ -28,20 +28,49 @@ scipy documentation for each specific implentation of a random variable type,
 unless noted otherwise!
 
 """
+from __future__ import annotations
+
 import copy
 import logging
 import numbers
+import typing
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Hashable,
+    Iterator,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy
 from scipy.stats import distributions
+from typing_extensions import Literal
 
 from orion.core.utils import float_to_digits_list, format_trials
 from orion.core.utils.flatten import flatten
 
+if typing.TYPE_CHECKING:
+    from numbers import Number
+    from typing import Tuple
+
+    from scipy.stats.distributions import rv_continuous, rv_discrete
+
+    _SeedType = Union[int, numpy.random.RandomState, None]
+    _ShapeType = Union[int, Tuple[int, ...], None]
+
+    from orion.core.worker.trial import Trial
+
+
 logger = logging.getLogger(__name__)
 
 
-def check_random_state(seed):
+def check_random_state(
+    seed: _SeedType,
+) -> numpy.random.RandomState:
     """Return numpy global rng or RandomState if seed is specified"""
     if seed is None or seed is numpy.random:
         rng = (
@@ -67,7 +96,10 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
         return "..."
 
 
-class Dimension:
+T = TypeVar("T")
+
+
+class Dimension(Generic[T]):
     """Base class for search space dimensions.
 
     Attributes
@@ -87,7 +119,9 @@ class Dimension:
 
     NO_DEFAULT_VALUE = None
 
-    def __init__(self, name, prior, *args, **kwargs):
+    def __init__(
+        self, name: str, prior: str | rv_discrete | rv_continuous, *args, **kwargs
+    ):
         """Init code which is common for `Dimension` subclasses.
 
         Parameters
@@ -111,7 +145,7 @@ class Dimension:
         """
         self._name = None
         self.name = name
-
+        self.prior: rv_discrete | rv_continuous | None = None
         if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
@@ -127,7 +161,7 @@ class Dimension:
         self._shape = kwargs.pop("shape", None)
         self.validate()
 
-    def validate(self):
+    def validate(self) -> None:
         """Validate dimension arguments"""
         if "random_state" in self._kwargs or "seed" in self._kwargs:
             raise ValueError(
@@ -151,7 +185,7 @@ class Dimension:
                 "Can't set default value.".format(self.default_value)
             )
 
-    def _get_hashable_members(self):
+    def _get_hashable_members(self) -> tuple[Hashable, ...]:
         return (
             self.name,
             self.shape,
@@ -163,18 +197,18 @@ class Dimension:
         )
 
     # pylint:disable=protected-access
-    def __eq__(self, other):
+    def __eq__(self, other: Dimension | Any) -> bool:
         """Return True if other is the same dimension as self"""
         if not isinstance(other, Dimension):
             return False
 
         return self._get_hashable_members() == other._get_hashable_members()
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """Return the hash of the hashable members"""
         return hash(self._get_hashable_members())
 
-    def sample(self, n_samples=1, seed=None):
+    def sample(self, n_samples: int = 1, seed: _SeedType = None) -> list[T]:
         """Draw random samples from `prior`.
 
         Parameters
@@ -213,7 +247,7 @@ class Dimension:
         """
         raise NotImplementedError
 
-    def interval(self, alpha=1.0):
+    def interval(self, alpha: float = 1.0) -> tuple[numpy.ndarray, numpy.ndarray]:
         """Return a tuple containing lower and upper bound for parameters.
 
         If parameters are drawn from an 'open' supported random variable,
@@ -223,7 +257,7 @@ class Dimension:
         """
         return self.prior.interval(alpha, *self._args, **self._kwargs)
 
-    def __contains__(self, point):
+    def __contains__(self, point: Any) -> bool:
         """Check if constraints hold for this `point` of `Dimension`.
 
         :param point: a parameter corresponding to this `Dimension`.
@@ -235,7 +269,7 @@ class Dimension:
         """
         raise NotImplementedError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent the object as a string."""
         return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5}, default value={6})".format(
             self.__class__.__name__,
@@ -247,7 +281,7 @@ class Dimension:
             self._default_value,
         )
 
-    def get_prior_string(self):
+    def get_prior_string(self) -> str:
         """Build the string corresponding to current prior"""
         args = copy.deepcopy(list(self._args[:]))
         if self._prior_name == "uniform" and len(args) == 2:
@@ -279,17 +313,17 @@ class Dimension:
             prior_name=prior_name, args=", ".join(args)
         )
 
-    def get_string(self):
+    def get_string(self) -> str:
         """Build the string corresponding to current dimension"""
         return "{name}~{prior}".format(name=self.name, prior=self.get_prior_string())
 
     @property
-    def name(self):
+    def name(self) -> str | None:
         """See `Dimension` attributes."""
         return self._name
 
     @name.setter
-    def name(self, value):
+    def name(self, value: str | None) -> None:
         if isinstance(value, str) or value is None:
             self._name = value
         else:
@@ -299,22 +333,22 @@ class Dimension:
             )
 
     @property
-    def default_value(self):
+    def default_value(self) -> T | None:
         """Return the default value for this dimensions"""
         return self._default_value
 
     @property
-    def type(self):
+    def type(self) -> str:
         """See `Dimension` attributes."""
         return self.__class__.__name__.lower()
 
     @property
-    def prior_name(self):
+    def prior_name(self) -> str:
         """Return the name of the prior"""
         return self._prior_name
 
     @property
-    def shape(self):
+    def shape(self) -> tuple[int, ...] | None:
         """Return the shape of dimension."""
         # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
         # Read about ``size`` argument in
@@ -331,21 +365,21 @@ class Dimension:
 
     # pylint:disable=no-self-use
     @property
-    def cardinality(self):
+    def cardinality(self) -> int | float:
         """Return the number of all the possible points from `Dimension`.
         The default value is ``numpy.inf``.
         """
         return numpy.inf
 
 
-def _is_numeric_array(point):
+def _is_numeric_array(point: Number | numpy.ndarray | Sequence | Any) -> bool:
     """Test whether a point is numerical object or an array containing only numerical objects"""
 
-    def _is_numeric(item):
+    def _is_numeric(item: Any) -> bool:
         return isinstance(item, (numbers.Number, numpy.ndarray))
 
     try:
-        return numpy.all(numpy.vectorize(_is_numeric)(point))
+        return bool(numpy.all(numpy.vectorize(_is_numeric)(point)))
     except TypeError:
         return _is_numeric(point)
 
@@ -381,7 +415,7 @@ class Real(Dimension):
 
     """
 
-    def __init__(self, name, prior, *args, **kwargs):
+    def __init__(self, name: str, prior: str, *args, **kwargs):
         self._low = kwargs.pop("low", -numpy.inf)
         self._high = kwargs.pop("high", numpy.inf)
         if self._high <= self._low:
@@ -402,7 +436,7 @@ class Real(Dimension):
 
         super().__init__(name, prior, *args, **kwargs)
 
-    def __contains__(self, point):
+    def __contains__(self, point: Any) -> bool:
         """Check if constraints hold for this `point` of `Dimension`.
 
         :param point: a parameter corresponding to this `Dimension`.
@@ -422,9 +456,9 @@ class Real(Dimension):
         if point_.shape != self.shape:
             return False
 
-        return numpy.all(point_ >= low) and numpy.all(point_ <= high)
+        return bool(numpy.all(point_ >= low) and numpy.all(point_ <= high))
 
-    def get_prior_string(self):
+    def get_prior_string(self) -> str:
         """Build the string corresponding to current prior"""
         prior_string = super().get_prior_string()
 
@@ -433,7 +467,7 @@ class Real(Dimension):
 
         return prior_string
 
-    def interval(self, alpha=1.0):
+    def interval(self, alpha: float = 1.0) -> tuple[numpy.ndarray, numpy.ndarray]:
         """Return a tuple containing lower and upper bound for parameters.
 
         If parameters are drawn from an 'open' supported random variable,
@@ -446,7 +480,7 @@ class Real(Dimension):
         prior_low, prior_high = super().interval(alpha)
         return (max(prior_low, self._low), min(prior_high, self._high))
 
-    def sample(self, n_samples=1, seed=None):
+    def sample(self, n_samples: int = 1, seed: _SeedType = None) -> list:
         """Draw random samples from `prior`.
 
         .. seealso:: `Dimension.sample`
@@ -471,7 +505,7 @@ class Real(Dimension):
         return samples
 
     # pylint:disable=no-self-use
-    def cast(self, point):
+    def cast(self, point) -> numpy.ndarray | list:
         """Cast a point to float
 
         If casted point will stay a list or a numpy array depending on the
@@ -485,7 +519,12 @@ class Real(Dimension):
         return casted_point
 
     @staticmethod
-    def get_cardinality(shape, interval, precision, prior_name):
+    def get_cardinality(
+        shape: _ShapeType,
+        interval: tuple[float, float],
+        precision: int,
+        prior_name: str,
+    ) -> int | float:
         """Return the number of all the possible points based and shape and interval"""
         if precision is None or prior_name not in ["loguniform", "reciprocal"]:
             return numpy.inf
@@ -493,7 +532,7 @@ class Real(Dimension):
         # If loguniform, compute every possible combinations based on precision
         # for each orders of magnitude.
 
-        def format_number(number):
+        def format_number(number: float) -> numpy.ndarray:
             """Turn number into an array of digits, the size of the precision"""
 
             formated_number = numpy.zeros(precision)
@@ -515,7 +554,7 @@ class Real(Dimension):
         # Total number of possibilities for an order of magnitude
         full_cardinality = 9 * 10 ** (precision - 1)
 
-        def num_below(number):
+        def num_below(number: numpy.ndarray) -> numpy.ndarray:
 
             return (
                 numpy.clip(number, a_min=0, a_max=9)
@@ -535,7 +574,7 @@ class Real(Dimension):
         return int(cardinality) ** int(numpy.prod(shape) if shape else 1)
 
     @property
-    def cardinality(self):
+    def cardinality(self) -> int | float:
         """Return the number of all the possible points from Integer `Dimension`"""
         return Real.get_cardinality(
             self.shape, self.interval(), self.precision, self._prior_name
@@ -543,7 +582,9 @@ class Real(Dimension):
 
 
 class _Discrete(Dimension):
-    def sample(self, n_samples=1, seed=None):
+    def sample(
+        self, n_samples: int = 1, seed: int | numpy.random.RandomState | None = None
+    ) -> list:
         """Draw random samples from `prior`.
 
         Discretizes with `numpy.floor` the results from `Dimension.sample`.
@@ -558,7 +599,7 @@ class _Discrete(Dimension):
         # Making discrete by ourselves because scipy does not use **floor**
         return list(map(self.cast, samples))
 
-    def interval(self, alpha=1.0):
+    def interval(self, alpha: float = 1.0) -> tuple[int | float, int | float]:
         """Return a tuple containing lower and upper bound for parameters.
 
         If parameters are drawn from an 'open' supported random variable,
@@ -581,7 +622,7 @@ class _Discrete(Dimension):
             int_high = numpy.inf
         return (int_low, int_high)
 
-    def __contains__(self, point):
+    def __contains__(self, point: Any) -> bool:
         raise NotImplementedError
 
 
@@ -611,7 +652,7 @@ class Integer(Real, _Discrete):
 
     """
 
-    def __contains__(self, point):
+    def __contains__(self, point: Any) -> bool:
         """Check if constraints hold for this `point` of `Dimension`.
 
         :param point: a parameter corresponding to this `Dimension`.
@@ -629,7 +670,7 @@ class Integer(Real, _Discrete):
 
         return super().__contains__(point)
 
-    def cast(self, point):
+    def cast(self, point: numpy.ndarray | Any) -> numpy.ndarray:
         """Cast a point to int
 
         If casted point will stay a list or a numpy array depending on the
@@ -654,28 +695,28 @@ class Integer(Real, _Discrete):
 
         return casted_point
 
-    def get_prior_string(self):
+    def get_prior_string(self) -> str:
         """Build the string corresponding to current prior"""
         prior_string = super().get_prior_string()
         return prior_string[:-1] + ", discrete=True)"
 
     @property
-    def prior_name(self):
+    def prior_name(self) -> str:
         """Return the name of the prior"""
         return "int_{}".format(super().prior_name)
 
     @staticmethod
-    def get_cardinality(shape, interval):
+    def get_cardinality(shape: _ShapeType, interval: tuple[int, int]) -> int:
         """Return the number of all the possible points based and shape and interval"""
         return int(interval[1] - interval[0] + 1) ** _get_shape_cardinality(shape)
 
     @property
-    def cardinality(self):
+    def cardinality(self) -> int:
         """Return the number of all the possible points from Integer `Dimension`"""
         return Integer.get_cardinality(self.shape, self.interval())
 
 
-def _get_shape_cardinality(shape):
+def _get_shape_cardinality(shape: _ShapeType) -> int:
     """Get the cardinality in a shape which can be int or tuple"""
     shape_cardinality = 1
     if shape is None:
@@ -704,7 +745,9 @@ class Categorical(Dimension):
 
     """
 
-    def __init__(self, name, categories, **kwargs):
+    def __init__(
+        self, name: str, categories: dict | Sequence[tuple[Any, Any]], **kwargs
+    ):
         if isinstance(categories, dict):
             self.categories = tuple(categories.keys())
             self._probs = tuple(categories.values())
@@ -720,16 +763,16 @@ class Categorical(Dimension):
         super().__init__(name, prior, **kwargs)
 
     @staticmethod
-    def get_cardinality(shape, categories):
+    def get_cardinality(shape: _ShapeType, categories: Sequence) -> int:
         """Return the number of all the possible points based and shape and categories"""
         return len(categories) ** _get_shape_cardinality(shape)
 
     @property
-    def cardinality(self):
+    def cardinality(self) -> int:
         """Return the number of all the possible values from Categorical `Dimension`"""
         return Categorical.get_cardinality(self.shape, self.interval())
 
-    def sample(self, n_samples=1, seed=None):
+    def sample(self, n_samples: int = 1, seed: _SeedType = None) -> list[Any]:
         """Draw random samples from `prior`.
 
         .. seealso:: `Dimension.sample`
@@ -743,11 +786,11 @@ class Categorical(Dimension):
         ]
         return samples
 
-    def interval(self, alpha=1.0):
+    def interval(self, alpha: float = 1.0) -> tuple[Any, ...]:
         """Return a tuple of possible values that this categorical dimension can take."""
         return self.categories
 
-    def __contains__(self, point):
+    def __contains__(self, point: Any) -> bool:
         """Check if constraints hold for this `point` of `Dimension`.
 
         :param point: a parameter corresponding to this `Dimension`.
@@ -760,7 +803,7 @@ class Categorical(Dimension):
         _check = numpy.vectorize(lambda x: x in self.categories)
         return numpy.all(_check(point_))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent the object as a string."""
         if len(self.categories) > 5:
             cats = self.categories[:2] + self.categories[-2:]
@@ -785,7 +828,7 @@ class Categorical(Dimension):
             self.name, prior, self.shape, self.default_value
         )
 
-    def get_prior_string(self):
+    def get_prior_string(self) -> str:
         """Build the string corresponding to current prior"""
         args = list(map(str, self._args[:]))
         args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
@@ -809,16 +852,16 @@ class Categorical(Dimension):
         return "choices({args})".format(args=", ".join(args))
 
     @property
-    def get_prior(self):
+    def get_prior(self) -> tuple[Any, ...]:
         """Return the priors"""
         return self._probs
 
     @property
-    def prior_name(self):
+    def prior_name(self) -> str:
         """Return the name of the prior"""
         return "choices"
 
-    def cast(self, point):
+    def cast(self, point) -> list | numpy.ndarray:
         """Cast a point to some category
 
         Casted point will stay a list or a numpy array depending on the
@@ -832,7 +875,7 @@ class Categorical(Dimension):
         """
         categorical_strings = {str(c): c for c in self.categories}
 
-        def get_category(value):
+        def get_category(value: Any) -> Any:
             """Return category corresponding to a string else return singleton object"""
             if str(value) not in categorical_strings:
                 raise ValueError("Invalid category: {}".format(value))
@@ -878,7 +921,7 @@ class Fidelity(Dimension):
     """
 
     # pylint:disable=super-init-not-called
-    def __init__(self, name, low, high, base=2):
+    def __init__(self, name: str, low: int, high: int, base: int = 2):
         if low <= 0:
             raise AttributeError("Minimum resources must be a positive number.")
         elif low > high:
@@ -895,25 +938,25 @@ class Fidelity(Dimension):
         self._prior_name = "None"
 
     @property
-    def default_value(self):
+    def default_value(self) -> int:
         """Return `high`"""
         return self.high
 
     @staticmethod
-    def get_cardinality(shape, interval):
+    def get_cardinality(shape: _ShapeType, interval: tuple[float, float]) -> Literal[1]:
         """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
         does not contribute to cardinality in a fixed way now.
         """
         return 1
 
     @property
-    def cardinality(self):
+    def cardinality(self) -> Literal[1]:
         """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
         does not contribute to cardinality in a fixed way now.
         """
         return Fidelity.get_cardinality(self.shape, self.interval())
 
-    def get_prior_string(self):
+    def get_prior_string(self) -> str:
         """Build the string corresponding to current prior"""
         args = [str(self.low), str(self.high)]
 
@@ -926,25 +969,25 @@ class Fidelity(Dimension):
         """Do not do anything."""
         raise NotImplementedError
 
-    def sample(self, n_samples=1, seed=None):
+    def sample(self, n_samples: int = 1, seed: _SeedType = None) -> list[int]:
         """Do not do anything."""
         return [self.high for i in range(n_samples)]
 
-    def interval(self, alpha=1.0):
+    def interval(self, alpha: float = 1.0) -> tuple[int, int]:
         """Do not do anything."""
         return (self.low, self.high)
 
-    def cast(self, point=0):
+    def cast(self, point: Any = 0):
         """Do not do anything."""
         raise NotImplementedError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent the object as a string."""
         return "{0}(name={1}, low={2}, high={3}, base={4})".format(
             self.__class__.__name__, self.name, self.low, self.high, self.base
         )
 
-    def __contains__(self, value):
+    def __contains__(self, value: Any) -> bool:
         """Check if constraints hold for this `point` of `Dimension`.
 
         :param point: a parameter corresponding to this `Dimension`.
@@ -953,7 +996,7 @@ class Fidelity(Dimension):
         return self.low <= value <= self.high
 
 
-class Space(dict):
+class Space(Dict[str, Dimension]):
     """Represents the search space.
 
     It is a sorted dictionary which contains `Dimension` objects.
@@ -962,11 +1005,11 @@ class Space(dict):
 
     contains = Dimension
 
-    def register(self, dimension):
+    def register(self, dimension: Dimension) -> None:
         """Register a new dimension to `Space`."""
         self[dimension.name] = dimension
 
-    def sample(self, n_samples=1, seed=None):
+    def sample(self, n_samples: int = 1, seed: _SeedType = None) -> list[Trial]:
         """Draw random samples from this space.
 
         Parameters
@@ -994,7 +1037,7 @@ class Space(dict):
         samples = [dim.sample(n_samples, rng) for dim in self.values()]
         return [format_trials.tuple_to_trial(point, self) for point in zip(*samples)]
 
-    def interval(self, alpha=1.0):
+    def interval(self, alpha: float = 1.0) -> list[tuple[Any, Any]]:
         """Return a list with the intervals for each contained dimension."""
         res = list()
         for dim in self.values():
@@ -1004,7 +1047,7 @@ class Space(dict):
                 res.append(dim.interval(alpha))
         return res
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str | int) -> Dimension:
         """Wrap __getitem__ to allow searching with position."""
         if isinstance(key, str):
             return super().__getitem__(key)
@@ -1012,7 +1055,7 @@ class Space(dict):
         values = list(self.values())
         return values[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str | int, value: Dimension) -> None:
         """Wrap __setitem__ to allow only ``Space.contains`` class, e.g. `Dimension`,
         values and string keys.
         """
@@ -1035,7 +1078,7 @@ class Space(dict):
             )
         super().__setitem__(key, value)
 
-    def __contains__(self, key_or_trial):
+    def __contains__(self, key_or_trial: str | Trial | Any) -> bool:
         """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
 
@@ -1059,36 +1102,36 @@ class Space(dict):
 
         return len(keys) == 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
         return "Space([{}])".format(",\n       ".join(map(str, dims)))
 
-    def items(self):
+    def items(self) -> list[tuple[str, Dimension]]:
         """Return items sorted according to keys"""
         return [(k, self[k]) for k in self.keys()]
 
-    def values(self):
+    def values(self) -> list[Dimension]:
         """Return values sorted according to keys"""
         return [self[k] for k in self.keys()]
 
-    def keys(self):
+    def keys(self) -> list[str]:
         """Return sorted keys"""
         return list(iter(self))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """Return sorted keys"""
         return iter(sorted(super().keys()))
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict[str, str]:
         """Return a dictionary of priors."""
         return {name: dim.get_prior_string() for name, dim in self.items()}
 
     @property
-    def cardinality(self):
+    def cardinality(self) -> int | float:
         """Return the number of all all possible sets of samples in the space"""
-        capacities = 1
+        capacities: int | float = 1
         for dim in self.values():
             capacities *= dim.cardinality
         return capacities

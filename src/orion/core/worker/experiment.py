@@ -8,14 +8,16 @@ Manage history of trials corresponding to a black box process.
 
 """
 from __future__ import annotations
+
 import contextlib
 import copy
 import datetime
 import inspect
 import logging
+import typing
 from dataclasses import dataclass, field
 from typing import Any, Callable
-import typing
+
 import pandas
 
 from orion.core.evc.adapters import BaseAdapter
@@ -27,8 +29,8 @@ from orion.core.utils.singleton import update_singletons
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_storage
 
 if typing.TYPE_CHECKING:
-    from orion.algo.space import Space
     from orion.algo.base import BaseAlgorithm
+    from orion.algo.space import Space
     from orion.core.worker.trial import Trial
 
 try:
