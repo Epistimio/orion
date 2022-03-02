@@ -48,9 +48,9 @@ def change_signal_handler(sig, handler):
 class FakeClient:
     """Orion mock client for Runner."""
 
-    def __init__(self, n_workers):
+    def __init__(self, n_workers, backend="joblib"):
         self.is_done = False
-        self.executor = executor_factory.create("joblib", n_workers)
+        self.executor = executor_factory.create(backend, n_workers)
         self.suggest_error = WaitingForTrials
         self.trials = []
         self.status = []
@@ -101,10 +101,10 @@ def function(lhs, sleep):
     return lhs + sleep
 
 
-def new_runner(idle_timeout, n_workers=2, client=None):
+def new_runner(idle_timeout, n_workers=2, client=None, backend="joblib"):
     """Create a new runner with a mock client."""
     if client is None:
-        client = FakeClient(n_workers)
+        client = FakeClient(n_workers, backend=backend)
 
     runner = Runner(
         client=client,
@@ -538,13 +538,13 @@ def test_should_sample():
     runner.client.close()
 
 
-def run_runner(reraise=False, executor=None):
+def run_runner(reraise=False, executor=None, backend="joblib"):
     try:
         count = 10
         max_trials = 10
         workers = 2
 
-        runner = new_runner(0.1, n_workers=workers)
+        runner = new_runner(0.1, n_workers=workers, backend=backend)
         runner.max_trials_per_worker = max_trials
         client = runner.client
 
@@ -605,10 +605,10 @@ def test_runner_inside_subprocess():
     dir = os.path.dirname(__file__)
 
     result = subprocess.run(
-        ["python", f"{dir}/runner_subprocess.py"],
+        ["python", f"{dir}/runner_subprocess.py", "--backend", "joblib"],
         check=True,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
     )
 
     assert result.stderr.decode("utf-8") == ""
@@ -636,10 +636,16 @@ def test_runner_inside_thread():
 
 @pytest.mark.skipif(not HAS_DASK, reason="Running without dask")
 def test_runner_inside_dask():
-    """Runner can execute inside a dask worker"""
+    """Runner can not execute inside a dask worker"""
 
     executor = Dask()
 
-    future = executor.submit(run_runner, executor=executor, reraise=True)
+    future = executor.submit(
+        run_runner, executor=executor, reraise=True, backend="dask"
+    )
 
-    assert future.get() == 0
+    with pytest.raises(AssertionError) as exc:
+        assert future.get() == 0
+
+    # Assertion Error is too broad we need to check the message as well
+    assert str(exc.value) == "daemonic processes are not allowed to have children"

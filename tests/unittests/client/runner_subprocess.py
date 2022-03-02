@@ -1,4 +1,5 @@
 """Used to test instantiating a runner inside a subprocess"""
+from argparse import ArgumentParser
 
 from orion.client.runner import Runner
 from orion.core.utils.exceptions import WaitingForTrials
@@ -8,6 +9,11 @@ from orion.executor.base import executor_factory
 idle_timeout = 20
 count = 10
 n_workers = 2
+
+
+parser = ArgumentParser()
+parser.add_argument("--backend", type=str, default="joblib")
+args = parser.parse_args()
 
 
 def new_trial(value, sleep=0.01):
@@ -25,7 +31,7 @@ class FakeClient:
 
     def __init__(self, n_workers):
         self.is_done = False
-        self.executor = executor_factory.create("joblib", n_workers)
+        self.executor = executor_factory.create(args.backend, n_workers)
         self.suggest_error = WaitingForTrials
         self.trials = []
         self.status = []
