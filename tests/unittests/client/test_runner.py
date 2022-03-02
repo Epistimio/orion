@@ -604,7 +604,12 @@ def test_runner_inside_subprocess():
 
     dir = os.path.dirname(__file__)
 
-    result = subprocess.check_call(["python", f"{dir}/runner_subprocess.py"])
+    result = subprocess.run(
+        ["python", f"{dir}/runner_subprocess.py"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
 
     assert result.stderr.decode("utf-8") == ""
     assert result.stdout.decode("utf-8") == "done\n"
