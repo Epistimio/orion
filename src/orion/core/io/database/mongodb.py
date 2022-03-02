@@ -111,7 +111,7 @@ class MongoDB(Database):
         else:
             port = pymongo.MongoClient.PORT
 
-        su).__init__(
+        super().__init__(
             host,
             name,
             port,
