@@ -561,7 +561,7 @@ def run_runner(reraise=False, executor=None):
         runner.max_trials_per_worker = max_trials
         client = runner.client
 
-        client.trials.extend([new_trial(i) for i in range(count)])
+        client.trials.extend([new_trial(i, sleep=0) for i in range(count)])
 
         if executor is None:
             executor = client.executor
