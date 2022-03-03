@@ -50,7 +50,8 @@ class Protected(object):
             self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
             self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
             self.signal_installed = True
-        except ValueError:
+
+        except ValueError:  # ValueError: signal only works in main thread
             log.warning(
                 "SIGINT/SIGTERM protection hooks could not be installed because "
                 "Runner is executing inside a thread/subprocess, results could get lost "

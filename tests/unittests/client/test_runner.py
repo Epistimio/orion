@@ -9,6 +9,7 @@ import traceback
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
+from wsgiref.simple_server import sys_version
 
 import pytest
 
@@ -24,6 +25,13 @@ from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.storage.base import LockAcquisitionTimeout
+
+
+import sys
+
+
+def compatible(version):
+    return sys.version_info.major == version[0] and sys.version_info.minor >= version[1]
 
 
 def new_trial(value, sleep=0.01):
@@ -48,9 +56,14 @@ def change_signal_handler(sig, handler):
 class FakeClient:
     """Orion mock client for Runner."""
 
-    def __init__(self, n_workers, backend="joblib"):
+    def __init__(self, n_workers, backend="joblib", executor=None):
         self.is_done = False
-        self.executor = executor_factory.create(backend, n_workers)
+
+        if executor is None:
+            self.executor = executor_factory.create(backend, n_workers)
+        else:
+            self.executor = executor
+
         self.suggest_error = WaitingForTrials
         self.trials = []
         self.status = []
@@ -101,10 +114,10 @@ def function(lhs, sleep):
     return lhs + sleep
 
 
-def new_runner(idle_timeout, n_workers=2, client=None, backend="joblib"):
+def new_runner(idle_timeout, n_workers=2, client=None, executor=None, backend="joblib"):
     """Create a new runner with a mock client."""
     if client is None:
-        client = FakeClient(n_workers, backend=backend)
+        client = FakeClient(n_workers, backend=backend, executor=executor)
 
     runner = Runner(
         client=client,
@@ -538,13 +551,13 @@ def test_should_sample():
     runner.client.close()
 
 
-def run_runner(reraise=False, executor=None, backend="joblib"):
+def run_runner(reraise=False, executor=None):
     try:
         count = 10
         max_trials = 10
         workers = 2
 
-        runner = new_runner(0.1, n_workers=workers, backend=backend)
+        runner = new_runner(0.1, n_workers=workers, executor=executor)
         runner.max_trials_per_worker = max_trials
         client = runner.client
 
@@ -641,11 +654,7 @@ def test_runner_inside_dask():
     executor = Dask()
 
     future = executor.submit(
-        run_runner, executor=executor, reraise=True, backend="dask"
+        run_runner, executor=executor, reraise=True
     )
 
-    with pytest.raises(AssertionError) as exc:
-        assert future.get() == 0
-
-    # Assertion Error is too broad we need to check the message as well
-    assert str(exc.value) == "daemonic processes are not allowed to have children"
+    assert future.get() == 0
