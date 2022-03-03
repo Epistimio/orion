@@ -4,6 +4,7 @@
 import copy
 import os
 import signal
+import sys
 import time
 import traceback
 from contextlib import contextmanager
@@ -25,9 +26,6 @@ from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.storage.base import LockAcquisitionTimeout
-
-
-import sys
 
 
 def compatible(version):
@@ -662,8 +660,6 @@ def test_runner_inside_dask():
 
     executor = Dask()
 
-    future = executor.submit(
-        run_runner, executor=executor, reraise=True
-    )
+    future = executor.submit(run_runner, executor=executor, reraise=True)
 
     assert future.get() == 0

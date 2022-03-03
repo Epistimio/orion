@@ -156,6 +156,10 @@ class PoolExecutor(BaseExecutor):
     backend: str
         Pool backend to use; thread or multiprocess, defaults to multiprocess
 
+    .. warning::
+
+       Pickling of the executor is not supported, see Dask for a backend that supports it
+
     """
 
     BACKENDS = dict(
@@ -174,7 +178,7 @@ class PoolExecutor(BaseExecutor):
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __setstate__(self, state):
-        self.pool = state['pool']
+        self.pool = state["pool"]
 
     def __getstate__(self):
         return dict(pool=self.pool)
