@@ -9,7 +9,6 @@ Algorithm modules
    :maxdepth: 2
    :caption: Algorithm modules of Oríon
 
-   algo/space
    algo/base
    algo/random
    algo/gridsearch
