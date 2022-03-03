@@ -566,6 +566,15 @@ def run_runner(reraise=False, executor=None):
         if executor is None:
             executor = client.executor
 
+        def set_is_done():
+            time.sleep(0.05)
+            runner.pending_trials = dict()
+            runner.client.is_done = True
+
+        start = time.time()
+        thread = Thread(target=set_is_done)
+        thread.start()
+
         with executor:
             runner.run()
 

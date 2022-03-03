@@ -201,7 +201,7 @@ def nested(executor):
     return sum([f.get() for f in futures])
 
 
-@pytest.mark.parametrize("backend", backends)
+@pytest.mark.parametrize("backend", [Dask, SingleExecutor])
 def test_nested_submit(backend):
     with backend(5) as executor:
         futures = [executor.submit(nested, executor) for i in range(5)]
@@ -209,9 +209,20 @@ def test_nested_submit(backend):
         results = executor.async_get(futures, timeout=2)
 
         for r in results:
-            # access the results to make sure no exception is being
-            # suppressed
             assert r.value == 35
+
+
+@pytest.mark.parametrize("backend", [multiprocess, thread])
+def test_nested_submit_failure(backend):
+    with backend(5) as executor:
+
+        if backend == multiprocess:
+            exception = NotImplementedError
+        elif backend == thread:
+            exception = TypeError
+
+        with pytest.raises(exception):
+            [executor.submit(nested, executor) for i in range(5)]
 
 
 @pytest.mark.parametrize("executor", executors)
