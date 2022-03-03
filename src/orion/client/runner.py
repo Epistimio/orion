@@ -40,12 +40,24 @@ class Protected(object):
         self.handlers = dict()
         self.start = 0
         self.delayed = 0
+        self.signal_installed = False
 
     def __enter__(self):
         """Override the signal handlers with our delayed handler"""
         self.signal_received = False
-        self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
-        self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
+
+        try:
+            self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
+            self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
+            self.signal_installed = True
+
+        except ValueError:  # ValueError: signal only works in main thread
+            log.warning(
+                "SIGINT/SIGTERM protection hooks could not be installed because "
+                "Runner is executing inside a thread/subprocess, results could get lost "
+                "on interruptions"
+            )
+
         return self
 
     def handler(self, sig, frame):
@@ -65,6 +77,9 @@ class Protected(object):
 
     def restore_handlers(self):
         """Restore old signal handlers"""
+        if not self.signal_installed:
+            return
+
         signal.signal(signal.SIGINT, self.handlers[signal.SIGINT])
         signal.signal(signal.SIGTERM, self.handlers[signal.SIGTERM])
 
