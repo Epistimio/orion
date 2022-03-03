@@ -56,6 +56,7 @@ class Protected(object):
                 "Runner is executing inside a thread/subprocess, results could get lost "
                 "on interruptions"
             )
+            raise
 
         return self
 
