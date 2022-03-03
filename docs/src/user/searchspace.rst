@@ -75,8 +75,6 @@ the fidelity and optionally the logarithmic base that should be used to explore 
 Dimension Types
 ===============
 
-.. py:currentmodule:: orion.algo.space
-
 The dimensions are casted to special types according to their prior. This is critical to
 either allow algorithms to leverage type information
 (ex: some algorithms works better on integers) or automatically transform trial types
@@ -290,11 +288,3 @@ only add more special arguments. You can see the state of our plan in our `Roadm
 References
 ==========
 
-- :class:`orion.core.io.space_builder.DimensionBuilder`
-- :class:`orion.core.io.space_builder.SpaceBuilder`
-- :class:`orion.algo.space.Space`
-- :class:`orion.algo.space.Dimension`
-- :class:`orion.algo.space.Real`
-- :class:`orion.algo.space.Integer`
-- :class:`orion.algo.space.Categorical`
-- :class:`orion.algo.space.Fidelity`
