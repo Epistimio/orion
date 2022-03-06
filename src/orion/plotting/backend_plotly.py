@@ -626,6 +626,30 @@ def build_regrets_frame(
     return pd.concat(frames), group, average_key, x, y, x_title
 
 
+def infer_unit_time(data, min_unit=3):
+    duration_col = "duration_mean" if "duration_mean" in data else "duration"
+    durations = data[duration_col].tolist()
+
+    if durations[0] > durations[-1]:
+        unit_time = durations[0] / len(durations)
+    else:
+        unit_time = durations[-1] / len(durations)
+
+    if unit_time >= 60 * 60 * 24 * min_unit:
+        duration = data[duration_col] / (60 * 60 * 24)
+        time_unit = "day(s)"
+    elif unit_time >= 60 * 60 * min_unit:
+        duration = data[duration_col] / (60 * 60)
+        time_unit = "hour(s)"
+    elif unit_time >= 60 * min_unit:
+        duration = data[duration_col] / 60
+        time_unit = "minute(s)"
+    else:
+        duration = data[duration_col]
+        time_unit = "second(s)"
+    return duration, time_unit
+
+
 def regrets(
     experiments,
     with_evc_tree=True,
@@ -641,8 +665,6 @@ def regrets(
         isinstance(experiments, dict)
         and isinstance(next(iter(experiments.values())), Iterable)
     )
-
-    print("build_frame_fn: ", build_frame_fn, compute_average)
 
     def build_groups():
         """Build dataframes for groups of experiments"""
@@ -717,22 +739,7 @@ def regrets(
         y = exp_data[y_col]
         x = exp_data[x_col]
 
-        duration_col = "duration_mean" if "duration_mean" in exp_data else "duration"
-        durations = exp_data[duration_col].tolist()
-        unit_time = durations[-1] / len(durations)
-        if unit_time > 60 * 60 * 24:
-            duration = exp_data[duration_col] / 60 * 60 * 24
-            time_unit = "day(s)"
-        elif unit_time > 60 * 60:
-            duration = exp_data[duration_col] / 60 * 60
-            time_unit = "hour(s)"
-        elif unit_time > 60:
-            duration = exp_data[duration_col] / 60
-            time_unit = "minute(s)"
-        else:
-            duration = exp_data[duration_col]
-            time_unit = "second(s)"
-
+        duration, time_unit = infer_unit_time(exp_data, min_unit=3)
         if x_col in ["duration", "duration_mean"]:
             x = duration
             x_title = "Experiment duration by {}".format(time_unit)

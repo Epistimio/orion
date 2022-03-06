@@ -10,6 +10,7 @@ import pytest
 import orion.client
 from orion.analysis.partial_dependency_utils import partial_dependency_grid
 from orion.core.worker.experiment import Experiment
+from orion.plotting.backend_plotly import infer_unit_time
 from orion.plotting.base import (
     durations,
     lpi,
@@ -1310,3 +1311,36 @@ class TestDurations:
             plot = durations([experiment])
 
         assert_durations_plot(plot, [f"{experiment.name}-v{experiment.version}"])
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestDurationUnitTime:
+    """Test `infer_unit_time`"""
+
+    @pytest.mark.parametrize(
+        "time_unit, duration",
+        (
+            ["day(s)", [60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 3]],
+            ["hour(s)", [60 * 60, 60 * 60 * 2, 60 * 60 * 3]],
+            ["minute(s)", [60, 60 * 2, 60 * 3]],
+            ["second(s)", [1, 2, 3]],
+        ),
+    )
+    def test_duration_units(self, time_unit, duration):
+        """Test that correct time unit and duration will be return with different duration values in seconds"""
+        df = pandas.DataFrame({"duration": duration})
+
+        duration, unit = infer_unit_time(df, min_unit=1)
+        assert unit == time_unit
+        assert duration.tolist() == [1, 2, 3]
+
+        duration, unit = infer_unit_time(df, min_unit=3)
+        if time_unit != "second(s)":
+            assert unit != time_unit
+        else:
+            assert unit == time_unit
+
+        df["duration"] = df["duration"] * 3
+        duration, unit = infer_unit_time(df, min_unit=3)
+        assert unit == time_unit
+        assert duration.tolist() == [3, 6, 9]
