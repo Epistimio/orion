@@ -333,7 +333,8 @@ class Runner:
         to_be_raised = None
         log.debug(f"Gathered new results {len(results)}")
         # register the results
-        trials = 0  # For Ptera instrumentation
+        # NOTE: For Ptera instrumentation
+        trials = 0  # pylint:disable=unused-variable
         for result in results:
             trial = self.pending_trials.pop(result.future)
 
@@ -342,7 +343,8 @@ class Runner:
                     # NB: observe release the trial already
                     self.client.observe(trial, result.value)
                     self.trials += 1
-                    trials = self.trials  # For Ptera instrumentation
+                    # NOTE: For Ptera instrumentation
+                    trials = self.trials  # pylint:disable=unused-variable
                 except InvalidResult as exception:
                     # stop the optimization process if we received `InvalidResult`
                     # as all the trials are assumed to be returning those
