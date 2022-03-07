@@ -18,7 +18,6 @@ import time
 from collections import defaultdict, namedtuple
 
 import bson
-import matplotlib.pyplot as plt
 import numpy
 from ptera import probing
 
@@ -319,6 +318,8 @@ colors = dict(joblib="#1f77b4", singleexecutor="#ff7f0e")
 
 
 def main(argv=None):
+    import matplotlib.pyplot as plt
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--backends",
