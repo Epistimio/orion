@@ -283,7 +283,7 @@ class Runner:
     def should_sample(self):
         """Check if more trials could be generated"""
 
-        if self.is_broken or self.is_done:
+        if self.free_worker <= 0 or (self.is_broken or self.is_done):
             return 0
 
         pending = len(self.pending_trials) + self.trials
@@ -332,8 +332,8 @@ class Runner:
 
         to_be_raised = None
         log.debug(f"Gathered new results {len(results)}")
-
         # register the results
+        trials = 0  # For Ptera instrumentation
         for result in results:
             trial = self.pending_trials.pop(result.future)
 
@@ -342,6 +342,7 @@ class Runner:
                     # NB: observe release the trial already
                     self.client.observe(trial, result.value)
                     self.trials += 1
+                    trials = self.trials  # For Ptera instrumentation
                 except InvalidResult as exception:
                     # stop the optimization process if we received `InvalidResult`
                     # as all the trials are assumed to be returning those
@@ -413,15 +414,19 @@ class Runner:
 
             # non critical errors
             except WaitingForTrials:
+                log.debug("Runner cannot sample because WaitingForTrials")
                 break
 
             except ReservationRaceCondition:
+                log.debug("Runner cannot sample because ReservationRaceCondition")
                 break
 
             except LockAcquisitionTimeout:
+                log.debug("Runner cannot sample because LockAcquisitionTimeout")
                 break
 
             except CompletedExperiment:
+                log.debug("Runner cannot sample because CompletedExperiment")
                 break
 
         return trials
