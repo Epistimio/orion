@@ -125,7 +125,9 @@ def upgrade_documents(storage):
     """Upgrade scheme of the documents"""
     for experiment in storage.fetch_experiments({}):
         add_version(experiment)
-        storage.update_experiment(uid=experiment.pop("_id"), **experiment)
+        uid = experiment.pop("_id")
+        storage.update_experiment(uid=experiment, **experiment)
+        storage.initialize_algorithm_lock(uid, experiment["algorithms"])
 
 
 def add_version(experiment):

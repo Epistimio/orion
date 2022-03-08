@@ -27,6 +27,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
+from orion.storage.base import LockAcquisitionTimeout
 
 log = logging.getLogger(__name__)
 
@@ -39,12 +40,24 @@ class Protected(object):
         self.handlers = dict()
         self.start = 0
         self.delayed = 0
+        self.signal_installed = False
 
     def __enter__(self):
         """Override the signal handlers with our delayed handler"""
         self.signal_received = False
-        self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
-        self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
+
+        try:
+            self.handlers[signal.SIGINT] = signal.signal(signal.SIGINT, self.handler)
+            self.handlers[signal.SIGTERM] = signal.signal(signal.SIGTERM, self.handler)
+            self.signal_installed = True
+
+        except ValueError:  # ValueError: signal only works in main thread
+            log.warning(
+                "SIGINT/SIGTERM protection hooks could not be installed because "
+                "Runner is executing inside a thread/subprocess, results could get lost "
+                "on interruptions"
+            )
+
         return self
 
     def handler(self, sig, frame):
@@ -64,6 +77,9 @@ class Protected(object):
 
     def restore_handlers(self):
         """Restore old signal handlers"""
+        if not self.signal_installed:
+            return
+
         signal.signal(signal.SIGINT, self.handlers[signal.SIGINT])
         signal.signal(signal.SIGTERM, self.handlers[signal.SIGTERM])
 
@@ -228,13 +244,13 @@ class Runner:
 
                     # Scatter the new trials to our free workers
                     with self.stat.time("scatter"):
-                        self.scatter(new_trials)
+                        scattered = self.scatter(new_trials)
 
                     # Gather the results of the workers that have finished
                     with self.stat.time("gather"):
-                        self.gather()
+                        gathered = self.gather()
 
-                    if self.is_idle:
+                    if scattered == 0 and gathered == 0 and self.is_idle:
                         idle_end = time.time()
                         idle_time += idle_end - idle_start
                         idle_start = idle_end
@@ -267,7 +283,7 @@ class Runner:
     def should_sample(self):
         """Check if more trials could be generated"""
 
-        if self.is_broken or self.is_done:
+        if self.free_worker <= 0 or (self.is_broken or self.is_done):
             return 0
 
         pending = len(self.pending_trials) + self.trials
@@ -306,6 +322,7 @@ class Runner:
 
         self.futures.extend(new_futures)
         log.debug("Scheduled new trials")
+        return len(new_futures)
 
     def gather(self):
         """Gather the results from each worker asynchronously"""
@@ -315,8 +332,9 @@ class Runner:
 
         to_be_raised = None
         log.debug(f"Gathered new results {len(results)}")
-
         # register the results
+        # NOTE: For Ptera instrumentation
+        trials = 0  # pylint:disable=unused-variable
         for result in results:
             trial = self.pending_trials.pop(result.future)
 
@@ -325,6 +343,8 @@ class Runner:
                     # NB: observe release the trial already
                     self.client.observe(trial, result.value)
                     self.trials += 1
+                    # NOTE: For Ptera instrumentation
+                    trials = self.trials  # pylint:disable=unused-variable
                 except InvalidResult as exception:
                     # stop the optimization process if we received `InvalidResult`
                     # as all the trials are assumed to be returning those
@@ -396,12 +416,19 @@ class Runner:
 
             # non critical errors
             except WaitingForTrials:
+                log.debug("Runner cannot sample because WaitingForTrials")
                 break
 
             except ReservationRaceCondition:
+                log.debug("Runner cannot sample because ReservationRaceCondition")
+                break
+
+            except LockAcquisitionTimeout:
+                log.debug("Runner cannot sample because LockAcquisitionTimeout")
                 break
 
             except CompletedExperiment:
+                log.debug("Runner cannot sample because CompletedExperiment")
                 break
 
         return trials

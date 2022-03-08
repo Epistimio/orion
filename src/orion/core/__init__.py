@@ -32,10 +32,10 @@ del get_versions
 __descr__ = "Asynchronous [black-box] Optimization"
 __version__ = VERSIONS["version"]
 __license__ = "BSD-3-Clause"
-__author__ = u"Epistímio"
-__author_short__ = u"Epistímio"
+__author__ = "Epistímio"
+__author_short__ = "Epistímio"
 __author_email__ = "xavier.bouthillier@umontreal.ca"
-__copyright__ = u"2017-2021, Epistímio"
+__copyright__ = "2017-2022, Epistímio"
 __url__ = "https://github.com/epistimio/orion"
 
 DIRS = AppDirs(__name__, __author_short__)
@@ -55,6 +55,7 @@ def define_config():
     define_experiment_config(config)
     define_worker_config(config)
     define_evc_config(config)
+    define_frontends_uri_config(config)
 
     config.add_option(
         "user_script_config",
@@ -71,6 +72,31 @@ def define_config():
     )
 
     return config
+
+
+def define_frontends_uri_config(config):
+    """Create and define the field of frontends URI configuration."""
+
+    def parse_frontends_uri(data):
+        # Expect either a list of strings (URLs),
+        # or a string as comma-separated list of URLs
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, str):
+            return [piece.strip() for piece in data.split(",")]
+        else:
+            raise RuntimeError(
+                f"frontends_uri: expected either a list of strings (URLs), "
+                f"or a string as comma-separated list of URLs, got {data}"
+            )
+
+    config.add_option(
+        "frontends_uri",
+        option_type=parse_frontends_uri,
+        default=[],
+        env_var="ORION_WEBAPI_FRONTENDS_URI",
+        help="List of frontends addresses allowed to send requests to Orion server.",
+    )
 
 
 def define_storage_config(config):

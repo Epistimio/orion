@@ -887,7 +887,7 @@ class TestBuild(object):
                 "judgement": None,
                 "scoring": 0,
                 "suspend": False,
-                "value": 5,
+                "value": (5,),
                 "seed": None,
             }
         }
