@@ -1,14 +1,20 @@
 # Roadmap
-Last update Feb 11th, 2022
+Last update March 7th, 2022
 
 ## Next releases - Short-Term
 
-### v0.2.3
+### v0.2.4
 
 - [DEBH](https://arxiv.org/abs/2105.09821)
 - [HEBO](https://github.com/huawei-noah/HEBO/tree/master/HEBO/archived_submissions/hebo)
 - [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
+- [Nevergrad](https://github.com/facebookresearch/nevergrad)
+- [Ax](https://ax.dev/)
+- [MOFA](https://github.com/Epistimio/orion.algo.mofa)
+- [PB2](https://github.com/Epistimio/orion.algo.pb2)
 - Integration with Hydra
+- Integration with [sample-space](https://github.com/Epistimio/sample-space) and
+  [ConfigSpace](https://automl.github.io/ConfigSpace/master/)
 
 ## Next releases - Mid-Term
 
