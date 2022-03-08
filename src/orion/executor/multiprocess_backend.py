@@ -156,6 +156,10 @@ class PoolExecutor(BaseExecutor):
     backend: str
         Pool backend to use; thread or multiprocess, defaults to multiprocess
 
+    .. warning::
+
+       Pickling of the executor is not supported, see Dask for a backend that supports it
+
     """
 
     BACKENDS = dict(
@@ -173,6 +177,12 @@ class PoolExecutor(BaseExecutor):
 
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
+    def __setstate__(self, state):
+        self.pool = state["pool"]
+
+    def __getstate__(self):
+        return dict(pool=self.pool)
+
     def __enter__(self):
         return self
 
@@ -187,13 +197,6 @@ class PoolExecutor(BaseExecutor):
         # __del__ is executed right away but pool might not be set
         if hasattr(self, "pool"):
             self.pool.shutdown()
-
-    def __getstate__(self):
-        state = super(PoolExecutor, self).__getstate__()
-        return state
-
-    def __setstate__(self, state):
-        super(PoolExecutor, self).__setstate__(state)
 
     def submit(self, function, *args, **kwargs):
         try:

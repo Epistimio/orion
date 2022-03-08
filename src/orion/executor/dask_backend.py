@@ -52,6 +52,16 @@ class _Future(Future):
 
 
 class Dask(BaseExecutor):
+    """Wrapper around the dask client.
+
+    .. warning::
+
+       The Dask executor can be pickled and used inside a subprocess,
+       the pickled client will use the main client that was spawned in the main process,
+       but you cannot spawn clients inside a subprocess.
+
+    """
+
     def __init__(self, n_workers=-1, client=None, **config):
         super(Dask, self).__init__(n_workers=n_workers)
 

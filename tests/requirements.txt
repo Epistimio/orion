@@ -4,3 +4,5 @@ pytest-timeout
 pytest-mock
 pytest-lazy-fixture
 pytest-custom_exit_code
+scikit-learn
+ptera >= 1.1.0

@@ -13,7 +13,6 @@ repo_root = os.path.dirname(os.path.abspath(__file__))
 with open("tests/requirements.txt") as f:
     tests_require = f.readlines()
 
-
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
     "orion.algo.pbt",
@@ -44,7 +43,7 @@ setup_args = dict(
         os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
-    author=u"Epistímio",
+    author="Epistímio",
     author_email="xavier.bouthillier@umontreal.ca",
     url="https://github.com/epistimio/orion",
     packages=packages,
@@ -95,6 +94,7 @@ setup_args = dict(
         "pandas",
         "gunicorn",
         "falcon",
+        "falcon-cors",
         "scikit-learn",
         "psutil",
         "joblib",

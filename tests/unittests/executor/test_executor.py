@@ -227,6 +227,39 @@ def test_multisubprocess(backend):
             r.value
 
 
+def nested(executor):
+    futures = []
+
+    for i in range(5):
+        futures.append(executor.submit(function, 1, 2, 3))
+
+    return sum([f.get() for f in futures])
+
+
+@pytest.mark.parametrize("backend", [Dask, SingleExecutor])
+def test_nested_submit(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(nested, executor) for i in range(5)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            assert r.value == 35
+
+
+@pytest.mark.parametrize("backend", [multiprocess, thread])
+def test_nested_submit_failure(backend):
+    with backend(5) as executor:
+
+        if backend == multiprocess:
+            exception = NotImplementedError
+        elif backend == thread:
+            exception = TypeError
+
+        with pytest.raises(exception):
+            [executor.submit(nested, executor) for i in range(5)]
+
+
 @pytest.mark.parametrize("executor", executors)
 def test_executors_have_default_args(executor):
 
