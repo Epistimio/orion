@@ -1344,3 +1344,31 @@ class TestDurationUnitTime:
         duration, unit = infer_unit_time(df, min_unit=3)
         assert unit == time_unit
         assert duration.tolist() == [3, 6, 9]
+
+    @pytest.mark.parametrize(
+        "time_unit, duration",
+        (
+            ["day(s)", [60 * 60 * 24 * 3, 60 * 60 * 24 * 2, 60 * 60 * 24]],
+            ["hour(s)", [60 * 60 * 3, 60 * 60 * 2, 60 * 60]],
+            ["minute(s)", [60 * 3, 60 * 2, 60]],
+            ["second(s)", [3, 2, 1]],
+        ),
+    )
+    def test_parallel_assessment_duration_units(self, time_unit, duration):
+        """Test that correct time unit and duration will be return with different duration values in seconds"""
+        df = pandas.DataFrame({"duration": duration})
+
+        duration, unit = infer_unit_time(df, min_unit=1)
+        assert unit == time_unit
+        assert duration.tolist() == [3, 2, 1]
+
+        duration, unit = infer_unit_time(df, min_unit=3)
+        if time_unit != "second(s)":
+            assert unit != time_unit
+        else:
+            assert unit == time_unit
+
+        df["duration"] = df["duration"] * 3
+        duration, unit = infer_unit_time(df, min_unit=3)
+        assert unit == time_unit
+        assert duration.tolist() == [9, 6, 3]
