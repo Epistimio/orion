@@ -31,6 +31,7 @@ extras_require = {
     "test": tests_require,
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
+    "profet": ["emukit", "GPy", "torch", "pybnn"],
 }
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 

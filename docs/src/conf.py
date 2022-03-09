@@ -254,6 +254,8 @@ sphinx_gallery_conf = {
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "plotly": ("https://plotly.com/python-api-reference/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
 }
 
 
@@ -291,8 +293,8 @@ ignore_algo_attr = [
     "orion.core.utils.Factory.__call__",  # TODO: Why this one fails???
     "orion.core.utils.singleton.SingletonType.__call__",
     "orion.plotting.base.PlotAccessor.__call__",
-    "orion.benchmark.task.BaseTask.__call__",
-    "orion.benchmark.task.base.BaseTask.__call__",
+    "orion.benchmark.task.BenchmarkTask.__call__",
+    "orion.benchmark.task.base.BenchmarkTask.__call__",
     "AlreadyReleased",
 ]
 
