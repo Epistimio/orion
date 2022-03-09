@@ -4,10 +4,13 @@
 import copy
 import os
 import signal
+import sys
 import time
+import traceback
 from contextlib import contextmanager
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from threading import Thread
+from wsgiref.simple_server import sys_version
 
 import pytest
 
@@ -21,8 +24,12 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
+from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.storage.base import LockAcquisitionTimeout
-from orion.testing import create_experiment
+
+
+def compatible(version):
+    return sys.version_info.major == version[0] and sys.version_info.minor >= version[1]
 
 
 def new_trial(value, sleep=0.01):
@@ -47,9 +54,14 @@ def change_signal_handler(sig, handler):
 class FakeClient:
     """Orion mock client for Runner."""
 
-    def __init__(self, n_workers):
+    def __init__(self, n_workers, backend="joblib", executor=None):
         self.is_done = False
-        self.executor = executor_factory.create("joblib", n_workers)
+
+        if executor is None:
+            self.executor = executor_factory.create(backend, n_workers)
+        else:
+            self.executor = executor
+
         self.suggest_error = WaitingForTrials
         self.trials = []
         self.status = []
@@ -100,10 +112,10 @@ def function(lhs, sleep):
     return lhs + sleep
 
 
-def new_runner(idle_timeout, n_workers=2, client=None):
+def new_runner(idle_timeout, n_workers=2, client=None, executor=None, backend="joblib"):
     """Create a new runner with a mock client."""
     if client is None:
-        client = FakeClient(n_workers)
+        client = FakeClient(n_workers, backend=backend, executor=executor)
 
     runner = Runner(
         client=client,
@@ -535,3 +547,119 @@ def test_should_sample():
     runner.trials = 5
     assert runner.should_sample() == 0, "The max number of trials was reached"
     runner.client.close()
+
+
+def run_runner(reraise=False, executor=None):
+    try:
+        count = 10
+        max_trials = 10
+        workers = 2
+
+        runner = new_runner(0.1, n_workers=workers, executor=executor)
+        runner.max_trials_per_worker = max_trials
+        client = runner.client
+
+        client.trials.extend([new_trial(i, sleep=0) for i in range(count)])
+
+        if executor is None:
+            executor = client.executor
+
+        def set_is_done():
+            time.sleep(0.05)
+            runner.pending_trials = dict()
+            runner.client.is_done = True
+
+        start = time.time()
+        thread = Thread(target=set_is_done)
+        thread.start()
+
+        with executor:
+            runner.run()
+
+        print("done")
+        return 0
+    except:
+        if reraise:
+            raise
+
+        traceback.print_exc()
+        return 1
+
+
+def test_runner_inside_process():
+    """Runner can execute inside a process"""
+
+    queue = Queue()
+
+    def get_result(results):
+        results.put(run_runner())
+
+    p = Process(target=get_result, args=(queue,))
+    p.start()
+    p.join()
+
+    assert queue.get() == 0
+    assert p.exitcode == 0
+
+
+def test_runner_inside_childprocess():
+    """Runner can execute inside a child process"""
+    pid = os.fork()
+
+    # execute runner in the child process
+    if pid == 0:
+        run_runner()
+        os._exit(0)
+    else:
+        # parent process wait for child process to end
+        wpid, exit_status = os.wait()
+        assert wpid == pid
+        assert exit_status == 0
+
+
+def test_runner_inside_subprocess():
+    """Runner can execute inside a subprocess"""
+
+    import subprocess
+
+    dir = os.path.dirname(__file__)
+
+    result = subprocess.run(
+        ["python", f"{dir}/runner_subprocess.py", "--backend", "joblib"],
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert result.stderr.decode("utf-8") == ""
+    assert result.stdout.decode("utf-8") == "done\n"
+    assert result.returncode == 0
+
+
+def test_runner_inside_thread():
+    """Runner can execute inside a thread"""
+
+    class GetResult:
+        def __init__(self) -> None:
+            self.r = None
+
+        def run(self):
+            self.r = run_runner()
+
+    result = GetResult()
+    thread = Thread(target=result.run)
+    thread.start()
+    thread.join()
+
+    assert result.r == 0
+
+
+@pytest.mark.skipif(not HAS_DASK, reason="Running without dask")
+def test_runner_inside_dask():
+    """Runner can not execute inside a dask worker"""
+
+    executor = Dask()
+
+    future = executor.submit(run_runner, executor=executor, reraise=True)
+
+    assert future.get() == 0

@@ -5,7 +5,7 @@ from multiprocessing import TimeoutError
 import pytest
 
 from orion.executor.base import AsyncException, ExecutorClosed, executor_factory
-from orion.executor.dask_backend import Dask
+from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
 
@@ -18,9 +18,32 @@ def thread(n):
     return PoolExecutor(n, "threading")
 
 
-executors = ["joblib", "poolexecutor", "dask", "singleexecutor"]
+_needs_dask_reason = "Dask dependency is required for these tests."
+executors = [
+    "joblib",
+    "poolexecutor",
+    "singleexecutor",
+    pytest.param(
+        "dask",
+        marks=pytest.mark.skipif(
+            not HAS_DASK,
+            reason=_needs_dask_reason,
+        ),
+    ),
+]
 
-backends = [thread, multiprocess, Dask, SingleExecutor]
+backends = [
+    thread,
+    multiprocess,
+    SingleExecutor,
+    pytest.param(
+        Dask,
+        marks=pytest.mark.skipif(
+            not HAS_DASK,
+            reason=_needs_dask_reason,
+        ),
+    ),
+]
 
 
 def function(a, b, c):
@@ -127,7 +150,19 @@ def test_execute_async_all(backend):
     assert all_results_async == all_results
 
 
-@pytest.mark.parametrize("backend", [thread, multiprocess, Dask])
+@pytest.mark.parametrize(
+    "backend",
+    [
+        thread,
+        multiprocess,
+        pytest.param(
+            Dask,
+            marks=pytest.mark.xfail(
+                condition=not HAS_DASK, reason=_needs_dask_reason, raises=ImportError
+            ),
+        ),
+    ],
+)
 def test_execute_async_timeout(backend):
     """Makes sure async_get does not wait after timeout"""
     with backend(5) as executor:
@@ -190,6 +225,39 @@ def test_multisubprocess(backend):
             # access the results to make sure no exception is being
             # suppressed
             r.value
+
+
+def nested(executor):
+    futures = []
+
+    for i in range(5):
+        futures.append(executor.submit(function, 1, 2, 3))
+
+    return sum([f.get() for f in futures])
+
+
+@pytest.mark.parametrize("backend", [Dask, SingleExecutor])
+def test_nested_submit(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(nested, executor) for i in range(5)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            assert r.value == 35
+
+
+@pytest.mark.parametrize("backend", [multiprocess, thread])
+def test_nested_submit_failure(backend):
+    with backend(5) as executor:
+
+        if backend == multiprocess:
+            exception = NotImplementedError
+        elif backend == thread:
+            exception = TypeError
+
+        with pytest.raises(exception):
+            [executor.submit(nested, executor) for i in range(5)]
 
 
 @pytest.mark.parametrize("executor", executors)
