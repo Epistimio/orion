@@ -126,3 +126,35 @@ def build_trials_response(trials: list):
     for trial in trials:
         response.append({"id": trial.id})
     return response
+
+
+def build_benchmarks_response(benchmarks: dict):
+    """
+    Build the response representing a list of benchmarks according to the API specification.
+
+    Parameters
+    ----------
+    benchmarks: dict
+        A dict containing pairs of ``benchmark-name: {algorithms:[], tasks:[], assessments:[]}``.
+
+    Returns
+    -------
+    A JSON-serializable list of benchmarks as defined in the API specification.
+    """
+    result = []
+    for benchmark in benchmarks:
+        benchmark_response = dict(
+            name=benchmark["name"],
+            algorithms=benchmark["algorithms"],
+            tasks=benchmark["targets"][0]["task"],
+        )
+
+        assessments = {}
+        for target in benchmark["targets"]:
+            assessments.update(target["assess"])
+
+        benchmark_response["assessments"] = assessments
+
+        result.append(benchmark_response)
+
+    return result
