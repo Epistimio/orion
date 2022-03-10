@@ -30,9 +30,11 @@ def skip_dask_if_not_installed(
     )
 
 
-def xfail_dask_if_not_installed(reason="Dask dependency is required for these tests."):
+def xfail_dask_if_not_installed(
+    value, reason="Dask dependency is required for these tests."
+):
     return pytest.param(
-        Dask,
+        value,
         marks=pytest.mark.xfail(
             condition=not HAS_DASK, reason=reason, raises=ImportError
         ),
