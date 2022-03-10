@@ -306,6 +306,54 @@ visualize your experiments and their results.
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
 
+Benchmarks
+----------
+The benchmark resource permits the retrieval of in-progress and completed benchmarks. You can
+retrieve individual benchmarks as well as a list of all your benchmarks.
+
+.. http:get:: /benchmarks
+
+   Return an unordered list of your benchmarks.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      [
+        {
+          "name": "branin_baselines",
+          "algorithms": ["gridsearch", "random"],
+          "assessments": {"AverageResult": {"task_num": 2}},
+          "tasks": {"Branin": {"max_trials": 10}},
+        },
+        {
+          "name": "another_benchmark",
+          "algorithms": ["gridsearch", {"random": {"seed": 1}}],
+          "assessments": {
+            "AverageRank": {"task_num": 2},
+            "AverageResult": {"task_num": 2},
+          },
+          "tasks": {
+            "Branin": {"max_trials": 10},
+            "CarromTable": {"max_trials": 20},
+            "EggHolder": {"dim": 4, "max_trials": 20},
+          },
+        },
+      ]
+
+   :>jsonarr name: Name of the benchmark.
+   :>jsonarr algorithms: Algorithms of the benchmark.
+   :>jsonarr assessments: Assessments used in the benchmark.
+   :>jsonarr tasks: Tasks covered by the benchmark.
+
+
+
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
