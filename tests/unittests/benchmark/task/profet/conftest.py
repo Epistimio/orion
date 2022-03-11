@@ -4,10 +4,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-try:
-    import torch  # type: ignore
-except ImportError:
-    pytest.skip("skipping profet tests", allow_module_level=True)
 
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
