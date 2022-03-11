@@ -13,9 +13,9 @@ from falcon import Request, Response
 
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
-from orion.serving.parameters import retrieve_experiment, verify_query_parameters
+from orion.serving.parameters import retrieve_benchmark, verify_query_parameters
 from orion.serving.responses import (
-    build_experiment_response,
+    build_benchmark_response,
     build_benchmarks_response,
 )
 from orion.storage.base import get_storage
@@ -34,20 +34,20 @@ class BenchmarksResource(object):
         response = build_benchmarks_response(benchmarks)
         resp.body = json.dumps(response)
 
-    def on_get_experiment(self, req: Request, resp: Response, name: str):
+    def on_get_benchmark(self, req: Request, resp: Response, name: str):
         """
-        Handle GET requests for experiments/:name where `name` is
-        the user-defined name of the experiment
+        Handle GET requests for benchmarks/:name where `name` is
+        the user-defined name of the benchmark
         """
-        verify_query_parameters(req.params, ["version"])
-        version = req.get_param_as_int("version")
-        experiment = retrieve_experiment(name, version)
+        verify_query_parameters(req.params, ["assessment", "task", "algorithms"])
+        assessment = req.get_param("assessment")
+        task = req.get_param("task")
+        algorithms = req.get_param_as_list("algorithms")
+        benchmark = retrieve_benchmark(
+            name, assessment=assessment, task=task, algorithms=algorithms
+        )
 
-        status = _retrieve_status(experiment)
-        algorithm = _retrieve_algorithm(experiment)
-        best_trial = _retrieve_best_trial(experiment)
-
-        response = build_experiment_response(experiment, status, algorithm, best_trial)
+        response = build_benchmark_response(benchmark, assessment, task, algorithms)
         resp.body = json.dumps(response)
 
 

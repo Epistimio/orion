@@ -351,8 +351,53 @@ retrieve individual benchmarks as well as a list of all your benchmarks.
    :>jsonarr assessments: Assessments used in the benchmark.
    :>jsonarr tasks: Tasks covered by the benchmark.
 
+.. http:get:: /benchmarks/:name
 
+   Retrieve the details of the existing benchmark named ``name``.
 
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+        "name": "all_algos_webapi",
+        "algorithms": ["gridsearch", {"random": {'seed': 1}}],
+        "tasks": [{"Branin": {"max_trials": 5}}, {"RosenBrock": {"dim": 3, "max_trials": 5}}],
+        "assessments": [{"AverageResult": {"task_num": 3}}],
+        "analysis": {
+          "AverageResult": {
+            "Branin": <plotly json encoding>
+            "RosenBrock": <plotly json encoding>
+          }
+        }
+      }
+
+   :query asssessment: Optional, specific assessment to analyse. All assessments will appear as
+                       part of the benchmark configuration, but the analysis dictionary will
+                       only contain the specified assessment.
+   :query task: Optional, specific task to analyse. All tasks will appear as
+                part of the benchmark configuration, but the analysis dictionary will
+                only contain the specified task.
+   :query algorithms: Optional, specific algorithms to include in the analyse. Multiple
+                values may be passed.
+                All algorithms will appear as part of the benchmark configuration, but
+                the analysis will be executed on the specified algorithms only.
+
+   :>jsonarr name: Name of the benchmark.
+   :>jsonarr algorithms: Algorithms of the benchmark.
+   :>jsonarr assessments: Assessments used in the benchmark.
+   :>jsonarr tasks: Tasks covered by the benchmark.
+   :>jsonarr analysis: Dictionary of format {assessment_name: {task: <plotly json>}}
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified benchmark does not exist in the database,
+                    or assessment, task or algorithms are not part of the existing benchmark
+                    configuration.
 
 Errors
 ------

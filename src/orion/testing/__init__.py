@@ -178,8 +178,8 @@ def create_study_experiments(
         client = ExperimentClient(experiment, executor=executor)
         experiments.append(client)
 
-    for index, exp in enumerate(experiments):
-        experiments_info.append((int(index / task_number), exp))
+        for index, exp in enumerate(experiments):
+            experiments_info.append(exp)
 
     return experiments_info
 
