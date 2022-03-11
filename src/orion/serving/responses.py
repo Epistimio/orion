@@ -7,10 +7,13 @@ Offers functions and attributes to generate response objects according to the AP
 """
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
+from orion.benchmark import Benchmark
 
 ERROR_EXPERIMENT_NOT_FOUND = "Experiment not found"
 ERROR_INVALID_PARAMETER = "Invalid parameter"
 ERROR_TRIAL_NOT_FOUND = "Trial not found"
+ERROR_BENCHMARK_NOT_FOUND = "Benchmark not found"
+ERROR_BENCHMARK_STUDY_NOT_FOUND = "Benchmark study not found"
 
 
 def build_trial_response(trial: Trial) -> dict:
@@ -126,6 +129,53 @@ def build_trials_response(trials: list):
     for trial in trials:
         response.append({"id": trial.id})
     return response
+
+
+def build_benchmark_response(
+    benchmark: Benchmark,
+    assessment: str = None,
+    task: str = None,
+    algorithms: list[str] = None,
+):
+    """
+    Build the response representing an experiment response object according to the API
+    specification.
+
+    Parameters
+    ----------
+    benchmark: Benchmark
+        The benchmark to return to the API
+    assessment: str
+        The assessment analysis to return
+    task: str
+        The task analysis to return
+    algorithms: list
+        The list of algorithm names to include in the analysis.
+
+    Returns
+    -------
+    A JSON-serializable benchmark response object representing the given benchmark.
+    """
+
+    def convert_plotly_to_json(analysis):
+        for study_name, study_analysis in analysis.items():
+            for task_name, task_analysis in study_analysis.items():
+                analysis[study_name][task_name] = task_analysis.to_json()
+        return analysis
+
+    data = {
+        "name": benchmark.name,
+        "algorithms": benchmark.algorithms,
+        "tasks": [task.configuration for task in benchmark.targets[0]["task"]],
+        "assessments": [
+            assessment.configuration for assessment in benchmark.targets[0]["assess"]
+        ],
+        "analysis": convert_plotly_to_json(
+            benchmark.analysis(assessment=assessment, task=task, algorithms=algorithms)
+        ),
+    }
+
+    return data
 
 
 def build_benchmarks_response(benchmarks: dict):
