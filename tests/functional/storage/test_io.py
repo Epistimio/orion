@@ -443,17 +443,17 @@ def test_io():
         net_in, net_out, n_trials = compute_stats(
             monitoring_method="ptera",
             executor="joblib",
-            max_trials=(498, 500),
-            sleep_time=30.0,
+            max_trials=(198, 200),
+            sleep_time=15.0,
         )
     net_in = numpy.array(net_in)
     net_out = numpy.array(net_out)
 
-    NOMINAL_IN_MEAN = 17.0  # KB/s
-    NOMINAL_IN_STD = 79.0  # KB/s
+    NOMINAL_IN_MEAN = 13.0  # KB/s
+    NOMINAL_IN_STD = 44.0  # KB/s
 
-    NOMINAL_OUT_MEAN = 59.0  # KB/s
-    NOMINAL_OUT_STD = 282.0  # KB/s
+    NOMINAL_OUT_MEAN = 46.0  # KB/s
+    NOMINAL_OUT_STD = 156.0  # KB/s
 
     assert net_in.mean() < NOMINAL_IN_MEAN + NOMINAL_IN_STD / numpy.sqrt(
         net_in.shape[0]
