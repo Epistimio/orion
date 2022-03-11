@@ -33,7 +33,7 @@ class AverageRank(BenchmarkAssessment):
         """
         algorithm_groups = defaultdict(list)
 
-        for _, exp in experiments:
+        for exp in experiments:
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 

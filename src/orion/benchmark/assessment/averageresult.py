@@ -27,12 +27,11 @@ class AverageResult(BenchmarkAssessment):
         task: str
             Name of the task
         experiments: list
-            A list of (task_index, experiment), where task_index is the index of task to run for
-            this assessment, and experiment is an instance of `orion.core.worker.experiment`.
+            A list of experiment, instances of `orion.core.worker.experiment`.
         """
         algorithm_groups = defaultdict(list)
 
-        for _, exp in experiments:
+        for exp in experiments:
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
