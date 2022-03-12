@@ -18,31 +18,41 @@ def thread(n):
     return PoolExecutor(n, "threading")
 
 
-_needs_dask_reason = "Dask dependency is required for these tests."
+def skip_dask_if_not_installed(
+    value, reason="Dask dependency is required for these tests."
+):
+    return pytest.param(
+        value,
+        marks=pytest.mark.skipif(
+            not HAS_DASK,
+            reason=reason,
+        ),
+    )
+
+
+def xfail_dask_if_not_installed(
+    value, reason="Dask dependency is required for these tests."
+):
+    return pytest.param(
+        value,
+        marks=pytest.mark.xfail(
+            condition=not HAS_DASK, reason=reason, raises=ImportError
+        ),
+    )
+
+
 executors = [
     "joblib",
     "poolexecutor",
     "singleexecutor",
-    pytest.param(
-        "dask",
-        marks=pytest.mark.skipif(
-            not HAS_DASK,
-            reason=_needs_dask_reason,
-        ),
-    ),
+    skip_dask_if_not_installed("dask"),
 ]
 
 backends = [
     thread,
     multiprocess,
     SingleExecutor,
-    pytest.param(
-        Dask,
-        marks=pytest.mark.skipif(
-            not HAS_DASK,
-            reason=_needs_dask_reason,
-        ),
-    ),
+    skip_dask_if_not_installed(Dask),
 ]
 
 
@@ -152,16 +162,7 @@ def test_execute_async_all(backend):
 
 @pytest.mark.parametrize(
     "backend",
-    [
-        thread,
-        multiprocess,
-        pytest.param(
-            Dask,
-            marks=pytest.mark.xfail(
-                condition=not HAS_DASK, reason=_needs_dask_reason, raises=ImportError
-            ),
-        ),
-    ],
+    [thread, multiprocess, xfail_dask_if_not_installed(Dask)],
 )
 def test_execute_async_timeout(backend):
     """Makes sure async_get does not wait after timeout"""
@@ -236,7 +237,7 @@ def nested(executor):
     return sum([f.get() for f in futures])
 
 
-@pytest.mark.parametrize("backend", [Dask, SingleExecutor])
+@pytest.mark.parametrize("backend", [xfail_dask_if_not_installed(Dask), SingleExecutor])
 def test_nested_submit(backend):
     with backend(5) as executor:
         futures = [executor.submit(nested, executor) for i in range(5)]
