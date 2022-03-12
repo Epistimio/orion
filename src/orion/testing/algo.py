@@ -600,6 +600,17 @@ class BaseAlgoTests:
             mocker, num, attr, {"x": "uniform(0, 5, shape=(3, 2))"}
         )
 
+    @phase
+    def test_broken_trials(self, mocker, num, attr):
+        """Test that algorithm can handle broken trials"""
+        algo = self.create_algo()
+        self.spy_phase(mocker, num, algo, attr)
+        trial = algo.suggest(1)[0]
+        trial.status = "broken"
+        assert not algo.has_observed(trial)
+        algo.observe([trial])
+        assert algo.has_observed(trial)
+
     def test_is_done_cardinality(self):
         """Test that algorithm will stop when cardinality is reached"""
         space = self.update_space(
