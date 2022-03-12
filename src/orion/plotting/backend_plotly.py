@@ -549,7 +549,116 @@ def regret(
     return fig
 
 
-def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
+def build_parallel_frame(
+    experiments, names=None, with_evc_tree=True, order_by="objective"
+):
+    """Builds the dataframe for the parallel assessment"""
+    exp_parallels = dict(
+        name=list(), objective=list(), n_workers=list(), duration=list()
+    )
+    average_key = "objective,duration"
+    group = "n_workers"
+    x = group
+    x_title = "Number of workers"
+    y = "objective"
+    for i, experiment in enumerate(experiments):
+        dfs = experiment.to_pandas(with_evc_tree=with_evc_tree)
+        dfs = dfs.loc[dfs["status"] == "completed"]
+        if len(dfs) > experiment.max_trials:
+            dfs = dfs.head(experiment.max_trials)
+        if not dfs.empty:
+            start = dfs["suggested"].iloc[0]
+            end = dfs["completed"].iloc[-1]
+            duration = (end - start).seconds + 1
+
+            dfs = dfs.sort_values(order_by)
+            exp_parallels["duration"].append(duration)
+            name = names[i] if names else f"{experiment.name}-v{experiment.version}"
+            exp_parallels["name"].append(name)
+            exp_parallels[group].append(experiment.executor.n_workers)
+            exp_parallels["objective"].append(dfs["objective"].tolist()[0])
+
+    return pd.DataFrame(exp_parallels), group, average_key, x, y, x_title
+
+
+def build_durations_frame(
+    experiments, names=None, with_evc_tree=True, order_by="suggested"
+):
+    """Builds the dataframe for the duration plot"""
+    x = "duration"
+    x_title = "Experiment duration by second(s)"
+    frames, group, average_key, _, y, _ = build_regrets_frame(
+        experiments, names, with_evc_tree, order_by
+    )
+
+    return frames, group, average_key, x, y, x_title
+
+
+def build_regrets_frame(
+    experiments, names=None, with_evc_tree=True, order_by="suggested"
+):
+    """Builds the dataframe for regrets plot"""
+    frames = []
+    average_key = "best,duration"
+    group = "order"
+    x = group
+    x_title = f"Trials ordered by {order_by} time"
+    y = "best"
+    for i, experiment in enumerate(experiments):
+        df = experiment.to_pandas(with_evc_tree=with_evc_tree)
+        df = df.loc[df["status"] == "completed"]
+        df = df.sort_values(order_by)
+        if len(df) > experiment.max_trials:
+            df = df.head(experiment.max_trials)
+        df = orion.analysis.regret(df)
+
+        start = df["suggested"][0]
+        durations = [t.seconds + 1 for t in (df["completed"] - start)]
+        df["duration"] = durations
+        df["n_workers"] = experiment.executor.n_workers
+
+        df["name"] = [
+            names[i] if names else f"{experiment.name}-v{experiment.version}"
+        ] * len(df)
+        df[group] = list(range(len(df)))
+        frames.append(df)
+
+    return pd.concat(frames), group, average_key, x, y, x_title
+
+
+def infer_unit_time(data, min_unit=3):
+    duration_col = "duration_mean" if "duration_mean" in data else "duration"
+    durations = data[duration_col].tolist()
+
+    if durations[0] > durations[-1]:
+        unit_time = durations[0] / len(durations)
+    else:
+        unit_time = durations[-1] / len(durations)
+
+    if unit_time >= 60 * 60 * 24 * min_unit:
+        duration = data[duration_col] / (60 * 60 * 24)
+        time_unit = "day(s)"
+    elif unit_time >= 60 * 60 * min_unit:
+        duration = data[duration_col] / (60 * 60)
+        time_unit = "hour(s)"
+    elif unit_time >= 60 * min_unit:
+        duration = data[duration_col] / 60
+        time_unit = "minute(s)"
+    else:
+        duration = data[duration_col]
+        time_unit = "second(s)"
+    return duration, time_unit
+
+
+def regrets(
+    experiments,
+    with_evc_tree=True,
+    order_by="suggested",
+    build_frame_fn=build_regrets_frame,
+    return_var=False,
+    title="Average Regret",
+    **kwargs,
+):
     """Plotly implementation of `orion.plotting.regrets`"""
 
     compute_average = bool(
@@ -559,36 +668,42 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
 
     def build_groups():
         """Build dataframes for groups of experiments"""
-        # TODO move this
         if compute_average:
             data_frames = dict()
             for name, group in experiments.items():
-                df = orion.analysis.average(build_frame(group), return_var=True)
+                frames, group_by, average_keys, x, y, x_title = build_frame_fn(
+                    group, with_evc_tree=with_evc_tree, order_by=order_by
+                )
+
+                df = orion.analysis.average(
+                    frames, group_by, average_keys, return_var=return_var
+                )
+
+                if x in average_keys.split(","):
+                    x = "{}_mean".format(x)
+                if y in average_keys.split(","):
+                    y = "{}_mean".format(y)
+
                 df["name"] = [name] * len(df)
+
+                if "n_workers" not in df:
+                    df["n_workers"] = [group[0].executor.n_workers] * len(df)
+
                 data_frames[name] = df
             data_frames = pd.concat(data_frames)
         elif isinstance(experiments, dict):
-            data_frames = build_frame(experiments.values(), list(experiments.keys()))
+            data_frames, group, average_keys, x, y, x_title = build_frame_fn(
+                experiments.values(),
+                list(experiments.keys()),
+                with_evc_tree=with_evc_tree,
+                order_by=order_by,
+            )
         else:
-            data_frames = build_frame(experiments)
+            data_frames, group, average_keys, x, y, x_title = build_frame_fn(
+                experiments, with_evc_tree=with_evc_tree, order_by=order_by
+            )
 
-        return data_frames
-
-    def build_frame(experiments, names=None):
-        """Builds the dataframe for the plot"""
-        frames = []
-        for i, experiment in enumerate(experiments):
-            df = experiment.to_pandas(with_evc_tree=with_evc_tree)
-            df = df.loc[df["status"] == "completed"]
-            df = df.sort_values(order_by)
-            df = orion.analysis.regret(df)
-            df["name"] = [
-                names[i] if names else f"{experiment.name}-v{experiment.version}"
-            ] * len(df)
-            df["order"] = range(len(df))
-            frames.append(df)
-
-        return pd.concat(frames)
+        return data_frames, x, y, x_title
 
     def get_objective_name(experiments):
         """Infer name of objective based on trials of one experiment"""
@@ -604,7 +719,7 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
                 return trials[0].objective.name
         return "objective"
 
-    ORDER_KEYS = ["suggested", "reserved", "completed"]
+    ORDER_KEYS = ["suggested", "reserved", "completed", "objective"]
 
     if not experiments:
         raise ValueError("Parameter 'experiment' is None")
@@ -612,29 +727,34 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     if order_by not in ORDER_KEYS:
         raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
 
-    df = build_groups()
-
+    df, x_col, y_col, x_title = build_groups()
     fig = go.Figure()
-
     if df.empty:
         return fig
 
     names = set(df["name"])
     for i, name in enumerate(sorted(names)):
         exp_data = df[df["name"] == name]
-        if "best_mean" in exp_data:
-            y = exp_data["best_mean"]
-        else:
-            y = exp_data["best"]
-        x = list(range(len(y)))
+
+        y = exp_data[y_col]
+        x = exp_data[x_col]
+
+        duration, time_unit = infer_unit_time(exp_data, min_unit=3)
+        if x_col in ["duration", "duration_mean"]:
+            x = duration
+            x_title = "Experiment duration by {}".format(time_unit)
+
         fig.add_scatter(
             x=x,
             y=y,
-            mode="lines",
+            mode="lines+markers",
             line=dict(color=px.colors.qualitative.G10[i]),
             name=name,
             legendgroup=name,
+            customdata=list(zip(exp_data["n_workers"], duration)),
+            hovertemplate=_template_regrets(name, time_unit),
         )
+
         if "best_var" in exp_data:
             dy = numpy.sqrt(exp_data["best_var"])
             fig.add_scatter(
@@ -648,8 +768,8 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
             )
 
     fig.update_layout(
-        title=f"Average Regret",
-        xaxis_title=f"Trials ordered by {order_by} time",
+        title=title,
+        xaxis_title=x_title,
         yaxis_title=get_objective_name(experiments),
         hovermode="x",
     )
@@ -683,6 +803,17 @@ def _format_hyperparameters(hyperparameters, names):
         result += x
 
     return result
+
+
+def _template_regrets(name, time_unit):
+    template = (
+        "algorithm: " + name + "<br>"
+        "best: %{y}<br>"
+        "workers: %{customdata[0]}<br>"
+        "duration: %{customdata[1]} " + time_unit
+    )
+    template += "<extra></extra>"
+    return template
 
 
 def _template_trials(verbose_hover):

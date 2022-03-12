@@ -1,5 +1,6 @@
 """Collection of tests for :mod:`orion.plotting.backend_plotly`."""
 import copy
+import datetime
 
 import numpy
 import pandas
@@ -9,8 +10,11 @@ import pytest
 import orion.client
 from orion.analysis.partial_dependency_utils import partial_dependency_grid
 from orion.core.worker.experiment import Experiment
+from orion.plotting.backend_plotly import infer_unit_time
 from orion.plotting.base import (
+    durations,
     lpi,
+    parallel_assessment,
     parallel_coordinates,
     partial_dependencies,
     rankings,
@@ -19,12 +23,14 @@ from orion.plotting.base import (
 )
 from orion.testing import create_experiment
 from orion.testing.plotting import (
+    assert_durations_plot,
     assert_lpi_plot,
     assert_parallel_coordinates_plot,
     assert_partial_dependencies_plot,
     assert_rankings_plot,
     assert_regret_plot,
     assert_regrets_plot,
+    asset_parallel_assessment_plot,
 )
 
 config = dict(
@@ -117,10 +123,14 @@ def mock_experiment_with_random_to_pandas(monkeypatch, status=None, unbalanced=F
         x = numpy.random.normal(0, 0.1, size=N)
         y = numpy.random.normal(0, 0.1, size=N)
         objectives = numpy.random.normal(0, 0.1, size=N)
+        start = datetime.datetime.utcnow()
+        suggested = [start + datetime.timedelta(seconds=int(i)) for i in ids]
         if status is None:
             exp_status = ["completed"] * N
         else:
             exp_status = status
+
+        completed = [start + datetime.timedelta(seconds=int(i) + 1) for i in ids]
 
         data = pandas.DataFrame(
             data={
@@ -129,7 +139,8 @@ def mock_experiment_with_random_to_pandas(monkeypatch, status=None, unbalanced=F
                 "y": y,
                 "objective": objectives,
                 "status": exp_status,
-                "suggested": ids,
+                "suggested": suggested,
+                "completed": completed,
             }
         )
 
@@ -1056,3 +1067,308 @@ class TestRegrets:
         with create_experiment(config, trial_config) as (_, _, experiment):
             with pytest.raises(ValueError):
                 regrets([experiment], order_by="unsupported")
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestParallelAdvantage:
+    """Tests the ``parallel_assessment()`` method provided by the plotly backend"""
+
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            parallel_assessment(None)
+
+    def test_returns_plotly_object(self, monkeypatch):
+        """Tests that the plotly backend returns a plotly object"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_assessment({"random": [experiment]})
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self, monkeypatch):
+        """Tests the layout of the plot"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_assessment({"random": [experiment] * 2})
+
+        asset_parallel_assessment_plot(plot, [f"random"], 1)
+
+    def test_list_of_experiments(self, monkeypatch):
+        """Tests the parallel_assessment with list of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": "child", "enable": True}
+            )
+
+            plot = parallel_assessment({"random": [experiment, child]})
+
+        asset_parallel_assessment_plot(plot, ["random"], 1)
+
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_assessment(
+                {"exp-1": [experiment] * 10, "exp-2": [experiment] * 10}
+            )
+
+        asset_parallel_assessment_plot(plot, ["exp-1", "exp-2"], 1)
+
+    def test_list_of_experiments_name_conflict(self, monkeypatch):
+        """Tests the parallel_assessment with list of experiments with the same name"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name,
+                branching={"branch_to": experiment.name, "enable": True},
+            )
+            assert child.name == experiment.name
+            assert child.version == experiment.version + 1
+            plot = parallel_assessment({"random": [experiment, child]})
+
+        asset_parallel_assessment_plot(plot, ["random"], 1)
+
+    def test_dict_of_experiments(self, monkeypatch):
+        """Tests the parallel_assessment with renamed experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_assessment({"exp-1": experiment, "exp-2": experiment})
+
+        asset_parallel_assessment_plot(plot, ["exp-1", "exp-2"], 1)
+
+    def test_dict_of_list_of_experiments(self, monkeypatch):
+        """Tests the regrparallel_assessmentets with avg of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_assessment(
+                {"exp-1": [experiment] * 10, "exp-2": [experiment] * 10}
+            )
+
+        asset_parallel_assessment_plot(plot, ["exp-1", "exp-2"], 1)
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        mock_experiment_with_random_to_pandas(
+            monkeypatch,
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = parallel_assessment({"random": [experiment]})
+
+        asset_parallel_assessment_plot(plot, ["random"], 1)
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestDurations:
+    """Tests the ``durations()`` method provided by the plotly backend"""
+
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            durations(None)
+
+    def test_returns_plotly_object(self, monkeypatch):
+        """Tests that the plotly backend returns a plotly object"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = durations([experiment])
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self, monkeypatch):
+        """Tests the layout of the plot"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = durations([experiment])
+
+        assert_durations_plot(plot, [f"{experiment.name}-v{experiment.version}"])
+
+    def test_list_of_experiments(self, monkeypatch):
+        """Tests the regrets with list of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": "child", "enable": True}
+            )
+
+            plot = durations([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_durations_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [child, experiment]]
+        )
+
+    def test_list_of_experiments_name_conflict(self, monkeypatch):
+        """Tests the durations with list of experiments with the same name"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name,
+                branching={"branch_to": experiment.name, "enable": True},
+            )
+            assert child.name == experiment.name
+            assert child.version == experiment.version + 1
+            plot = durations([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_durations_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [experiment, child]]
+        )
+
+    def test_dict_of_experiments(self, monkeypatch):
+        """Tests the durations with renamed experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = durations({"exp-1": experiment, "exp-2": experiment})
+
+        assert_durations_plot(plot, ["exp-1", "exp-2"])
+
+    def test_dict_of_list_of_experiments(self, monkeypatch):
+        """Tests the regrets with avg of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = durations({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_durations_plot(plot, ["exp-1", "exp-2"])
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        mock_experiment_with_random_to_pandas(
+            monkeypatch,
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = durations([experiment])
+
+        assert_durations_plot(plot, [f"{experiment.name}-v{experiment.version}"])
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestDurationUnitTime:
+    """Test `infer_unit_time`"""
+
+    @pytest.mark.parametrize(
+        "time_unit, duration",
+        (
+            ["day(s)", [60 * 60 * 24, 60 * 60 * 24 * 2, 60 * 60 * 24 * 3]],
+            ["hour(s)", [60 * 60, 60 * 60 * 2, 60 * 60 * 3]],
+            ["minute(s)", [60, 60 * 2, 60 * 3]],
+            ["second(s)", [1, 2, 3]],
+        ),
+    )
+    def test_duration_units(self, time_unit, duration):
+        """Test that correct time unit and duration will be return with different duration values in seconds"""
+        df = pandas.DataFrame({"duration": duration})
+
+        duration, unit = infer_unit_time(df, min_unit=1)
+        assert unit == time_unit
+        assert duration.tolist() == [1, 2, 3]
+
+        duration, unit = infer_unit_time(df, min_unit=3)
+        if time_unit != "second(s)":
+            assert unit != time_unit
+        else:
+            assert unit == time_unit
+
+        df["duration"] = df["duration"] * 3
+        duration, unit = infer_unit_time(df, min_unit=3)
+        assert unit == time_unit
+        assert duration.tolist() == [3, 6, 9]
+
+    @pytest.mark.parametrize(
+        "time_unit, duration",
+        (
+            ["day(s)", [60 * 60 * 24 * 3, 60 * 60 * 24 * 2, 60 * 60 * 24]],
+            ["hour(s)", [60 * 60 * 3, 60 * 60 * 2, 60 * 60]],
+            ["minute(s)", [60 * 3, 60 * 2, 60]],
+            ["second(s)", [3, 2, 1]],
+        ),
+    )
+    def test_parallel_assessment_duration_units(self, time_unit, duration):
+        """Test that correct time unit and duration will be return with different duration values in seconds"""
+        df = pandas.DataFrame({"duration": duration})
+
+        duration, unit = infer_unit_time(df, min_unit=1)
+        assert unit == time_unit
+        assert duration.tolist() == [3, 2, 1]
+
+        duration, unit = infer_unit_time(df, min_unit=3)
+        if time_unit != "second(s)":
+            assert unit != time_unit
+        else:
+            assert unit == time_unit
+
+        df["duration"] = df["duration"] * 3
+        duration, unit = infer_unit_time(df, min_unit=3)
+        assert unit == time_unit
+        assert duration.tolist() == [9, 6, 3]

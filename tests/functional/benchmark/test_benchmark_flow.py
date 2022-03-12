@@ -7,18 +7,27 @@ import pytest
 
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-from orion.benchmark.task import (
-    BenchmarkTask,
-    Branin,
-    CarromTable,
-    EggHolder,
-    RosenBrock,
-)
+from orion.benchmark.task import BenchmarkTask, Branin
 
 algorithms = [
     {"algorithm": {"random": {"seed": 1}}},
     {"algorithm": {"tpe": {"seed": 1}}},
 ]
+
+
+def assert_benchmark_figures(figures, num, assessments, tasks):
+
+    figure_num = 0
+    for i, (assess, task_figs) in enumerate(figures.items()):
+        assert assess == assessments[i].__class__.__name__
+        for j, (task, figs) in enumerate(task_figs.items()):
+            assert task == tasks[j].__class__.__name__
+            figure_num += len(figs)
+
+            for _, fig in figs.items():
+                assert type(fig) is plotly.graph_objects.Figure
+
+    assert figure_num == num
 
 
 class BirdLike(BenchmarkTask):
@@ -73,12 +82,10 @@ def test_simple():
 
     figures = benchmark.analysis()
 
-    assert len(figures) == len(benchmark.studies)
-    assert type(figures[0]) is plotly.graph_objects.Figure
+    assert_benchmark_figures(figures, 4, assessments, tasks)
 
     benchmark = get_or_create_benchmark(name="bm001")
     figures = benchmark.analysis()
 
-    assert len(figures) == len(benchmark.studies)
-    assert type(figures[0]) is plotly.graph_objects.Figure
+    assert_benchmark_figures(figures, 4, assessments, tasks)
     benchmark.close()
