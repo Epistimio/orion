@@ -19,9 +19,9 @@ import numpy
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.flatten import flatten
 from tabulate import tabulate
+from orion.algo.space import Fidelity, Space
 
 if typing.TYPE_CHECKING:
-    from orion.algo.space import Fidelity, Space
     from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -173,7 +173,10 @@ class Hyperband(BaseAlgorithm):
         seed: int | Sequence[int] | None = None,
         repetitions: int | float = numpy.inf,
     ):
-        super().__init__(space, repetitions=repetitions)
+        # NOTE: Need to set the attribute before calling super().__init__ because it calls seed_rng.
+        self.brackets: Optional[list[HyperbandBracket]] = []
+        super().__init__(space, repetitions=repetitions, seed=seed)
+        self.seed = seed
         # Stores Point id (with no fidelity) -> Bracket (int)
         self.trial_to_brackets: dict[str, int] = {}
 
@@ -183,6 +186,11 @@ class Hyperband(BaseAlgorithm):
 
         fidelity_dim: Fidelity = space[fidelity_index]
 
+        # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
+        from orion.core.worker.transformer import TransformedDimension
+        if isinstance(fidelity_dim, TransformedDimension):
+            fidelity_dim = fidelity_dim.original_dimension
+        assert isinstance(fidelity_dim, Fidelity)
         self.min_resources = fidelity_dim.low
         self.max_resources = fidelity_dim.high
         self.reduction_factor = fidelity_dim.base
@@ -192,7 +200,7 @@ class Hyperband(BaseAlgorithm):
 
         self.repetitions = repetitions
 
-        self.brackets: Optional[list[HyperbandBracket]] = None
+        self.brackets = None
         self.budgets: Optional[list[list[BudgetTuple]]] = None
         if self.reduction_factor >= 2:
             self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
@@ -502,8 +510,8 @@ class HyperbandBracket:
             for n_trials, budget in budgets
         ]
         self.seed = None
-        self.repetition_id = repetition_id
-        self.buffer = 10
+        self.repetition_id: int = repetition_id
+        self.buffer: int = 10
         self._samples: list[Trial] | None = None
 
         logger.debug("Bracket budgets: %s", str(budgets))
