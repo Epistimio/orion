@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
+from typing import Type
 import copy
 import functools
 import inspect
@@ -173,12 +174,22 @@ class BaseAlgoTests:
         """
         config = copy.deepcopy(config or self.config)
         config.update(kwargs)
-        algo = SpaceTransformAlgoWrapper(
-            orion.algo.base.algo_factory.get_class(self.algo_name),
-            space or self.create_space(),
-            **config,
+        base_algo_type: Type[
+            orion.algo.base.BaseAlgorithm
+        ] = orion.algo.base.algo_factory.get_class(self.algo_name)
+        original_space = space or self.create_space()
+        from orion.core.worker.transformer import build_required_space
+
+        transformed_space = build_required_space(
+            original_space=original_space,
+            type_requirement=base_algo_type.requires_type,
+            shape_requirement=base_algo_type.requires_shape,
+            dist_requirement=base_algo_type.requires_dist,
         )
-        algo.algorithm.max_trials = self.max_trials
+        base_algo = base_algo_type(space=transformed_space, **config)
+        base_algo.max_trials = self.max_trials
+
+        algo = SpaceTransformAlgoWrapper(algorithm=base_algo, space=original_space)
         return algo
 
     def update_space(self, test_space):
