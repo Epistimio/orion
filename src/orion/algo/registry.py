@@ -31,8 +31,9 @@ class Registry(Mapping[str, Trial]):
     def __len__(self) -> int:
         return len(self._trials)
 
+    @property
     def state_dict(self) -> dict:
-        return self._trials
+        return {"_trials": self._trials}
 
     def set_state(self, statedict: dict) -> None:
         self._trials = statedict["_trials"]
@@ -72,10 +73,11 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         self.transformed_registry = transformed_registry
         self._mapping: dict[str, set[str]] = defaultdict(set)
 
+    @property
     def state_dict(self) -> dict:
         return {
-            "original_registry": self.original_registry.state_dict(),
-            "transformed_registry": self.transformed_registry.state_dict(),
+            "original_registry": self.original_registry.state_dict,
+            "transformed_registry": self.transformed_registry.state_dict,
             "_mapping": self._mapping,
         }
 
@@ -106,5 +108,6 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         """Register an equivalence between the given original trial and the transformed trial."""
         # NOTE: Peut-être pas .id, faut voir comment on compute le ID.
         original_id = self.original_registry.register(original_trial)
-        self._mapping[original_id].add(transformed_trial.id)
+        transformed_id = self.transformed_registry.register(transformed_trial)
+        self._mapping[original_id].add(transformed_id)
         return original_id
