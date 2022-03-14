@@ -148,8 +148,8 @@ class BaseAlgorithm:
 
         Parameters
         ----------
-        point : tuples of array-likes
-            Points from a `orion.algo.space.Space`.
+        trial : Trial
+            trial from a `orion.algo.space.Space`.
         ignore_fidelity: bool, optional
             If True, the fidelity dimension is ignored when computing a unique hash for
             the trial. Defaults to False.
