@@ -131,7 +131,7 @@ class BaseAlgorithm:
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {"registry": self.registry.state_dict()}
+        return {"registry": self.registry.state_dict}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict

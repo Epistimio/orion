@@ -132,9 +132,19 @@ class SpaceTransformAlgoWrapper:
         # Then, we make the wrapped algo observe each equivalent suggestion instead of this trial.
         transformed_trials = []
         for trial in trials:
+            # Update the status of this trial in the registry (if it was suggested), otherwise set
+            # it in the registry (for example in testing when we force the algo to observe a trial).
+            self.registry.register(trial)
+
             equivalent_transformed_trials = self.registry_mapping.get_trials(trial)
-            # TODO: Should we also transfer the status of `trial` to the equivalent transformed trials?
+            # Also transfer the status and results of `trial` to the equivalent transformed trials.
+            for transformed_trial in equivalent_transformed_trials:
+                transformed_trial.status = trial.status
+                transformed_trial.end_time = trial.end_time
+                if trial.results:
+                    transformed_trial.results = trial.results
             transformed_trials.extend(equivalent_transformed_trials)
+
         self.algorithm.observe(transformed_trials)
 
     def has_suggested(self, trial: Trial) -> bool:
@@ -148,9 +158,8 @@ class SpaceTransformAlgoWrapper:
         """Whether the algorithm has observed a given trial.
 
         .. seealso:: `orion.algo.base.BaseAlgorithm.has_observed`
-
         """
-        return self.algorithm.has_observed(self.transformed_space.transform(trial))
+        return self.registry.has_observed(trial)
 
     @property
     def n_suggested(self) -> int:

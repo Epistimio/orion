@@ -1,5 +1,6 @@
 """ Classes that serve as an in-memory storage of trials for the algorithms. """
 from __future__ import annotations
+import copy
 from collections import defaultdict
 from typing import Any, Iterator, Mapping
 from orion.core.worker.trial import Trial
@@ -42,7 +43,7 @@ class Registry(Mapping[str, Trial]):
         return trial.id in self
 
     def has_observed(self, trial: Trial) -> bool:
-        if not self.has_suggested(trial):
+        if trial.id not in self._trials:
             return False
         return self[trial.id].status in ("broken", "completed")
 
@@ -52,9 +53,12 @@ class Registry(Mapping[str, Trial]):
     def register(self, trial: Trial) -> str:
         """Register the given trial in the registry."""
         if trial.id in self:
+            existing = self._trials[trial.id]
             # TODO: Do we allow overwriting? Or maybe only if the status is updated?
-            # if self[trial.id].status != "completed"
-            raise RuntimeError(f"Trial {trial} is already registered.")
+            # raise RuntimeError(
+            #     f"Trial {trial} is already registered as {self._trials[trial.id]}"
+            # )
+        trial = copy.deepcopy(trial)
         self._trials[trial.id] = trial
         return trial.id
 
@@ -83,8 +87,14 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
 
     def set_state(self, statedict: dict):
         self.original_registry.set_state(statedict["original_registry"])
-        self.transformed_registry.set_state(statedict["transformed_regsitry"])
+        self.transformed_registry.set_state(statedict["transformed_registry"])
         self._mapping = statedict["_mapping"]
+
+    def __iter__(self) -> Iterator[Trial]:
+        return iter(self.original_registry.values())
+
+    def __len__(self) -> int:
+        return len(self.original_registry)
 
     def __contains__(self, trial: Trial):
         return trial in self.original_registry
