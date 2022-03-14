@@ -21,6 +21,7 @@ from abc import ABCMeta, abstractmethod
 
 from orion.algo.space import Fidelity
 from orion.core.utils import GenericFactory, format_trials
+from orion.algo.registry import Registry
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +107,6 @@ class BaseAlgorithm:
             type(self).__name__,
             kwargs,
         )
-        self._trials_info = {}  # Stores Unique Trial -> Result
         self._space = space
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
@@ -116,6 +116,8 @@ class BaseAlgorithm:
         # TODO: move this inside an initialization function.
         if hasattr(self, "seed"):
             self.seed_rng(self.seed)
+
+        self.registry = Registry()
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -129,37 +131,14 @@ class BaseAlgorithm:
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {"_trials_info": copy.deepcopy(dict(self._trials_info))}
+        return {"registry": self.registry.state_dict()}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        self._trials_info = state_dict.get("_trials_info")
-
-    def format_trial(self, trial):
-        """Format trial based on space transformations
-
-        This will apply the reverse transformation on the trial and then
-        transform it again.
-
-        Some transformations are lossy and thus the trials suggested by the algorithm could
-        be different when returned to `observe`. Using `format_trial` makes it possible
-        for the algorithm to see the final version of the trial after back and forth
-        transformations. This way it can recognise the trial in `observe` and also
-        avoid duplicates that would have gone unnoticed during suggestion.
-
-        Parameters
-        ----------
-        trial : `orion.core.worker.trial.Trial`
-            Trial from a `orion.algo.space.Space`.
-        """
-
-        if hasattr(self.space, "transform"):
-            trial = self.space.transform(self.space.reverse(trial))
-
-        return trial
+        self.registry.set_state(state_dict["registry"])
 
     def get_id(self, trial, ignore_fidelity=False, ignore_parent=False):
         """Return unique hash for a trials based on params
@@ -179,14 +158,6 @@ class BaseAlgorithm:
             the trial. Defaults to False.
 
         """
-
-        # Apply transforms and reverse to see data as it would come from DB
-        # (Some transformations looses some info. ex: Precision transformation)
-
-        # Compute trial hash in the client-facing format.
-        if hasattr(self.space, "reverse"):
-            trial = self.space.reverse(trial)
-
         return trial.compute_trial_hash(
             trial,
             ignore_fidelity=ignore_fidelity,
@@ -263,20 +234,17 @@ class BaseAlgorithm:
            Trial from a `orion.algo.space.Space`.
 
         """
-        self._trials_info[self.get_id(trial)] = (
-            copy.deepcopy(trial),
-            format_trials.get_trial_results(trial) if trial.objective else None,
-        )
+        self.registry.register(trial)
 
     @property
     def n_suggested(self):
         """Number of trials suggested by the algorithm"""
-        return len(self._trials_info)
+        return len(self.registry)
 
     @property
     def n_observed(self):
-        """Number of completed trials observed by the algorithm"""
-        return sum(bool(point[1] is not None) for point in self._trials_info.values())
+        """Number of completed trials observed by the algorithm."""
+        return sum(trial.objective is not None for trial in self.registry.values())
 
     def has_suggested(self, trial):
         """Whether the algorithm has suggested a given point.
@@ -292,7 +260,7 @@ class BaseAlgorithm:
             True if the trial was suggested by the algo, False otherwise.
 
         """
-        return self.get_id(trial) in self._trials_info
+        return self.registry.has_suggested(trial)
 
     def has_observed(self, trial):
         """Whether the algorithm has observed a given point objective.
@@ -310,12 +278,7 @@ class BaseAlgorithm:
             True if the trial's objective was observed by the algo, False otherwise.
 
         """
-        if not self.has_suggested(trial):
-            return False
-        return self._trials_info[self.get_id(trial)][0].status in (
-            "broken",
-            "completed",
-        )
+        return self.registry.has_suggested(trial)
 
     @property
     def is_done(self):
