@@ -505,10 +505,16 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
     try:
         backported_config = backward.port_algo_config(config)
         algo_constructor = algo_factory.get_class(backported_config.pop("of_type"))
-        algo = SpaceTransformAlgoWrapper(
-            algo_constructor, space=space, **backported_config
-        )
-        algo.algorithm.max_trials = max_trials
+
+        requirements = backward.get_algo_requirements(algo_constructor)
+        from orion.core.worker.transformer import build_required_space
+
+        original_space = space
+        transformed_space = build_required_space(space, **requirements)
+        algorithm = algo_constructor(transformed_space, **backported_config)
+        algorithm.max_trials = max_trials
+        algo = SpaceTransformAlgoWrapper(algorithm=algorithm, space=original_space)
+
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
