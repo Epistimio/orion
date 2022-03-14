@@ -7,18 +7,18 @@ Implement Hyperband to exploit configurations with fixed resource efficiently
 
 """
 from __future__ import annotations
+
 import copy
 import hashlib
-import typing
 import logging
+import typing
 from collections import OrderedDict
-from typing import Any, Optional, Sequence
+from typing import Any, NamedTuple, Optional, Sequence, TypedDict
 
 import numpy
-from tabulate import tabulate
-
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.flatten import flatten
+from tabulate import tabulate
 
 if typing.TYPE_CHECKING:
     from orion.algo.space import Fidelity, Space
@@ -41,6 +41,17 @@ BUDGET_ERROR = """
 Cannot build budgets below max_resources;
 (max: {}) - (min: {}) > (num_rungs: {})
 """
+
+
+class BudgetTuple(NamedTuple):
+    n_trials: int
+    resource_budget: int | float
+
+
+class RungDict(TypedDict):
+    resources: int | float
+    n_trials: int
+    results: dict
 
 
 def compute_budgets(
@@ -288,7 +299,7 @@ class Hyperband(BaseAlgorithm):
         for bracket, bracket_state_dict in zip(self.brackets, state_dict["brackets"]):
             bracket.set_state(bracket_state_dict)
 
-    def register_samples(self, bracket, samples):
+    def register_samples(self, bracket: HyperbandBracket, samples: list[Trial]) -> None:
         for sample in samples:
             full_id = self.get_id(sample, ignore_fidelity=False, ignore_parent=False)
             if self.has_observed(sample):
@@ -310,8 +321,8 @@ class Hyperband(BaseAlgorithm):
                     self.get_id(sample, ignore_fidelity=True, ignore_parent=True)
                 ] = self.brackets.index(bracket)
 
-    def promote(self, num):
-        samples = []
+    def promote(self, num: int) -> list[Trial]:
+        samples: list[Trial] = []
         assert self.brackets is not None
         for bracket in reversed(self.brackets):
             if bracket.is_ready() and not bracket.is_done:
@@ -321,8 +332,8 @@ class Hyperband(BaseAlgorithm):
 
         return samples
 
-    def sample(self, num):
-        samples = []
+    def sample(self, num: int) -> list[Trial]:
+        samples: list[Trial] = []
         assert self.brackets is not None
         for bracket in reversed(self.brackets):
             if not bracket.is_filled:
@@ -330,11 +341,11 @@ class Hyperband(BaseAlgorithm):
                     bracket, min(num - len(samples), bracket.remainings)
                 )
                 self.register_samples(bracket, bracket_samples)
-                samples += bracket_samples
+                samples.extend(bracket_samples)
 
         return samples
 
-    def suggest(self, num):
+    def suggest(self, num: int) -> list[Trial] | None:
         """Suggest a number of new sets of parameters.
 
         Sample new points until first rung is filled. Afterwards
@@ -348,10 +359,10 @@ class Hyperband(BaseAlgorithm):
 
         Returns
         -------
-        list of points or None
-            A list of lists representing points suggested by the algorithm. The algorithm may opt
-            out if it cannot make a good suggestion at the moment (it may be waiting for other
-            trials to complete), in which case it will return None.
+        list of `Trial` or None
+            A list of trials suggested by the algorithm. The algorithm may opt out if it cannot make
+            a good suggestion at the moment (it may be waiting for other trials to complete), in
+            which case it will return None.
 
         """
         self._refresh_brackets()
@@ -378,11 +389,11 @@ class Hyperband(BaseAlgorithm):
                 f"{self.__class__.__name__} cannot suggest new samples and must wait "
                 "for trials to complete."
             )
-
+        # TODO: Shouldn't this return None in this case?
         return []
 
     @property
-    def executed_times(self):
+    def executed_times(self) -> int:
         """Counter for how many times Hyperband been executed"""
         if not self.brackets:
             return 0
@@ -393,7 +404,7 @@ class Hyperband(BaseAlgorithm):
         )
         return executed_times - int(not all_brackets_done)
 
-    def _refresh_brackets(self):
+    def _refresh_brackets(self) -> None:
         """Refresh bracket if one hyperband execution is done"""
         assert self.brackets is not None
         if all(bracket.is_done for bracket in self.brackets):
@@ -420,13 +431,13 @@ class Hyperband(BaseAlgorithm):
             for i, bracket_budgets in enumerate(self.budgets)
         ]
 
-    def _get_bracket(self, trial):
+    def _get_bracket(self, trial: Trial) -> HyperbandBracket:
         """Get the bracket of a trial"""
         _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True, ignore_parent=True)
         assert self.brackets is not None
         return self.brackets[self.trial_to_brackets[_id_wo_fidelity]]
 
-    def observe(self, trials):
+    def observe(self, trials: list[Trial]) -> None:
         """Observe evaluation `results` corresponding to list of `trials` in
         space.
 
@@ -460,25 +471,12 @@ class Hyperband(BaseAlgorithm):
                 continue
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True, if all required execution been done."""
         if self.executed_times >= self.repetitions:
             return True
+        # TODO: Shouldn't this be super().is_done?
         return False
-
-
-from typing import NamedTuple, TypedDict
-
-
-class BudgetTuple(NamedTuple):
-    n_trials: int
-    resource_budget: int | float
-
-
-class RungDict(TypedDict):
-    resources: int | float
-    n_trials: int
-    results: dict
 
 
 class HyperbandBracket:
