@@ -244,7 +244,9 @@ class BaseAlgorithm:
     @property
     def n_observed(self):
         """Number of completed trials observed by the algorithm."""
-        return sum(trial.objective is not None for trial in self.registry.values())
+        return sum(
+            trial.status in ("completed", "broken") for trial in self.registry.values()
+        )
 
     def has_suggested(self, trial):
         """Whether the algorithm has suggested a given point.
@@ -278,7 +280,7 @@ class BaseAlgorithm:
             True if the trial's objective was observed by the algo, False otherwise.
 
         """
-        return self.registry.has_suggested(trial)
+        return self.registry.has_observed(trial)
 
     @property
     def is_done(self):

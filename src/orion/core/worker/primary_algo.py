@@ -185,7 +185,9 @@ class SpaceTransformAlgoWrapper:
     @property
     def n_observed(self) -> int:
         """Number of completed trials observed by the algorithm."""
-        return sum(trial.objective is not None for trial in self.registry.values())
+        return sum(
+            trial.status in ("completed", "broken") for trial in self.registry.values()
+        )
 
     @property
     def is_done(self):
