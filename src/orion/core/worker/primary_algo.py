@@ -7,6 +7,7 @@ Performs checks and organizes required transformations of points.
 
 """
 from __future__ import annotations
+import copy
 import typing
 from typing import Any, Optional
 from orion.algo.base import BaseAlgorithm
@@ -67,17 +68,23 @@ class SpaceTransformAlgoWrapper:
     @property
     def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {
-            "algorithm": self.algorithm.state_dict,
-            "registry": self.registry.state_dict,
-            "registry_mapping": self.registry_mapping.state_dict,
-        }
+        # TODO: There's currently some duplicates between:
+        # - self.registry_mapping.original_registry and self.registry
+        # - self.registry_mapping.transformed_registry and self.algorithm.registry
+        return copy.deepcopy(
+            {
+                "algorithm": self.algorithm.state_dict,
+                "registry": self.registry.state_dict,
+                "registry_mapping": self.registry_mapping.state_dict,
+            }
+        )
 
     def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
+        state_dict = copy.deepcopy(state_dict)
         self.algorithm.set_state(state_dict["algorithm"])
         self.registry.set_state(state_dict["registry"])
         self.registry_mapping.set_state(state_dict["registry_mapping"])
