@@ -124,9 +124,18 @@ class SpaceTransformAlgoWrapper:
                     f"Space: {self.transformed_space}"
                 )
             original = self.transformed_space.reverse(transformed_trial)
-            # if not self.registry.has_suggested(original):
-            if original not in self.registry:
+            if original in self.registry:
+                # We already have a trial that is equivalent to this one.
+                # Copy over the status and results and observe it.
+                transformed_trial = _copy_status_and_results(
+                    original_trial=original, transformed_trial=transformed_trial
+                )
+                self.algorithm.observe([transformed_trial])
+            else:
+                # We haven't seen this trial before. Register it.
                 trials.append(original)
+            # NOTE: This registers the original in self.registry and the transformed trial in
+            # self.algo.registry.
             self.registry_mapping.register(original, transformed_trial)
         return trials
 
@@ -136,23 +145,23 @@ class SpaceTransformAlgoWrapper:
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe`
         """
         # For each trial in the original space, find the suggestions from the algo that match it.
-        # Then, we make the wrapped algo observe each equivalent suggestion instead of this trial.
-        transformed_trials = []
+        # Then, we make the wrapped algo observe each equivalent trial, with the updated status.
         for trial in trials:
             # Update the status of this trial in the registry (if it was suggested), otherwise set
             # it in the registry (for example in testing when we force the algo to observe a trial).
             self.registry.register(trial)
 
-            equivalent_transformed_trials = self.registry_mapping.get_trials(trial)
-            # Also transfer the status and results of `trial` to the equivalent transformed trials.
-            for transformed_trial in equivalent_transformed_trials:
-                transformed_trial.status = trial.status
-                transformed_trial.end_time = trial.end_time
-                if trial.results:
-                    transformed_trial.results = trial.results
-            transformed_trials.extend(equivalent_transformed_trials)
+            # Get the known transformed trials that correspond to this original.
+            transformed_trials = self.registry_mapping.get_trials(trial)
 
-        self.algorithm.observe(transformed_trials)
+            # Also transfer the status and results of `trial` to the equivalent transformed trials.
+            transformed_trials = [
+                _copy_status_and_results(
+                    original_trial=trial, transformed_trial=transformed_trial
+                )
+                for transformed_trial in transformed_trials
+            ]
+            self.algorithm.observe(transformed_trials)
 
     def has_suggested(self, trial: Trial) -> bool:
         """Whether the algorithm has suggested a given trial.
@@ -258,3 +267,12 @@ class SpaceTransformAlgoWrapper:
                 f"Trial {trial.id} not contained in space:"
                 f"\nParams: {trial.params}\nSpace: {space}"
             )
+
+
+def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
+    transformed_trial = copy.deepcopy(transformed_trial)
+    transformed_trial.status = original_trial.status
+    transformed_trial.end_time = original_trial.end_time
+    if original_trial.results:
+        transformed_trial.results = original_trial.results
+    return transformed_trial
