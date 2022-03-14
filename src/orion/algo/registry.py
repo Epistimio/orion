@@ -41,7 +41,9 @@ class Registry(Mapping[str, Trial]):
         return trial.id in self
 
     def has_observed(self, trial: Trial) -> bool:
-        return trial.id in self and self[trial.id].objective is not None
+        if not self.has_suggested(trial):
+            return False
+        return self[trial.id].status in ("broken", "completed")
 
     def get_trial(self, trial_id: str) -> Trial:
         return self[trial_id]
