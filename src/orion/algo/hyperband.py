@@ -9,9 +9,7 @@ Implement Hyperband to exploit configurations with fixed resource efficiently
 from __future__ import annotations
 
 import copy
-import hashlib
 import logging
-import typing
 from collections import OrderedDict
 from typing import Any, NamedTuple, Optional, Sequence, TypedDict
 
@@ -21,9 +19,7 @@ from tabulate import tabulate
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity, Space
 from orion.core.utils.flatten import flatten
-
-if typing.TYPE_CHECKING:
-    from orion.core.worker.trial import Trial
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +48,7 @@ class BudgetTuple(NamedTuple):
 class RungDict(TypedDict):
     resources: int | float
     n_trials: int
-    results: dict[str, tuple[float, Trial]]
+    results: dict[str, tuple[float | None, Trial]]
 
 
 def compute_budgets(
@@ -628,8 +624,11 @@ class HyperbandBracket:
 
         rung_results = self.rungs[rung_id]["results"]
         next_rung = self.rungs[rung_id + 1]["results"]
-
-        rung = sorted(rung_results.values(), key=lambda pair: pair[0])
+        # BUG: What if some of the objectives are None? Then comparison between None and floats here
+        # will cause an error.
+        # Adding this assert to make this assumption more explicit.
+        assert all(objective is not None for objective, trial in rung_results.values())
+        rung = sorted(rung_results.values(), key=lambda pair: pair[0])  # type: ignore
 
         if not rung:
             return []

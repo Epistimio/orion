@@ -54,8 +54,9 @@ def create_rung_from_points(
 
 
 def compare_registered_trial(
-    registered_trial: tuple[float, Trial], trial: Trial
+    registered_trial: tuple[float | None, Trial], trial: Trial
 ) -> None:
+    assert trial.objective is not None
     assert registered_trial[0] == trial.objective.value
     assert registered_trial[1].to_dict() == trial.to_dict()
 
@@ -174,6 +175,7 @@ class TestHyperbandBracket:
 
         assert len(bracket.rungs[0])
         assert trial_id in bracket.rungs[0]["results"]
+        assert trial.objective is not None
         assert bracket.rungs[0]["results"][trial_id][0] == trial.objective.value
         assert bracket.rungs[0]["results"][trial_id][1].to_dict() == trial.to_dict()
 
@@ -204,6 +206,7 @@ class TestHyperbandBracket:
         trial = create_trial_for_hb((1, 0.0), None)
         bracket.hyperband = hyperband
         bracket.rungs[0] = rung_0
+        assert trial.objective is not None
         bracket.rungs[1]["results"][hyperband.get_id(trial, ignore_fidelity=True)] = (
             trial.objective.value,
             trial,
@@ -250,7 +253,7 @@ class TestHyperbandBracket:
         assert not bracket.is_done
 
         # Actual value of the point is not important here
-        bracket.rungs[2]["results"] = {"1": (1, 0.0), "2": (1, 0.0), "3": (1, 0.0)}
+        bracket.rungs[2]["results"] = {"1": (1, 0.0), "2": (1, 0.0), "3": (1, 0.0)}  # type: ignore
 
         assert bracket.is_done
 
@@ -351,7 +354,7 @@ class TestHyperband:
         trial_id = hyperband.get_id(trial, ignore_fidelity=True)
 
         force_observe(hyperband, trial)
-
+        assert hyperband.brackets is not None
         bracket = hyperband.brackets[0]
 
         assert len(bracket.rungs[0])
@@ -468,7 +471,7 @@ class TestHyperband:
         )
 
         trials = hyperband.suggest(100)
-
+        assert trials is not None
         assert trials[0].params == {"epoch": 1.0, "lr": 0}
         assert trials[1].params == {"epoch": 1.0, "lr": 1}
 
@@ -487,7 +490,7 @@ class TestHyperband:
         new_trial = create_trial_for_hb((fidelity, 0.5))
 
         duplicate_id = hyperband.get_id(duplicate_trial, ignore_fidelity=True)
-        bracket.rungs[0]["results"] = {duplicate_id: (0.0, duplicate_trial)}
+        bracket.rungs[0]["results"] = {duplicate_id: (0.0, duplicate_trial)}  # type: ignore
 
         hyperband.trial_to_brackets[duplicate_id] = 0
 
@@ -497,8 +500,9 @@ class TestHyperband:
             hyperband,
             trials + [create_trial_for_hb((fidelity, i)) for i in range(10 - 2)],
         )
-
-        assert hyperband.suggest(100)[0].params == new_trial.params
+        trials = hyperband.suggest(100)
+        assert trials is not None
+        assert trials[0].params == new_trial.params
 
     def test_suggest_duplicates_one_call(
         self, monkeypatch, hyperband: Hyperband, bracket: HyperbandBracket
@@ -515,7 +519,7 @@ class TestHyperband:
 
         mock_samples(hyperband, zhe_point * 2)
         zhe_samples = hyperband.suggest(100)
-
+        assert zhe_samples is not None
         assert zhe_samples[0].params["lr"] == 0.0
         assert zhe_samples[1].params["lr"] == 1.0
         assert zhe_samples[2].params["lr"] == 2.0
@@ -544,6 +548,7 @@ class TestHyperband:
             hyperband.get_id(create_trial_for_hb((1, 0.0)), ignore_fidelity=True)
         ] = 0
         zhe_samples = hyperband.suggest(100)
+        assert zhe_samples is not None
         assert zhe_samples[0].params["lr"] == 5.0
         assert zhe_samples[1].params["lr"] == 4.0
 
@@ -590,6 +595,7 @@ class TestHyperband:
         hyperband._refresh_brackets()
         mock_samples(hyperband, zhe_point)
         zhe_samples = hyperband.suggest(100)
+        assert zhe_samples is not None
         assert len(zhe_samples) == 8
         assert zhe_samples[0].params == {"epoch": 9, "lr": 2}
         assert zhe_samples[1].params == {"epoch": 9, "lr": 3}
@@ -651,7 +657,7 @@ class TestHyperband:
         bracket.rungs[0] = rung_0
 
         points = hyperband.suggest(100)
-
+        assert points is not None
         assert len(points) == 3
         assert points[0].params == {"epoch": 3, "lr": 0}
         assert points[1].params == {"epoch": 3, "lr": 1}
@@ -675,12 +681,15 @@ class TestHyperband:
                 ignore_fidelity=True,
                 ignore_experiment=True,
             )
+            assert trial.objective is not None
             results[trial_hash] = (trial.objective.value, trial)
 
-        bracket.rungs[0] = dict(n_trials=n_trials, resources=resources, results=results)
+        bracket.rungs[0] = RungDict(
+            n_trials=n_trials, resources=resources, results=results
+        )
 
         candidates = hyperband.suggest(2)
-
+        assert candidates is not None
         assert len(candidates) == 2
         assert (
             sum(
@@ -1054,11 +1063,11 @@ class TestGenericHyperband(BaseAlgoTests):
         assert algo.is_done
 
     @pytest.mark.parametrize("num", [100000, 1])
-    def test_is_done_max_trials(self, num):
+    def test_is_done_max_trials(self, num: int):
         space = self.create_space()
 
         MAX_TRIALS = 10
-        algo: SpaceTransformAlgoWrapper[Hyperband] = self.create_algo(space=space)
+        algo = self.create_algo(space=space)
         algo.algorithm.max_trials = MAX_TRIALS
 
         objective = 0
