@@ -18,8 +18,12 @@ from orion.algo.registry import Registry, RegistryMapping
 if typing.TYPE_CHECKING:
     from orion.core.worker.trial import Trial
 
+from typing import Generic, TypeVar
+
+AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
+
 # pylint: disable=too-many-public-methods
-class SpaceTransformAlgoWrapper:
+class SpaceTransformAlgoWrapper(Generic[AlgoType]):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -38,9 +42,9 @@ class SpaceTransformAlgoWrapper:
 
     """
 
-    def __init__(self, algorithm: BaseAlgorithm, space: Space):
+    def __init__(self, algorithm: AlgoType, space: Space):
         self._space = space
-        self.algorithm = algorithm
+        self.algorithm: AlgoType = algorithm
         self.registry = Registry()
         self.registry_mapping = RegistryMapping(
             original_registry=self.registry,
@@ -245,11 +249,18 @@ class SpaceTransformAlgoWrapper:
         """
         return self._space
 
-    def get_id(self, point, ignore_fidelity=False):
+    def get_id(self, trial: Trial, ignore_fidelity: bool = False) -> str:
         """Compute a unique hash for a point based on params"""
-        # TODO: Remove this?
+        # TODO: Double-check this with @bouthilx.
         return self.algorithm.get_id(
-            self.transformed_space.transform(point), ignore_fidelity=ignore_fidelity
+            self.transformed_space.transform(trial), ignore_fidelity=ignore_fidelity
+        )
+        return trial.compute_trial_hash(
+            trial,
+            ignore_fidelity=ignore_fidelity,
+            ignore_experiment=True,
+            ignore_lie=True,
+            ignore_parent=ignore_parent,
         )
 
     @property
