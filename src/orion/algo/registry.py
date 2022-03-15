@@ -1,8 +1,10 @@
 """ Classes that serve as an in-memory storage of trials for the algorithms. """
 from __future__ import annotations
+
 import copy
 from collections import defaultdict
 from typing import Any, Iterator, Mapping
+
 from orion.core.worker.trial import Trial
 
 

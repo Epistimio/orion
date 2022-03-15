@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
-from typing import Type
 import copy
 import functools
 import inspect
 import itertools
 import logging
 from collections import defaultdict
+from typing import Type
 
 import numpy
 import pytest

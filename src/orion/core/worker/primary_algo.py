@@ -7,13 +7,15 @@ Performs checks and organizes required transformations of points.
 
 """
 from __future__ import annotations
+
 import copy
 import typing
 from typing import Any, Optional
+
 from orion.algo.base import BaseAlgorithm
+from orion.algo.registry import Registry, RegistryMapping
 from orion.algo.space import Space
 from orion.core.worker.transformer import TransformedSpace
-from orion.algo.registry import Registry, RegistryMapping
 
 if typing.TYPE_CHECKING:
     from orion.core.worker.trial import Trial

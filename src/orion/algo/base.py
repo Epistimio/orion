@@ -19,9 +19,9 @@ import hashlib
 import logging
 from abc import ABCMeta, abstractmethod
 
+from orion.algo.registry import Registry
 from orion.algo.space import Fidelity
 from orion.core.utils import GenericFactory, format_trials
-from orion.algo.registry import Registry
 
 log = logging.getLogger(__name__)
 
