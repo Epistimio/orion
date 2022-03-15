@@ -6,14 +6,19 @@ The Evolved Transformer and large-scale evolution of image classifiers
 Implement evolution to exploit configurations with fixed resource efficiently
 
 """
+from __future__ import annotations
+
 import copy
 import importlib
 import logging
+from typing import Callable, ClassVar, Sequence
 
 import numpy as np
 
-from orion.algo.hyperband import Hyperband, HyperbandBracket
+from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket, RungDict
+from orion.algo.space import Space
 from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
 
@@ -33,22 +38,26 @@ Cannot build budgets below max_resources;
 
 
 def compute_budgets(
-    min_resources, max_resources, reduction_factor, nums_population, pairs
-):
+    min_resources: int,
+    max_resources: int,
+    reduction_factor: int,
+    nums_population: int,
+    pairs: int,
+) -> list[list[BudgetTuple]]:
     """Compute the budgets used for each execution of hyperband"""
     budgets_eves = []
     if reduction_factor == 1:
         for i in range(min_resources, max_resources + 1):
             if i == min_resources:
-                budgets_eves.append([(nums_population, i)])
+                budgets_eves.append([BudgetTuple(nums_population, i)])
             else:
-                budgets_eves[0].append((pairs * 2, i))
+                budgets_eves[0].append(BudgetTuple(pairs * 2, i))
     else:
         num_brackets = int(np.log(max_resources) / np.log(reduction_factor))
-        budgets = []
-        budgets_tab = {}  # just for display consideration
+        budgets: list[list[BudgetTuple]] = []
+        budgets_tab: dict[int, list[BudgetTuple]] = {}  # just for display consideration
         for bracket_id in range(0, num_brackets + 1):
-            bracket_budgets = []
+            bracket_budgets: list[BudgetTuple] = []
             num_trials = int(
                 np.ceil(
                     int((num_brackets + 1) / (num_brackets - bracket_id + 1))
@@ -62,20 +71,21 @@ def compute_budgets(
             for i in range(0, num_brackets - bracket_id + 1):
                 n_i = int(num_trials / reduction_factor ** i)
                 min_i = int(min_resources * reduction_factor ** i)
-                bracket_budgets.append((n_i, min_i))
+                bracket_budgets.append(BudgetTuple(n_i, min_i))
 
+                budget = BudgetTuple(n_i, min_i)
                 if budgets_tab.get(i):
-                    budgets_tab[i].append((n_i, min_i))
+                    budgets_tab[i].append(budget)
                 else:
-                    budgets_tab[i] = [(n_i, min_i)]
+                    budgets_tab[i] = [budget]
 
             budgets.append(bracket_budgets)
 
         for i in range(len(budgets[0])):
             if i == 0:
-                budgets_eves.append([(nums_population, budgets[0][i][1])])
+                budgets_eves.append([BudgetTuple(nums_population, budgets[0][i][1])])
             else:
-                budgets_eves[0].append((pairs * 2, budgets[0][i][1]))
+                budgets_eves[0].append(BudgetTuple(pairs * 2, budgets[0][i][1]))
 
     return budgets_eves
 
@@ -106,7 +116,7 @@ class EvolutionES(Hyperband):
         performance but causes more computation. So there is a trade-off according to the search
         space and required budget of your problems.
         Default: 20
-    mutate: str or None, optional
+    mutate: str or dict or None, optional
         In the mutate part, one can define the customized mutate function with its mutate factors,
         such as multiply factor (times/divides by a multiply factor) and add factor
         (add/subtract by a multiply factor). The function must be defined by
@@ -115,20 +125,20 @@ class EvolutionES(Hyperband):
 
     """
 
-    requires_type = None
-    requires_dist = None
-    requires_shape = "flattened"
+    requires_type: ClassVar[str | None] = None
+    requires_dist: ClassVar[str | None] = None
+    requires_shape: ClassVar[str | None] = "flattened"
 
     def __init__(
         self,
-        space,
-        seed=None,
-        repetitions=np.inf,
-        nums_population=20,
-        mutate=None,
-        max_retries=1000,
+        space: Space,
+        seed: int | Sequence[int] | None = None,
+        repetitions: int | float = np.inf,
+        nums_population: int = 20,
+        mutate: str | dict | None = None,
+        max_retries: int = 1000,
     ):
-        super(EvolutionES, self).__init__(space, seed=seed, repetitions=repetitions)
+        super().__init__(space, seed=seed, repetitions=repetitions)
         pair = nums_population // 2
         mutate_ratio = 0.3
         self.nums_population = nums_population
@@ -144,14 +154,14 @@ class EvolutionES(Hyperband):
 
         self._param_names += ["nums_population", "mutate", "max_retries"]
 
-        self.hurdles = []
+        self.hurdles: list[float | np.ndarray] = []
 
-        self.population = {}
+        self.population: dict[int, list[int]] = {}
         for i, dim in enumerate(self.space.values()):
             if dim.type != "fidelity":
                 self.population[i] = [-1] * nums_population
 
-        self.performance = np.inf * np.ones(nums_population)
+        self.performance: np.ndarray = np.inf * np.ones(nums_population)
 
         self.budgets = compute_budgets(
             self.min_resources,
@@ -161,28 +171,28 @@ class EvolutionES(Hyperband):
             pair,
         )
 
-        self.brackets = [
+        self.brackets: list[BracketEVES] = [
             BracketEVES(self, bracket_budgets, 1) for bracket_budgets in self.budgets
         ]
         self.seed_rng(seed)
 
     @property
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(EvolutionES, self).state_dict
+        state_dict = super().state_dict
         state_dict["population"] = copy.deepcopy(self.population)
         state_dict["performance"] = copy.deepcopy(self.performance)
         state_dict["hurdles"] = copy.deepcopy(self.hurdles)
         return state_dict
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict"""
-        super(EvolutionES, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.population = state_dict["population"]
         self.performance = state_dict["performance"]
         self.hurdles = state_dict["hurdles"]
 
-    def _get_bracket(self, trial):
+    def _get_bracket(self, trial: Trial) -> BracketEVES:
         """Get the bracket of a trial during observe"""
         return self.brackets[-1]
 
@@ -201,43 +211,49 @@ class BracketEVES(HyperbandBracket):
 
     """
 
-    def __init__(self, evolution_es, budgets, repetition_id):
-        super(BracketEVES, self).__init__(evolution_es, budgets, repetition_id)
-        self.eves = self.hyperband
+    def __init__(
+        self, evolution_es: EvolutionES, budgets: list[BudgetTuple], repetition_id: int
+    ):
+        super().__init__(evolution_es, budgets, repetition_id)
+        self.eves = evolution_es
         self.search_space_without_fidelity = []
-        self._candidates = {}
+        self._candidates: dict[int, list[Trial]] = {}
 
+        self.mutate_attr: dict = {}
         if evolution_es.mutate:
+            # TODO: This is inconsistent with the docstring of the constructor, which says it can be
+            # a string. Adding an assert here in the meantime, just to state the assumption
+            # explicitly.
+            assert isinstance(evolution_es.mutate, dict)
             self.mutate_attr = copy.deepcopy(evolution_es.mutate)
-        else:
-            self.mutate_attr = {}
-
         function_string = self.mutate_attr.pop(
             "function", "orion.algo.mutate_functions.default_mutate"
         )
         mod_name, func_name = function_string.rsplit(".", 1)
         mod = importlib.import_module(mod_name)
-        self.mutate_func = getattr(mod, func_name)
+        self.mutate_func: Callable = getattr(mod, func_name)
 
         for i, dim in enumerate(self.space.values()):
             if dim.type != "fidelity":
                 self.search_space_without_fidelity.append(i)
 
     @property
-    def space(self):
+    def space(self) -> Space:
         return self.eves.space
 
     @property
-    def state_dict(self):
-        state_dict = super(BracketEVES, self).state_dict
+    def state_dict(self) -> dict:
+        state_dict = super().state_dict
         state_dict["candidates"] = copy.deepcopy(self._candidates)
         return state_dict
 
-    def set_state(self, state_dict):
-        super(BracketEVES, self).set_state(state_dict)
+    def set_state(self, state_dict: dict) -> None:
+        super().set_state(state_dict)
         self._candidates = state_dict["candidates"]
 
-    def _get_teams(self, rung_id):
+    def _get_teams(
+        self, rung_id: int
+    ) -> list | tuple[dict, int, np.ndarray, np.ndarray]:
         """Get the red team and blue team"""
         if self.has_rung_filled(rung_id + 1):
             return []
@@ -270,13 +286,20 @@ class BracketEVES(HyperbandBracket):
 
         return rung, population_range, red_team, blue_team
 
-    def _mutate_population(self, red_team, blue_team, rung, population_range, fidelity):
+    def _mutate_population(
+        self,
+        red_team: np.ndarray,
+        blue_team: np.ndarray,
+        rung: dict,
+        population_range: int,
+        fidelity: int | float,
+    ) -> tuple[list[Trial], np.ndarray]:
         """Get the mutated population and hurdles"""
         winner_list = []
         loser_list = []
 
         if set(red_team) != set(blue_team):
-            hurdles = 0
+            hurdles = np.zeros(1)
             for i, _ in enumerate(red_team):
                 winner, loser = (
                     (red_team, blue_team)
@@ -299,7 +322,7 @@ class BracketEVES(HyperbandBracket):
         trial_ids = set()
         nums_all_equal = [0] * population_range
         for i in range(population_range):
-            point = [0] * len(self.space)
+            point: Sequence[int | float] = [0] * len(self.space)
             while True:
                 point = list(point)
                 point[
@@ -310,7 +333,7 @@ class BracketEVES(HyperbandBracket):
                     point[j] = self.eves.population[j][i]
 
                 trial = format_trials.tuple_to_trial(point, self.space)
-                trial = self.eves.format_trial(trial)
+                # trial = self.eves.format_trial(trial)
                 trial_id = self.eves.get_id(trial)
 
                 if trial_id in trial_ids:
@@ -337,7 +360,7 @@ class BracketEVES(HyperbandBracket):
 
         return trials, np.array(nums_all_equal)
 
-    def get_candidates(self, rung_id):
+    def get_candidates(self, rung_id: int) -> list[Trial]:
         """Get a candidate for promotion"""
         if rung_id not in self._candidates:
             rung, population_range, red_team, blue_team = self._get_teams(rung_id)
@@ -346,13 +369,13 @@ class BracketEVES(HyperbandBracket):
                 red_team, blue_team, rung, population_range, fidelity
             )[0]
 
-        candidates = []
+        candidates: list[Trial] = []
         for candidate in self._candidates[rung_id]:
             if not self.eves.has_suggested(candidate):
                 candidates.append(candidate)
         return candidates
 
-    def _mutate(self, winner_id, loser_id):
+    def _mutate(self, winner_id: int, loser_id: int) -> None:
         select_genes_key_list = self.eves.rng.choice(
             self.search_space_without_fidelity,
             self.eves.nums_mutate_gene,
@@ -369,7 +392,7 @@ class BracketEVES(HyperbandBracket):
 
         self.eves.performance[loser_id] = -1
 
-    def copy_winner(self, winner_id, loser_id):
+    def copy_winner(self, winner_id: int, loser_id: int) -> None:
         """Copy winner to loser"""
         for key in self.search_space_without_fidelity:
             self.eves.population[key][loser_id] = self.eves.population[key][winner_id]

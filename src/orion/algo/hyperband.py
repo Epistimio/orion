@@ -190,9 +190,11 @@ class Hyperband(BaseAlgorithm):
         # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
         from orion.core.worker.transformer import TransformedDimension
 
-        if isinstance(fidelity_dim, TransformedDimension):
+        # TODO: Double-check with @bouthilx: Currently bypassing (possibly more than one)
+        # `TransformedDimension` wrappers to get the 'low', 'high' and 'base' attributes.
+        while isinstance(fidelity_dim, TransformedDimension):
             fidelity_dim = fidelity_dim.original_dimension
-        assert isinstance(fidelity_dim, Fidelity)
+        assert isinstance(fidelity_dim, Fidelity), (fidelity_dim, type(fidelity_dim))
         self.min_resources = fidelity_dim.low
         self.max_resources = fidelity_dim.high
         self.reduction_factor = fidelity_dim.base
@@ -584,6 +586,7 @@ class HyperbandBracket:
             trial.objective.value if trial.objective else None,
             copy.deepcopy(trial),
         )
+        # Note: replaces this:
         # self._get_results(trial)[
         #     self.hyperband.get_id(trial, ignore_fidelity=True, ignore_parent=True)
         # ] = (
