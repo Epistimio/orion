@@ -251,9 +251,7 @@ class BracketEVES(HyperbandBracket):
         super().set_state(state_dict)
         self._candidates = state_dict["candidates"]
 
-    def _get_teams(
-        self, rung_id: int
-    ) -> list | tuple[dict, int, np.ndarray, np.ndarray]:
+    def _get_teams(self, rung_id: int) -> list | tuple[dict, int, list[int], list[int]]:
         """Get the red team and blue team"""
         if self.has_rung_filled(rung_id + 1):
             return []
@@ -284,12 +282,12 @@ class BracketEVES(HyperbandBracket):
             diff_list, self.eves.nums_comp_pairs, replace=False
         )
 
-        return rung, population_range, red_team, blue_team
+        return rung, population_range, red_team.tolist(), blue_team.tolist()
 
     def _mutate_population(
         self,
-        red_team: np.ndarray,
-        blue_team: np.ndarray,
+        red_team: Sequence[int],
+        blue_team: Sequence[int],
         rung: dict,
         population_range: int,
         fidelity: int | float,

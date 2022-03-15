@@ -52,7 +52,7 @@ class BudgetTuple(NamedTuple):
 class RungDict(TypedDict):
     resources: int | float
     n_trials: int
-    results: dict
+    results: dict[str, tuple[float, Trial]]
 
 
 def compute_budgets(
