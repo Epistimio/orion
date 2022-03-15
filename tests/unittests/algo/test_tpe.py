@@ -3,11 +3,12 @@
 """Tests for :mod:`orion.algo.tpe`."""
 import itertools
 import timeit
+from typing import Sequence
 
 import numpy
 import pytest
 from scipy.stats import norm
-
+import numpy as np
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.algo.tpe import (
     TPE,
@@ -41,7 +42,7 @@ def space():
 
 
 @pytest.fixture
-def tpe(space):
+def tpe(space: Space):
     """Return an instance of TPE."""
     return TPE(space, seed=1)
 
@@ -54,7 +55,7 @@ def test_compute_max_ei_point():
 
     numpy.random.shuffle(below_likelis)
     numpy.random.shuffle(above_likes)
-    max_ei_index = (below_likelis - above_likes).argmax()
+    max_ei_index = (below_likelis - above_likes).argmax()  # type: ignore
 
     max_ei_point = compute_max_ei_point(points, below_likelis, above_likes)
     assert max_ei_point == points[max_ei_index]
@@ -354,7 +355,7 @@ class TestGMMSampler:
 
         assert exc.match("Failed to sample in interval")
 
-    def test_get_loglikelis(self):
+    def test_get_loglikelis(self, tpe: TPE):
         """Test to get log likelis of points"""
         mus = numpy.linspace(-10, 10, num=10, endpoint=False)
         weights = numpy.linspace(1, 10, num=10) ** 3
@@ -393,19 +394,22 @@ class TestGMMSampler:
         assert len(likelis) == len(points)
 
 
-class TestTPE:
+@pytest.mark.skip(reason="Tests weren't even run before.")
+class TestTPE_old:
     """Tests for the algo TPE."""
 
-    def test_seed_rng(self, tpe):
+    def test_seed_rng(self, tpe: TPE):
         """Test that algo is seeded properly"""
         tpe.seed_rng(1)
+        trials = tpe.suggest(1)
+        assert trials is not None
         a = tpe.suggest(1)[0]
         assert not numpy.allclose(a, tpe.suggest(1)[0])
 
         tpe.seed_rng(1)
         assert numpy.allclose(a, tpe.suggest(1)[0])
 
-    def test_set_state(self, tpe):
+    def test_set_state(self, tpe: TPE):
         """Test that state is reset properly"""
         tpe.seed_rng(1)
         state = tpe.state_dict
@@ -444,12 +448,12 @@ class TestTPE:
             in str(ex.value)
         )
 
-    def test_split_trials(self, tpe):
+    def test_split_trials(self, tpe: TPE):
         """Test observed trials can be split based on TPE gamma"""
         space = Space()
         dim1 = Real("yolo1", "uniform", -3, 6)
         space.register(dim1)
-
+        # BUG: This should FAIL: tpe doesn't have a space setter anymore.
         tpe.space = space
 
         points = numpy.linspace(-3, 3, num=10, endpoint=False)
@@ -458,7 +462,12 @@ class TestTPE:
         numpy.random.shuffle(points_results)
         points, results = zip(*points_results)
         for point, result in zip(points, results):
+            # BUG: This should FAIL: uses trials now.
             tpe.observe([[point]], [{"objective": result}])
+            # Might want to update to something like this:
+            # trial = format_trials.tuple_to_trial(point, space=tpe.space)
+            # trial.results = [{"objective": result}]
+            # tpe.observe([trial])
 
         tpe.gamma = 0.25
         below_points, above_points = tpe.split_trials()
@@ -486,6 +495,7 @@ class TestTPE:
         obs_points = numpy.random.randint(-10, 10, 100)
         below_points = [obs_points[:25]]
         above_points = [obs_points[25:]]
+        # BUG: This should FAIL!
         points = tpe.sample_one_dimension(
             dim1, 1, below_points, above_points, tpe._sample_int_point
         )
@@ -736,6 +746,7 @@ class TestTPE(BaseAlgoTests):
         algo = self.create_algo()
         spy = self.spy_phase(mocker, 0, algo, "space.sample")
         points = algo.suggest(1000)
+        assert points is not None
         assert len(points) == N_INIT
 
     def test_suggest_init_missing(self, mocker):
@@ -743,6 +754,7 @@ class TestTPE(BaseAlgoTests):
         missing = 3
         spy = self.spy_phase(mocker, N_INIT - missing, algo, "space.sample")
         points = algo.suggest(1000)
+        assert points is not None
         assert len(points) == missing
 
     def test_suggest_init_overflow(self, mocker):
@@ -750,11 +762,13 @@ class TestTPE(BaseAlgoTests):
         spy = self.spy_phase(mocker, N_INIT - 1, algo, "space.sample")
         # Now reaching N_INIT
         points = algo.suggest(1000)
+        assert points is not None
         assert len(points) == 1
         # Verify point was sampled randomly, not using BO
         assert spy.call_count == 1
         # Overflow above N_INIT
         points = algo.suggest(1000)
+        assert points is not None
         assert len(points) == 1
         # Verify point was sampled randomly, not using BO
         assert spy.call_count == 2
@@ -764,6 +778,7 @@ class TestTPE(BaseAlgoTests):
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
         points = algo.suggest(5)
+        assert points is not None
         if num == 0:
             assert len(points) == 5
         else:
@@ -805,6 +820,7 @@ class TestTPE(BaseAlgoTests):
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
+        i = 0
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
             n = algo.n_suggested
@@ -848,7 +864,7 @@ class TestTPE(BaseAlgoTests):
         assert algo.n_suggested == RANGE
 
     @phase
-    def test_stuck_exploiting(self, mocker, num, attr):
+    def test_stuck_exploiting(self, mocker, num: int, attr: str):
         """Test that algo drops out when exploiting an already explored region."""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, 0, algo, "space.sample")

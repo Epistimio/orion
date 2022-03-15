@@ -64,7 +64,7 @@ def ramp_up_weights(total_num: int, flat_num: int, equal_weight: bool) -> np.nda
 
 # pylint:disable=assignment-from-no-return
 def adaptive_parzen_estimator(
-    mus: np.ndarray | Sequence[np.ndarray] | Sequence[Sequence[float]],
+    mus: np.ndarray | Sequence,
     low: float,
     high: float,
     prior_weight: float = 1.0,
