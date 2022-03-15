@@ -16,10 +16,11 @@ from collections import OrderedDict
 from typing import Any, NamedTuple, Optional, Sequence, TypedDict
 
 import numpy
-from orion.algo.base import BaseAlgorithm
-from orion.core.utils.flatten import flatten
 from tabulate import tabulate
+
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity, Space
+from orion.core.utils.flatten import flatten
 
 if typing.TYPE_CHECKING:
     from orion.core.worker.trial import Trial
@@ -72,8 +73,8 @@ def compute_budgets(
 
         min_resources = max_resources / reduction_factor ** (num_brackets - bracket_id)
         for i in range(0, num_brackets - bracket_id + 1):
-            n_i = int(num_trials / reduction_factor**i)
-            min_i = int(min_resources * reduction_factor**i)
+            n_i = int(num_trials / reduction_factor ** i)
+            min_i = int(min_resources * reduction_factor ** i)
             budget_tuple = BudgetTuple(n_i, min_i)
             bracket_budgets.append(budget_tuple)
 
@@ -188,6 +189,7 @@ class Hyperband(BaseAlgorithm):
 
         # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
         from orion.core.worker.transformer import TransformedDimension
+
         if isinstance(fidelity_dim, TransformedDimension):
             fidelity_dim = fidelity_dim.original_dimension
         assert isinstance(fidelity_dim, Fidelity)

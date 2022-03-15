@@ -4,6 +4,7 @@ Asynchronous Successive Halving Algorithm
 =========================================
 """
 from __future__ import annotations
+
 import copy
 import hashlib
 import logging
@@ -15,11 +16,11 @@ import numpy as np
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.hyperband import (
+    BudgetTuple,
     Hyperband,
     HyperbandBracket,
-    display_budgets,
-    BudgetTuple,
     RungDict,
+    display_budgets,
 )
 from orion.algo.space import Fidelity, Space
 from orion.core.worker.trial import Trial
@@ -86,7 +87,7 @@ def compute_budgets(
         bracket_budgets: list[BudgetTuple] = []
         for i, min_ressources in enumerate(bracket_ressources[::-1]):
             budget = BudgetTuple(
-                n_trials=reduction_factor**i, resource_budget=min_ressources
+                n_trials=reduction_factor ** i, resource_budget=min_ressources
             )
             bracket_budgets.append(budget)
             budgets_tab[len(bracket_ressources) - i - 1].append(budget)
@@ -172,12 +173,14 @@ class ASHA(Hyperband):
         self.seed_rng(seed)
 
     def compute_bracket_idx(self, num: int) -> np.ndarray:
-        def assign_resources(n: int, remainings: np.ndarray, totals: np.ndarray):
+        def assign_resources(
+            n: int, remainings: np.ndarray, totals: np.ndarray
+        ) -> np.ndarray:
             if n == 0 or remainings.sum() == 0:
                 return remainings
 
             ratios = remainings / totals
-            fractions = numpy.nan_to_num(ratios / ratios.sum(), 0)
+            fractions = numpy.nan_to_num(ratios / ratios.sum(), nan=0)
             index = numpy.argmax(fractions)
             remainings[index] -= 1
             n -= 1
@@ -214,7 +217,9 @@ class ASHA(Hyperband):
     def suggest(self, num: int) -> list[Trial] | None:
         return super().suggest(num)
 
-    def create_bracket(self, i: Any, budgets: list[BudgetTuple], iteration: int):
+    def create_bracket(
+        self, i: Any, budgets: list[BudgetTuple], iteration: int
+    ) -> ASHABracket:
         return ASHABracket(self, budgets, iteration)
 
 
@@ -231,6 +236,15 @@ class ASHABracket(HyperbandBracket):
         The id of hyperband execution this bracket belongs to
 
     """
+
+    def __init__(
+        self,
+        asha: ASHA,
+        budgets: list[BudgetTuple],
+        repetition_id: int,
+    ):
+        super().__init__(hyperband=asha, budgets=budgets, repetition_id=repetition_id)
+        self.asha: ASHA = asha
 
     def sample(self, num: int) -> list[Trial]:
         """Sample a new trial with lowest fidelity"""
@@ -302,14 +316,9 @@ class ASHABracket(HyperbandBracket):
             for candidate in self.get_candidates(rung_id):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
-                    "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
-                    "rung {new_rung} with fidelity {new_fidelity}".format(
-                        trial=candidate,
-                        past_rung=rung_id,
-                        past_fidelity=candidate.params[self.hyperband.fidelity_index],
-                        new_rung=rung_id + 1,
-                        new_fidelity=self.rungs[rung_id + 1]["resources"],
-                    )
+                    f"Promoting {candidate} from rung {rung_id} with fidelity "
+                    f"{candidate.params[self.hyperband.fidelity_index]} to "
+                    f"rung {rung_id + 1} with fidelity {self.rungs[rung_id + 1]['resources']}"
                 )
 
                 candidate = candidate.branch(
