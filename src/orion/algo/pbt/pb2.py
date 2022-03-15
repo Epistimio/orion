@@ -8,13 +8,13 @@ import time
 
 import numpy as np
 import pandas
-from orion.algo.pbt.pbt import PBT
-from orion.core.worker.trial import Trial
 
 from orion.algo.pbt.pb2_utils import select_config
+from orion.algo.pbt.pbt import PBT
+from orion.core.utils.flatten import flatten
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
-from orion.core.utils.flatten import flatten
 
 
 class PB2(PBT):

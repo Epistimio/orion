@@ -21,6 +21,13 @@ except ImportError:
     HAS_PB2 = False
 
 
+if not HAS_PB2:
+
+    class Kern:
+        def __init__(self, *args, **kwargs):
+            pass
+
+
 class TVSquaredExp(Kern):
     """Time varying squared exponential kernel.
     For more info see the TV-GP-UCB paper:
