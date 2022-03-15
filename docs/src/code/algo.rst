@@ -16,5 +16,6 @@ Algorithm modules
    algo/hyperband
    algo/asha
    algo/pbt
+   algo/pb2
    algo/tpe
    algo/parallel_strategy

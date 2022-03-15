@@ -6,12 +6,19 @@ https://github.com/ray-project/ray/blob/master/python/ray/tune/schedulers/pb2_ut
 """
 from copy import deepcopy
 
-import GPy
 import numpy as np
-from GPy import Param
-from GPy.kern import Kern
 from scipy.optimize import minimize
 from sklearn.metrics import euclidean_distances, pairwise_distances
+
+try:
+    import GPy
+    from GPy import Param
+    from GPy.kern import Kern
+
+    HAS_PB2 = True
+except ImportError:
+    GPy = None
+    HAS_PB2 = False
 
 
 class TVSquaredExp(Kern):
@@ -90,11 +97,14 @@ def standardize(data):
 
 
 def UCB(m, m1, x, fixed, kappa=0.5):
-    """UCB acquisition function. Interesting points to note:
-    1) We concat with the fixed points, because we are not optimizing wrt
+    """UCB acquisition function.
+
+    Interesting points to note:
+
+    1. We concat with the fixed points, because we are not optimizing wrt
        these. This is the Reward and Time, which we can't change. We want
        to find the best hyperparameters *given* the reward and time.
-    2) We use m to get the mean and m1 to get the variance. If we already
+    2. We use m to get the mean and m1 to get the variance. If we already
        have trials running, then m1 contains this information. This reduces
        the variance at points currently running, even if we don't have
        their label.
@@ -196,22 +206,28 @@ def select_config(Xraw, yraw, current, newpoint, bounds, num_f):
     This function takes the formatted data, fits the GP model and optimizes the
     UCB acquisition function to select the next point.
 
-    Args:
-        Xraw (np.array): The un-normalized array of hyperparams, Time and
-            Reward
-        yraw (np.array): The un-normalized vector of reward changes.
-        current (list): The hyperparams of trials currently running. This is
-            important so we do not select the same config twice. If there is
-            data here then we fit a second GP including it
-            (with fake y labels). The GP variance doesn't depend on the y
-            labels so it is ok.
-        newpoint (np.array): The Reward and Time for the new point.
-            We cannot change these as they are based on the *new weights*.
-        bounds (dict): Bounds for the hyperparameters. Used to normalize.
-        num_f (int): The number of fixed params. Almost always 2 (reward+time)
+    Parameters
+    ----------
+    Xraw: np.array
+        The un-normalized array of hyperparams, Time and Reward
+    yraw: np.array
+        The un-normalized vector of reward changes.
+    current: list
+        The hyperparams of trials currently running. This is important so we do not select the same
+        config twice. If there is data here then we fit a second GP including it
+        (with fake y labels). The GP variance doesn't depend on the y labels so it is ok.
+    newpoint: np.array
+        The Reward and Time for the new point.  We cannot change these as they are based on the
+        *new weights*.
+    bounds: dict
+        Bounds for the hyperparameters. Used to normalize.
+    num_f: int
+        The number of fixed params. Almost always 2 (reward+time)
 
-    Return:
-        xt (np.array): A vector of new hyperparameters.
+    Returns
+    -------
+    ``np.array``
+        A vector of new hyperparameters.
     """
     length = select_length(Xraw, yraw, bounds, num_f)
 

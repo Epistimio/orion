@@ -1,5 +1,5 @@
 """
-:mod:`orion.algo.pb2.pb2
+:mod:`orion.algo.pbt.pb2
 ========================
 
 """
@@ -11,14 +11,30 @@ import pandas
 from orion.algo.pbt.pbt import PBT
 from orion.core.worker.trial import Trial
 
-from orion.algo.pb2.pb2_utils import select_config
+from orion.algo.pbt.pb2_utils import select_config
 
 logger = logging.getLogger(__name__)
 from orion.core.utils.flatten import flatten
 
 
 class PB2(PBT):
-    """TODO: Class docstring
+    """Population Based Bandits
+
+    Population Based Bandits is a variant of Population Based Training using probabilistic model
+    to guide the search instead of relying on purely random perturbations.
+    PB2 implementation uses a time-varying Gaussian process to model the optimization curves
+    during training. This implementation is based on ray-tune implementation. Oríon's version
+    supports discrete and categorical dimensions, and offers better resiliency to broken
+    trials by using back-tracking.
+
+    See PBT documentation for more information on how to use PBT algorithms.
+
+    For more information on the algorithm,
+    see original paper at https://arxiv.org/abs/2002.02518.
+
+    Parker-Holder, Jack, Vu Nguyen, and Stephen J. Roberts.
+    "Provably efficient online hyperparameter optimization with population-based bandits."
+    Advances in Neural Information Processing Systems 33 (2020): 17200-17211.
 
     Parameters
     ----------
@@ -27,6 +43,22 @@ class PB2(PBT):
     seed: None, int or sequence of int
         Seed for the random number generator used to sample new trials.
         Default: ``None``
+    population_size: int, optional
+        Size of the population. No trial will be continued until there are `population_size`
+        trials executed until lowest fidelity. If a trial is broken during execution at lowest
+        fidelity, the algorithm will sample a new trial, keeping the population of *non-broken*
+        trials at `population_size`.  For efficiency it is better to have less workers running than
+        population_size. Default: 50.
+    generations: int, optional
+        Number of generations, from lowest fidelity to highest one. This will determine how
+        many branchings occur during the execution of PBT. Default: 10
+    exploit: dict or None, optional
+        Configuration for a ``pbt.exploit.BaseExploit`` object that determines
+        when if a trial should be exploited or not. If None, default configuration
+        is a ``PipelineExploit`` with ``BacktrackExploit`` and ``TruncateExploit``.
+    fork_timeout: int, optional
+        Maximum amount of time in seconds that an attempt to mutate a trial should take, otherwise
+        algorithm.suggest() will raise ``SuggestionTimeout``. Default: 60
 
     """
 

@@ -29,11 +29,21 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
 
 extras_require = {
     "test": tests_require,
+    "docs": [
+        "matplotlib",
+        "numpydoc",
+        "sphinx",
+        "sphinx_rtd_theme",
+        "sphinxcontrib.httpdomain",
+        "sphinx-autoapi",
+        "sphinx_gallery",
+    ],
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "pb2": ["GPy"],
 }
-extras_require["all"] = list(set(sum(extras_require.values(), [])))
+extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 setup_args = dict(
     name="orion",
@@ -62,6 +72,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "pb2 = orion.algo.pbt.pb2:PB2",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
