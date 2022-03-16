@@ -67,6 +67,49 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
         return "..."
 
 
+
+def _to_snake_case(name):
+    """Transform a class name ``MyClassName`` to snakecase ``my_class_name``"""
+    frags = []
+
+    frag = []
+    for c in name:
+        if c.isupper() and frag:
+            frags.append(''.join(frag).lower())
+            frag = []
+
+        frag.append(c)
+
+    if frag:
+      frags.append(''.join(frag).lower())
+
+    return '_'.join(frags)
+
+
+
+class Visitor:
+    def visit(self, dim):
+        return dim.visit(self)
+
+    def dimension(self, dim):
+        pass
+
+    def real(self, dim):
+        pass
+
+    def integer(self, dim):
+        pass
+
+    def categorical(self, dim):
+        pass
+
+    def fidelity(self, dim):
+        pass
+
+    def space(self, dim):
+        pass
+
+
 class Dimension:
     """Base class for search space dimensions.
 
@@ -336,6 +379,10 @@ class Dimension:
         The default value is ``numpy.inf``.
         """
         return numpy.inf
+
+    def visit(self, visitor):
+        """Returns a configspace dimension"""
+        return getattr(visitor, _to_snake_case(self.__class__.__name__))(self)
 
 
 def _is_numeric_array(point):
