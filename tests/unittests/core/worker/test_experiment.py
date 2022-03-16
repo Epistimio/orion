@@ -24,12 +24,13 @@ from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.storage.base import LockedAlgorithmState, get_storage
 from orion.testing import OrionState
+from orion.testing.algo import create_algo
 
 
 @pytest.fixture()
 def algorithm(dumbalgo, space):
     """Build a dumb algo object"""
-    return SpaceTransformAlgoWrapper(dumbalgo, space=space)
+    return create_algo(dumbalgo, space=space)
 
 
 @pytest.fixture()

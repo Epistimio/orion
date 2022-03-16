@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
+from __future__ import annotations
 import copy
 import functools
 import inspect
@@ -18,12 +19,16 @@ from orion.algo.hyperband import Hyperband
 from orion.algo.parallel_strategy import strategy_factory
 from orion.algo.random import Random
 from orion.algo.tpe import TPE
+from orion.algo.base import BaseAlgorithm
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
+from orion.algo.space import Space
 from orion.testing.space import build_space
+from typing import TypeVar
+from orion.core.worker.transformer import build_required_space
 
 algorithms = {
     "evolutionaryes": "what is the config?",
@@ -105,6 +110,23 @@ def customized_mutate_example(search_space, rng, old_value, **kwargs):
     else:
         new_value = old_value
     return new_value
+
+
+AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
+
+
+def create_algo(
+    algo_type: type[AlgoType], space: Space, **algo_kwargs
+) -> SpaceTransformAlgoWrapper[AlgoType]:
+    transformed_space = build_required_space(
+        original_space=space,
+        type_requirement=algo_type.requires_type,
+        shape_requirement=algo_type.requires_shape,
+        dist_requirement=algo_type.requires_dist,
+    )
+    algo = algo_type(transformed_space, **algo_kwargs)
+    wrapper = SpaceTransformAlgoWrapper(algo, space=space)
+    return wrapper
 
 
 class BaseAlgoTests:

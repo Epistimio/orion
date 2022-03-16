@@ -16,7 +16,7 @@ from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.algo.space import Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, create_algo
 
 
 class TestComputeFidelities:
@@ -28,17 +28,7 @@ class TestComputeFidelities:
 
 
 def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
-    from orion.core.worker.transformer import build_required_space
-
-    transformed_space = build_required_space(
-        original_space=space,
-        type_requirement=PBT.requires_type,
-        shape_requirement=PBT.requires_shape,
-        dist_requirement=PBT.requires_dist,
-    )
-    algo = PBT(transformed_space, **pbt_kwargs)
-    wrapper = SpaceTransformAlgoWrapper(algo, space=space)
-    return wrapper
+    return create_algo(PBT, space=space, **pbt_kwargs)
 
 
 class TestPBTObserve:
