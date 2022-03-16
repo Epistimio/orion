@@ -2,16 +2,18 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
 from __future__ import annotations
-from typing import Any, TypeVar
+
 import typing
+from typing import Any, TypeVar
+
 import pytest
 
 from orion.algo.base import BaseAlgorithm, algo_factory
+from orion.algo.space import Space
 from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
-from orion.algo.space import Space
 from orion.testing.algo import create_algo
 
 if typing.TYPE_CHECKING:

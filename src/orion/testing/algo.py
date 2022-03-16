@@ -1,34 +1,34 @@
 # -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
 from __future__ import annotations
+
 import copy
 import functools
 import inspect
 import itertools
 import logging
 from collections import defaultdict
-from typing import Type
+from typing import Type, TypeVar
 
 import numpy
 import pytest
 
 import orion.algo.base
 from orion.algo.asha import ASHA
+from orion.algo.base import BaseAlgorithm
 from orion.algo.gridsearch import GridSearch
 from orion.algo.hyperband import Hyperband
 from orion.algo.parallel_strategy import strategy_factory
 from orion.algo.random import Random
+from orion.algo.space import Space
 from orion.algo.tpe import TPE
-from orion.algo.base import BaseAlgorithm
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
-from orion.core.worker.trial import Trial
-from orion.algo.space import Space
-from orion.testing.space import build_space
-from typing import TypeVar
 from orion.core.worker.transformer import build_required_space
+from orion.core.worker.trial import Trial
+from orion.testing.space import build_space
 
 algorithms = {
     "evolutionaryes": "what is the config?",
