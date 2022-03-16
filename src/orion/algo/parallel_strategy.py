@@ -8,11 +8,13 @@ Register objectives for incomplete trials.
 Parallel strategy objects can be created using `strategy_factory.create('strategy_name')`.
 
 """
+from __future__ import annotations
 import copy
 import logging
 
 from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
+from orion.algo.registry import Registry
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ If you encounter this issue often, please consider reporting it to
 https://github.com/Epistimio/orion/issues."""
 
 
-def get_objective(trial):
+def get_objective(trial: Trial) -> float | None:
     """Get the value for the objective, if it exists, for this trial
 
     :return: Float or None
@@ -37,7 +39,7 @@ def get_objective(trial):
     objectives = [
         result.value for result in trial.results if result.type == "objective"
     ]
-
+    objective: float | None = None
     if not objectives:
         objective = None
     elif len(objectives) == 1:
@@ -67,21 +69,21 @@ def get_objective(trial):
 #           default_result: 0.5
 
 
-class ParallelStrategy(object):
+class ParallelStrategy:
     """Strategy to give intermediate results for incomplete trials"""
 
-    def __init__(self, *args, **kwargs):
-        self._trials_info = {}
+    def __init__(self):
+        self.registry = Registry()
 
     @property
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the strategy."""
-        return {"_trials_info": self._trials_info}
+        return {"registry": self.registry.state_dict}
 
-    def set_state(self, state_dict):
-        self._trials_info = state_dict["_trials_info"]
+    def set_state(self, state_dict: dict) -> None:
+        self.registry.set_state(state_dict["registry"])
 
-    def observe(self, trials):
+    def observe(self, trials: list[Trial]) -> None:
         """Observe completed trials
 
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe` method
@@ -93,9 +95,9 @@ class ParallelStrategy(object):
 
         """
         for trial in trials:
-            self._trials_info[trial.id] = trial
+            self.registry.register(trial)
 
-    def infer(self, trial):
+    def infer(self, trial: Trial) -> Trial | None:
         fake_result = self.lie(trial)
         if fake_result is None:
             return None
@@ -105,7 +107,7 @@ class ParallelStrategy(object):
         return fake_trial
 
     # pylint: disable=no-self-use
-    def lie(self, trial):
+    def lie(self, trial: Trial) -> Trial.Result | None:
         """Construct a fake result for an incomplete trial
 
         Parameters
@@ -133,7 +135,7 @@ class ParallelStrategy(object):
         return None
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict:
         """Provide the configuration of the strategy as a dictionary."""
         return {"of_type": self.__class__.__name__.lower()}
 
@@ -141,9 +143,9 @@ class ParallelStrategy(object):
 class NoParallelStrategy(ParallelStrategy):
     """No parallel strategy"""
 
-    def lie(self, trial):
+    def lie(self, trial: Trial) -> Trial.Result | None:
         """See ParallelStrategy.lie"""
-        result = super(NoParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 
@@ -163,8 +165,10 @@ class StatusBasedParallelStrategy(ParallelStrategy):
         Default is NoParallelStrategy(), which always returns None.
     """
 
-    def __init__(self, strategy_configs=None, default_strategy=None):
-        super(StatusBasedParallelStrategy, self).__init__()
+    def __init__(
+        self, strategy_configs: dict | None = None, default_strategy: dict | None = None
+    ):
+        super().__init__()
         if strategy_configs is None:
             strategy_configs = {"broken": {"of_type": "maxparallelstrategy"}}
 
@@ -175,11 +179,13 @@ class StatusBasedParallelStrategy(ParallelStrategy):
         if default_strategy is None:
             default_strategy = {"of_type": "noparallelstrategy"}
 
-        self.default_strategy = strategy_factory.create(**default_strategy)
+        self.default_strategy: ParallelStrategy = strategy_factory.create(
+            **default_strategy
+        )
 
     @property
-    def configuration(self):
-        configuration = super(StatusBasedParallelStrategy, self).configuration
+    def configuration(self) -> dict:
+        configuration = super().configuration
         configuration["strategy_configs"] = {
             status: strategy.configuration
             for status, strategy in self.strategies.items()
@@ -189,21 +195,21 @@ class StatusBasedParallelStrategy(ParallelStrategy):
         return configuration
 
     @property
-    def state_dict(self):
-        state_dict = super(StatusBasedParallelStrategy, self).state_dict
+    def state_dict(self) -> dict:
+        state_dict = super().state_dict
         state_dict["strategies"] = {
             status: strategy.state_dict for status, strategy in self.strategies.items()
         }
         state_dict["default_strategy"] = self.default_strategy.state_dict
         return state_dict
 
-    def set_state(self, state_dict):
-        super(StatusBasedParallelStrategy, self).set_state(state_dict)
+    def set_state(self, state_dict: dict) -> None:
+        super().set_state(state_dict)
         for status in self.strategies.keys():
             self.strategies[status].set_state(state_dict["strategies"][status])
         self.default_strategy.set_state(state_dict["default_strategy"])
 
-    def get_strategy(self, trial):
+    def get_strategy(self, trial: Trial) -> ParallelStrategy:
         strategy = self.strategies.get(trial.status)
 
         if strategy is None:
@@ -211,13 +217,13 @@ class StatusBasedParallelStrategy(ParallelStrategy):
 
         return strategy
 
-    def observe(self, trials):
+    def observe(self, trials: list[Trial]) -> None:
         for trial in trials:
             for strategy in self.strategies.values():
                 strategy.observe([trial])
             self.default_strategy.observe([trial])
 
-    def lie(self, trial):
+    def lie(self, trial: Trial) -> Trial.Result | None:
         # print(
         #     trial.status, self.get_strategy(trial), self.get_strategy(trial).max_result
         # )
@@ -229,30 +235,30 @@ class MaxParallelStrategy(ParallelStrategy):
 
     def __init__(self, default_result=float("inf")):
         """Initialize the maximum result used to lie"""
-        super(MaxParallelStrategy, self).__init__()
+        super().__init__()
         self.default_result = default_result
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict:
         """Provide the configuration of the strategy as a dictionary."""
-        configuration = super(MaxParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["default_result"] = self.default_result
         return configuration
 
     @property
-    def max_result(self):
+    def max_result(self) -> float:
         objectives = [
             trial.objective.value
-            for trial in self._trials_info.values()
-            if trial.status == "completed"
+            for trial in self.registry.values()
+            if trial.status == "completed" and trial.objective is not None
         ]
         if not objectives:
             return self.default_result
         return max(objectives)
 
-    def lie(self, trial):
+    def lie(self, trial: Trial) -> Trial.Result | None:
         """See ParallelStrategy.lie"""
-        result = super(MaxParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 
@@ -262,30 +268,30 @@ class MaxParallelStrategy(ParallelStrategy):
 class MeanParallelStrategy(ParallelStrategy):
     """Parallel strategy that uses the mean of completed objectives"""
 
-    def __init__(self, default_result=float("inf")):
+    def __init__(self, default_result: float = float("inf")):
         """Initialize the mean result used to lie"""
-        super(MeanParallelStrategy, self).__init__()
+        super().__init__()
         self.default_result = default_result
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict:
         """Provide the configuration of the strategy as a dictionary."""
-        configuration = super(MeanParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["default_result"] = self.default_result
         return configuration
 
     @property
-    def mean_result(self):
+    def mean_result(self) -> float:
         objectives = [
             trial.objective.value
-            for trial in self._trials_info.values()
-            if trial.status == "completed"
+            for trial in self.registry.values()
+            if trial.status == "completed" and trial.objective is not None
         ]
         if not objectives:
             return self.default_result
         return sum(objectives) / len(objectives)
 
-    def lie(self, trial):
+    def lie(self, trial: Trial) -> Trial.Result | None:
         """See ParallelStrategy.lie"""
         result = super(MeanParallelStrategy, self).lie(trial)
         if result:
@@ -297,21 +303,21 @@ class MeanParallelStrategy(ParallelStrategy):
 class StubParallelStrategy(ParallelStrategy):
     """Parallel strategy that returns static objective value for incompleted trials."""
 
-    def __init__(self, stub_value=None):
+    def __init__(self, stub_value: float | None = None):
         """Initialize the stub value"""
-        super(StubParallelStrategy, self).__init__()
+        super().__init__()
         self.stub_value = stub_value
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict:
         """Provide the configuration of the strategy as a dictionary."""
-        configuration = super(StubParallelStrategy, self).configuration
+        configuration = super().configuration
         configuration["stub_value"] = self.stub_value
         return configuration
 
-    def lie(self, trial):
+    def lie(self, trial: Trial) -> Trial.Result | None:
         """See ParallelStrategy.lie"""
-        result = super(StubParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 
