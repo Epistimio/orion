@@ -1,33 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
-
+from __future__ import annotations
+from typing import Any, TypeVar
+import typing
 import pytest
 
-from orion.algo.base import algo_factory
+from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.transformer import build_required_space
+from orion.core.worker.trial import Trial
+from orion.algo.space import Space
+from orion.testing.algo import create_algo
+
+if typing.TYPE_CHECKING:
+    from tests.conftest import DumbAlgo
 
 
 @pytest.fixture()
-def palgo(dumbalgo, space, fixed_suggestion_value):
+def palgo(
+    dumbalgo: type[DumbAlgo], space: Space, fixed_suggestion_value: Any
+) -> SpaceTransformAlgoWrapper[DumbAlgo]:
     """Set up a SpaceTransformAlgoWrapper with dumb configuration."""
-    algo_config = {
-        "value": fixed_suggestion_value,
-    }
-    palgo = SpaceTransformAlgoWrapper(dumbalgo, space, **algo_config)
-
-    return palgo
+    return create_algo(dumbalgo, space=space, value=fixed_suggestion_value)
 
 
-class TestSpaceTransformAlgoWrapperWraps(object):
+class TestSpaceTransformAlgoWrapperWraps:
     """Test if SpaceTransformAlgoWrapper is actually wrapping the configured algorithm.
 
     Does not test for transformations.
     """
 
-    def test_verify_trial(self, palgo, space):
+    def test_verify_trial(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], space: Space
+    ):
         trial = format_trials.tuple_to_trial((["asdfa", 2], 0, 3.5), space)
         palgo._verify_trial(trial)
 
@@ -51,7 +58,12 @@ class TestSpaceTransformAlgoWrapperWraps(object):
         # Transformed point is in transformed space
         palgo._verify_trial(ttrial, space=tspace)
 
-    def test_init_and_configuration(self, dumbalgo, palgo, fixed_suggestion_value):
+    def test_init_and_configuration(
+        self,
+        dumbalgo: type[DumbAlgo],
+        palgo: SpaceTransformAlgoWrapper[DumbAlgo],
+        fixed_suggestion_value: Trial,
+    ):
         """Check if initialization works."""
         assert isinstance(palgo.algorithm, dumbalgo)
         assert palgo.configuration == {
@@ -65,50 +77,67 @@ class TestSpaceTransformAlgoWrapperWraps(object):
             }
         }
 
-    def test_space_can_only_retrieved(self, palgo, space):
+    def test_space_can_only_retrieved(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], space: Space
+    ):
         """Set space is forbidden, getter works as supposed."""
         assert palgo.space == space
         with pytest.raises(AttributeError):
             palgo.space = 5
 
-    def test_suggest(self, palgo, fixed_suggestion):
+    def test_suggest(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], fixed_suggestion: Trial
+    ):
         """Suggest wraps suggested."""
         palgo.algorithm.pool_size = 10
-        assert palgo.suggest(1)[0].params == fixed_suggestion.params
-        assert [trial.params for trial in palgo.suggest(4)] == [
-            fixed_suggestion.params
-        ] * 4
-        fixed_suggestion_value = fixed_suggestion
+        trials = palgo.suggest(1)
+        assert trials is not None
+        assert trials[0].params == fixed_suggestion.params
+        ptrials = palgo.suggest(4)
+        # NOTE: Now, if an algorithm has already suggested the same trial, we don't return a
+        # duplicate.
+        assert not ptrials
+        # assert ptrials is not None
+        # assert len(ptrials) == 4
+        # assert [trial.params for trial in ptrials] == [fixed_suggestion.params] * 4
         palgo.algorithm.possible_values = [fixed_suggestion]
         del fixed_suggestion._params[-1]
         with pytest.raises(ValueError, match="not contained in space"):
             palgo.suggest(1)
 
-    def test_observe(self, palgo, fixed_suggestion):
+    def test_observe(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], fixed_suggestion: Trial
+    ):
         """Observe wraps observations."""
         backward.algo_observe(palgo, [fixed_suggestion], [dict(objective=5)])
         palgo.observe([fixed_suggestion])
         assert palgo.algorithm._trials[0].params == fixed_suggestion.params
 
-    def test_isdone(self, palgo):
+    def test_isdone(self, palgo: SpaceTransformAlgoWrapper[DumbAlgo]):
         """Wrap isdone."""
         palgo.algorithm.done = 10
         assert palgo.is_done == 10
         assert palgo.algorithm._times_called_is_done == 1
 
-    def test_shouldsuspend(self, palgo, fixed_suggestion):
+    def test_shouldsuspend(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], fixed_suggestion: Trial
+    ):
         """Wrap should_suspend."""
         palgo.algorithm.suspend = 55
         assert palgo.should_suspend(fixed_suggestion) == 55
         assert palgo.algorithm._times_called_suspend == 1
 
-    def test_score(self, palgo, fixed_suggestion):
+    def test_score(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], fixed_suggestion: Trial
+    ):
         """Wrap score."""
         palgo.algorithm.scoring = 60
         assert palgo.score(fixed_suggestion) == 60
         assert palgo.algorithm._score_trial.params == fixed_suggestion.params
 
-    def test_judge(self, palgo, fixed_suggestion):
+    def test_judge(
+        self, palgo: SpaceTransformAlgoWrapper[DumbAlgo], fixed_suggestion: Trial
+    ):
         """Wrap judge."""
         palgo.algorithm.judgement = "naedw"
         assert palgo.judge(fixed_suggestion, 8) == "naedw"
