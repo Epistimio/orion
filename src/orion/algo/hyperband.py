@@ -12,8 +12,9 @@ import copy
 import logging
 from collections import OrderedDict
 from typing import Any, NamedTuple, Optional, Sequence, TypedDict
-import numpy as np
+
 import numpy
+import numpy as np
 from tabulate import tabulate
 
 from orion.algo.base import BaseAlgorithm
@@ -191,6 +192,7 @@ class Hyperband(BaseAlgorithm):
         while isinstance(fidelity_dim, TransformedDimension):
             fidelity_dim = fidelity_dim.original_dimension
         assert isinstance(fidelity_dim, Fidelity), (fidelity_dim, type(fidelity_dim))
+
         self.min_resources = fidelity_dim.low
         self.max_resources = fidelity_dim.high
         self.reduction_factor = fidelity_dim.base
@@ -276,7 +278,7 @@ class Hyperband(BaseAlgorithm):
             bracket.seed_rng(tuple(rng.randint(0, 1000000, size=3)))
 
     @property
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict: dict[str, Any] = super().state_dict
         assert self.brackets is not None
@@ -290,7 +292,7 @@ class Hyperband(BaseAlgorithm):
         )
         return state_dict
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
@@ -309,7 +311,6 @@ class Hyperband(BaseAlgorithm):
 
     def register_samples(self, bracket: HyperbandBracket, samples: list[Trial]) -> None:
         for sample in samples:
-            full_id = self.get_id(sample, ignore_fidelity=False, ignore_parent=False)
             if self.has_observed(sample):
                 raise RuntimeError(
                     "Hyperband resampling a trial that was already completed. "

@@ -6,8 +6,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import logging
-from typing import Any, Sequence
 import typing
+from typing import Any, Sequence
 
 import numpy as np
 import pytest

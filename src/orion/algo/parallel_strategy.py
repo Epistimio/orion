@@ -9,12 +9,13 @@ Parallel strategy objects can be created using `strategy_factory.create('strateg
 
 """
 from __future__ import annotations
+
 import copy
 import logging
 
+from orion.algo.registry import Registry
 from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
-from orion.algo.registry import Registry
 
 log = logging.getLogger(__name__)
 
