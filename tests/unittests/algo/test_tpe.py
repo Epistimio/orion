@@ -6,9 +6,10 @@ import timeit
 from typing import Sequence
 
 import numpy
+import numpy as np
 import pytest
 from scipy.stats import norm
-import numpy as np
+
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.algo.tpe import (
     TPE,

@@ -5,6 +5,7 @@ Population Based Training
 
 """
 from __future__ import annotations
+
 import copy
 import logging
 import shutil
@@ -12,15 +13,16 @@ import time
 from typing import Any
 
 import numpy
-from orion.core.worker.trial import Trial
-from orion.algo.space import Fidelity, Space
-from orion.core.worker.transformer import TransformedDimension
+
 from orion.algo.base import BaseAlgorithm
 from orion.algo.pbt.exploit import exploit_factory
 from orion.algo.pbt.explore import explore_factory
 from orion.algo.random import Random
+from orion.algo.space import Fidelity, Space
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.utils.tree import TreeNode
+from orion.core.worker.transformer import TransformedDimension
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
 
