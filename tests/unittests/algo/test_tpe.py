@@ -886,31 +886,45 @@ class TestTPE(BaseAlgoTests):
 
     def test_log_integer(self, monkeypatch):
         """Verify that log integer dimensions do not go out of bound."""
+        # TODO: This test is now failing, there's something going on with the mapping/transforms.
         RANGE = 100
+        # NOTE: Here we're passing the 'original' space, not the transformed space.
         algo = self.create_algo(
             space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
         )
-        algo.algorithm.max_trials = RANGE * 2
+        # algo = TPE(
+        #     space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
+        # )
 
-        values = set(range(1, RANGE + 1))
+        algo.algorithm.max_trials = RANGE * 2
+        values = list(range(1, RANGE + 1))
 
         # Mock sampling so that it quickly samples all possible integers in given bounds
         def sample(self, n_samples=1, seed=None):
             return [
                 format_trials.tuple_to_trial(
-                    (numpy.log(values.pop()),), algo.transformed_space
+                    (numpy.log(values.pop()),), algo.algorithm.space
                 )
                 for _ in range(n_samples)
             ]
 
-        def _suggest_random(self, num):
-            return self._suggest(num, sample)
+        def _suggest_random(self, num: int) -> list[Trial]:
+            v = self._suggest(num, sample)
+            print(f"num={num}, Suggesting {v} ({len(values)} values left.)")
+            return v
 
         monkeypatch.setattr("orion.algo.tpe.TPE._suggest_random", _suggest_random)
         monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+
         self.force_observe(RANGE, algo)
-        assert algo.n_observed == RANGE
+        # # BUG: How can a trial be in the registry, if that wasn't observed?
+        assert len(algo.algorithm.registry) == RANGE
+        assert len(algo.registry_mapping) == RANGE
+        assert len(algo.registry) == RANGE
+        assert algo.algorithm.n_suggested == RANGE
+        assert algo.algorithm.n_observed == RANGE
         assert algo.n_suggested == RANGE
+        assert algo.n_observed == RANGE
 
     @phase
     def test_stuck_exploiting(self, mocker, num: int, attr: str):

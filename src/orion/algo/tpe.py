@@ -712,11 +712,11 @@ class GMMSampler:
     ) -> np.ndarray:
         """Return the log likelihood for the points"""
         points = numpy.array(points)
-        weight_likelis = [
+        weight_likelis_list = [
             numpy.log(self.weights[i] * pdf.pdf(points))
             for i, pdf in enumerate(self.pdfs)
         ]
-        weight_likelis = numpy.array(weight_likelis)
+        weight_likelis = numpy.array(weight_likelis_list)
         # (num_weights, num_points) => (num_points, num_weights)
         weight_likelis = weight_likelis.transpose()
 
