@@ -290,4 +290,6 @@ def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) ->
     transformed_trial.end_time = original_trial.end_time
     if original_trial.results:
         transformed_trial.results = original_trial.results
+    if original_trial.exp_working_dir:
+        transformed_trial.exp_working_dir = original_trial.exp_working_dir
     return transformed_trial
