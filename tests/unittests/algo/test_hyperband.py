@@ -7,6 +7,7 @@ import copy
 import hashlib
 import logging
 from typing import Any, Sequence
+import typing
 
 import numpy as np
 import pytest
@@ -24,6 +25,9 @@ from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, phase
 from orion.testing.trial import compare_trials, create_trial
+
+if typing.TYPE_CHECKING:
+    from _pytest.logging import LogCaptureFixture
 
 
 def create_trial_for_hb(point: Sequence[Any], objective: float | None = None) -> Trial:
@@ -421,7 +425,7 @@ class TestHyperband:
         assert not hyperband.has_suggested(trial)
         assert not hyperband.has_observed(trial)
 
-    def test_register_not_sampled(self, space: Space, caplog):
+    def test_register_not_sampled(self, space: Space, caplog: LogCaptureFixture):
         """Check that a point cannot registered if not sampled."""
         hyperband = Hyperband(space)
 
@@ -435,7 +439,7 @@ class TestHyperband:
         assert len(caplog.records) == 1
         assert "Ignoring trial" in caplog.records[0].msg
 
-    def test_register_corrupted_db(self, caplog, space: Space):
+    def test_register_corrupted_db(self, caplog: LogCaptureFixture, space: Space):
         """Check that a point cannot registered if passed in order diff than fidelity."""
         hyperband = Hyperband(space)
 
