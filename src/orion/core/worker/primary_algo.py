@@ -21,6 +21,9 @@ if typing.TYPE_CHECKING:
     from orion.core.worker.trial import Trial
 
 from typing import Generic, TypeVar
+from logging import getLogger as get_logger
+
+logger = get_logger(__name__)
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
@@ -140,8 +143,13 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
             else:
                 # We haven't seen this trial before. Register it.
                 trials.append(original)
-            # NOTE: This registers the original in self.registry and the transformed trial in
-            # self.algo.registry.
+
+            # Register the trial in our registry.
+            self.registry.register(original)
+            # Here we register the transformed trial just in case the algorithm hasn't already
+            # registered the trial in its `suggest`.
+            self.algorithm.register(transformed_trial)
+            # Register the equivalence between these trials.
             self.registry_mapping.register(original, transformed_trial)
         return trials
 
@@ -167,6 +175,29 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
                 )
                 for transformed_trial in transformed_trials
             ]
+
+            if not transformed_trials:
+                # `trial` is a new, original trial that wasn't suggested by the algorithm. (This
+                # might happen when an insertion is done according to @bouthilx)
+                transformed_trial = self.transformed_space.transform(trial)
+                transformed_trial = _copy_status_and_results(
+                    original_trial=trial, transformed_trial=transformed_trial
+                )
+                transformed_trials = [transformed_trial]
+                logger.debug(
+                    f"Observing trial {trial} (transformed as {transformed_trial}), even "
+                    f"though it wasn't suggested by the algorithm."
+                )
+                # NOTE: @lebrice Here we don't want to store the transformed trial in the
+                # algo's registry (by either calling `self.algorithm.register(transformed_trial)` or
+                # `self.algorithm.registry.register(transformed_trial))`, because some algos can't
+                # observe trials that they haven't suggested. We'd also need to perform all the
+                # logic that the algo did in `suggest` (e.g. store it in a bracket for HyperBand).
+                # Therefore we only register it in the wrapper, and store the equivalence between
+                # these two trials in the registry mapping.
+                self.registry.register(trial)
+                self.registry_mapping.register(trial, transformed_trial)
+
             self.algorithm.observe(transformed_trials)
 
     def has_suggested(self, trial: Trial) -> bool:
@@ -253,17 +284,10 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
 
     def get_id(self, trial: Trial, ignore_fidelity: bool = False) -> str:
         """Compute a unique hash for a point based on params"""
-        # TODO: Double-check this with @bouthilx.
-        return self.algorithm.get_id(
-            self.transformed_space.transform(trial), ignore_fidelity=ignore_fidelity
-        )
-        return trial.compute_trial_hash(
-            trial,
-            ignore_fidelity=ignore_fidelity,
-            ignore_experiment=True,
-            ignore_lie=True,
-            ignore_parent=ignore_parent,
-        )
+        # TODO: Double-check this with @bouthilx: Should we check the registry mapping? Or create a
+        # new transformed trial?
+        transformed_trial = self.transformed_space.transform(trial)
+        return self.algorithm.get_id(transformed_trial, ignore_fidelity=ignore_fidelity)
 
     @property
     def fidelity_index(self) -> str | None:
@@ -285,6 +309,7 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
 
 
 def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
+    """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
     transformed_trial = copy.deepcopy(transformed_trial)
     transformed_trial.status = original_trial.status
     transformed_trial.end_time = original_trial.end_time

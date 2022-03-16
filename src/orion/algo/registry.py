@@ -118,8 +118,8 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
 
     def register(self, original_trial: Trial, transformed_trial: Trial) -> str:
         """Register an equivalence between the given original trial and the transformed trial."""
-        # NOTE: Peut-être pas .id, faut voir comment on compute le ID.
-        original_id = self.original_registry.register(original_trial)
-        transformed_id = self.transformed_registry.register(transformed_trial)
-        self._mapping[original_id].add(transformed_id)
-        return original_id
+        # NOTE: Choosing not to register the trials here, and instead do it more manually.
+        # original_id = self.original_registry.register(original_trial)
+        # transformed_id = self.transformed_registry.register(transformed_trial)
+        self._mapping[original_trial.id].add(transformed_trial.id)
+        return original_trial.id
