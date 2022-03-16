@@ -371,18 +371,17 @@ class TPE(BaseAlgorithm):
     ) -> list[Trial]:
         trials: list[Trial] = []
 
-        ids = set(self.registry.keys())
         retries = 0
         while len(trials) < num and retries < self.max_retry:
             for candidate in function(num - len(trials)):
-                candidate_id = self.get_id(candidate)
-                if candidate_id not in ids:
-                    ids.add(candidate_id)
+                if candidate not in self.registry:
+                    self.register(candidate)
+                    # self.registry.register(candidate)
                     trials.append(candidate)
                 else:
                     retries += 1
 
-                if len(ids) >= self.space.cardinality:
+                if len(self.registry) >= self.space.cardinality:
                     return trials
 
         if retries >= self.max_retry:
@@ -709,7 +708,7 @@ class GMMSampler:
         return point
 
     def get_loglikelis(
-        self, points: Sequence[Sequence[float]] | np.ndarray
+        self, points: np.ndarray | list[np.ndarray] | Sequence[Sequence[float]]
     ) -> np.ndarray:
         """Return the log likelihood for the points"""
         points = numpy.array(points)
