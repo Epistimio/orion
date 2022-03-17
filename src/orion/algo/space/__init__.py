@@ -31,6 +31,7 @@ unless noted otherwise!
 import copy
 import logging
 import numbers
+from typing import Generic, TypeVar
 
 import numpy
 from scipy.stats import distributions
@@ -67,7 +68,6 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
         return "..."
 
 
-
 def _to_snake_case(name):
     """Transform a class name ``MyClassName`` to snakecase ``my_class_name``"""
     frags = []
@@ -75,38 +75,41 @@ def _to_snake_case(name):
     frag = []
     for c in name:
         if c.isupper() and frag:
-            frags.append(''.join(frag).lower())
+            frags.append("".join(frag).lower())
             frag = []
 
         frag.append(c)
 
     if frag:
-      frags.append(''.join(frag).lower())
+        frags.append("".join(frag).lower())
 
-    return '_'.join(frags)
+    return "_".join(frags)
 
 
+T = TypeVar("T")
+S = TypeVar("S")
 
-class Visitor:
-    def visit(self, dim):
+
+class Visitor(Generic[T, S]):
+    def visit(self, dim: "Dimension") -> T:
         return dim.visit(self)
 
-    def dimension(self, dim):
+    def dimension(self, dim: "Dimension") -> T:
         pass
 
-    def real(self, dim):
+    def real(self, dim: "Dimension") -> T:
         pass
 
-    def integer(self, dim):
+    def integer(self, dim: "Dimension") -> T:
         pass
 
-    def categorical(self, dim):
+    def categorical(self, dim: "Dimension") -> T:
         pass
 
-    def fidelity(self, dim):
+    def fidelity(self, dim: "Dimension") -> T:
         pass
 
-    def space(self, dim):
+    def space(self, dim: "Dimension") -> S:
         pass
 
 
@@ -380,7 +383,7 @@ class Dimension:
         """
         return numpy.inf
 
-    def visit(self, visitor):
+    def visit(self, visitor: Visitor[T, S]) -> Any:
         """Returns a configspace dimension"""
         return getattr(visitor, _to_snake_case(self.__class__.__name__))(self)
 
