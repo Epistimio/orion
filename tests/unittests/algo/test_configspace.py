@@ -11,6 +11,7 @@ def test_orion_configspace():
     space.register(Integer("r1i", "reciprocal", 1, 6))
     space.register(Integer("u1i", "uniform", -3, 6))
     space.register(Integer("u2i", "uniform", -3, 6))
+    space.register(Integer("u3i", "uniform", -3, 6, default_value=2))
 
     space.register(Real("r1f", "reciprocal", 1, 6))
     space.register(Real("u1f", "uniform", -3, 6))
@@ -34,6 +35,10 @@ def test_orion_configspace():
 
         converted = roundtrip[k]
 
-        converted._default_value = None
+        # Orion space did not have default values
+        # but ConfigSpace always set them
+        if not original.default_value:
+            converted._default_value = None
+
         assert type(original) == type(converted)
         assert original == converted
