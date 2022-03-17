@@ -11,7 +11,7 @@ from __future__ import annotations
 import copy
 import logging
 from collections import OrderedDict
-from typing import Any, NamedTuple, Optional, Sequence, TypedDict
+from typing import Any, NamedTuple, Optional, Sequence
 
 import numpy
 import numpy as np
@@ -21,6 +21,11 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity, Space
 from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 logger = logging.getLogger(__name__)
 
