@@ -10,13 +10,7 @@ generic manner.
 """
 from __future__ import annotations
 
-from typing import (
-    Callable,
-    Generic,
-    Iterable,
-    Sequence,
-    TypeVar,
-)
+from typing import Callable, Generic, Iterable, Sequence, TypeVar
 
 T = TypeVar("T", covariant=True)
 V = TypeVar("V")
