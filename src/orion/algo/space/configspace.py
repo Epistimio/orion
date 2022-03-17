@@ -39,7 +39,7 @@ def _qantization(dim: Dimension) -> float:
     return None
 
 
-class ToConfigSpace(Visitor[Optional[Hyperparameter], ConfigurationSpace]):
+class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
     """Convert an Orion space into a configspace"""
 
     def __init__(self) -> None:
@@ -155,7 +155,9 @@ def tooriondim(dim: Hyperparameter) -> Dimension:
     klass = Integer
     args = []
     kwargs = dict(
-        # default_value=dim.default_value
+        # NOTE: Config space always has a config value
+        # so orion-space would get it as well
+        default_value=dim.default_value
     )
 
     if isinstance(dim, (UniformFloatHyperparameter, UniformIntegerHyperparameter)):

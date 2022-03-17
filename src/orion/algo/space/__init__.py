@@ -87,10 +87,9 @@ def _to_snake_case(name: str) -> str:
 
 
 T = TypeVar("T")
-S = TypeVar("S")
 
 
-class Visitor(Generic[T, S]):
+class Visitor(Generic[T]):
     def visit(self, dim: "Dimension") -> T:
         return dim.visit(self)
 
@@ -107,9 +106,6 @@ class Visitor(Generic[T, S]):
         pass
 
     def fidelity(self, dim: "Dimension") -> T:
-        pass
-
-    def space(self, dim: "Dimension") -> S:
         pass
 
 
@@ -383,7 +379,7 @@ class Dimension:
         """
         return numpy.inf
 
-    def visit(self, visitor: Visitor[T, S]) -> T:
+    def visit(self, visitor: Visitor[T]) -> T:
         """Execute a visitor on the given dimension"""
         return getattr(visitor, _to_snake_case(self.__class__.__name__))(self)
 
