@@ -52,7 +52,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
     def real(self, dim: Dimension) -> Optional[FloatHyperparameter]:
         """Convert a real dimension into a configspace equivalent"""
-        if dim.prior_name == ("reciprocal", "uniform"):
+        if dim.prior_name in ("reciprocal", "uniform"):
             a, b = dim._args
 
             return UniformFloatHyperparameter(
@@ -82,7 +82,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
     def integer(self, dim: Dimension) -> Optional[IntegerHyperparameter]:
         """Convert a integer dimension into a configspace equivalent"""
-        if dim.prior_name == ("int_uniform", "int_reciprocal"):
+        if dim.prior_name in ("int_uniform", "int_reciprocal"):
             a, b = dim._args
 
             return UniformIntegerHyperparameter(
@@ -132,15 +132,20 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
             if cdim:
                 dims.append(cdim)
-            else:
-                print(dim)
 
         cspace.add_hyperparameters(dims)
         return cspace
 
 
 def toconfigspace(space: Space) -> ConfigurationSpace:
-    """Convert orion space to configspace"""
+    """Convert orion space to configspace
+
+    Notes
+    -----
+    ``ConfigurationSpace`` will set its own default values
+    if not set inside ``Space``
+
+    """
     conversion = ToConfigSpace()
     return conversion.space(space)
 
@@ -168,7 +173,7 @@ def tooriondim(dim: Hyperparameter) -> Dimension:
 
         dist = "uniform"
         args.append(dim.lower)
-        args.apend(dim.upper)
+        args.append(dim.upper)
 
         if dim.log:
             dist = "reciprocal"
@@ -191,7 +196,13 @@ def tooriondim(dim: Hyperparameter) -> Dimension:
 
 
 def toorionspace(cspace: ConfigurationSpace) -> Space:
-    """Convert from orion space to configspace"""
+    """Convert from orion space to configspace
+
+    Notes
+    -----
+    ``ConfigurationSpace`` will set default values for each dimensions of ``Space``
+
+    """
     space = Space()
 
     for _, cdim in cspace.get_hyperparameters_dict().items():

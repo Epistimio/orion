@@ -34,5 +34,6 @@ def test_orion_configspace():
 
         converted = roundtrip[k]
 
+        converted._default_value = None
         assert type(original) == type(converted)
         assert original == converted
