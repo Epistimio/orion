@@ -11,14 +11,11 @@ generic manner.
 from __future__ import annotations
 
 from typing import (
-    Any,
     Callable,
     Generic,
     Iterable,
-    Iterator,
     Sequence,
     TypeVar,
-    overload,
 )
 
 T = TypeVar("T", covariant=True)
