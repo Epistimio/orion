@@ -99,6 +99,7 @@ class BaseAlgorithm:
 
     """
 
+    deterministic = False
     requires_type = None
     requires_shape = None
     requires_dist = None

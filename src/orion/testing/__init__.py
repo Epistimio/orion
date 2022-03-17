@@ -131,8 +131,8 @@ def generate_benchmark_experiments_trials(
     for i in range(task_number * algo_num):
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
-        exp["name"] = f"experiment-name-{i}"
-        exp["algorithms"] = benchmark_algorithms[i % algo_num]["algorithm"]
+        exp["name"] = "experiment-name-{}".format(i)
+        exp["algorithms"] = benchmark_algorithms[i % algo_num]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)

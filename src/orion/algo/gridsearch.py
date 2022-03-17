@@ -116,6 +116,7 @@ class GridSearch(BaseAlgorithm):
         used, and all categories will be used to build the grid.
     """
 
+    deterministic = True
     requires_type = None
     requires_dist = None
     requires_shape = "flattened"
