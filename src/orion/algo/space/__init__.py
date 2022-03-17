@@ -68,7 +68,7 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
         return "..."
 
 
-def _to_snake_case(name):
+def _to_snake_case(name: str) -> str:
     """Transform a class name ``MyClassName`` to snakecase ``my_class_name``"""
     frags = []
 
@@ -383,8 +383,8 @@ class Dimension:
         """
         return numpy.inf
 
-    def visit(self, visitor: Visitor[T, S]) -> Any:
-        """Returns a configspace dimension"""
+    def visit(self, visitor: Visitor[T, S]) -> T:
+        """Execute a visitor on the given dimension"""
         return getattr(visitor, _to_snake_case(self.__class__.__name__))(self)
 
 

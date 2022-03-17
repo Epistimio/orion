@@ -1,108 +1,130 @@
+from math import log10
+from typing import Optional
+
+from orion.algo.space import Categorical, Dimension, Integer, Real, Space, Visitor
+
 try:
-    import ConfigSpace as cs
-    import ConfigSpace.hyperparameters as csh
+    from ConfigSpace import ConfigurationSpace
+    from ConfigSpace.hyperparameters import (
+        CategoricalHyperparameter,
+        FloatHyperparameter,
+        Hyperparameter,
+        IntegerHyperparameter,
+        NormalFloatHyperparameter,
+        NormalIntegerHyperparameter,
+        UniformFloatHyperparameter,
+        UniformIntegerHyperparameter,
+    )
 
     IMPORT_ERROR = None
+
 except ImportError as err:
     IMPORT_ERROR = err
 
-from cmath import log10
-from orion.algo.space import Visitor, Space, Real, Integer, Categorical
+    IntegerHyperparameter = object()
+    FloatHyperparameter = object()
+    ConfigurationSpace = object()
+    Hyperparameter = object()
+    UniformFloatHyperparameter = object()
+    NormalFloatHyperparameter = object()
+    UniformIntegerHyperparameter = object()
+    NormalIntegerHyperparameter = object()
+    CategoricalHyperparamete = object()
 
 
-def _qantization(dim):
+def _qantization(dim: Dimension) -> float:
     """Convert precision to the quantization factor"""
     if dim.precision:
-        return 10 ** (- dim.precision)
+        return 10 ** (-dim.precision)
     return None
 
 
-class ToConfigSpace(Visitor):
+class ToConfigSpace(Visitor[Optional[Hyperparameter], ConfigurationSpace]):
     """Convert an Orion space into a configspace"""
 
     def __init__(self) -> None:
         if IMPORT_ERROR is not None:
             raise IMPORT_ERROR
 
-    def dimension(self, dim):
+    def dimension(self, dim: Dimension) -> None:
         """Raise an error if the visitor is called on an abstract class"""
         raise NotImplementedError()
 
-    def real(self, dim):
+    def real(self, dim: Dimension) -> Optional[FloatHyperparameter]:
         """Convert a real dimension into a configspace equivalent"""
-        if dim.prior_name == ('loguniform', 'reciprocal', 'uniform'):
+        if dim.prior_name == ("reciprocal", "uniform"):
             a, b = dim._args
 
-            return csh.UniformFloatHyperparameter(
+            return UniformFloatHyperparameter(
                 name=dim.name,
                 lower=a,
                 upper=b,
                 default_value=dim.default_value,
                 q=_qantization(dim),
-                log=dim.prior_name == 'reciprocal',
+                log=dim.prior_name == "reciprocal",
             )
 
-        if dim.prior_name in ('normal', 'norm'):
+        if dim.prior_name in ("normal", "norm"):
             a, b = dim._args
 
-            return csh.NormalFloatHyperparameter(
+            return NormalFloatHyperparameter(
                 name=dim.name,
                 mu=a,
                 sigma=b,
                 default_value=dim.default_value,
                 q=_qantization(dim),
                 log=False,
-                lower=dim.low if hasattr(dim, 'low') else None,
-                upper=dim.high if hasattr(dim, 'high') else None,
+                lower=dim.low if hasattr(dim, "low") else None,
+                upper=dim.high if hasattr(dim, "high") else None,
             )
 
         return
 
-    def integer(self, dim):
+    def integer(self, dim: Dimension) -> Optional[IntegerHyperparameter]:
         """Convert a integer dimension into a configspace equivalent"""
-        if dim.prior_name == ('int_uniform', 'int_reciprocal'):
+        if dim.prior_name == ("int_uniform", "int_reciprocal"):
             a, b = dim._args
 
-            return csh.UniformIntegerHyperparameter(
+            return UniformIntegerHyperparameter(
                 name=dim.name,
                 lower=a,
                 upper=b,
                 default_value=dim.default_value,
                 q=_qantization(dim),
-                log=dim.prior_name == 'int_reciprocal',
+                log=dim.prior_name == "int_reciprocal",
             )
 
-        if dim.prior_name in ('norm', 'normal'):
+        if dim.prior_name in ("norm", "normal"):
             a, b = dim._args
 
-            return csh.NormalIntegerHyperparameter(
+            return NormalIntegerHyperparameter(
                 name=dim.name,
                 mu=a,
                 sigma=b,
                 default_value=dim.default_value,
                 q=_qantization(dim),
                 log=False,
-                lower=dim.low if hasattr(dim, 'low') else None,
-                upper=dim.high if hasattr(dim, 'high') else None
+                lower=dim.low if hasattr(dim, "low") else None,
+                upper=dim.high if hasattr(dim, "high") else None,
             )
 
         return None
 
-    def categorical(self, dim):
+    def categorical(self, dim: Dimension) -> Optional[CategoricalHyperparameter]:
         """Convert a categorical dimension into a configspace equivalent"""
-        return csh.CategoricalHyperparameter(
+        return CategoricalHyperparameter(
             name=dim.name,
             choices=dim.categories,
             weights=dim._probs,
         )
 
-    def fidelity(self, dim):
+    def fidelity(self, dim: Dimension) -> None:
         """Ignores fidelity dimension as configspace does not have an equivalent"""
         return None
 
-    def space(self, space):
+    def space(self, space: Space) -> ConfigurationSpace:
         """Convert orion space to configspace"""
-        cspace = cs.ConfigurationSpace()
+        cspace = ConfigurationSpace()
         dims = []
 
         for _, dim in space.items():
@@ -110,59 +132,63 @@ class ToConfigSpace(Visitor):
 
             if cdim:
                 dims.append(cdim)
+            else:
+                print(dim)
 
         cspace.add_hyperparameters(dims)
         return cspace
 
 
-def toconfigspace(space):
+def toconfigspace(space: Space) -> ConfigurationSpace:
     """Convert orion space to configspace"""
     conversion = ToConfigSpace()
     return conversion.space(space)
 
 
-def tooriondim(dim):
-    """Convert a config space dimension to an orion dimension"""
+def tooriondim(dim: Hyperparameter) -> Dimension:
+    """Convert a config space hyperparameter to an orion dimension"""
+
+    if isinstance(dim, CategoricalHyperparameter):
+        choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
+        return Categorical(dim.name, choices)
+
     klass = Integer
     args = []
     kwargs = dict(
         # default_value=dim.default_value
     )
 
-    if isinstance(dim, (csh.UniformFloatHyperparameter, csh.UniformIntegerHyperparameter)):
-        if isinstance(dim, csh.UniformFloatHyperparameter):
+    if isinstance(dim, (UniformFloatHyperparameter, UniformIntegerHyperparameter)):
+        if isinstance(dim, UniformFloatHyperparameter):
             klass = Real
+        else:
+            kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
 
-        dist = 'uniform'
+        dist = "uniform"
         args.append(dim.lower)
-        args.append(dim.upper)
-        # kwargs['prevision'] = log10(-dim.q)
+        args.apend(dim.upper)
 
         if dim.log:
-            dist = 'reciprocal'
+            dist = "reciprocal"
 
-    if isinstance(dim, (csh.NormalFloatHyperparameter, csh.NormalIntegerHyperparameter)):
-        if isinstance(dim, csh.NormalFloatHyperparameter):
+    if isinstance(dim, (NormalFloatHyperparameter, NormalIntegerHyperparameter)):
+        if isinstance(dim, NormalFloatHyperparameter):
             klass = Real
+        else:
+            kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
 
-        dist = 'norm'
+        dist = "norm"
         args.append(dim.mu)
         args.append(dim.sigma)
-        # kwargs['precision'] = log10(-dim.q)
 
         if dim.lower:
-            kwargs['low'] = dim.lower
-            kwargs['high'] = dim.upper
-
-    if isinstance(dim, csh.CategoricalHyperparameter):
-        klass = Categorical
-        choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
-        return klass(dim.name, choices)
+            kwargs["low"] = dim.lower
+            kwargs["high"] = dim.upper
 
     return klass(dim.name, dist, *args, **kwargs)
 
 
-def toorionspace(cspace):
+def toorionspace(cspace: ConfigurationSpace) -> Space:
     """Convert from orion space to configspace"""
     space = Space()
 

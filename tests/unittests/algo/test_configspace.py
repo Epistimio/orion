@@ -1,8 +1,7 @@
 import pytest
 
-
-from orion.algo.space import Space, Real, Integer, Categorical, Fidelity
-from orion.algo.space.configspace import toconfigspace, toorionspace, IMPORT_ERROR
+from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
+from orion.algo.space.configspace import IMPORT_ERROR, toconfigspace, toorionspace
 
 
 @pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
@@ -30,7 +29,7 @@ def test_orion_configspace():
     roundtrip = toorionspace(newspace)
 
     for k, original in space.items():
-        if k == 'f1':
+        if k == "f1":
             continue
 
         converted = roundtrip[k]
