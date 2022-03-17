@@ -14,6 +14,7 @@ import orion.core
 from orion.client import create_experiment
 from orion.executor.base import executor_factory
 from orion.storage.base import BaseStorageProtocol
+from orion.algo.base import algo_factory
 
 
 class Benchmark:
@@ -33,19 +34,11 @@ class Benchmark:
 
         - A `str` of the algorithm name
         - A `dict`, with only one key and one value, where key is the algorithm name and value is a dict for the algorithm config.
-        - A `dict`, with two keys.
-
-            algorithm: str or dict
-                Algorithm name in string or a dict with algorithm configure.
-            deterministic: bool, optional
-                True if it is a deterministic algorithm, then for each assessment, only one experiment
-                will be run for this algorithm.
 
         Examples:
 
         >>> ["random", "tpe"]
         >>> ["random", {"tpe": {"seed": 1}}]
-        >>> [{"algorithm": "random"}, {"algorithm": {"gridsearch": {"n_values": 50}}, "deterministic": True}]
 
     targets: list, optional
         Targets for the benchmark, each target will be a dict with two keys.
@@ -203,6 +196,7 @@ class Benchmark:
             algo if isinstance(algo, str) else next(iter(algo.keys()))
             for algo in self.algorithms
         )
+
         for algorithm in algorithms:
             if algorithm not in algorithm_names:
                 raise ValueError(
@@ -334,25 +328,15 @@ class Study:
 
         def __init__(self, algorithm):
             parameters = None
-            deterministic = False
 
             if isinstance(algorithm, dict):
-                if len(algorithm) > 1 or algorithm.get("algorithm"):
-                    deterministic = algorithm.get("deterministic", False)
-                    experiment_algorithm = algorithm["algorithm"]
-
-                    if isinstance(experiment_algorithm, dict):
-                        name, parameters = list(experiment_algorithm.items())[0]
-                    else:
-                        name = experiment_algorithm
-                else:
-                    name, parameters = list(algorithm.items())[0]
+                name, parameters = list(algorithm.items())[0]
             else:
                 name = algorithm
 
             self.algo_name = name
             self.parameters = parameters
-            self.deterministic = deterministic
+            self.deterministic = algo_factory.get_class(name).deterministic
 
         @property
         def name(self):

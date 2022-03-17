@@ -37,7 +37,7 @@ class TestAverageRank:
             experiment,
             _,
         ):
-            figure = ar1.analysis("task_name", [(0, experiment)])
+            figure = ar1.analysis("task_name", [experiment])
 
         assert (
             type(figure["AverageRank"]["task_name"]["rankings"])
@@ -55,7 +55,7 @@ class TestAverageRank:
         assert_rankings_plot(
             figure["AverageRank"]["task_name"]["rankings"],
             [
-                list(algorithm["algorithm"].keys())[0]
+                list(algorithm.keys())[0]
                 for algorithm in study_experiments_config["algorithms"]
             ],
             balanced=study_experiments_config["max_trial"],
@@ -85,7 +85,7 @@ class TestAverageResult:
             _,
             experiment,
         ):
-            figure = ar1.analysis("task_name", [(0, experiment)])
+            figure = ar1.analysis("task_name", [experiment])
 
         assert (
             type(figure["AverageResult"]["task_name"]["regrets"])
@@ -103,7 +103,7 @@ class TestAverageResult:
         assert_regrets_plot(
             figure["AverageResult"]["task_name"]["regrets"],
             [
-                list(algorithm["algorithm"].keys())[0]
+                list(algorithm.keys())[0]
                 for algorithm in study_experiments_config["algorithms"]
             ],
             balanced=study_experiments_config["max_trial"],
