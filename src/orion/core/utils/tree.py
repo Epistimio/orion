@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Callable, Generic, Iterable, Sequence, TypeVar
 
+# pylint: disable=invalid-name
 T = TypeVar("T", covariant=True)
 V = TypeVar("V")
 

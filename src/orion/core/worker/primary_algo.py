@@ -9,19 +9,15 @@ Performs checks and organizes required transformations of points.
 from __future__ import annotations
 
 import copy
-import typing
-from typing import Any, Optional
+from typing import Any, Optional, Generic, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.registry import Registry, RegistryMapping
 from orion.algo.space import Space
 from orion.core.worker.transformer import TransformedSpace
-
-if typing.TYPE_CHECKING:
-    from orion.core.worker.trial import Trial
+from orion.core.worker.trial import Trial
 
 from logging import getLogger as get_logger
-from typing import Generic, TypeVar
 
 logger = get_logger(__name__)
 
