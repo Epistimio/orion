@@ -328,15 +328,15 @@ retrieve individual benchmarks as well as a list of all your benchmarks.
         {
           "name": "branin_baselines",
           "algorithms": ["gridsearch", "random"],
-          "assessments": {"AverageResult": {"task_num": 2}},
+          "assessments": {"AverageResult": {"repetitions": 2}},
           "tasks": {"Branin": {"max_trials": 10}},
         },
         {
           "name": "another_benchmark",
           "algorithms": ["gridsearch", {"random": {"seed": 1}}],
           "assessments": {
-            "AverageRank": {"task_num": 2},
-            "AverageResult": {"task_num": 2},
+            "AverageRank": {"repetitions": 2},
+            "AverageResult": {"repetitions": 2},
           },
           "tasks": {
             "Branin": {"max_trials": 10},
@@ -368,7 +368,7 @@ retrieve individual benchmarks as well as a list of all your benchmarks.
         "name": "all_algos_webapi",
         "algorithms": ["gridsearch", {"random": {'seed': 1}}],
         "tasks": [{"Branin": {"max_trials": 5}}, {"RosenBrock": {"dim": 3, "max_trials": 5}}],
-        "assessments": [{"AverageResult": {"task_num": 3}}],
+        "assessments": [{"AverageResult": {"repetitions": 3}}],
         "analysis": {
           "AverageResult": {
             "Branin": <plotly json encoding>

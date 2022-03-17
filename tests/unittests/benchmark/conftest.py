@@ -33,8 +33,8 @@ def benchmark_config(benchmark_algorithms):
         "targets": [
             {
                 "assess": {
-                    "AverageResult": {"task_num": 2},
-                    "AverageRank": {"task_num": 2},
+                    "AverageResult": {"repetitions": 2},
+                    "AverageRank": {"repetitions": 2},
                 },
                 "task": {
                     "RosenBrock": {"dim": 3, "max_trials": 25},

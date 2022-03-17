@@ -61,15 +61,15 @@ class TestCollection:
             {
                 "name": "branin_baselines",
                 "algorithms": ["gridsearch", "random"],
-                "assessments": {"AverageResult": {"task_num": 2}},
+                "assessments": {"AverageResult": {"repetitions": 2}},
                 "tasks": {"Branin": {"max_trials": 10}},
             },
             {
                 "name": "another_benchmark",
                 "algorithms": ["gridsearch", {"random": {"seed": 1}}],
                 "assessments": {
-                    "AverageRank": {"task_num": 2},
-                    "AverageResult": {"task_num": 2},
+                    "AverageRank": {"repetitions": 2},
+                    "AverageResult": {"repetitions": 2},
                 },
                 "tasks": {
                     "Branin": {"max_trials": 10},
@@ -106,14 +106,15 @@ class TestItem:
         assert response.json["name"] == "branin_baselines"
         assert response.json["algorithms"] == ["gridsearch", "random"]
         assert response.json["tasks"] == [{"Branin": {"max_trials": 10}}]
-        assert response.json["assessments"] == [{"AverageResult": {"task_num": 2}}]
+        assert response.json["assessments"] == [{"AverageResult": {"repetitions": 2}}]
         assert "AverageResult" in response.json["analysis"]
         assert "Branin" in response.json["analysis"]["AverageResult"]
         _assert_plot_contains(
-            "gridsearch", response.json["analysis"]["AverageResult"]["Branin"]
+            "gridsearch",
+            response.json["analysis"]["AverageResult"]["Branin"]["regrets"],
         )
         _assert_plot_contains(
-            "random", response.json["analysis"]["AverageResult"]["Branin"]
+            "random", response.json["analysis"]["AverageResult"]["Branin"]["regrets"]
         )
 
     def test_benchmark_specific_assessment(self, client_with_benchmark):
@@ -129,8 +130,8 @@ class TestItem:
             {"EggHolder": {"dim": 4, "max_trials": 20}},
         ]
         assert response.json["assessments"] == [
-            {"AverageResult": {"task_num": 2}},
-            {"AverageRank": {"task_num": 2}},
+            {"AverageResult": {"repetitions": 2}},
+            {"AverageRank": {"repetitions": 2}},
         ]
         assert "AverageResult" in response.json["analysis"]
         assert "AverageRank" in response.json["analysis"]
@@ -142,8 +143,8 @@ class TestItem:
         assert response.status == "200 OK"
         assert response.json["name"] == "another_benchmark"
         assert response.json["assessments"] == [
-            {"AverageResult": {"task_num": 2}},
-            {"AverageRank": {"task_num": 2}},
+            {"AverageResult": {"repetitions": 2}},
+            {"AverageRank": {"repetitions": 2}},
         ]
         assert "AverageResult" in response.json["analysis"]
         assert "AverageRank" not in response.json["analysis"]
@@ -161,8 +162,8 @@ class TestItem:
             {"EggHolder": {"dim": 4, "max_trials": 20}},
         ]
         assert response.json["assessments"] == [
-            {"AverageResult": {"task_num": 2}},
-            {"AverageRank": {"task_num": 2}},
+            {"AverageResult": {"repetitions": 2}},
+            {"AverageRank": {"repetitions": 2}},
         ]
         assert "Branin" in response.json["analysis"]["AverageResult"]
         assert "CarromTable" in response.json["analysis"]["AverageResult"]
@@ -196,14 +197,15 @@ class TestItem:
             {"EggHolder": {"dim": 4, "max_trials": 20}},
         ]
         assert response.json["assessments"] == [
-            {"AverageResult": {"task_num": 2}},
-            {"AverageRank": {"task_num": 2}},
+            {"AverageResult": {"repetitions": 2}},
+            {"AverageRank": {"repetitions": 2}},
         ]
         _assert_plot_contains(
-            "gridsearch", response.json["analysis"]["AverageResult"]["Branin"]
+            "gridsearch",
+            response.json["analysis"]["AverageResult"]["Branin"]["regrets"],
         )
         _assert_plot_contains(
-            "random", response.json["analysis"]["AverageResult"]["Branin"]
+            "random", response.json["analysis"]["AverageResult"]["Branin"]["regrets"]
         )
 
         response = client_with_benchmark.simulate_get(
@@ -215,10 +217,11 @@ class TestItem:
         assert response.json["algorithms"] == ["gridsearch", {"random": {"seed": 1}}]
         with pytest.raises(AssertionError):
             _assert_plot_contains(
-                "gridsearch", response.json["analysis"]["AverageResult"]["Branin"]
+                "gridsearch",
+                response.json["analysis"]["AverageResult"]["Branin"]["regrets"],
             )
         _assert_plot_contains(
-            "random", response.json["analysis"]["AverageResult"]["Branin"]
+            "random", response.json["analysis"]["AverageResult"]["Branin"]["regrets"]
         )
 
         response = client_with_benchmark.simulate_get(
@@ -229,10 +232,10 @@ class TestItem:
         assert response.json["name"] == "another_benchmark"
         assert response.json["algorithms"] == ["gridsearch", {"random": {"seed": 1}}]
         _assert_plot_contains(
-            "gridsearch", response.json["analysis"]["AverageResult"]["Branin"]
+            "gridsearch", response.json["analysis"]["AverageResult"]["Branin"]['regrets']
         )
         _assert_plot_contains(
-            "random", response.json["analysis"]["AverageResult"]["Branin"]
+            "random", response.json["analysis"]["AverageResult"]["Branin"]['regrets']
         )
 
     # TODO: Test bad task

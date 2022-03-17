@@ -2,7 +2,7 @@
 Common code for verifying query parameters
 ==========================================
 """
-from typing import Optional
+from typing import Optional, List
 
 import falcon
 
@@ -124,7 +124,7 @@ def retrieve_benchmark(
     benchmark_name: str,
     assessment: Optional[str] = None,
     task: Optional[str] = None,
-    algorithms: Optional[list[str]] = None,
+    algorithms: Optional[List[str]] = None,
 ) -> Optional[Benchmark]:
     """
     Retrieve an benchmark from the database with the given name.

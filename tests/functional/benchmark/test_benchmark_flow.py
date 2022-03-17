@@ -52,9 +52,9 @@ class BirdLike(BenchmarkTask):
 @pytest.mark.usefixtures("orionstate")
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
-    task_num = 2
+    repetitions = 2
     max_trials = 10
-    assessments = [AverageResult(task_num), AverageRank(task_num)]
+    assessments = [AverageResult(repetitions), AverageRank(repetitions)]
     tasks = [
         Branin(max_trials),
         BirdLike(max_trials),
@@ -76,7 +76,7 @@ def test_simple():
 
     experiments = benchmark.experiments()
 
-    assert len(experiments) == len(algorithms) * task_num * len(assessments) * len(
+    assert len(experiments) == len(algorithms) * repetitions * len(assessments) * len(
         tasks
     )
 

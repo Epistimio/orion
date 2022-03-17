@@ -102,6 +102,7 @@ class Benchmark:
     def process(self, n_workers=1):
         """Run studies experiment"""
         if self._executor is None or self._executor_owner:
+            # TODO: Do the experiments really use the executor set here??
             with self.executor:
                 for study in self.studies:
                     study.execute(n_workers)
@@ -374,15 +375,15 @@ class Study:
     def setup_experiments(self):
         """Setup experiments to run of the study"""
         max_trials = self.task.max_trials
-        task_num = self.assessment.task_num
+        repetitions = self.assessment.repetitions
         space = self.task.get_search_space()
 
-        for task_index in range(task_num):
+        for repetition_index in range(repetitions):
 
             for algo_index, algorithm in enumerate(self.algorithms):
 
                 # Run only 1 experiment for deterministic algorithm
-                if algorithm.is_deterministic and task_index > 0:
+                if algorithm.is_deterministic and repetition_index > 0:
                     continue
 
                 experiment_name = (
@@ -392,13 +393,14 @@ class Study:
                     + "_"
                     + self.task_name
                     + "_"
-                    + str(task_index)
+                    + str(repetition_index)
                     + "_"
                     + str(algo_index)
                 )
 
                 executor = (
-                    self.assessment.get_executor(task_index) or self.benchmark.executor
+                    self.assessment.get_executor(repetition_index)
+                    or self.benchmark.executor
                 )
                 experiment = create_experiment(
                     experiment_name,
@@ -408,13 +410,13 @@ class Study:
                     storage=self.benchmark.storage,
                     executor=executor,
                 )
-                self.experiments_info.append(experiment)
+                self.experiments_info.append((repetition_index, experiment))
 
     def execute(self, n_workers=1):
         """Execute all the experiments of the study"""
         max_trials = self.task.max_trials
 
-        for experiment in self.get_experiments():
+        for _, experiment in self.get_experiments():
             # TODO: it is a blocking call
             if self.has_assesment_executor:
                 experiment.workon(self.task, max_trials=max_trials)
@@ -425,7 +427,7 @@ class Study:
         """Return status of the study"""
         algorithm_tasks = {}
 
-        for experiment in self.get_experiments():
+        for _, experiment in self.get_experiments():
             trials = experiment.fetch_trials()
 
             algorithm_name = list(experiment.configuration["algorithms"].keys())[0]
@@ -477,12 +479,12 @@ class Study:
         if algorithms is not None:
             algorithms = [algo_name.lower() for algo_name in algorithms]
         exps = []
-        for experiment in self.experiments_info:
+        for repetition_index, experiment in self.experiments_info:
             if (
                 algorithms is None
                 or type(experiment.algorithms.algorithm).__name__.lower() in algorithms
             ):
-                exps.append(experiment)
+                exps.append((repetition_index, experiment))
         return exps
 
     def __repr__(self):

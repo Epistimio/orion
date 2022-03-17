@@ -5,6 +5,8 @@ Helpers for building responses according to the specification
 Offers functions and attributes to generate response objects according to the API specification.
 
 """
+from typing import List
+
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.benchmark import Benchmark
@@ -135,7 +137,7 @@ def build_benchmark_response(
     benchmark: Benchmark,
     assessment: str = None,
     task: str = None,
-    algorithms: list[str] = None,
+    algorithms: List[str] = None,
 ):
     """
     Build the response representing an experiment response object according to the API
@@ -160,7 +162,9 @@ def build_benchmark_response(
     def convert_plotly_to_json(analysis):
         for study_name, study_analysis in analysis.items():
             for task_name, task_analysis in study_analysis.items():
-                analysis[study_name][task_name] = task_analysis.to_json()
+                analysis[study_name][task_name] = {
+                    key: figure.to_json() for key, figure in task_analysis.items()
+                }
         return analysis
 
     data = {
