@@ -6,6 +6,7 @@ Module responsible for the benchmarks/ REST endpoint
 Serves all the requests made to benchmarks/ REST endpoint.
 
 """
+import time
 import json
 from typing import Optional
 
