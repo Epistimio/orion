@@ -30,6 +30,7 @@ def test_orion_configspace():
     roundtrip = toorionspace(newspace)
 
     for k, original in space.items():
+        # ConfigSpace does not have a fidelity dimension
         if k == "f1":
             continue
 
