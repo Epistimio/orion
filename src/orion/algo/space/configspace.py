@@ -1,7 +1,16 @@
 from math import log10
 from typing import Optional
 
-from orion.algo.space import Categorical, Dimension, Integer, Real, Space, Visitor
+from orion.algo.space import (
+    Categorical,
+    Dimension,
+    Fidelity,
+    Integer,
+    Real,
+    Space,
+    Visitor,
+    to_orionspace,
+)
 
 try:
     from ConfigSpace import ConfigurationSpace
@@ -50,7 +59,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
         """Raise an error if the visitor is called on an abstract class"""
         raise NotImplementedError()
 
-    def real(self, dim: Dimension) -> Optional[FloatHyperparameter]:
+    def real(self, dim: Real) -> Optional[FloatHyperparameter]:
         """Convert a real dimension into a configspace equivalent"""
         if dim.prior_name in ("reciprocal", "uniform"):
             a, b = dim._args
@@ -80,7 +89,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
         return
 
-    def integer(self, dim: Dimension) -> Optional[IntegerHyperparameter]:
+    def integer(self, dim: Integer) -> Optional[IntegerHyperparameter]:
         """Convert a integer dimension into a configspace equivalent"""
         if dim.prior_name in ("int_uniform", "int_reciprocal"):
             a, b = dim._args
@@ -110,7 +119,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
         return None
 
-    def categorical(self, dim: Dimension) -> Optional[CategoricalHyperparameter]:
+    def categorical(self, dim: Categorical) -> Optional[CategoricalHyperparameter]:
         """Convert a categorical dimension into a configspace equivalent"""
         return CategoricalHyperparameter(
             name=dim.name,
@@ -118,7 +127,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
             weights=dim._probs,
         )
 
-    def fidelity(self, dim: Dimension) -> None:
+    def fidelity(self, dim: Fidelity) -> None:
         """Ignores fidelity dimension as configspace does not have an equivalent"""
         return None
 
@@ -137,7 +146,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
         return cspace
 
 
-def toconfigspace(space: Space) -> ConfigurationSpace:
+def to_configspace(space: Space) -> ConfigurationSpace:
     """Convert orion space to configspace
 
     Notes
@@ -150,7 +159,7 @@ def toconfigspace(space: Space) -> ConfigurationSpace:
     return conversion.space(space)
 
 
-def tooriondim(dim: Hyperparameter) -> Dimension:
+def to_oriondim(dim: Hyperparameter) -> Dimension:
     """Convert a config space hyperparameter to an orion dimension"""
 
     if isinstance(dim, CategoricalHyperparameter):
@@ -195,7 +204,8 @@ def tooriondim(dim: Hyperparameter) -> Dimension:
     return klass(dim.name, dist, *args, **kwargs)
 
 
-def toorionspace(cspace: ConfigurationSpace) -> Space:
+@to_orionspace.register
+def configpsace_to_orionspace(cspace: ConfigurationSpace) -> Space:
     """Convert from orion space to configspace
 
     Notes
@@ -206,7 +216,7 @@ def toorionspace(cspace: ConfigurationSpace) -> Space:
     space = Space()
 
     for _, cdim in cspace.get_hyperparameters_dict().items():
-        odim = tooriondim(cdim)
+        odim = to_oriondim(cdim)
         space.register(odim)
 
     return space

@@ -31,7 +31,8 @@ unless noted otherwise!
 import copy
 import logging
 import numbers
-from typing import Generic, TypeVar
+from functools import singledispatch
+from typing import Any, Generic, TypeVar
 
 import numpy
 from scipy.stats import distributions
@@ -96,16 +97,16 @@ class Visitor(Generic[T]):
     def dimension(self, dim: "Dimension") -> T:
         pass
 
-    def real(self, dim: "Dimension") -> T:
+    def real(self, dim: "Real") -> T:
         pass
 
-    def integer(self, dim: "Dimension") -> T:
+    def integer(self, dim: "Integer") -> T:
         pass
 
-    def categorical(self, dim: "Dimension") -> T:
+    def categorical(self, dim: "Categorical") -> T:
         pass
 
-    def fidelity(self, dim: "Dimension") -> T:
+    def fidelity(self, dim: "Fidelity") -> T:
         pass
 
 
@@ -1138,3 +1139,14 @@ class Space(dict):
         for dim in self.values():
             capacities *= dim.cardinality
         return capacities
+
+
+@singledispatch
+def to_orionspace(space: Any) -> Space:
+    """Convert a third party search space into an Orion compatible space
+
+    Raises
+    ------
+    NotImplementedError if no conversion was registered
+    """
+    raise NotImplementedError()
