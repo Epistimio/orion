@@ -91,23 +91,40 @@ T = TypeVar("T")
 
 
 class Visitor(Generic[T]):
+    """Visitor interface to iterate over an Orion search space.
+    This can be used to implement new features for ``orion.algo.space.Space``
+    outside of Orion's code base.
+
+    """
+
     def visit(self, dim: "Dimension") -> T:
+        """Make dimension call its handler"""
         return dim.visit(self)
 
     def dimension(self, dim: "Dimension") -> T:
+        """Called when the dimension does not have a decicated handler"""
         pass
 
     def real(self, dim: "Real") -> T:
+        """Called by real dimension"""
         pass
 
     def integer(self, dim: "Integer") -> T:
+        """Called by integer dimension"""
         pass
 
     def categorical(self, dim: "Categorical") -> T:
+        """Called by categorical dimension"""
         pass
 
     def fidelity(self, dim: "Fidelity") -> T:
+        """Called by fidelity dimension"""
         pass
+
+    def space(self, space: "Space") -> None:
+        """Iterate through a research space and visit each dimensions"""
+        for _, dim in space.items():
+            self.visit(dim)
 
 
 class Dimension:

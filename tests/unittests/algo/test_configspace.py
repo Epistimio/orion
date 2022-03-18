@@ -16,6 +16,7 @@ def test_orion_configspace():
     space.register(Real("r1f", "reciprocal", 1, 6))
     space.register(Real("u1f", "uniform", -3, 6))
     space.register(Real("u2f", "uniform", -3, 6))
+    space.register(Real("name.u2f", "uniform", -3, 6))
 
     space.register(Categorical("c1", ("asdfa", 2)))
     space.register(Categorical("c2", dict(a=0.2, b=0.8)))
