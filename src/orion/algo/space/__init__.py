@@ -32,7 +32,7 @@ import copy
 import logging
 import numbers
 from functools import singledispatch
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 import numpy
 from scipy.stats import distributions
@@ -87,39 +87,36 @@ def _to_snake_case(name: str) -> str:
     return "_".join(frags)
 
 
-T = TypeVar("T")
-
-
-class Visitor(Generic[T]):
+class Visitor:
     """Visitor interface to iterate over an Orion search space.
     This can be used to implement new features for ``orion.algo.space.Space``
     outside of Orion's code base.
 
     """
 
-    def visit(self, dim: "Dimension") -> T:
+    def visit(self, dim: "Dimension") -> Any:
         """Make dimension call its handler"""
         return dim.visit(self)
 
-    def dimension(self, dim: "Dimension") -> T:
+    def dimension(self, dim: "Dimension") -> Any:
         """Called when the dimension does not have a decicated handler"""
-        pass
+        raise NotImplementedError()
 
-    def real(self, dim: "Real") -> T:
+    def real(self, dim: "Real") -> Any:
         """Called by real dimension"""
-        pass
+        raise NotImplementedError()
 
-    def integer(self, dim: "Integer") -> T:
+    def integer(self, dim: "Integer") -> Any:
         """Called by integer dimension"""
-        pass
+        raise NotImplementedError()
 
-    def categorical(self, dim: "Categorical") -> T:
+    def categorical(self, dim: "Categorical") -> Any:
         """Called by categorical dimension"""
-        pass
+        raise NotImplementedError()
 
-    def fidelity(self, dim: "Fidelity") -> T:
+    def fidelity(self, dim: "Fidelity") -> Any:
         """Called by fidelity dimension"""
-        pass
+        raise NotImplementedError()
 
     def space(self, space: "Space") -> None:
         """Iterate through a research space and visit each dimensions"""
