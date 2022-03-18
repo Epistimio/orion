@@ -490,6 +490,22 @@ class Hyperband(BaseAlgorithm):
         if self.executed_times >= self.repetitions:
             return True
         # TODO: Shouldn't this be super().is_done?
+        fidelity_index = self.fidelity_index
+        assert fidelity_index is not None
+        n_observed_with_max_fidelity = 0
+        fidelity_dim = self.space[fidelity_index]
+        _, max_fidelity_value = fidelity_dim.interval()
+        for trial in self.registry.values():
+            if not self.registry.has_observed(trial):
+                continue
+            fidelity_value = trial.params[fidelity_index]
+            if fidelity_value >= max_fidelity_value:
+                n_observed_with_max_fidelity += 1
+
+        max_trials: int | float = getattr(self, "max_trials", float("inf"))
+        if n_observed_with_max_fidelity >= max_trials:
+            # NOTE: Never get here during tests..
+            return True
         return False
 
 
