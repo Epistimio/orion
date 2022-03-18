@@ -32,7 +32,7 @@ import copy
 import logging
 import numbers
 from functools import singledispatch
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import numpy
 from scipy.stats import distributions
@@ -41,6 +41,19 @@ from orion.core.utils import float_to_digits_list, format_trials
 from orion.core.utils.flatten import flatten
 
 logger = logging.getLogger(__name__)
+
+
+__all__ = [
+    "check_random_state",
+    "Visitor",
+    "Dimension",
+    "Real",
+    "Integer",
+    "Categorical",
+    "Fidelity",
+    "Space",
+    "to_orionspace",
+]
 
 
 def check_random_state(seed):
@@ -87,36 +100,39 @@ def _to_snake_case(name: str) -> str:
     return "_".join(frags)
 
 
-class Visitor:
+T = TypeVar("T")
+
+
+class Visitor(Generic[T]):
     """Visitor interface to iterate over an Orion search space.
     This can be used to implement new features for ``orion.algo.space.Space``
     outside of Orion's code base.
 
     """
 
-    def visit(self, dim: "Dimension") -> Any:
+    def visit(self, dim: "Dimension") -> T:
         """Make dimension call its handler"""
         return dim.visit(self)
 
-    def dimension(self, dim: "Dimension") -> Any:
+    def dimension(self, dim: "Dimension") -> T:
         """Called when the dimension does not have a decicated handler"""
-        raise NotImplementedError()
+        pass
 
-    def real(self, dim: "Real") -> Any:
+    def real(self, dim: "Real") -> T:
         """Called by real dimension"""
-        raise NotImplementedError()
+        pass
 
-    def integer(self, dim: "Integer") -> Any:
+    def integer(self, dim: "Integer") -> T:
         """Called by integer dimension"""
-        raise NotImplementedError()
+        pass
 
-    def categorical(self, dim: "Categorical") -> Any:
+    def categorical(self, dim: "Categorical") -> T:
         """Called by categorical dimension"""
-        raise NotImplementedError()
+        pass
 
-    def fidelity(self, dim: "Fidelity") -> Any:
+    def fidelity(self, dim: "Fidelity") -> T:
         """Called by fidelity dimension"""
-        raise NotImplementedError()
+        pass
 
     def space(self, space: "Space") -> None:
         """Iterate through a research space and visit each dimensions"""

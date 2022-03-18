@@ -48,7 +48,7 @@ def _qantization(dim: Dimension) -> float:
     return None
 
 
-class ToConfigSpace(Visitor):
+class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
     """Convert an Orion space into a configspace"""
 
     def __init__(self) -> None:
