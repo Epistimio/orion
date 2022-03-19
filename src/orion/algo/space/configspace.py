@@ -205,7 +205,7 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
 
 
 @to_orionspace.register
-def configpsace_to_orionspace(cspace: ConfigurationSpace) -> Space:
+def configspace_to_orionspace(cspace: ConfigurationSpace) -> Space:
     """Convert from orion space to configspace
 
     Notes
