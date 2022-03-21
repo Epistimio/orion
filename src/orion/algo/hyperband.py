@@ -373,7 +373,7 @@ class Hyperband(BaseAlgorithm):
 
         Returns
         -------
-        list of `Trial` or None
+        list of `orion.core.worker.trial:Trial` or None
             A list of trials suggested by the algorithm. The algorithm may opt out if it cannot make
             a good suggestion at the moment (it may be waiting for other trials to complete), in
             which case it will return None.
