@@ -25,6 +25,7 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.serving",
     "orion.storage",
     "orion.testing",
+    "orion.typing",
 ]
 
 extras_require = {

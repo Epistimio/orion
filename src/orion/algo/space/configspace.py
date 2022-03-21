@@ -30,15 +30,20 @@ try:
 except ImportError as err:
     IMPORT_ERROR = err
 
-    IntegerHyperparameter = object()
-    FloatHyperparameter = object()
-    ConfigurationSpace = object()
-    Hyperparameter = object()
-    UniformFloatHyperparameter = object()
-    NormalFloatHyperparameter = object()
-    UniformIntegerHyperparameter = object()
-    NormalIntegerHyperparameter = object()
-    CategoricalHyperparamete = object()
+    class DummyType:
+        """Dummy type for type hints"""
+
+        pass
+
+    IntegerHyperparameter = DummyType
+    FloatHyperparameter = DummyType
+    ConfigurationSpace = DummyType
+    Hyperparameter = DummyType
+    UniformFloatHyperparameter = DummyType
+    NormalFloatHyperparameter = DummyType
+    UniformIntegerHyperparameter = DummyType
+    NormalIntegerHyperparameter = DummyType
+    CategoricalHyperparameter = DummyType
 
 
 def _qantization(dim: Dimension) -> float:
@@ -205,7 +210,7 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
 
 
 @to_orionspace.register
-def configpsace_to_orionspace(cspace: ConfigurationSpace) -> Space:
+def configspace_to_orionspace(cspace: ConfigurationSpace) -> Space:
     """Convert from orion space to configspace
 
     Notes
