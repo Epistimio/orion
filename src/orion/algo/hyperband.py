@@ -491,19 +491,16 @@ class Hyperband(BaseAlgorithm):
             return True
         fidelity_index = self.fidelity_index
         assert fidelity_index is not None
-        n_observed_with_max_fidelity = 0
+        n_suggested_with_max_fidelity = 0
         fidelity_dim = self.space[fidelity_index]
         _, max_fidelity_value = fidelity_dim.interval()
         for trial in self.registry.values():
-            if not self.registry.has_observed(trial):
-                continue
             fidelity_value = trial.params[fidelity_index]
             if fidelity_value >= max_fidelity_value:
-                n_observed_with_max_fidelity += 1
-        if n_observed_with_max_fidelity >= self.space.cardinality:
-            # NOTE: Never get here during tests..
+                n_suggested_with_max_fidelity += 1
+        if n_suggested_with_max_fidelity >= self.space.cardinality:
             return True
-        # NOTE: this doesn't fall back to super().is_done. TODO: @bouthilx why?
+        # NOTE: this doesn't fall back to super().is_done
         return False
 
 

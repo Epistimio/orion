@@ -224,25 +224,24 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
     @property
     def is_done(self):
         """Return True, if an algorithm holds that there can be no further improvement."""
-        if self.n_suggested >= self.original_space.cardinality:
-            return True
-
+        n_suggested = self.n_suggested
         fidelity_index = self.fidelity_index
         if fidelity_index is not None:
-            space_cardinality = self.space.cardinality
-            n_observed_with_max_fidelity = 0
+            # When there is a fidelity dimension, we only count the trials with the max fidelity
+            # value when comparing to the space cardinality, i.e., the algo is done if it has
+            # suggested all points of the space, with the maximum fidelity value.
+            n_suggested_with_max_fidelity = 0
             fidelity_dim = self.original_space[fidelity_index]
             _, max_fidelity_value = fidelity_dim.interval()
             for trial in self.registry.values():
-                if not self.has_observed(trial):
-                    continue
                 fidelity_value = trial.params[fidelity_index]
                 if fidelity_value >= max_fidelity_value:
-                    n_observed_with_max_fidelity += 1
-            if n_observed_with_max_fidelity > space_cardinality:
-                return True
+                    n_suggested_with_max_fidelity += 1
+            n_suggested = n_suggested_with_max_fidelity
+        if n_suggested >= self.original_space.cardinality:
+            return True
 
-        elif hasattr(self, "max_trials"):
+        if hasattr(self, "max_trials"):
             max_trials: int | float = self.max_trials  # type: ignore
             if self.n_observed > max_trials:
                 return True
