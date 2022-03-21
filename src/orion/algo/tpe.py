@@ -337,7 +337,6 @@ class TPE(BaseAlgorithm):
         num: int, optional
             Number of trials to sample. If None, TPE will sample all random trials at once, or a
             single trial if it is at the Bayesian Optimization stage.
-        :param num: how many sets to be suggested.
 
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
@@ -346,24 +345,25 @@ class TPE(BaseAlgorithm):
         # NOTE: Making this explicit for now:
         assert num is not None
         # Only sample up to `n_initial_points` and after that only sample one at a time.
-        num = min(num, max(self.n_initial_points - self.n_suggested, 1))
+        num_samples = min(num, max(self.n_initial_points - self.n_suggested, 1))
 
         samples: list[Trial] = []
-        candidates: list[Trial] = []
-        while len(samples) < num and self.n_suggested < self.space.cardinality:
-            if candidates:
-                candidate = candidates.pop(0)
+        while len(samples) < num_samples and self.n_suggested < self.space.cardinality:
+            if self.n_observed < self.n_initial_points:
+                candidates = self._suggest_random(num_samples)
+                logger.debug("Random candidates: %s", candidates)
+            else:
+                v = max(num_samples - len(samples), 0)
+                candidates = self._suggest_bo(v)
+                logger.debug("BO candidates: %s", candidates)
+
+            if not candidates:
+                # Perhaps the BO algo wasn't able to suggest any points? Break in that case.
+                break
+            for candidate in candidates:
                 if candidate:
                     self.register(candidate)
                     samples.append(candidate)
-            elif self.n_observed < self.n_initial_points:
-                candidates = self._suggest_random(num)
-            else:
-                candidates = self._suggest_bo(max(num - len(samples), 0))
-
-            if not candidates:
-                break
-
         return samples
 
     def _suggest(
