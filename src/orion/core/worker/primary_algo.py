@@ -227,23 +227,24 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
         if self.n_suggested >= self.original_space.cardinality:
             return True
 
-        if hasattr(self, "max_trials"):
-            max_trials: int | float = self.max_trials  # type: ignore
+        fidelity_index = self.fidelity_index
+        if fidelity_index is not None:
+            space_cardinality = self.space.cardinality
+            n_observed_with_max_fidelity = 0
+            fidelity_dim = self.original_space[fidelity_index]
+            _, max_fidelity_value = fidelity_dim.interval()
+            for trial in self.registry.values():
+                if not self.has_observed(trial):
+                    continue
+                fidelity_value = trial.params[fidelity_index]
+                if fidelity_value >= max_fidelity_value:
+                    n_observed_with_max_fidelity += 1
+            if n_observed_with_max_fidelity > space_cardinality:
+                return True
 
-            fidelity_index = self.fidelity_index
-            if fidelity_index is not None:
-                n_observed_with_max_fidelity = 0
-                fidelity_dim = self.original_space[fidelity_index]
-                _, max_fidelity_value = fidelity_dim.interval()
-                for trial in self.registry.values():
-                    if not self.has_observed(trial):
-                        continue
-                    fidelity_value = trial.params[fidelity_index]
-                    if fidelity_value >= max_fidelity_value:
-                        n_observed_with_max_fidelity += 1
-                if n_observed_with_max_fidelity > max_trials:
-                    return True
-            elif self.n_observed > max_trials:
+        elif hasattr(self, "max_trials"):
+            max_trials: int | float = self.max_trials  # type: ignore
+            if self.n_observed > max_trials:
                 return True
         return self.algorithm.is_done
 

@@ -486,10 +486,9 @@ class Hyperband(BaseAlgorithm):
 
     @property
     def is_done(self) -> bool:
-        """Return True, if all required execution been done."""
+        """Return True, if all required execution has been done."""
         if self.executed_times >= self.repetitions:
             return True
-        # TODO: Shouldn't this be super().is_done?
         fidelity_index = self.fidelity_index
         assert fidelity_index is not None
         n_observed_with_max_fidelity = 0
@@ -501,11 +500,10 @@ class Hyperband(BaseAlgorithm):
             fidelity_value = trial.params[fidelity_index]
             if fidelity_value >= max_fidelity_value:
                 n_observed_with_max_fidelity += 1
-
-        max_trials: int | float = getattr(self, "max_trials", float("inf"))
-        if n_observed_with_max_fidelity >= max_trials:
+        if n_observed_with_max_fidelity >= self.space.cardinality:
             # NOTE: Never get here during tests..
             return True
+        # NOTE: this doesn't fall back to super().is_done. TODO: @bouthilx why?
         return False
 
 
