@@ -119,7 +119,7 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
         if transformed_trials is None:
             return None
 
-        trials = []
+        trials: list[Trial] = []
         for transformed_trial in transformed_trials:
             if transformed_trial not in self.transformed_space:
                 raise ValueError(

@@ -200,8 +200,6 @@ class BaseAlgoTests:
             orion.algo.base.BaseAlgorithm
         ] = orion.algo.base.algo_factory.get_class(self.algo_name)
         original_space = space or self.create_space()
-        from orion.core.worker.transformer import build_required_space
-
         transformed_space = build_required_space(
             original_space=original_space,
             type_requirement=base_algo_type.requires_type,
