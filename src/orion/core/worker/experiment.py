@@ -7,6 +7,7 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
+import contextlib
 import copy
 import datetime
 import inspect
@@ -386,6 +387,60 @@ class Experiment:
         trial.exp_working_dir = self.working_dir
 
         self._storage.register_trial(trial)
+
+    @contextlib.contextmanager
+    def acquire_algorithm_lock(self, timeout=60, retry_interval=1):
+        """Acquire lock on algorithm
+
+        This method should be called using a ``with``-clause.
+
+        The context manager returns the algorithm object with its state updated
+        based on the state loaded from storage.
+
+        Upon leaving the context manager, the new state of the algorithm is saved back
+        to the storage before releasing the lock.
+
+        Parameters
+        ----------
+        timeout: int, optional
+            Timeout for the acquisition of the lock. If the lock is not
+            obtained before ``timeout``, then ``LockAcquisitionTimeout`` is raised.
+            The timeout is only for the acquisition of the lock.
+            Once the lock is obtained, it is valid until the context manager is closed.
+            Default: 600.
+        retry_interval: int, optional
+            Sleep time between each attempts at acquiring the lock. Default: 1
+
+        Raises
+        ------
+        ``RuntimeError``
+            The algorithm configuration is different then the one during last execution of that
+            same experiment.
+        ``orion.storage.base.LockAcquisitionTimeout``
+            The lock could not be obtained in less than ``timeout`` seconds.
+        """
+
+        self._check_if_writable()
+
+        with self._storage.acquire_algorithm_lock(
+            experiment=self, timeout=timeout, retry_interval=retry_interval
+        ) as locked_algorithm_state:
+            if locked_algorithm_state.configuration != self.algorithms.configuration:
+                log.warning(
+                    "Saved configuration: %s", locked_algorithm_state.configuration
+                )
+                log.warning("Current configuration: %s", self.algorithms.configuration)
+                raise RuntimeError(
+                    "Algorithm configuration changed since last experiment execution. "
+                    "Algorithm cannot be resumed with a different configuration. "
+                )
+
+            if locked_algorithm_state.state:
+                self.algorithms.set_state(locked_algorithm_state.state)
+
+            yield self.algorithms
+
+            locked_algorithm_state.set_state(self.algorithms.state_dict)
 
     def _select_evc_call(self, with_evc_tree, function, *args, **kwargs):
         if self._node is not None and with_evc_tree:

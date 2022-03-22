@@ -156,6 +156,10 @@ class PoolExecutor(BaseExecutor):
     backend: str
         Pool backend to use; thread or multiprocess, defaults to multiprocess
 
+    .. warning::
+
+       Pickling of the executor is not supported, see Dask for a backend that supports it
+
     """
 
     BACKENDS = dict(
@@ -165,25 +169,34 @@ class PoolExecutor(BaseExecutor):
         loky=Pool,  # TODO: For compatibility with joblib backend. Remove in v0.4.0.
     )
 
-    def __init__(self, n_workers, backend="multiprocess", **kwargs):
-        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
+    def __init__(self, n_workers=-1, backend="multiprocess", **kwargs):
         super().__init__(n_workers, **kwargs)
+
+        if n_workers <= 0:
+            n_workers = multiprocessing.cpu_count()
+
+        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
+
+    def __setstate__(self, state):
+        self.pool = state["pool"]
+
+    def __getstate__(self):
+        return dict(pool=self.pool)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.pool.shutdown()
+        self.close()
 
     def __del__(self):
-        self.pool.shutdown()
+        self.close()
 
-    def __getstate__(self):
-        state = super(PoolExecutor, self).__getstate__()
-        return state
-
-    def __setstate__(self, state):
-        super(PoolExecutor, self).__setstate__(state)
+    def close(self):
+        # This is necessary because if the factory constructor fails
+        # __del__ is executed right away but pool might not be set
+        if hasattr(self, "pool"):
+            self.pool.shutdown()
 
     def submit(self, function, *args, **kwargs):
         try:

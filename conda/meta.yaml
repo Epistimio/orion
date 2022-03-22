@@ -17,6 +17,7 @@ requirements:
     - pytest-runner
     - appdirs
   run:
+    - cloudpickle
     - dataclasses
     - python
     - numpy
@@ -32,6 +33,7 @@ requirements:
     - requests
     - pandas
     - falcon
+    - falcon-cors
     - gunicorn
     - scikit-learn
     - psutil

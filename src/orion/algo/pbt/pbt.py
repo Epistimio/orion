@@ -446,7 +446,6 @@ class PBT(BaseAlgorithm):
             self.has_suggested(new_trial)
             and time.perf_counter() - start > self.fork_timeout
         ):
-            # TODO: Replace with SuggestionTimeout or relevant Exception based on PR #684.
             raise RuntimeError(
                 f"Could not generate unique new parameters for trial {trial.id} in "
                 f"less than {self.fork_timeout} seconds. Attempted {attempts} times."
@@ -476,8 +475,6 @@ class PBT(BaseAlgorithm):
     def _queue_trials_for_promotions(self, trials):
         """Queue trials if they are completed or ancestor trials if they are broken."""
         for trial in trials:
-            # TODO: On resumption, broken trials will be observed and will lead
-            #       to retry. This is because jumps are lost.
             if trial.status == "broken":
                 # Branch again from trial that lead to this broken one.
                 lineage_to_retry = self.lineages.get_lineage(trial).get_true_ancestor()
@@ -512,7 +509,6 @@ class PBT(BaseAlgorithm):
            Trials from a `orion.algo.space.Space`.
 
         """
-        # TODO: Jumps are lost during resumption. Need to save algo state to conserve them.
         trials_to_verify = self._triage(trials)
         self._queue_trials_for_promotions(trials_to_verify)
 

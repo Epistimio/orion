@@ -32,9 +32,10 @@ def benchmark(benchmark_algorithms):
 @pytest.fixture
 def study(benchmark, benchmark_algorithms):
     """Return a study instance"""
-    return Study(
-        benchmark, benchmark_algorithms, AverageResult(2), RosenBrock(25, dim=3)
-    )
+    with benchmark.executor:
+        yield Study(
+            benchmark, benchmark_algorithms, AverageResult(2), RosenBrock(25, dim=3)
+        )
 
 
 class TestBenchmark:
@@ -134,7 +135,10 @@ class TestBenchmark:
             figures = benchmark.analysis()
 
             assert len(figures) == 1
-            assert type(figures[0]) is plotly.graph_objects.Figure
+            assert (
+                type(figures[study.assess_name][study.task_name]["regrets"])
+                is plotly.graph_objects.Figure
+            )
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_experiments(
@@ -280,9 +284,12 @@ class TestStudy:
 
             study.experiments_info = experiments
 
-            plot = study.analysis()
+            figure = study.analysis()
 
-            assert type(plot) is plotly.graph_objects.Figure
+            assert (
+                type(figure[study.assess_name][study.task_name]["regrets"])
+                is plotly.graph_objects.Figure
+            )
 
     def test_experiments(self, study, study_experiments_config, task_number):
         """Test to get experiments of a study"""
@@ -296,4 +303,4 @@ class TestStudy:
             assert (
                 len(experiments) == study_experiments_config["task_number"] * algo_num
             )
-            assert isinstance(experiments[0], Experiment)
+            assert isinstance(experiments[0], ExperimentClient)

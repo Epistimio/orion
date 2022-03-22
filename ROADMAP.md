@@ -1,25 +1,20 @@
 # Roadmap
-Last update Nov 23rd, 2021
+Last update March 7th, 2022
 
 ## Next releases - Short-Term
 
-### v0.2.2
-
-- New master process to enhance parallelisation efficiency.
-- [PBT](https://arxiv.org/abs/1711.09846)
-
-### v0.2.3
-
-- Use shared algo serialization instead of replications to enhance parallelisation efficiency.
-- [DEBH](https://arxiv.org/abs/2105.09821)
-
 ### v0.2.4
 
+- [DEBH](https://arxiv.org/abs/2105.09821)
 - [HEBO](https://github.com/huawei-noah/HEBO/tree/master/HEBO/archived_submissions/hebo)
-
-### v0.2.5
-
 - [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
+- [Nevergrad](https://github.com/facebookresearch/nevergrad)
+- [Ax](https://ax.dev/)
+- [MOFA](https://github.com/Epistimio/orion.algo.mofa)
+- [PB2](https://github.com/Epistimio/orion.algo.pb2)
+- Integration with Hydra
+- Integration with [sample-space](https://github.com/Epistimio/sample-space) and
+  [ConfigSpace](https://automl.github.io/ConfigSpace/master/)
 
 ## Next releases - Mid-Term
 

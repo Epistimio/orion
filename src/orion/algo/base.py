@@ -310,9 +310,11 @@ class BaseAlgorithm:
             True if the trial's objective was observed by the algo, False otherwise.
 
         """
-        return (
-            self.get_id(trial) in self._trials_info
-            and self._trials_info[self.get_id(trial)][1] is not None
+        if not self.has_suggested(trial):
+            return False
+        return self._trials_info[self.get_id(trial)][0].status in (
+            "broken",
+            "completed",
         )
 
     @property

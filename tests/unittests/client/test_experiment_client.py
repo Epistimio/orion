@@ -11,7 +11,7 @@ import pandas.testing
 import pytest
 
 import orion.core
-from orion.client.experiment import AlreadyReleased, reserve_trial
+from orion.client.experiment import reserve_trial
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.utils.exceptions import (
@@ -21,7 +21,7 @@ from orion.core.utils.exceptions import (
     ReservationTimeout,
     WaitingForTrials,
 )
-from orion.core.worker.trial import Trial
+from orion.core.worker.trial import AlreadyReleased, Trial
 from orion.executor.base import ExecutorClosed, executor_factory
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
@@ -674,7 +674,7 @@ class TestSuggest:
 
         def opt_out(num=1):
             """Never suggest a new trial"""
-            return None
+            return []
 
         monkeypatch.setattr(orion.core.config.worker, "reservation_timeout", -1)
 

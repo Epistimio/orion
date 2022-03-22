@@ -248,9 +248,7 @@ def build_experiment(
                 "repository."
             ) from e
 
-    producer = Producer(experiment)
-
-    return ExperimentClient(experiment, producer, executor, heartbeat)
+    return ExperimentClient(experiment, executor, heartbeat)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
@@ -269,7 +267,6 @@ def get_experiment(name, version=None, mode="r", storage=None):
         'r': read access only
         'w': can read and write to database
         Default is 'r'
-
     storage: dict, optional
         Configuration of the storage backend.
 
@@ -285,7 +282,7 @@ def get_experiment(name, version=None, mode="r", storage=None):
     setup_storage(storage)
     assert mode in set("rw")
     experiment = experiment_builder.load(name, version, mode)
-    return ExperimentClient(experiment, None)
+    return ExperimentClient(experiment)
 
 
 def workon(

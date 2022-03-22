@@ -750,3 +750,20 @@ class Track(BaseStorageProtocol):  # noqa: F811
         self.backend.log_trial_metadata(
             trial.storage, heartbeat=to_epoch(datetime.datetime.utcnow())
         )
+
+    def _initialize_algorithm_lock(self, experiment_id):
+        raise NotImplementedError
+        return self._db.write(
+            "algo",
+            {
+                "experiment": experiment_id,
+                "locked": 0,
+                "v": 0,
+                "state": None,
+                "heartbeat": datetime.datetime.utcnow(),
+            },
+        )
+
+    def acquire_algorithm_lock(self, experiment, timeout=60, retry_interval=1):
+        """See :func:`orion.storage.base.BaseStorageProtocol.acquire_algorithm_lock`"""
+        raise NotImplementedError

@@ -11,10 +11,10 @@ from orion.core.worker.transformer import build_required_space
 
 
 @pytest.fixture()
-def palgo(dumbalgo, space, fixed_suggestion):
+def palgo(dumbalgo, space, fixed_suggestion_value):
     """Set up a SpaceTransformAlgoWrapper with dumb configuration."""
     algo_config = {
-        "value": fixed_suggestion,
+        "value": fixed_suggestion_value,
     }
     palgo = SpaceTransformAlgoWrapper(dumbalgo, space, **algo_config)
 
@@ -51,13 +51,13 @@ class TestSpaceTransformAlgoWrapperWraps(object):
         # Transformed point is in transformed space
         palgo._verify_trial(ttrial, space=tspace)
 
-    def test_init_and_configuration(self, dumbalgo, palgo, fixed_suggestion):
+    def test_init_and_configuration(self, dumbalgo, palgo, fixed_suggestion_value):
         """Check if initialization works."""
         assert isinstance(palgo.algorithm, dumbalgo)
         assert palgo.configuration == {
             "dumbalgo": {
                 "seed": None,
-                "value": fixed_suggestion,
+                "value": fixed_suggestion_value,
                 "scoring": 0,
                 "judgement": None,
                 "suspend": False,
@@ -78,6 +78,7 @@ class TestSpaceTransformAlgoWrapperWraps(object):
         assert [trial.params for trial in palgo.suggest(4)] == [
             fixed_suggestion.params
         ] * 4
+        fixed_suggestion_value = fixed_suggestion
         palgo.algorithm.possible_values = [fixed_suggestion]
         del fixed_suggestion._params[-1]
         with pytest.raises(ValueError, match="not contained in space"):

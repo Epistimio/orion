@@ -10,9 +10,8 @@ import versioneer
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
-
-tests_require = ["pytest>=3.0.0", "scikit-learn"]
-
+with open("tests/requirements.txt") as f:
+    tests_require = f.readlines()
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
@@ -28,6 +27,14 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.testing",
 ]
 
+extras_require = {
+    "test": tests_require,
+    "dask": ["dask[complete]"],
+    "track": ["track @ git+https://github.com/Delaunay/track"],
+    "profet": ["emukit", "GPy", "torch", "pybnn"],
+}
+extras_require["all"] = list(set(sum(extras_require.values(), [])))
+
 setup_args = dict(
     name="orion",
     version=versioneer.get_version(),
@@ -37,7 +44,7 @@ setup_args = dict(
         os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
-    author=u"Epistímio",
+    author="Epistímio",
     author_email="xavier.bouthillier@umontreal.ca",
     url="https://github.com/epistimio/orion",
     packages=packages,
@@ -72,7 +79,8 @@ setup_args = dict(
         ],
     },
     install_requires=[
-        "dataclasses",
+        "cloudpickle",
+        "dataclasses;python_version<'3.7'",
         "PyYAML",
         "pymongo>=3",
         "numpy",
@@ -95,7 +103,7 @@ setup_args = dict(
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
-    extras_require=dict(test=tests_require, dask=["dask[complete]"]),
+    extras_require=extras_require,
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
     zip_safe=False,

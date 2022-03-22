@@ -20,14 +20,47 @@ from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.producer import Producer
 from orion.testing.state import OrionState
 
+base_experiment = {
+    "name": "default_name",
+    "version": 0,
+    "metadata": {
+        "user": "default_user",
+        "user_script": "abc",
+        "priors": {"x": "uniform(0, 10)"},
+        "datetime": "2017-11-23T02:00:00",
+        "orion_version": "XYZ",
+    },
+    "algorithms": {"random": {"seed": 1}},
+}
+
+base_trial = {
+    "experiment": "default_name",
+    "status": "new",  # new, reserved, suspended, completed, broken
+    "worker": None,
+    "submit_time": "2017-11-23T02:00:00",
+    "start_time": None,
+    "end_time": None,
+    "heartbeat": None,
+    "results": [],
+    "params": [],
+}
+
 
 def default_datetime():
     """Return default datetime"""
     return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
-def generate_trials(trial_config, statuses, exp_config=None):
+all_status = ["completed", "broken", "reserved", "interrupted", "suspended", "new"]
+
+
+def generate_trials(trial_config=None, statuses=None, exp_config=None, max_attemtps=50):
     """Generate Trials with different configurations"""
+    if trial_config is None:
+        trial_config = base_trial
+
+    if statuses is None:
+        statuses = all_status
 
     def _generate(obj, *args, value):
         if obj is None:
@@ -62,11 +95,25 @@ def generate_trials(trial_config, statuses, exp_config=None):
         space = SpaceBuilder().build({"x": "uniform(0, 200)"})
 
     # make each trial unique
-    for i, trial in enumerate(new_trials):
+    sampled = set()
+    i = 0
+    for trial in new_trials:
         if trial["status"] == "completed":
             trial["results"].append({"name": "loss", "type": "objective", "value": i})
 
         trial_stub = space.sample(seed=i)[0]
+        attempts = 0
+        while trial_stub.id in sampled and attempts < max_attemtps:
+            trial_stub = space.sample(seed=i)[0]
+            attempts += 1
+            i += 1
+
+        if attempts >= max_attemtps:
+            raise RuntimeError(
+                f"Cannot sample unique trials in less than {max_attemtps}"
+            )
+
+        sampled.add(trial_stub.id)
         trial["params"] = trial_stub.to_dict()["params"]
 
     return new_trials
@@ -101,17 +148,29 @@ def generate_benchmark_experiments_trials(
 
 @contextmanager
 def create_study_experiments(
-    exp_config, trial_config, algorithms, task_number, max_trial
+    exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
 ):
     gen_exps, gen_trials = generate_benchmark_experiments_trials(
-        algorithms, exp_config, trial_config, task_number, max_trial
+        algorithms, exp_config, trial_config, task_number * len(n_workers), max_trial
     )
+
+    from orion.client.experiment import ExperimentClient
+    from orion.executor.joblib_backend import Joblib
+
+    workers = []
+    for _ in range(task_number):
+        for worker in n_workers:
+            for _ in range(len(algorithms)):
+                workers.append(worker)
     with OrionState(experiments=gen_exps, trials=gen_trials):
         experiments = []
         experiments_info = []
-        for i in range(task_number * len(algorithms)):
+        for i in range(task_number * len(n_workers) * len(algorithms)):
             experiment = experiment_builder.build("experiment-name-{}".format(i))
-            experiments.append(experiment)
+
+            executor = Joblib(n_workers=workers[i], backend="threading")
+            client = ExperimentClient(experiment, executor=executor)
+            experiments.append(client)
 
         for index, exp in enumerate(experiments):
             experiments_info.append((int(index / task_number), exp))
@@ -157,7 +216,7 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
         experiment = experiment_builder.build(name=exp_config["name"])
         if cfg.trials:
             experiment._id = cfg.trials[0]["experiment"]
-        client = ExperimentClient(experiment, Producer(experiment))
+        client = ExperimentClient(experiment)
         yield cfg, experiment, client
 
     client.close()

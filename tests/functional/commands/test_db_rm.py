@@ -53,37 +53,85 @@ def test_confirm_name(monkeypatch, single_with_trials):
 
 def test_one_exp(single_with_trials):
     """Test that one exp is deleted properly"""
-    assert len(get_storage().fetch_experiments({})) == 1
+    experiments = get_storage().fetch_experiments({})
+    assert len(experiments) == 1
     assert len(get_storage()._fetch_trials({})) > 0
+    assert get_storage().get_algorithm_lock_info(uid=experiments[-1]["_id"]) is not None
     execute("db rm -f test_single_exp")
     assert len(get_storage().fetch_experiments({})) == 0
     assert len(get_storage()._fetch_trials({})) == 0
+    assert get_storage().get_algorithm_lock_info(uid=experiments[-1]["_id"]) is None
 
 
 def test_rm_all_evc(three_family_branch_with_trials):
     """Test that deleting root removes all experiments"""
-    assert len(get_storage().fetch_experiments({})) == 3
+    experiments = get_storage().fetch_experiments({})
+    assert len(experiments) == 3
     assert len(get_storage()._fetch_trials({})) > 0
+    for experiment in experiments:
+        assert (
+            get_storage().get_algorithm_lock_info(uid=experiments[-1]["_id"])
+            is not None
+        )
     execute("db rm -f test_double_exp --version 1")
     assert len(get_storage().fetch_experiments({})) == 0
     assert len(get_storage()._fetch_trials({})) == 0
+    for experiment in experiments:
+        assert get_storage().get_algorithm_lock_info(uid=experiments[-1]["_id"]) is None
 
 
 def test_rm_under_evc(three_family_branch_with_trials):
     """Test that deleting an experiment removes all children"""
-    assert len(get_storage().fetch_experiments({})) == 3
+    experiments = get_storage().fetch_experiments({})
+    assert len(experiments) == 3
     assert len(get_storage()._fetch_trials({})) > 0
+    for experiment in experiments:
+        assert (
+            get_storage().get_algorithm_lock_info(uid=experiments[-1]["_id"])
+            is not None
+        )
     execute("db rm -f test_double_exp_child --version 1")
     assert len(get_storage().fetch_experiments({})) == 1
-    assert len(get_storage()._fetch_trials({})) > 0
-    # TODO: Test that the correct trials were deleted
+    for experiment in experiments:
+        if experiment["name"] == "test_double_exp":
+            assert (
+                len(get_storage()._fetch_trials({"experiment": experiment["_id"]})) > 0
+            )
+            assert (
+                get_storage().get_algorithm_lock_info(uid=experiment["_id"]) is not None
+            )
+        else:
+            assert (
+                len(get_storage()._fetch_trials({"experiment": experiment["_id"]})) == 0
+            )
+            assert get_storage().get_algorithm_lock_info(uid=experiment["_id"]) is None
 
 
-def test_rm_default_leaf(three_experiments_same_name):
+def test_rm_default_leaf(three_experiments_same_name_with_trials):
     """Test that deleting an experiment removes the leaf by default"""
-    assert len(get_storage().fetch_experiments({})) == 3
+    experiments = get_storage().fetch_experiments({})
+    assert len(experiments) == 3
+    assert len(get_storage()._fetch_trials({})) > 0
+    for experiment in experiments:
+        assert (
+            get_storage().get_algorithm_lock_info(uid=experiments[-1]["_id"])
+            is not None
+        )
     execute("db rm -f test_single_exp")
     assert len(get_storage().fetch_experiments({})) == 2
+    for experiment in experiments:
+        if experiment["version"] == 3:
+            assert (
+                len(get_storage()._fetch_trials({"experiment": experiment["_id"]})) == 0
+            )
+            assert get_storage().get_algorithm_lock_info(uid=experiment["_id"]) is None
+        else:
+            assert (
+                len(get_storage()._fetch_trials({"experiment": experiment["_id"]})) > 0
+            )
+            assert (
+                get_storage().get_algorithm_lock_info(uid=experiment["_id"]) is not None
+            )
 
 
 def test_rm_trials_by_status(single_with_trials):
