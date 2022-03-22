@@ -67,11 +67,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
-<<<<<<< HEAD
-=======
-            "pb2 = orion.algo.pbt.pb2:PB2",
             "bohb = orion.algo.bohb:BOHB",
->>>>>>> 81ee421f... Add BOHB
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
