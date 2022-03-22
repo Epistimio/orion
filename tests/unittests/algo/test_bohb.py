@@ -1,11 +1,12 @@
 """Perform integration tests for `orion.algo.bohb`."""
 import pytest
-from orion.testing.algo import BaseAlgoTests
 
-# Test suite for algorithms. You may reimplement some of the tests to adapt them to your algorithm
-# Full documentation is available at https://orion.readthedocs.io/en/stable/code/testing/algo.html
-# Look for algorithms tests in https://github.com/Epistimio/orion/blob/master/tests/unittests/algo
-# for examples of customized tests.
+from orion.testing.algo import BaseAlgoTests
+from orion.algo.bohb import has_HpBandSter
+
+if not has_HpBandSter:
+    pytest.skip("skipping BOHB tests", allow_module_level=True)
+
 N_INIT = 5
 
 

@@ -1,15 +1,23 @@
 """
-:mod:`orion.algo.bohb.bohb -- TODO
-============================================
+:mod:`orion.algo.bohb.bohb -- BOHB
+==================================
 
-TODO: Write long description
+Module for the wrapper around HpBandSter.
 """
 import copy
 
 import numpy as np
-from hpbandster.optimizers.config_generators.bohb import BOHB as CG_BOHB
-from hpbandster.optimizers.iterations import SuccessiveHalving
-from sspace.convert import convert_space, reverse, transform
+
+try:
+    from hpbandster.optimizers.config_generators.bohb import BOHB as CG_BOHB
+    from hpbandster.optimizers.iterations import SuccessiveHalving
+    from sspace.convert import convert_space, reverse, transform
+
+    has_HPBANDSTER = True
+except ImportError:
+    CG_BOHB = None
+    SuccessiveHalving = None
+    has_HpBandSter = False
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.parallel_strategy import strategy_factory
@@ -17,8 +25,8 @@ from orion.core.utils.format_trials import dict_to_trial
 
 SPACE_ERROR = """
 BOHB cannot be used if space does not contain a fidelity dimension.
-For more information on the configuration and usage of Hyperband, see
-https://orion.readthedocs.io/en/develop/user/algorithms.html#bohb
+For more information on the configuration and usage of BOHB, see
+https://orion.readthedocs.io/en/develop/user/algorithms.html#bohb-algorithm
 """
 
 
@@ -42,7 +50,17 @@ class FakeJob(object):  # pylint: disable=too-few-public-methods
 
 
 class BOHB(BaseAlgorithm):
-    """TODO: Class docstring
+    """Bayesian Optimization with HyperBand
+
+    This class is a wrapper around the librairy HpBandSter:
+    https://github.com/automl/HpBandSter.
+
+    For more information on the algorithm,
+    see original paper at https://arxiv.org/abs/1807.01774.
+
+    Falkner, Stefan, Aaron Klein, and Frank Hutter. "BOHB: Robust and efficient hyperparameter
+    optimization at scale." In International Conference on Machine Learning, pp. 1437-1446. PMLR,
+    2018.
 
     Parameters
     ----------
