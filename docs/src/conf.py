@@ -55,7 +55,6 @@ extensions = (
         "sphinx.ext.todo",
         "sphinx.ext.viewcode",
         "sphinx.ext.intersphinx",
-        "sphinx_autodoc_typehints",
     ]
 )
 
@@ -216,7 +215,7 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ["_version", "utils._appdirs"]
+autodoc_mock_imports = ["_version", "utils._appdirs", "torch"]
 
 # -- Gallery configuration -----------------------------------------------
 
@@ -279,7 +278,7 @@ extlinks = {
 # Enable nitpicky mode - which ensures that all references in the docs
 # resolve.
 
-ignore_algo_attr = [
+ignore_attr = [
     "configuration",
     "is_done",
     "should_suspend",
@@ -299,8 +298,15 @@ ignore_algo_attr = [
     "AlreadyReleased",
 ]
 
+type_hints = [
+    "orion.algo.space.T",
+]
+
 nitpicky = True
-nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr]
+nitpick_ignore = (
+    [("py:obj", attr) for attr in ignore_attr] +
+    [("py:class", attr) for attr in type_hints]
+)
 
 ################################################################################
 #                             Numpy Doc Extension                              #

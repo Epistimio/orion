@@ -1,13 +1,15 @@
 """ Simulated Task consisting in training a Support Vector Machine (SVM).
 """
-
+import typing
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, ClassVar, Dict, List, Tuple
 
 from orion.benchmark.task.profet.model_utils import get_default_architecture
 from orion.benchmark.task.profet.profet_task import ProfetTask
-from orion.typing import torch
+
+if typing.TYPE_CHECKING:
+    import torch
 
 
 class ProfetSvmTask(ProfetTask):
