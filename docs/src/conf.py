@@ -298,8 +298,16 @@ ignore_algo_attr = [
     "AlreadyReleased",
 ]
 
+type_hints = [
+    "orion.core.utils.tree.T",
+    "T",
+    "orion.core.worker.primary_algo.AlgoType",
+]
 nitpicky = True
-nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr]
+nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr] + [
+    ("py:class", annotation_str)
+    for annotation_str in type_hints
+]
 
 ################################################################################
 #                             Numpy Doc Extension                              #
