@@ -25,10 +25,10 @@ T = TypeVar("T")
 
 
 def compute_max_ei_point(
-    points: Sequence[T],
-    below_likelis: Sequence[float] | np.ndarray,
-    above_likelis: Sequence[float] | np.ndarray,
-) -> T:
+    points: numpy.ndarray | Sequence[numpy.ndarray],
+    below_likelis: Sequence[float] | numpy.ndarray,
+    above_likelis: Sequence[float] | numpy.ndarray,
+) -> numpy.ndarray:
     """Compute ei among points based on their log likelihood and return the point with max ei.
 
     :param points: list of point with real values.
@@ -45,7 +45,7 @@ def compute_max_ei_point(
     return points[point_index]
 
 
-def ramp_up_weights(total_num: int, flat_num: int, equal_weight: bool) -> np.ndarray:
+def ramp_up_weights(total_num: int, flat_num: int, equal_weight: bool) -> numpy.ndarray:
     """Adjust weights of observed trials.
 
     :param total_num: total number of observed trials.
@@ -64,13 +64,13 @@ def ramp_up_weights(total_num: int, flat_num: int, equal_weight: bool) -> np.nda
 
 # pylint:disable=assignment-from-no-return
 def adaptive_parzen_estimator(
-    mus: np.ndarray | Sequence,
+    mus: numpy.ndarray | Sequence,
     low: float,
     high: float,
     prior_weight: float = 1.0,
     equal_weight: bool = False,
     flat_num: int = 25,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     """Return the sorted mus, the corresponding sigmas and weights with adaptive kernel estimator.
 
     This adaptive parzen window estimator is based on the original papers and also refer the use of
@@ -453,9 +453,9 @@ class TPE(BaseAlgorithm):
     def _sample_real_dimension(
         self,
         dimension: Real,
-        below_points: Sequence[np.ndarray],
-        above_points: Sequence[np.ndarray],
-    ) -> np.ndarray:
+        below_points: Sequence[numpy.ndarray],
+        above_points: Sequence[numpy.ndarray],
+    ) -> numpy.ndarray:
         """Sample values for real dimension"""
         if any(map(dimension.prior_name.endswith, ["uniform", "reciprocal"])):
             return self._sample_real_point(
@@ -469,8 +469,8 @@ class TPE(BaseAlgorithm):
             )
 
     def _sample_loguniform_real_point(
-        self, dimension: Real, below_points: np.ndarray, above_points: np.ndarray
-    ) -> np.ndarray:
+        self, dimension: Real, below_points: numpy.ndarray, above_points: numpy.ndarray
+    ) -> numpy.ndarray:
         """Sample one value for real dimension in a loguniform way"""
         return self._sample_real_point(
             dimension, below_points, above_points, is_log=True
@@ -479,14 +479,14 @@ class TPE(BaseAlgorithm):
     def _sample_real_point(
         self,
         dimension: Real,
-        below_points: np.ndarray | Sequence[np.ndarray],
-        above_points: np.ndarray | Sequence[np.ndarray],
+        below_points: numpy.ndarray | Sequence[numpy.ndarray],
+        above_points: numpy.ndarray | Sequence[numpy.ndarray],
         is_log: bool = False,
-    ) -> np.ndarray:
+    ) -> numpy.ndarray:
         """Sample one value for real dimension based on the observed good and bad points"""
         low, high = dimension.interval()
-        below_points = np.array(below_points)
-        above_points = np.array(above_points)
+        below_points = numpy.array(below_points)
+        above_points = numpy.array(above_points)
         if is_log:
             low = numpy.log(low)
             high = numpy.log(high)
@@ -540,8 +540,8 @@ class TPE(BaseAlgorithm):
     def _sample_int_point(
         self,
         dimension: Integer,
-        below_points: np.ndarray | Sequence[np.ndarray],
-        above_points: np.ndarray | Sequence[np.ndarray],
+        below_points: numpy.ndarray | Sequence[numpy.ndarray],
+        above_points: numpy.ndarray | Sequence[numpy.ndarray],
     ):
         """Sample one value for integer dimension based on the observed good and bad points"""
         low, high = dimension.interval()
@@ -560,7 +560,7 @@ class TPE(BaseAlgorithm):
         lik_below = sampler_below.get_loglikelis(candidate_points)
         lik_above = sampler_above.get_loglikelis(candidate_points)
 
-        new_point: np.ndarray = compute_max_ei_point(
+        new_point: numpy.ndarray = compute_max_ei_point(
             candidate_points, lik_below, lik_above
         )
         new_point = new_point + low
@@ -642,11 +642,11 @@ class GMMSampler:
     def __init__(
         self,
         tpe: TPE,
-        mus: Sequence[float] | np.ndarray,
-        sigmas: Sequence[float] | np.ndarray,
+        mus: Sequence[float] | numpy.ndarray,
+        sigmas: Sequence[float] | numpy.ndarray,
         low: float,
         high: float,
-        weights: Sequence[float] | np.ndarray | None = None,
+        weights: Sequence[float] | numpy.ndarray | None = None,
         base_attempts: int = 10,
         attempts_factor: int = 10,
         max_attempts: int = 10000,
@@ -671,18 +671,18 @@ class GMMSampler:
         for mu, sigma in zip(self.mus, self.sigmas):
             self.pdfs.append(norm(mu, sigma))
 
-    def sample(self, num: int = 1, attempts: int | None = None) -> list[np.ndarray]:
+    def sample(self, num: int = 1, attempts: int | None = None) -> list[numpy.ndarray]:
         """Sample required number of points"""
         if attempts is None:
             attempts = self.base_attempts
         # TODO: See below, unsure about the return type for this function.
-        point: list[np.ndarray] = []
+        point: list[numpy.ndarray] = []
         for _ in range(num):
             pdf = numpy.argmax(self.tpe.rng.multinomial(1, self.weights))
             attempts_tried = 0
             index: int | None = None
             while attempts_tried < attempts:
-                new_points: np.ndarray = self.pdfs[pdf].rvs(
+                new_points: numpy.ndarray = self.pdfs[pdf].rvs(
                     size=attempts, random_state=self.tpe.rng
                 )
                 valid_points = (self.low <= new_points) * (self.high >= new_points)
@@ -708,8 +708,8 @@ class GMMSampler:
         return point
 
     def get_loglikelis(
-        self, points: np.ndarray | list[np.ndarray] | Sequence[Sequence[float]]
-    ) -> np.ndarray:
+        self, points: numpy.ndarray | list[numpy.ndarray] | Sequence[Sequence[float]]
+    ) -> numpy.ndarray:
         """Return the log likelihood for the points"""
         points = numpy.array(points)
         weight_likelis_list = [
@@ -746,15 +746,15 @@ class CategoricalSampler:
     def __init__(
         self,
         tpe: TPE,
-        observations: Sequence | np.ndarray,
-        choices: Sequence | np.ndarray,
+        observations: Sequence | numpy.ndarray,
+        choices: Sequence | numpy.ndarray,
     ):
         self.tpe = tpe
         self.obs = observations
         self.choices = choices
 
         self._build_multinomial_weights()
-        self.weights: np.ndarray
+        self.weights: numpy.ndarray
 
     def _build_multinomial_weights(self) -> None:
         """Build weights for categorical distribution based on observations"""
@@ -767,7 +767,7 @@ class CategoricalSampler:
         counts_obs = counts_obs + self.tpe.prior_weight
         self.weights = counts_obs / counts_obs.sum()
 
-    def sample(self, num: int = 1) -> np.ndarray:
+    def sample(self, num: int = 1) -> numpy.ndarray:
         """Sample required number of points"""
         samples = self.tpe.rng.multinomial(n=1, pvals=self.weights, size=num)
 
@@ -778,6 +778,8 @@ class CategoricalSampler:
 
         return samples_index
 
-    def get_loglikelis(self, points: np.ndarray | Sequence[np.ndarray]) -> np.ndarray:
+    def get_loglikelis(
+        self, points: numpy.ndarray | Sequence[numpy.ndarray]
+    ) -> numpy.ndarray:
         """Return the log likelihood for the points"""
         return numpy.log(numpy.asarray(self.weights)[points])
