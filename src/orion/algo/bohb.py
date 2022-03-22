@@ -9,10 +9,11 @@ import copy
 import numpy as np
 from hpbandster.optimizers.config_generators.bohb import BOHB as CG_BOHB
 from hpbandster.optimizers.iterations import SuccessiveHalving
-from orion.algo.base import BaseAlgorithm
-from orion.core.utils.format_trials import dict_to_trial
-
 from sspace.convert import convert_space, reverse, transform
+
+from orion.algo.base import BaseAlgorithm
+from orion.algo.parallel_strategy import strategy_factory
+from orion.core.utils.format_trials import dict_to_trial
 
 SPACE_ERROR = """
 BOHB cannot be used if space does not contain a fidelity dimension.
