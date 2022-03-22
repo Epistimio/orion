@@ -212,6 +212,48 @@ Configuration
                      executed_times, compute_bracket_idx
 
 
+.. _DEHB-algorithm:
+
+DEHB
+----
+
+
+`DEHB`_, is an integration of a Differential Evolutionary algorithm for the 
+selection of hyperparameters to try at the first rung of Hyperband brackets.
+First batch of Trials will be sampled randomly, but subsequent ones will be
+selected using Differential Evolution.
+See :ref:`hyperband-algorithm` for more information on how to use multi-fidelity algorithms.
+
+.. _DEHB: https://arxiv.org/abs/2105.09821
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      dehb:
+        seed: null
+        mutation_factor: 0.5
+        crossover_prob: 0.5
+        mutation_strategy: rand1
+        crossover_strategy: bin
+        boundary_fix_type: random
+        min_clip: null
+        max_clip: null
+        max_age: 10e10
+
+
+.. autoclass:: orion.algo.dehb.dehb.DEHB
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
 .. _PBT:
 
 Population Based Training (PBT)

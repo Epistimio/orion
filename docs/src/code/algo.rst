@@ -15,6 +15,7 @@ Algorithm modules
    algo/gridsearch
    algo/hyperband
    algo/asha
+   algo/dehb
    algo/pbt
    algo/tpe
    algo/parallel_strategy

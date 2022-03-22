@@ -1,0 +1,501 @@
+"""
+:mod:`orion.algo.dehb.dehb -- DEHB
+==================================
+
+Module for the wrapper around DEHB: https://github.com/automl/DEHB.
+"""
+
+
+import logging
+from collections import OrderedDict, defaultdict
+from copy import deepcopy
+from typing import List, Optional
+
+import numpy as np
+
+from orion.algo.dehb.brackets import SHBracketManager
+from orion.algo.dehb.logger import remove_loguru
+
+remove_loguru()
+
+from dehb.optimizers import DEHB as DEHBImpl
+from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
+from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
+from sspace.convert import convert_space
+from sspace.convert import transform as to_orion
+
+logger = logging.getLogger(__name__)
+
+
+class UnsupportedConfiguration(Exception):
+    """Raised when an unsupported configuration is sent"""
+
+    pass
+
+
+SPACE_ERROR = """
+DEHB cannot be used if space does not contain a fidelity dimension.
+"""
+
+MUTATION_STRATEGIES = [
+    "rand1",
+    "rand2dir",
+    "randtobest1",
+    "currenttobest1",
+    "best1",
+    "best2",
+    "rand2",
+]
+
+CROSSOVER_STRATEGY = [
+    "bin",
+    "exp",
+]
+
+FIX_MODES = ["random", "clip"]
+
+
+# pylint: disable=too-many-public-methods
+class DEHB(DEHBImpl, BaseAlgorithm):
+    """Differential Evolution with HyperBand
+
+    This class is a wrapper around the librairy DEHB:
+    https://github.com/automl/DEHB.
+
+    For more information on the algorithm,
+    see original paper at https://arxiv.org/abs/2105.09821.
+
+    Awad, Noor, Neeratyoy Mallik, and Frank Hutter. "Dehb: Evolutionary hyperband for scalable,
+    robust and efficient hyperparameter optimization." arXiv preprint arXiv:2105.09821 (2021).
+
+    Parameters
+    ----------
+    space: `orion.algo.space.Space`
+        Optimisation space with priors for each dimension.
+
+    seed: None, int or sequence of int
+        Seed for the random number generator used to sample new trials.
+        Default: ``None``
+
+    mutation_factor: float
+        Mutation probability
+        Default: ``0.5``
+
+    crossover_prob: float
+        Crossover probability
+        Default: ``0.5``
+
+    mutation_strategy: str
+        Mutation strategy rand1, rand2dir randtobest1 currenttobest1 best1 best2 rand2
+        Default: ``'rand1'``
+
+    crossover_strategy: str
+        Crossover strategy bin or exp
+        Default: ``'bin'``
+
+    boundary_fix_type: str
+        Boundary fix method, clip or random
+        Default: ``'random'``
+
+    min_clip: float
+        Min clip when boundary fix method is clip
+        Default: ``None``
+
+    max_clip: float
+        Max clip when boundary fix method is clip
+        Default: ``None``
+
+    max_age: Optional[int]
+        Default: ``np.inf``
+
+    """
+
+    requires_type = None
+    requires_dist = None
+    requires_shape = "flattened"
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        space: Space = None,
+        seed: Optional[int] = None,
+        mutation_factor: float = 0.5,
+        crossover_prob: float = 0.5,
+        mutation_strategy: str = "rand1",
+        crossover_strategy: str = "bin",
+        boundary_fix_type: str = "random",
+        min_clip: Optional[int] = None,
+        max_clip: Optional[int] = None,
+        max_age: Optional[int] = np.inf,
+    ):
+        # Sanity Check
+        if mutation_strategy not in MUTATION_STRATEGIES:
+            raise UnsupportedConfiguration(
+                f"Mutation strategy {mutation_strategy} not supported"
+            )
+
+        if crossover_strategy not in CROSSOVER_STRATEGY:
+            raise UnsupportedConfiguration(
+                f"Crossover strategy {crossover_strategy} not supported"
+            )
+
+        if boundary_fix_type not in FIX_MODES:
+            raise UnsupportedConfiguration(
+                f"Boundary fix type {boundary_fix_type} not supported"
+            )
+
+        # We need the transformed algo to initialize DEHB
+        # so store the arguments for after the constructor
+
+        self._original = space
+        BaseAlgorithm.__init__(
+            self,
+            space,
+            seed=seed,
+            mutation_factor=mutation_factor,
+            crossover_prob=crossover_prob,
+            mutation_strategy=mutation_strategy,
+            crossover_strategy=crossover_strategy,
+            boundary_fix_type=boundary_fix_type,
+            min_clip=min_clip,
+            max_clip=max_clip,
+            max_age=max_age,
+        )
+
+        # Extract fidelity information
+        fidelity_index = self.fidelity_index
+        if fidelity_index is None:
+            raise RuntimeError(SPACE_ERROR)
+
+        fidelity_dim = space[fidelity_index]
+
+        # Add derived arguments for when we will init DEHB
+        self.init_kwargs = dict(
+            mutation_factor=mutation_factor,
+            crossover_prob=crossover_prob,
+            strategy=f"{mutation_strategy}_{crossover_strategy}",
+            min_clip=min_clip,
+            max_clip=max_clip,
+            boundary_fix_type=boundary_fix_type,
+            max_age=max_age,
+            # Derived
+            min_budget=fidelity_dim.low,
+            max_budget=fidelity_dim.high,
+            eta=fidelity_dim.base,
+            # Disable their Dask Integration
+            n_workers=1,
+            client=None,
+            # No need for the user function
+            f=None,
+        )
+
+        self.rung = None
+        self.cs = None
+        self.seed = seed
+        self.job_infos = defaultdict(list)
+        self.job_results = dict()
+        self.duplicates = defaultdict(int)
+
+    def f_objective(self, *args, **kwargs):
+        """Not needed for Orion, the objective is called by the worker"""
+        pass
+
+    @property
+    def space(self) -> Space:
+        """Space of the optimizer"""
+        return self._space
+
+    @space.setter
+    def space(self, space: Space) -> None:
+        """Setter of optimizer's space.
+
+        We need the transformed algo to initialize DEHB
+        """
+        self._space = space
+        self._initialize()
+
+    def _initialize(self) -> None:
+        # Convert to configpace
+
+        self.cs = convert_space(self.space)
+
+        dimensions = len(self.cs.get_hyperparameters())
+
+        # Initialize
+        self.seed_rng(self.seed)
+        DEHBImpl.__init__(
+            self,
+            cs=self.cs,
+            configspace=True,
+            dimensions=dimensions,
+            **self.init_kwargs,
+        )
+        self.rung = len(self.budgets)
+
+    def _start_new_bracket(self):
+        """Starts a new bracket based on Hyperband"""
+        # start new bracket
+        self.iteration_counter += (
+            1  # iteration counter gives the bracket count or bracket ID
+        )
+        n_configs, budgets = self.get_next_iteration(self.iteration_counter)
+        bracket = SHBracketManager(
+            n_configs=n_configs,
+            budgets=budgets,
+            bracket_id=self.iteration_counter,
+            duplicates=self.duplicates,
+        )
+        self.active_brackets.append(bracket)
+        return bracket
+
+    @property
+    def state_dict(self) -> dict:
+        """Return a state dict that can be used to reset the state of the algorithm."""
+        state_dict = super(DEHB, self).state_dict
+
+        state = dict(self.__dict__)
+        state["client"] = None
+        state["logger"] = None
+
+        state_dict["numpy_GlobalState"] = np.random.get_state()
+        state_dict["numpy_RandomState"] = self.cs.random.get_state()
+        state_dict["DEHB_statedict"] = state
+
+        return deepcopy(state_dict)
+
+    def set_state(self, state_dict: dict) -> None:
+        """Reset the state of the algorithm based on the given state_dict
+
+        :param state_dict: Dictionary representing state of an algorithm
+        """
+        BaseAlgorithm.set_state(self, state_dict)
+
+        for k, v in state_dict["DEHB_statedict"].items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                logger.error("DEHB does not have attribute %s", k)
+
+        np.random.set_state(state_dict["numpy_GlobalState"])
+        self.cs.random.set_state(state_dict["numpy_RandomState"])
+
+    def seed_rng(self, seed: int) -> None:
+        """Seed the state of the random number generator.
+
+        Parameters
+        ----------
+        seed: int
+            Integer seed for the random number generator.
+
+        """
+        np.random.seed(seed)
+        if hasattr(self, "cs"):
+            self.cs.seed(np.random.randint(np.iinfo(np.int32).max))
+
+    def init_population(self, pop_size: int) -> List[np.array]:
+        """Generate our initial population of sample
+
+        Parameters
+        ----------
+        pop_size: int
+            Number of samples to generate
+
+        """
+        population = self.cs.sample_configuration(size=pop_size)
+        population = [
+            self.configspace_to_vector(individual) for individual in population
+        ]
+        return population
+
+    def register_job(self, job_info: dict) -> None:
+        """Register to DEHB's backend"""
+
+        # pass information of job submission to Bracket Manager
+        for bracket in self.active_brackets:
+            if bracket.bracket_id == job_info["bracket_id"]:
+                # registering is IMPORTANT for Bracket Manager to perform SH
+                bracket.register_job(job_info["budget"])
+                break
+
+    @property
+    def is_done(self) -> bool:
+        """Return True, if an algorithm holds that there can be no further improvement."""
+        return self._is_run_budget_exhausted(None, self.rung, None)
+
+    def sample_to_trial(self, sample: np.array, fidelity: int) -> Trial:
+        """Convert a ConfigSpace sample into a trial"""
+        config = self.vector_to_configspace(sample)
+        hps = OrderedDict()
+
+        for k, v in self.space.items():
+
+            if v.type == "fidelity":
+                hps[k] = fidelity
+
+            else:
+                hps[k] = config[k]
+
+        return format_trials.dict_to_trial(to_orion(hps), self.space)
+
+    def suggest(self, num: int) -> List[Trial]:
+        """Suggest a `num`ber of new sets of parameters.
+
+        Parameters
+        ----------
+        num: int, optional
+            Number of trials to suggest. The algorithm may return less than the number of trials
+            requested.
+
+        Returns
+        -------
+        list of trials or None
+            A list of trials representing values suggested by the algorithm. The algorithm may opt
+            out if it cannot make a good suggestion at the moment (it may be waiting for other
+            trials to complete), in which case it will return None.
+
+        Notes
+        -----
+        New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
+
+        """
+        trials = []
+        while len(trials) < num:
+            if self.is_done:
+                break
+
+            job_info = DEHBImpl._get_next_job(self)
+            job_info["done"] = 0
+
+            # We are generating trials for a bracket that is too high
+            if self.rung is not None and job_info["bracket_id"] >= self.rung:
+                break
+
+            # Generate Orion trial
+            new_trial = self.sample_to_trial(
+                job_info["config"], fidelity=job_info["budget"]
+            )
+
+            # DEHB may sample 2 very similar trial, that gets the same ID because
+            # for instance the precision is low and rounding the HP values leads to
+            # 2 identical trials. It this case you will have has_suggested(new_trial)
+            # is True, and you will discard this trial.
+            # It's fine to discard the trial, but we should keep track of the job_info.
+            # DEHB does not know that we discarded the trial and will be waiting for the
+            # result.We need to keep track of both job_info so that when we have
+            # the result of the first trial, we assign it to the second job_info as well.
+
+            if not self.has_suggested(new_trial):
+                # Store metadata
+                self.job_infos[self.get_id(new_trial)].append(job_info)
+                self.register_job(job_info)
+
+                # Standard Orion
+                self.register(new_trial)
+                trials.append(new_trial)
+                logger.debug("Suggest new trials %s", new_trial)
+            else:
+                logger.debug("Already suggested %s", new_trial)
+
+                # Do we already have a result for this trial ?
+                result = self.job_results.get(self.get_id(new_trial))
+
+                # Keep track of duplicated jobs per brackets
+                # Bracket is only done after we reach the budget for unique
+                # jobs
+                self.duplicates[str(job_info["budget"])] += 1
+
+                # if so observe it right now and discard
+                if result is not None:
+                    self._dehb_observe(job_info, *result)
+                else:
+                    # else we need to keep track of it to observe it later
+                    self.job_infos[self.get_id(new_trial)].append(job_info)
+
+        return trials
+
+    def observe(self, trials: List[Trial]) -> None:
+        """Observe the `trials` new state of result.
+
+        Parameters
+        ----------
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
+
+        """
+        for trial in trials:
+            if not self.has_suggested(trial):
+                logger.debug("Ignore unseen trial %s", trial)
+                continue
+
+            if self.has_observed(trial):
+                logger.debug("Ignore already observed trial %s", trial)
+                continue
+
+            self.register(trial)
+
+            if trial.status == "completed":
+                self.observe_one(trial)
+                logger.debug(
+                    "Observe trial %s (Remaining %d)", trial, len(self.job_infos)
+                )
+
+    def observe_one(self, trial: Trial) -> None:
+        """Observe a single trial"""
+
+        # Get all the job sampled by DEHB, it might be more than one
+        job_infos = self.job_infos.get(self.get_id(trial), [])
+
+        if len(job_infos) == 0:
+            # this should be 100% unreachable because we check
+            # if the trial was suggested inside `observe`
+            logger.error("Could not find trial %s", self.get_id(trial))
+            return
+
+        # Yes, it is odd; fidelity is cost and fitness is objective
+        cost = trial.params[self.fidelity_index]
+        fitness = trial.objective.value
+
+        # Store the result for later, if we sample
+        # a trial that is too alike for us to evaluate
+        results = cost, fitness
+        self.job_results[self.get_id(trial)] = results
+
+        for job_info in job_infos:
+            cost = job_info["budget"]
+            self._dehb_observe(job_info, cost, fitness)
+
+    def _dehb_observe(self, job_info, cost, fitness):
+        config = job_info["config"]
+        budget = job_info["budget"]
+        parent_id = job_info["parent_id"]
+        bracket_id = job_info["bracket_id"]
+        info = dict()
+
+        #
+        for bracket in self.active_brackets:
+            if bracket.bracket_id == bracket_id:
+                # bracket job complete
+                # IMPORTANT to perform synchronous SH
+                bracket.complete_job(budget)
+
+        # carry out DE selection
+        if fitness <= self.de[budget].fitness[parent_id]:
+            self.de[budget].population[parent_id] = config
+            self.de[budget].fitness[parent_id] = fitness
+
+        # updating incumbents
+        if self.de[budget].fitness[parent_id] < self.inc_score:
+            self._update_incumbents(
+                config=self.de[budget].population[parent_id],
+                score=self.de[budget].fitness[parent_id],
+                info=info,
+            )
+
+        # book-keeping
+        self._update_trackers(
+            traj=self.inc_score,
+            runtime=cost,
+            history=(config.tolist(), float(fitness), float(cost), float(budget), info),
+        )
