@@ -68,6 +68,10 @@ class BOHB(BaseAlgorithm):
         To keep diversity, even when all (good) samples have the same value
         for one of the parameters, a minimum bandwidth is used instead of
         zero. Default: 1e-3
+    parallel_strategy: dict or None, optional
+        The configuration of a parallel strategy to use for pending trials or broken trials.
+        Default is a MaxParallelStrategy for broken trials and NoParallelStrategy for pending
+        trials.
 
     """
 
@@ -85,7 +89,21 @@ class BOHB(BaseAlgorithm):
         random_fraction=1 / 3,
         bandwidth_factor=3,
         min_bandwidth=1e-3,
+        parallel_strategy=None,
     ):  # pylint: disable=too-many-arguments
+
+        if parallel_strategy is None:
+            parallel_strategy = {
+                "of_type": "StatusBasedParallelStrategy",
+                "strategy_configs": {
+                    "broken": {
+                        "of_type": "MaxParallelStrategy",
+                    },
+                },
+            }
+
+        self.strategy = strategy_factory.create(**parallel_strategy)
+
         super(BOHB, self).__init__(
             space,
             seed=seed,
@@ -95,6 +113,7 @@ class BOHB(BaseAlgorithm):
             random_fraction=random_fraction,
             bandwidth_factor=bandwidth_factor,
             min_bandwidth=min_bandwidth,
+            parallel_strategy=parallel_strategy,
         )
         self.trial_meta = {}
         self.trial_results = {}
@@ -182,6 +201,7 @@ class BOHB(BaseAlgorithm):
         state_dict["trial_meta"] = dict(self.trial_meta)
         state_dict["trial_results"] = dict(self.trial_results)
         state_dict["bohb"] = copy.deepcopy(self.bohb)
+        state_dict["strategy"] = self.strategy.state_dict
         return state_dict
 
     def set_state(self, state_dict):
@@ -199,6 +219,7 @@ class BOHB(BaseAlgorithm):
         self.trial_meta = state_dict["trial_meta"]
         self.trial_results = state_dict["trial_results"]
         self.bohb = state_dict["bohb"]  # pylint: disable=attribute-defined-outside-init
+        self.strategy.set_state(state_dict["strategy"])
         self._setup()
 
     def suggest(self, num):
@@ -276,6 +297,8 @@ class BOHB(BaseAlgorithm):
         """
         super(BOHB, self).observe(trials)
         for trial in trials:
+            if trial.status == "broken":
+                trial = self.strategy.infer(trial)
             if trial.objective is not None:
                 self.trial_results[self.get_id(trial)] = trial.objective.value
             runs = self.trial_meta.get(self.get_id(trial), [])

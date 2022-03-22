@@ -22,6 +22,10 @@ class TestBOHB(BaseAlgoTests):
         "random_fraction": 1 / 4,
         "bandwidth_factor": 4,
         "min_bandwidth": 1e-4,
+        "parallel_strategy": {
+            "of_type": "StatusBasedParallelStrategy",
+            "strategy_configs": {"broken": {"of_type": "MaxParallelStrategy"}},
+        },
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
 
