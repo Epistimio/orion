@@ -131,7 +131,7 @@ def test_simple(algorithm):
     no_fidelity_algorithm_configs.values(),
     ids=list(no_fidelity_algorithm_configs.keys()),
 )
-def test_cardinality_stop(algorithm):
+def test_cardinality_stop_uniform(algorithm):
     """Test when algo needs to stop because all space is explored (dicrete space)."""
     discrete_space = copy.deepcopy(space)
     discrete_space["x"] = "uniform(-10, 5, discrete=True)"
@@ -141,9 +141,17 @@ def test_cardinality_stop(algorithm):
     assert len(trials) == 16
     assert trials[-1].status == "completed"
 
+
+@pytest.mark.parametrize(
+    "algorithm",
+    no_fidelity_algorithm_configs.values(),
+    ids=list(no_fidelity_algorithm_configs.keys()),
+)
+def test_cardinality_stop_loguniform(algorithm):
+    """Test when algo needs to stop because all space is explored (loguniform space)."""
+    discrete_space = copy.deepcopy(space)
     discrete_space["x"] = "loguniform(0.1, 1, precision=1)"
     exp = workon(rosenbrock, discrete_space, algorithms=algorithm, max_trials=30)
-    print(exp.space.cardinality)
 
     trials = exp.fetch_trials()
     assert len(trials) == 10
