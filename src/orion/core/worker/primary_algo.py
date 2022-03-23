@@ -322,9 +322,11 @@ def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) ->
     """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
     transformed_trial = copy.deepcopy(transformed_trial)
     transformed_trial.status = original_trial.status
-    transformed_trial.end_time = original_trial.end_time
     if original_trial.results:
         transformed_trial.results = original_trial.results
     if original_trial.exp_working_dir:
         transformed_trial.exp_working_dir = original_trial.exp_working_dir
+    # TODO: Should we also copy these over?
+    transformed_trial.experiment = original_trial.experiment
+    transformed_trial.end_time = original_trial.end_time
     return transformed_trial
