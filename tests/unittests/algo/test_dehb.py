@@ -2,7 +2,9 @@
 
 import itertools
 
+import numpy
 import pytest
+
 from orion.core.utils import backward, format_trials
 from orion.testing.algo import BaseAlgoTests
 
@@ -44,6 +46,12 @@ class TestDEHB(BaseAlgoTests):
         with pytest.raises(RuntimeError):
             space = self.create_space(dict(x="uniform(0, 1)"))
             self.create_algo(space=space)
+
+    def test_suggest_n(self, mocker, num, attr):
+        algo = self.create_algo()
+        spy = self.spy_phase(mocker, num, algo, attr)
+        trials = algo.suggest(3)
+        assert len(trials) == 3
 
     @pytest.mark.xfail
     def test_is_done_cardinality(self):
@@ -106,9 +114,11 @@ class TestDEHB(BaseAlgoTests):
 # These are the total number of suggestions that the algorithm will make
 # for each "phase" (including previous ones).
 # The maximum number is 32 and then it will be done and stop suggesting mode.
-COUNTS = [8, 15, 22, 28]
+# COUNTS = [8 + 4 * 3, 4 + 2 + 4, 2 + 1, 1]
+COUNTS = [8 + 4 * 3, 4 + 2 + 4]
+COUNTS = numpy.cumsum(COUNTS)
 
 TestDEHB.set_phases(
     [("random", 0, "space.sample")]
-    + [(f"rung{i}", budget, "suggest") for i, budget in enumerate(COUNTS)]
+    + [(f"rung{i}", budget - 1, "space.sample") for i, budget in enumerate(COUNTS)]
 )

@@ -258,6 +258,17 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         state = dict(self.__dict__)
         state["client"] = None
         state["logger"] = None
+        for key in [
+            "active_brackets",
+            "iteration_counter",
+            "de",
+            "_max_pop_size",
+            "start",
+            "traj",
+            "runtime",
+            "history",
+        ]:
+            state[key] = getattr(self, key, None)
 
         state_dict["numpy_GlobalState"] = np.random.get_state()
         state_dict["numpy_RandomState"] = self.cs.random.get_state()
@@ -337,7 +348,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
             else:
                 hps[k] = config[k]
 
-        return format_trials.dict_to_trial(to_orion(hps), self.space)
+        return self.format_trial(format_trials.dict_to_trial(to_orion(hps), self.space))
 
     def suggest(self, num: int) -> List[Trial]:
         """Suggest a `num`ber of new sets of parameters.
