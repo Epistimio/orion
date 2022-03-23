@@ -114,7 +114,7 @@ class GridSearch(BaseAlgorithm):
     requires_shape = "flattened"
 
     def __init__(self, space, n_values=100, seed=None):
-        super(GridSearch, self).__init__(space, n_values=n_values, seed=seed)
+        super().__init__(space, n_values=n_values, seed=seed)
         self.n = 0
         self.grid = None
 
@@ -176,7 +176,7 @@ class GridSearch(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(GridSearch, self).state_dict
+        state_dict = super().state_dict
         state_dict["grid"] = self.grid
         state_dict["index"] = self.index
         return state_dict
@@ -189,7 +189,7 @@ class GridSearch(BaseAlgorithm):
         state_dict: dict
             Dictionary representing state of an algorithm
         """
-        super(GridSearch, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.grid = state_dict["grid"]
         self.index = state_dict["index"]
 
@@ -220,7 +220,7 @@ class GridSearch(BaseAlgorithm):
     def is_done(self):
         """Return True when all grid has been covered."""
         return (
-            super(GridSearch, self).is_done
+            super().is_done
             or self.grid is not None
             and self.n_suggested >= len(self.grid)
         )
