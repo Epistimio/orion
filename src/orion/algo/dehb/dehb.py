@@ -19,12 +19,13 @@ from orion.algo.dehb.logger import remove_loguru
 remove_loguru()
 
 from dehb.optimizers import DEHB as DEHBImpl
+from sspace.convert import convert_space
+from sspace.convert import transform as to_orion
+
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
-from sspace.convert import convert_space
-from sspace.convert import transform as to_orion
 
 logger = logging.getLogger(__name__)
 

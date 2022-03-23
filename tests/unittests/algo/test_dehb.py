@@ -5,10 +5,9 @@ import itertools
 import numpy
 import pytest
 
+from orion.algo.dehb.dehb import UnsupportedConfiguration
 from orion.core.utils import backward, format_trials
 from orion.testing.algo import BaseAlgoTests
-
-from orion.algo.dehb.dehb import UnsupportedConfiguration
 
 
 class TestDEHB(BaseAlgoTests):
