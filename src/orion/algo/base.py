@@ -245,9 +245,7 @@ class BaseAlgorithm:
     @property
     def n_observed(self):
         """Number of completed trials observed by the algorithm."""
-        return sum(
-            trial.status in ("completed", "broken") for trial in self.registry.values()
-        )
+        return sum(self.has_observed(trial) for trial in self.registry)
 
     def has_suggested(self, trial):
         """Whether the algorithm has suggested a given point.

@@ -217,9 +217,7 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
     @property
     def n_observed(self) -> int:
         """Number of completed trials observed by the algorithm."""
-        return sum(
-            trial.status in ("completed", "broken") for trial in self.registry.values()
-        )
+        return sum(self.has_observed(trial) for trial in self.registry)
 
     @property
     def is_done(self):
@@ -233,7 +231,7 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
             n_suggested_with_max_fidelity = 0
             fidelity_dim = self.original_space[fidelity_index]
             _, max_fidelity_value = fidelity_dim.interval()
-            for trial in self.registry.values():
+            for trial in self.registry:
                 fidelity_value = trial.params[fidelity_index]
                 if fidelity_value >= max_fidelity_value:
                     n_suggested_with_max_fidelity += 1

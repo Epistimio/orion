@@ -590,7 +590,7 @@ class TPE(BaseAlgorithm):
         """Split the observed trials into good and bad ones based on the ratio `gamma``"""
 
         trials: list[Trial] = []
-        for trial in self.registry.values():
+        for trial in self.registry:
             if trial.status != "completed":
                 trial = self.strategy.infer(trial)
 

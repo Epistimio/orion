@@ -494,7 +494,7 @@ class Hyperband(BaseAlgorithm):
         n_suggested_with_max_fidelity = 0
         fidelity_dim = self.space[fidelity_index]
         _, max_fidelity_value = fidelity_dim.interval()
-        for trial in self.registry.values():
+        for trial in self.registry:
             fidelity_value = trial.params[fidelity_index]
             if fidelity_value >= max_fidelity_value:
                 n_suggested_with_max_fidelity += 1

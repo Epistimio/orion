@@ -3,33 +3,41 @@ from __future__ import annotations
 
 import copy
 from collections import defaultdict
-from typing import Any, Iterator, Mapping
+from logging import getLogger as get_logger
+from typing import Any, Container, Iterator, Mapping
 
-from orion.core.worker.trial import Trial
+from orion.core.worker.trial import Trial, TrialCM
+
+logger = get_logger(__name__)
 
 
-class Registry(Mapping[str, Trial]):
+class Registry(Container[Trial]):
     """In-memory container for the trials that the algorithm suggests/observes/etc."""
 
     def __init__(self):
         self._trials: dict[str, Trial] = {}
 
     def __contains__(self, trial_or_id: str | Trial | Any) -> bool:
-        if isinstance(trial_or_id, Trial):
-            trial_id = trial_or_id.id
+        if isinstance(trial_or_id, TrialCM):
+            trial_id = _get_id(trial_or_id._cm_trial)
+        elif isinstance(trial_or_id, Trial):
+            trial_id = _get_id(trial_or_id)
         elif isinstance(trial_or_id, str):
             trial_id = trial_or_id
         else:
             raise NotImplementedError(trial_or_id)
         return trial_id in self._trials
 
-    def __getitem__(self, item: str) -> Trial:
-        if not isinstance(item, str):
+    def __getitem__(self, item: int | str) -> Trial:
+        if not isinstance(item, (str, int)):
             raise KeyError(item)
-        return self._trials[item]
+        if isinstance(item, str):
+            return self._trials[item]
+        trial_ids = list(self._trials.keys())
+        return self._trials[trial_ids[item]]
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._trials)
+    def __iter__(self) -> Iterator[Trial]:
+        return iter(self._trials.values())
 
     def __len__(self) -> int:
         return len(self._trials)
@@ -42,27 +50,29 @@ class Registry(Mapping[str, Trial]):
         self._trials = statedict["_trials"]
 
     def has_suggested(self, trial: Trial) -> bool:
-        return trial.id in self
+        return _get_id(trial) in self
 
     def has_observed(self, trial: Trial) -> bool:
-        if trial.id not in self._trials:
+        trial_id = _get_id(trial)
+        if trial_id not in self:
             return False
-        return self[trial.id].status in ("broken", "completed")
-
-    def get_trial(self, trial_id: str) -> Trial:
-        return self[trial_id]
+        return self[trial_id].status in ("broken", "completed")
 
     def register(self, trial: Trial) -> str:
         """Register the given trial in the registry."""
-        if trial.id in self:
-            existing = self._trials[trial.id]
-            # TODO: Do we allow overwriting? Or maybe only if the status is updated?
-            # raise RuntimeError(
-            #     f"Trial {trial} is already registered as {self._trials[trial.id]}"
-            # )
-        trial = copy.deepcopy(trial)
-        self._trials[trial.id] = trial
-        return trial.id
+        trial_id = _get_id(trial)
+        if trial_id in self:
+            existing = self._trials[trial_id]
+            logger.debug(
+                f"Overwriting existing trial {existing} with new trial {trial}"
+            )
+        else:
+            logger.debug(
+                f"Registry {id(self)} Registering new trial {trial} ({len(self)} trials in total)"
+            )
+        trial_copy = copy.deepcopy(trial)
+        self._trials[trial_id] = trial_copy
+        return trial_id
 
 
 class RegistryMapping(Mapping[Trial, "list[Trial]"]):
@@ -93,7 +103,7 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         self._mapping = statedict["_mapping"]
 
     def __iter__(self) -> Iterator[Trial]:
-        return iter(self.original_registry.values())
+        return iter(self.original_registry)
 
     def __len__(self) -> int:
         return len(self.original_registry)
@@ -102,9 +112,10 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         return trial in self.original_registry
 
     def __getitem__(self, item: Trial) -> list[Trial]:
-        if item.id not in self._mapping:
+        trial_id = _get_id(item)
+        if trial_id not in self._mapping:
             raise KeyError(item)
-        transformed_trial_ids = self._mapping[item.id]
+        transformed_trial_ids = self._mapping[trial_id]
         return [
             self.transformed_registry[transformed_id]
             for transformed_id in transformed_trial_ids
@@ -121,5 +132,16 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         # NOTE: Choosing not to register the trials here, and instead do it more manually.
         # original_id = self.original_registry.register(original_trial)
         # transformed_id = self.transformed_registry.register(transformed_trial)
-        self._mapping[original_trial.id].add(transformed_trial.id)
-        return original_trial.id
+        original_trial_id = _get_id(original_trial)
+        transformed_trial_id = _get_id(transformed_trial)
+        self._mapping[original_trial_id].add(transformed_trial_id)
+        return original_trial_id
+
+
+def _get_id(trial: Trial) -> str:
+    """Returns the unique identifier to be used to store the trial.
+
+    Only to be used internally in this module. This ignores the `experiment`
+    attribute of the trial.
+    """
+    return Trial.compute_trial_hash(trial, ignore_experiment=True)

@@ -250,7 +250,7 @@ class MaxParallelStrategy(ParallelStrategy):
     def max_result(self) -> float:
         objectives = [
             trial.objective.value
-            for trial in self.registry.values()
+            for trial in self.registry
             if trial.status == "completed" and trial.objective is not None
         ]
         if not objectives:
@@ -285,7 +285,7 @@ class MeanParallelStrategy(ParallelStrategy):
     def mean_result(self) -> float:
         objectives = [
             trial.objective.value
-            for trial in self.registry.values()
+            for trial in self.registry
             if trial.status == "completed" and trial.objective is not None
         ]
         if not objectives:
