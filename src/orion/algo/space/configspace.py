@@ -1,4 +1,3 @@
-import sys
 from math import log10
 from typing import Optional
 
@@ -94,10 +93,6 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
                 upper=dim.high if hasattr(dim, "high") else None,
             )
 
-            if sys.version_info.major == 3 and sys.version_info.minor <= 6:
-                kwargs.pop("lower")
-                kwargs.pop("upper")
-
             return NormalFloatHyperparameter(**kwargs)
 
         return
@@ -130,10 +125,6 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
                 lower=dim.low if hasattr(dim, "low") else None,
                 upper=dim.high if hasattr(dim, "high") else None,
             )
-
-            if sys.version_info.major == 3 and sys.version_info.minor <= 6:
-                kwargs.pop("lower")
-                kwargs.pop("upper")
 
             return NormalIntegerHyperparameter(**kwargs)
 

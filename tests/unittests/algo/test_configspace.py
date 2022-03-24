@@ -1,7 +1,7 @@
 import pytest
 
-from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
-from orion.algo.space.configspace import IMPORT_ERROR, to_configspace, configspace_to_orionspace
+from orion.algo.space import Categorical, Fidelity, Integer, Real, Space, to_orionspace
+from orion.algo.space.configspace import IMPORT_ERROR, to_configspace
 
 
 @pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
@@ -28,7 +28,7 @@ def test_orion_configspace():
 
     newspace = to_configspace(space)
 
-    roundtrip = configspace_to_orionspace(newspace)
+    roundtrip = to_orionspace(newspace)
 
     for k, original in space.items():
         # ConfigSpace does not have a fidelity dimension
