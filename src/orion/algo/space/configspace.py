@@ -1,3 +1,4 @@
+from functools import singledispatch
 from math import log10
 from typing import Optional
 
@@ -170,12 +171,23 @@ def to_configspace(space: Space) -> ConfigurationSpace:
     return conversion.space(space)
 
 
+@singledispatch
 def to_oriondim(dim: Hyperparameter) -> Dimension:
     """Convert a config space hyperparameter to an orion dimension"""
+    raise NotImplementedError()
 
-    if isinstance(dim, CategoricalHyperparameter):
-        choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
-        return Categorical(dim.name, choices)
+
+@to_oriondim.register(CategoricalHyperparameter)
+def from_categorical(dim: CategoricalHyperparameter) -> Dimension:
+    """Builds a categorical dimension from a categorical hyperparameter"""
+    choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
+    return Categorical(dim.name, choices)
+
+
+@to_oriondim.register(UniformIntegerHyperparameter)
+@to_oriondim.register(UniformFloatHyperparameter)
+def from_uniform(dim: Hyperparameter) -> Dimension:
+    """Builds a uniform dimension from a uniform hyperparameter"""
 
     klass = Integer
     args = []
@@ -185,32 +197,44 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
         default_value=dim.default_value
     )
 
-    if isinstance(dim, (UniformFloatHyperparameter, UniformIntegerHyperparameter)):
-        if isinstance(dim, UniformFloatHyperparameter):
-            klass = Real
-        else:
-            kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
+    if isinstance(dim, UniformFloatHyperparameter):
+        klass = Real
+    else:
+        kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
 
-        dist = "uniform"
-        args.append(dim.lower)
-        args.append(dim.upper)
+    dist = "uniform"
+    args.append(dim.lower)
+    args.append(dim.upper)
 
-        if dim.log:
-            dist = "reciprocal"
+    if dim.log:
+        dist = "reciprocal"
 
-    if isinstance(dim, (NormalFloatHyperparameter, NormalIntegerHyperparameter)):
-        if isinstance(dim, NormalFloatHyperparameter):
-            klass = Real
-        else:
-            kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
 
-        dist = "norm"
-        args.append(dim.mu)
-        args.append(dim.sigma)
+@to_oriondim.register(NormalFloatHyperparameter)
+@to_oriondim.register(NormalIntegerHyperparameter)
+def from_normal(dim: Hyperparameter) -> Dimension:
+    """Builds a normal dimension from a normal hyperparameter"""
 
-        if dim.lower:
-            kwargs["low"] = dim.lower
-            kwargs["high"] = dim.upper
+    klass = Integer
+    args = []
+    kwargs = dict(
+        # NOTE: Config space always has a config value
+        # so orion-space would get it as well
+        default_value=dim.default_value
+    )
+
+    if isinstance(dim, NormalFloatHyperparameter):
+        klass = Real
+    else:
+        kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
+
+    dist = "norm"
+    args.append(dim.mu)
+    args.append(dim.sigma)
+
+    if dim.lower:
+        kwargs["low"] = dim.lower
+        kwargs["high"] = dim.upper
 
     return klass(dim.name, dist, *args, **kwargs)
 
