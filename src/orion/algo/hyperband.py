@@ -177,7 +177,7 @@ class Hyperband(BaseAlgorithm):
         repetitions: int | float = numpy.inf,
     ):
         # NOTE: Need to set the attribute before calling super().__init__ because it calls seed_rng.
-        self.brackets: Optional[list[HyperbandBracket]] = []
+        self.brackets: list[HyperbandBracket] = []
         super().__init__(space, repetitions=repetitions, seed=seed)
         self.seed = seed
         # Stores Point id (with no fidelity) -> Bracket (int)
@@ -206,9 +206,7 @@ class Hyperband(BaseAlgorithm):
         #     raise AttributeError("Reduction factor for Hyperband needs to be at least 2.")
 
         self.repetitions = repetitions
-
-        self.brackets = None
-        self.budgets: Optional[list[list[BudgetTuple]]] = None
+        self.budgets: list[list[BudgetTuple]] = []
         if self.reduction_factor >= 2:
             self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
             self.brackets = self.create_brackets()
@@ -262,7 +260,6 @@ class Hyperband(BaseAlgorithm):
 
                 trials.append(trial)
                 self.register(trial)
-                assert self.brackets is not None
                 self.trial_to_brackets[id_wo_fidelity] = self.brackets.index(bracket)
 
         return trials
@@ -278,15 +275,13 @@ class Hyperband(BaseAlgorithm):
 
     def seed_brackets(self, seed: int | Sequence[int] | None) -> None:
         rng = numpy.random.RandomState(seed)
-        assert self.brackets is not None
-        for i, bracket in enumerate(self.brackets[::-1]):
+        for bracket in self.brackets[::-1]:
             bracket.seed_rng(tuple(rng.randint(0, 1000000, size=3)))
 
     @property
     def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict: dict[str, Any] = super().state_dict
-        assert self.brackets is not None
         state_dict.update(
             {
                 "rng_state": self.rng.get_state(),
@@ -306,7 +301,6 @@ class Hyperband(BaseAlgorithm):
         self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])
         self.trial_to_brackets = state_dict["trial_to_brackets"]
-        assert self.brackets is not None
         while len(self.brackets) < len(state_dict["brackets"]):
             self.append_brackets()
         assert len(self.brackets) == len(state_dict["brackets"]), "corrupted state"
@@ -330,14 +324,12 @@ class Hyperband(BaseAlgorithm):
                 self.get_id(sample, ignore_fidelity=True, ignore_parent=True)
                 not in self.trial_to_brackets
             ):
-                assert self.brackets is not None
                 self.trial_to_brackets[
                     self.get_id(sample, ignore_fidelity=True, ignore_parent=True)
                 ] = self.brackets.index(bracket)
 
     def promote(self, num: int) -> list[Trial]:
         samples: list[Trial] = []
-        assert self.brackets is not None
         for bracket in reversed(self.brackets):
             if bracket.is_ready() and not bracket.is_done:
                 bracket_samples = bracket.promote(num - len(samples))
@@ -348,7 +340,6 @@ class Hyperband(BaseAlgorithm):
 
     def sample(self, num: int) -> list[Trial]:
         samples: list[Trial] = []
-        assert self.brackets is not None
         for bracket in reversed(self.brackets):
             if not bracket.is_filled:
                 bracket_samples = self.sample_from_bracket(
@@ -384,7 +375,6 @@ class Hyperband(BaseAlgorithm):
         samples = self.promote(num)
 
         samples.extend(self.sample(max(num - len(samples), 0)))
-        assert self.brackets is not None
         tabulate_status(self.brackets)
 
         if samples:
@@ -412,7 +402,6 @@ class Hyperband(BaseAlgorithm):
         if not self.brackets:
             return 0
         executed_times = self.brackets[-1].repetition_id
-        assert self.budgets is not None
         all_brackets_done = all(
             bracket.is_done for bracket in self.brackets[-len(self.budgets) :]
         )
@@ -420,7 +409,6 @@ class Hyperband(BaseAlgorithm):
 
     def _refresh_brackets(self) -> None:
         """Refresh bracket if one hyperband execution is done"""
-        assert self.brackets is not None
         if all(bracket.is_done for bracket in self.brackets):
             logger.info(
                 "Hyperband execution %i is done, required to execute %s times",
@@ -433,13 +421,11 @@ class Hyperband(BaseAlgorithm):
                 self.append_brackets()
 
     def append_brackets(self) -> None:
-        assert self.brackets is not None
         self.brackets = self.brackets + self.create_brackets()
         # Reset brackets seeds
         self.seed_brackets(self.seed)
 
     def create_brackets(self) -> list[HyperbandBracket]:
-        assert self.budgets is not None
         return [
             self.create_bracket(i, bracket_budgets, self.executed_times + 1)
             for i, bracket_budgets in enumerate(self.budgets)
@@ -448,7 +434,6 @@ class Hyperband(BaseAlgorithm):
     def _get_bracket(self, trial: Trial) -> HyperbandBracket:
         """Get the bracket of a trial"""
         _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True, ignore_parent=True)
-        assert self.brackets is not None
         return self.brackets[self.trial_to_brackets[_id_wo_fidelity]]
 
     def observe(self, trials: list[Trial]) -> None:
