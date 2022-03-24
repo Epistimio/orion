@@ -28,13 +28,10 @@ class Registry(Container[Trial]):
             raise NotImplementedError(trial_or_id)
         return trial_id in self._trials
 
-    def __getitem__(self, item: int | str) -> Trial:
-        if not isinstance(item, (str, int)):
+    def __getitem__(self, item: str) -> Trial:
+        if not isinstance(item, str):
             raise KeyError(item)
-        if isinstance(item, str):
-            return self._trials[item]
-        trial_ids = list(self._trials.keys())
-        return self._trials[trial_ids[item]]
+        return self._trials[item]
 
     def __iter__(self) -> Iterator[Trial]:
         return iter(self._trials.values())
@@ -44,15 +41,19 @@ class Registry(Container[Trial]):
 
     @property
     def state_dict(self) -> dict:
-        return {"_trials": self._trials}
+        """Get the state of the registry as a dictionary."""
+        return {"_trials": copy.deepcopy(self._trials)}
 
     def set_state(self, statedict: dict) -> None:
+        """Set the state of the registry from the given dictionary."""
         self._trials = statedict["_trials"]
 
     def has_suggested(self, trial: Trial) -> bool:
+        """Check if the trial has been suggested."""
         return _get_id(trial) in self
 
     def has_observed(self, trial: Trial) -> bool:
+        """Check if the trial has been observed."""
         trial_id = _get_id(trial)
         if trial_id not in self:
             return False
@@ -91,13 +92,15 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
 
     @property
     def state_dict(self) -> dict:
+        """Get the state of the registry mapping (and each invididual registry) as a dictionary."""
         return {
             "original_registry": self.original_registry.state_dict,
             "transformed_registry": self.transformed_registry.state_dict,
-            "_mapping": self._mapping,
+            "_mapping": copy.deepcopy(self._mapping),
         }
 
     def set_state(self, statedict: dict):
+        """Set the state of the registry mapping (and each registry) from the given dictionary."""
         self.original_registry.set_state(statedict["original_registry"])
         self.transformed_registry.set_state(statedict["transformed_registry"])
         self._mapping = statedict["_mapping"]
