@@ -684,7 +684,6 @@ class GMMSampler:
                     f"Failed to sample in interval ({self.low}, {self.high})"
                 )
             elif index is None:
-                # TODO: Why is this recursive? What is the proper return type of this function?
                 point.append(
                     self.sample(num=1, attempts=attempts * self.attempts_factor)[0]
                 )
