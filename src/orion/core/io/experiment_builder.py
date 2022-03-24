@@ -73,16 +73,18 @@ hierarchy. From the more global to the more specific, there is:
   argument to ``orion`` itself as well as the user's script name and its arguments.
 
 """
+from __future__ import annotations
 import copy
 import datetime
 import getpass
 import logging
 import pprint
 import sys
-
+from typing import Callable, TypeVar
+from typing_extensions import ParamSpec
 import orion.core
 import orion.core.utils.backward as backward
-from orion.algo.base import algo_factory
+from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
@@ -486,6 +488,31 @@ def _instantiate_space(config):
     return SpaceBuilder().build(config)
 
 
+AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
+
+
+def create_algo(
+    space: Space,
+    algo_type: type[AlgoType],
+    **algo_kwargs,
+) -> SpaceTransformAlgoWrapper[AlgoType]:
+    """Creates an algorithm of the given type, taking care of transforming the space if needed."""
+    original_space = space
+    from orion.core.worker.transformer import build_required_space
+
+    # TODO: We could perhaps eventually *not* wrap the algorithm if it doesn't require any
+    # transformations. For now we just always wrap it.
+    transformed_space = build_required_space(
+        space,
+        type_requirement=algo_type.requires_type,
+        shape_requirement=algo_type.requires_shape,
+        dist_requirement=algo_type.requires_dist,
+    )
+    algorithm = algo_type(transformed_space, **algo_kwargs)
+    wrapped_algo = SpaceTransformAlgoWrapper(algorithm=algorithm, space=original_space)
+    return wrapped_algo
+
+
 def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
     """Instantiate the algorithm object
 
@@ -504,25 +531,25 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
 
     try:
         backported_config = backward.port_algo_config(config)
-        algo_constructor = algo_factory.get_class(backported_config.pop("of_type"))
-
-        requirements = backward.get_algo_requirements(algo_constructor)
-        from orion.core.worker.transformer import build_required_space
-
-        original_space = space
-        transformed_space = build_required_space(space, **requirements)
-        algorithm = algo_constructor(transformed_space, **backported_config)
-        algorithm.max_trials = max_trials
-        algo = SpaceTransformAlgoWrapper(algorithm=algorithm, space=original_space)
+        algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(
+            backported_config.pop("of_type")
+        )
+        # NOTE: the config doesn't have the `of_type` key anymore, it only has the algo's kwargs
+        wrapped_algo = create_algo(
+            space=space, algo_type=algo_constructor, **backported_config
+        )
+        if max_trials is not None:
+            # todo: Create a `max_trials` property or annotation on BaseAlgorithm at some point.
+            wrapped_algo.algorithm.max_trials = max_trials
 
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
         log.warning(str(e))
         log.warning("Algorithm will not be instantiated.")
-        algo = config
+        wrapped_algo = config
 
-    return algo
+    return wrapped_algo
 
 
 def _instantiate_strategy(config=None):
