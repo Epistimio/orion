@@ -223,17 +223,10 @@ class BaseAlgorithm:
     def register(self, trial):
         """Save the trial as one suggested or observed by the algorithm.
 
-        TODO: Update this docstring:
-        The trial objectives may change without the algorithm having actually observed it.
-        In order to detect this, we assign a tuple ``(trial and trial.objective)``
-        to the key ``self.get_id(trial)`` so that if the objective was not observed, we
-        will see that second item of the tuple is ``None``.
-
         Parameters
         ----------
         trial: ``orion.core.worker.trial.Trial``
-           Trial from a `orion.algo.space.Space`.
-
+           a Trial from `self.space`.
         """
         self.registry.register(trial)
 
