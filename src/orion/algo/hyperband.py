@@ -192,8 +192,8 @@ class Hyperband(BaseAlgorithm):
         # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
         from orion.core.worker.transformer import TransformedDimension
 
-        # TODO: Double-check with @bouthilx: Currently bypassing (possibly more than one)
-        # `TransformedDimension` wrappers to get the 'low', 'high' and 'base' attributes.
+        # NOTE: Currently bypassing (possibly more than one) `TransformedDimension` wrappers to get
+        # the 'low', 'high' and 'base' attributes.
         while isinstance(fidelity_dim, TransformedDimension):
             fidelity_dim = fidelity_dim.original_dimension
         assert isinstance(fidelity_dim, Fidelity), (fidelity_dim, type(fidelity_dim))
