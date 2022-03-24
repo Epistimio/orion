@@ -393,7 +393,6 @@ class Hyperband(BaseAlgorithm):
                 f"{self.__class__.__name__} cannot suggest new samples and must wait "
                 "for trials to complete."
             )
-        # TODO: Shouldn't this return None in this case?
         return []
 
     @property
