@@ -269,11 +269,6 @@ class TPE(BaseAlgorithm):
         self.parallel_strategy = parallel_strategy
         self._verify_space()
 
-    @property
-    def space(self) -> Space | TransformedSpace:
-        """Return transformed space of TPE"""
-        return self._space
-
     def _verify_space(self) -> None:
         """Verify space is supported"""
 
