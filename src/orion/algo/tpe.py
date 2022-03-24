@@ -267,13 +267,12 @@ class TPE(BaseAlgorithm):
         self.full_weight_num = full_weight_num
         self.max_retry = max_retry
         self.parallel_strategy = parallel_strategy
-        self._initialize()
+        self._verify_space()
 
     @property
     def space(self) -> Space | TransformedSpace:
         """Return transformed space of TPE"""
         return self._space
-
 
     def _verify_space(self) -> None:
         """Verify space is supported"""
@@ -324,22 +323,18 @@ class TPE(BaseAlgorithm):
         self.rng.set_state(state_dict["rng_state"])
         self.strategy.set_state(state_dict["strategy"])
 
-    def suggest(self, num: int | None = None) -> list[Trial] | None:
+    def suggest(self, num: int) -> list[Trial] | None:
         """Suggest a `num` of new sets of parameters. Randomly draw samples
         from the import space and return them.
 
         Parameters
         ----------
-        num: int, optional
-            Number of trials to sample. If None, TPE will sample all random trials at once, or a
-            single trial if it is at the Bayesian Optimization stage.
+        num: int
+            Number of trials to sample.
 
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
-        # TODO: Code below assumes that `num` is an int, but docstring says it can be None.
-        # NOTE: Making this explicit for now:
-        assert num is not None
         # Only sample up to `n_initial_points` and after that only sample one at a time.
         num_samples = min(num, max(self.n_initial_points - self.n_suggested, 1))
 
