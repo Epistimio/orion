@@ -361,7 +361,6 @@ class TPE(BaseAlgorithm):
             for candidate in function(num - len(trials)):
                 if candidate not in self.registry:
                     self.register(candidate)
-                    # self.registry.register(candidate)
                     trials.append(candidate)
                 else:
                     retries += 1
@@ -432,7 +431,6 @@ class TPE(BaseAlgorithm):
             params[dimension.name] = dim_samples
 
         trial = format_trials.dict_to_trial(params, self.space)
-        # return self.format_trial(trial)
         return trial
 
     def _sample_real_dimension(
