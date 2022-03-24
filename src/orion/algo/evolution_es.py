@@ -221,11 +221,12 @@ class BracketEVES(HyperbandBracket):
 
         self.mutate_attr: dict = {}
         if evolution_es.mutate:
-            # TODO: This is inconsistent with the docstring of the constructor, which says it can be
-            # a string. Adding an assert here in the meantime, just to state the assumption
-            # explicitly.
-            assert isinstance(evolution_es.mutate, dict)
-            self.mutate_attr = copy.deepcopy(evolution_es.mutate)
+            if isinstance(evolution_es.mutate, str):
+                self.mutate_attr = {"function": evolution_es.mutate}
+            elif isinstance(evolution_es.mutate, dict):
+                self.mutate_attr = copy.deepcopy(evolution_es.mutate)
+            else:
+                raise ValueError(f"Unsupported type for mutate: {evolution_es.mutate}")
         function_string = self.mutate_attr.pop(
             "function", "orion.algo.mutate_functions.default_mutate"
         )
