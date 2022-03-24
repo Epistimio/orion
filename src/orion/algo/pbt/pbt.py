@@ -402,7 +402,6 @@ class PBT(BaseAlgorithm):
 
             logger.debug("Forking trial %s to %s", trial_to_branch, new_trial)
 
-            assert new_trial is not None
             branched_trials.append(new_trial)
             self.register(new_trial)
 
