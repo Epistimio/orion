@@ -332,7 +332,6 @@ class BracketEVES(HyperbandBracket):
                     point[j] = self.eves.population[j][i]
 
                 trial = format_trials.tuple_to_trial(point, self.space)
-                # trial = self.eves.format_trial(trial)
                 trial_id = self.eves.get_id(trial)
 
                 if trial_id in trial_ids:

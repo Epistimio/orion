@@ -584,13 +584,6 @@ class HyperbandBracket:
             trial.objective.value if trial.objective else None,
             copy.deepcopy(trial),
         )
-        # Note: replaces this:
-        # self._get_results(trial)[
-        #     self.hyperband.get_id(trial, ignore_fidelity=True, ignore_parent=True)
-        # ] = (
-        #     trial.objective.value if trial.objective else None,
-        #     copy.deepcopy(trial),
-        # )
 
     def _get_results(self, trial: Trial) -> dict:
         fidelity = flatten(trial.params)[self.hyperband.fidelity_index]

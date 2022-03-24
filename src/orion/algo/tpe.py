@@ -274,13 +274,9 @@ class TPE(BaseAlgorithm):
         """Return transformed space of TPE"""
         return self._space
 
-    # @space.setter
-    # def space(self, space: Space | TransformedSpace) -> None:
-    #     """Set the space of TPE and initialize it"""
-    #     self._space = space
 
-    def _initialize(self) -> None:
-        """Initialize TPE once the space is transformed"""
+    def _verify_space(self) -> None:
+        """Verify space is supported"""
 
         for dimension in self.space.values():
 
