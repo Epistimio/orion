@@ -10,7 +10,7 @@ generic manner.
 """
 from __future__ import annotations
 
-from typing import Callable, Generic, Iterable, Sequence, TypeVar
+from typing import Callable, Generic, Iterable, Iterator, Sequence, TypeVar
 
 # pylint: disable=invalid-name
 T = TypeVar("T", covariant=True)
@@ -18,7 +18,7 @@ V = TypeVar("V")
 
 
 # pylint: disable=too-few-public-methods
-class PreOrderTraversal(Iterable[T]):
+class PreOrderTraversal(Iterable["TreeNode[T]"]):
     """Iterate on a tree in a pre-order traversal fashion
 
     Attributes
@@ -34,11 +34,11 @@ class PreOrderTraversal(Iterable[T]):
         """Initialize the stack for iteration"""
         self.stack = [tree_node]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[TreeNode[T]]:
         """Get the iterator"""
         return self
 
-    def __next__(self):
+    def __next__(self) -> TreeNode[T]:
         """Get the next node in pre-order traversal"""
         try:
             node = self.stack.pop()
@@ -51,7 +51,7 @@ class PreOrderTraversal(Iterable[T]):
 
 
 # pylint: disable=too-few-public-methods
-class DepthFirstTraversal(object):
+class DepthFirstTraversal(Iterable["TreeNode[T]"]):
     """Iterate on a tree in a pre-order traversal fashion
 
     Attributes
@@ -65,27 +65,27 @@ class DepthFirstTraversal(object):
 
     __slots__ = ("stack", "seen")
 
-    def __init__(self, tree_node):
+    def __init__(self, tree_node: TreeNode[T]):
         """Initialize the stack and set of seen nodes for iteration"""
         self.stack = [tree_node]
-        self.seen = set()
+        self.seen: set[TreeNode[T]] = set()
 
-    def _compute_potential(self):
+    def _compute_potential(self) -> list[TreeNode[T]]:
         """Filter out seen nodes from the stack"""
         if not self.stack:
             return []
 
         return list(filter(lambda n: n not in self.seen, self.stack[-1].children))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[TreeNode[T]]:
         """Get the iterator"""
         return self
 
-    def __next__(self):
+    def __next__(self) -> TreeNode[T]:
         """Get the next node in depth-first traversal"""
         potential = self._compute_potential()
         while self.stack and potential:
-            self.stack += potential[::-1]
+            self.stack.extend(potential[::-1])
             potential = self._compute_potential()
 
         try:
@@ -342,7 +342,7 @@ class TreeNode(Generic[T]):
 
         return sum([node.item for node in nodes], [])
 
-    # TODO: Trying to type-annotate this function with overloads is a complete nightmare.
+    # NOTE: Would be nice to type-annotate this method with overloads, but it's really tough.
 
     def map(
         self,
