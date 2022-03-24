@@ -177,7 +177,7 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
     raise NotImplementedError()
 
 
-@to_oriondim.register(CategoricalHyperparameter)
+@to_oriondim.register
 def from_categorical(dim: CategoricalHyperparameter) -> Dimension:
     """Builds a categorical dimension from a categorical hyperparameter"""
     choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
@@ -208,6 +208,8 @@ def from_uniform(dim: Hyperparameter) -> Dimension:
 
     if dim.log:
         dist = "reciprocal"
+
+    return klass(dim.name, dist, *args, **kwargs)
 
 
 @to_oriondim.register(NormalFloatHyperparameter)
@@ -252,6 +254,8 @@ def configspace_to_orionspace(cspace: ConfigurationSpace) -> Space:
 
     for _, cdim in cspace.get_hyperparameters_dict().items():
         odim = to_oriondim(cdim)
+        print(cdim, odim)
+        assert odim is not None
         space.register(odim)
 
     return space
