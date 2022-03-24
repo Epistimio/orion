@@ -80,8 +80,7 @@ import getpass
 import logging
 import pprint
 import sys
-from typing import Callable, TypeVar
-from typing_extensions import ParamSpec
+from typing import TypeVar
 import orion.core
 import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm, algo_factory
