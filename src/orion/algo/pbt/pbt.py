@@ -822,7 +822,6 @@ class LineageNode(TreeNode):
             identical working_dir would imply that different trials have identical parameters.
 
         """
-        # BUG: Here getting the working_dir property is causing an issue.
         if self.item.working_dir == new_trial.working_dir:
             raise RuntimeError(
                 f"The new trial {new_trial.id} has the same working directory as "
