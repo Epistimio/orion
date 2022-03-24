@@ -347,9 +347,8 @@ class TPE(BaseAlgorithm):
                 # Perhaps the BO algo wasn't able to suggest any points? Break in that case.
                 break
             for candidate in candidates:
-                if candidate:
-                    self.register(candidate)
-                    samples.append(candidate)
+                self.register(candidate)
+                samples.append(candidate)
         return samples
 
     def _suggest(
