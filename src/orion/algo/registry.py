@@ -102,11 +102,12 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         self.transformed_registry.set_state(statedict["transformed_registry"])
         self._mapping = statedict["_mapping"]
 
-    def __iter__(self) -> Iterator[Trial]:
-        return iter(self.original_registry)
+    def __iter__(self) -> Iterator[tuple[Trial, list[Trial]]]:
+        for trial in self.original_registry:
+            yield trial, self[trial]
 
     def __len__(self) -> int:
-        return len(self.original_registry)
+        return len(self._mapping)
 
     def __contains__(self, trial: Trial):
         return trial in self.original_registry
@@ -114,6 +115,8 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
     def __getitem__(self, item: Trial) -> list[Trial]:
         trial_id = _get_id(item)
         if trial_id not in self._mapping:
+            if trial_id in self.original_registry:
+                return []
             raise KeyError(item)
         transformed_trial_ids = self._mapping[trial_id]
         return [
