@@ -74,6 +74,7 @@ hierarchy. From the more global to the more specific, there is:
 
 """
 from __future__ import annotations
+
 import copy
 import datetime
 import getpass
@@ -81,6 +82,7 @@ import logging
 import pprint
 import sys
 from typing import TypeVar
+
 import orion.core
 import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm, algo_factory
