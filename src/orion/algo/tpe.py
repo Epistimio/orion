@@ -660,7 +660,6 @@ class GMMSampler:
         """Sample required number of points"""
         if attempts is None:
             attempts = self.base_attempts
-        # TODO: See below, unsure about the return type for this function.
         point: list[numpy.ndarray] = []
         for _ in range(num):
             pdf = numpy.argmax(self.tpe.rng.multinomial(1, self.weights))
@@ -674,7 +673,7 @@ class GMMSampler:
 
                 if any(valid_points):
                     index = numpy.argmax(valid_points)
-                    point.append(float(new_points[index]))
+                    point.append(new_points[index])
                     break
 
                 index = None
