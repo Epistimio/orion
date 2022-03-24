@@ -13,12 +13,16 @@ from __future__ import annotations
 from typing import Callable, Generic, Iterable, Iterator, Sequence, TypeVar
 
 # pylint: disable=invalid-name
-T = TypeVar("T", covariant=True)
+T = TypeVar("T")
 V = TypeVar("V")
 
+Self = TypeVar("Self", bound="TreeNode")
 
 # pylint: disable=too-few-public-methods
-class PreOrderTraversal(Iterable["TreeNode[T]"]):
+NodeType = TypeVar("NodeType", bound="TreeNode")
+
+
+class PreOrderTraversal(Iterable[NodeType]):
     """Iterate on a tree in a pre-order traversal fashion
 
     Attributes
@@ -30,15 +34,15 @@ class PreOrderTraversal(Iterable["TreeNode[T]"]):
 
     __slots__ = ("stack",)
 
-    def __init__(self, tree_node: TreeNode[T]):
+    def __init__(self, tree_node: NodeType):
         """Initialize the stack for iteration"""
         self.stack = [tree_node]
 
-    def __iter__(self) -> Iterator[TreeNode[T]]:
+    def __iter__(self) -> Iterator[NodeType]:
         """Get the iterator"""
         return self
 
-    def __next__(self) -> TreeNode[T]:
+    def __next__(self) -> NodeType:
         """Get the next node in pre-order traversal"""
         try:
             node = self.stack.pop()
@@ -51,7 +55,7 @@ class PreOrderTraversal(Iterable["TreeNode[T]"]):
 
 
 # pylint: disable=too-few-public-methods
-class DepthFirstTraversal(Iterable["TreeNode[T]"]):
+class DepthFirstTraversal(Iterable[NodeType]):
     """Iterate on a tree in a pre-order traversal fashion
 
     Attributes
@@ -65,23 +69,23 @@ class DepthFirstTraversal(Iterable["TreeNode[T]"]):
 
     __slots__ = ("stack", "seen")
 
-    def __init__(self, tree_node: TreeNode[T]):
+    def __init__(self, tree_node: NodeType):
         """Initialize the stack and set of seen nodes for iteration"""
         self.stack = [tree_node]
-        self.seen: set[TreeNode[T]] = set()
+        self.seen: set[NodeType] = set()
 
-    def _compute_potential(self) -> list[TreeNode[T]]:
+    def _compute_potential(self) -> list[NodeType]:
         """Filter out seen nodes from the stack"""
         if not self.stack:
             return []
 
         return list(filter(lambda n: n not in self.seen, self.stack[-1].children))
 
-    def __iter__(self) -> Iterator[TreeNode[T]]:
+    def __iter__(self) -> Iterator[NodeType]:
         """Get the iterator"""
         return self
 
-    def __next__(self) -> TreeNode[T]:
+    def __next__(self) -> NodeType:
         """Get the next node in depth-first traversal"""
         potential = self._compute_potential()
         while self.stack and potential:
@@ -98,7 +102,7 @@ class DepthFirstTraversal(Iterable["TreeNode[T]"]):
         return node
 
 
-class TreeNode(Generic[T]):
+class TreeNode(Generic[T], Iterable[T]):
     r"""Tree node data structure
 
     Nodes have an attribute item to carry arbitrary information. A node may only have one parent and
@@ -182,10 +186,10 @@ class TreeNode(Generic[T]):
     __slots__ = ("_item", "_parent", "_children")
 
     def __init__(
-        self,
+        self: Self,
         item: T,
-        parent: TreeNode[T] | None = None,
-        children: Sequence[TreeNode[T]] = tuple(),
+        parent: Self | None = None,
+        children: Sequence[Self] = tuple(),
     ):
         """Initialize node with item, parent and children
 
@@ -193,8 +197,8 @@ class TreeNode(Generic[T]):
             :class:`orion.core.utils.tree.TreeNode` for information about the attributes
         """
         self._item: T = item
-        self._parent: TreeNode[T] | None = None
-        self._children: list[TreeNode[T]] = []
+        self._parent: Self | None = None
+        self._children: list[Self] = []
 
         if parent is not None:
             self.set_parent(parent)
@@ -212,7 +216,7 @@ class TreeNode(Generic[T]):
         self._item = new_item
 
     @property
-    def parent(self) -> TreeNode[T] | None:
+    def parent(self: Self) -> Self | None:
         """Get parent of the node, None if no parent"""
         return self._parent
 
@@ -225,7 +229,7 @@ class TreeNode(Generic[T]):
             assert self._parent is not None
             self._parent.drop_children(self)
 
-    def set_parent(self, node: TreeNode[T]) -> None:
+    def set_parent(self: Self, node: Self) -> None:
         """Set the parent of the node
 
         Note that setting a new parent will have the effect of dropping the previous parent, hence
@@ -247,11 +251,11 @@ class TreeNode(Generic[T]):
             node.add_children(self)
 
     @property
-    def children(self) -> list[TreeNode[T]]:
+    def children(self: Self) -> list[Self]:
         """Get children of the node, empty list if no children"""
         return self._children
 
-    def drop_children(self, *nodes: TreeNode[T]) -> None:
+    def drop_children(self: Self, *nodes: Self) -> None:
         """Drop the children of the node, do nothing if no parent
 
         If no nodes are passed, the method will drop all the children of the current node.
@@ -272,7 +276,7 @@ class TreeNode(Generic[T]):
             # pylint: disable=protected-access
             child._parent = None
 
-    def add_children(self, *nodes: TreeNode[T]) -> None:
+    def add_children(self: Self, *nodes: Self) -> None:
         """Add children to the current node
 
         Note that added children will have their parent set to the current node as well.
@@ -282,7 +286,7 @@ class TreeNode(Generic[T]):
         """
         for child in nodes:
             if child is not None and not isinstance(child, TreeNode):
-                raise TypeError("Cannot add %s to children" % str(child))
+                raise TypeError(f"Cannot add {child} to children")
 
             if child not in self._children:
                 # TreeNode.set_parent uses add_children so using it here could cause an infinit
@@ -304,9 +308,9 @@ class TreeNode(Generic[T]):
         return self.parent.root
 
     @property
-    def leafs(self) -> list[TreeNode[T]]:
+    def leafs(self: Self) -> list[Self]:
         """Get the leafs of the tree"""
-        leaves: list[TreeNode[T]] = []
+        leaves: list[Self] = []
         for child in self.children:
             leaves += child.leafs
 
@@ -323,7 +327,7 @@ class TreeNode(Generic[T]):
 
         return 0
 
-    def get_nodes_at_depth(self, depth: int) -> list[T]:
+    def get_nodes_at_depth(self: Self, depth: int) -> list[Self]:
         """Returns a list of nodes at the corresponding depth.
 
         Depth is relative to current node. To get nodes at a depth relative
@@ -331,8 +335,8 @@ class TreeNode(Generic[T]):
         """
 
         def has_depth(
-            node: TreeNode[T], children: list[TreeNode[T]]
-        ) -> tuple[list[TreeNode[T]], list[TreeNode[T]] | None]:
+            node: TreeNode[T], children: Sequence[TreeNode[T]]
+        ) -> tuple[Sequence[TreeNode[T]], Sequence[TreeNode[T]] | None]:
             if node.node_depth - self.node_depth == depth:
                 return [node], None
 
@@ -347,7 +351,7 @@ class TreeNode(Generic[T]):
     def map(
         self,
         function: Callable,
-        node: TreeNode[T] | list[TreeNode[T]] | None,
+        node: TreeNode[T] | Sequence[TreeNode[T]] | None,
     ) -> TreeNode:
         r"""Apply a function recursively on the tree
 
@@ -437,6 +441,8 @@ class TreeNode(Generic[T]):
             rval, _ = function(self, None)
             return TreeNode(rval)
         elif node is self.parent:
+            assert node is not None
+            assert isinstance(node, TreeNode)
             rval_parent_node = node.map(function, node.parent)
             rval, parent_node = function(self, rval_parent_node)
             return TreeNode(rval, parent_node)
@@ -449,22 +455,20 @@ class TreeNode(Generic[T]):
         else:
             raise ValueError("Invalid nodes: %s" % str(node))
 
-    def __iter__(self) -> Iterable[TreeNode[T]]:
+    def __iter__(self: Self) -> PreOrderTraversal[Self]:
         """Iterate on the tree with pre-order traversal"""
         return PreOrderTraversal(self)
 
     def __repr__(self) -> str:
         """Represent the object as a string."""
-        parent = self.parent
-        if parent is not None:
-            parent = parent.item
+        parent_item = self.parent.item if self.parent is not None else None
 
         children = [child.item for child in self.children]
 
         return "%s(%s, parent=%s, children=%s)" % (
             self.__class__.__name__,
             str(self.item),
-            str(parent),
+            str(parent_item),
             str(children),
         )
 
