@@ -246,12 +246,6 @@ class ASHABracket(HyperbandBracket):
         super().__init__(hyperband=asha, budgets=budgets, repetition_id=repetition_id)
         self.asha: ASHA = asha
 
-    def sample(self, num: int) -> list[Trial]:
-        """Sample a new trial with lowest fidelity"""
-        should_have_n_trials = self.rungs[0]["n_trials"]
-        # BUG: Shouldn't this be `sample_from_bracket`?
-        return self.hyperband.sample_for_bracket(num, self)
-
     def get_candidates(self, rung_id: int) -> list[Trial]:
         """Get a candidate for promotion
 
