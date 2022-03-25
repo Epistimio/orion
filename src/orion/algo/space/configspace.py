@@ -254,7 +254,6 @@ def configspace_to_orionspace(cspace: ConfigurationSpace) -> Space:
 
     for _, cdim in cspace.get_hyperparameters_dict().items():
         odim = to_oriondim(cdim)
-        print(cdim, odim)
         assert odim is not None
         space.register(odim)
 
