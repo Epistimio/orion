@@ -675,9 +675,6 @@ class TestTPE_old:
             return wrapper
 
         tpe = _create_algo(space=space, seed=1, n_initial_points=10)
-        # tpe = TPE(space=space, seed=1)
-
-        # tpe.n_initial_points = 10
         results = numpy.random.random(10)
         for i in range(10):
             trials = tpe.suggest(1)
