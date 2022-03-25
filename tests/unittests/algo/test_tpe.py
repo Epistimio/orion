@@ -917,7 +917,6 @@ class TestTPE(BaseAlgoTests):
         monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
 
         self.force_observe(RANGE, algo)
-        # # BUG: How can a trial be in the registry, if that wasn't observed?
         assert len(algo.algorithm.registry) == RANGE
         assert len(algo.registry_mapping) == RANGE
         assert len(algo.registry) == RANGE

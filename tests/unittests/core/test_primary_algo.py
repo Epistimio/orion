@@ -99,9 +99,6 @@ class TestSpaceTransformAlgoWrapperWraps:
         # NOTE: Now, if an algorithm has already suggested the same trial, we don't return a
         # duplicate.
         assert not ptrials
-        # assert ptrials is not None
-        # assert len(ptrials) == 4
-        # assert [trial.params for trial in ptrials] == [fixed_suggestion.params] * 4
         palgo.algorithm.possible_values = [fixed_suggestion]
         del fixed_suggestion._params[-1]
         with pytest.raises(ValueError, match="not contained in space"):
