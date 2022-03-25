@@ -75,6 +75,16 @@ class Registry(Container[Trial]):
         self._trials[trial_id] = trial_copy
         return trial_id
 
+    def get_existing(self, trial: Trial) -> Trial:
+        """Get the equivalent trial from the registry.
+
+        If `trial` isn't in the registry, raises a RuntimeError.
+        """
+        trial_id = _get_id(trial)
+        if trial_id not in self:
+            raise RuntimeError(f"Trial `{trial}` isn't in the registry (id={trial_id})")
+        return self[trial_id]
+
 
 class RegistryMapping(Mapping[Trial, "list[Trial]"]):
     """A map between the original and transformed registries.

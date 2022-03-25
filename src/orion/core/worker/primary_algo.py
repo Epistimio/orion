@@ -130,17 +130,19 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
             original = self.transformed_space.reverse(transformed_trial)
             if original in self.registry:
                 # We already have a trial that is equivalent to this one.
-                # Copy over the status and results and observe it.
+                # Fetch the actual trial (with the status and possibly results)
+                original = self.registry.get_existing(original)
+                # Copy over the status and results from the original to the transformed trial
+                # and observe it.
                 transformed_trial = _copy_status_and_results(
                     original_trial=original, transformed_trial=transformed_trial
                 )
                 self.algorithm.observe([transformed_trial])
             else:
                 # We haven't seen this trial before. Register it.
+                self.registry.register(original)
                 trials.append(original)
 
-            # Register the trial in our registry.
-            self.registry.register(original)
             # Here we register the transformed trial just in case the algorithm hasn't already
             # registered the trial in its `suggest`.
             self.algorithm.register(transformed_trial)
