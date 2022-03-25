@@ -22,6 +22,29 @@ logger = get_logger(__name__)
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
+
+def create_algo(
+    space: Space,
+    algo_type: type[AlgoType],
+    **algo_kwargs,
+) -> SpaceTransformAlgoWrapper[AlgoType]:
+    """Creates an algorithm of the given type, taking care of transforming the space if needed."""
+    original_space = space
+    from orion.core.worker.transformer import build_required_space
+
+    # TODO: We could perhaps eventually *not* wrap the algorithm if it doesn't require any
+    # transformations. For now we just always wrap it.
+    transformed_space = build_required_space(
+        space,
+        type_requirement=algo_type.requires_type,
+        shape_requirement=algo_type.requires_shape,
+        dist_requirement=algo_type.requires_dist,
+    )
+    algorithm = algo_type(transformed_space, **algo_kwargs)
+    wrapped_algo = SpaceTransformAlgoWrapper(algorithm=algorithm, space=original_space)
+    return wrapped_algo
+
+
 # pylint: disable=too-many-public-methods
 class SpaceTransformAlgoWrapper(Generic[AlgoType]):
     """Perform checks on points and transformations. Wrap the primary algorithm.

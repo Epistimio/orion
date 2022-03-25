@@ -81,7 +81,6 @@ import getpass
 import logging
 import pprint
 import sys
-from typing import TypeVar
 
 import orion.core
 import orion.core.utils.backward as backward
@@ -101,7 +100,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -487,31 +486,6 @@ def _instantiate_space(config):
         return config
 
     return SpaceBuilder().build(config)
-
-
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
-
-
-def create_algo(
-    space: Space,
-    algo_type: type[AlgoType],
-    **algo_kwargs,
-) -> SpaceTransformAlgoWrapper[AlgoType]:
-    """Creates an algorithm of the given type, taking care of transforming the space if needed."""
-    original_space = space
-    from orion.core.worker.transformer import build_required_space
-
-    # TODO: We could perhaps eventually *not* wrap the algorithm if it doesn't require any
-    # transformations. For now we just always wrap it.
-    transformed_space = build_required_space(
-        space,
-        type_requirement=algo_type.requires_type,
-        shape_requirement=algo_type.requires_shape,
-        dist_requirement=algo_type.requires_dist,
-    )
-    algorithm = algo_type(transformed_space, **algo_kwargs)
-    wrapped_algo = SpaceTransformAlgoWrapper(algorithm=algorithm, space=original_space)
-    return wrapped_algo
 
 
 def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
