@@ -25,6 +25,7 @@ def test_orion_configspace():
     space.register(Real("n1", "norm", 0.9, 0.1, precision=6))
     space.register(Real("n2", "norm", 0.9, 0.1, precision=None))
     space.register(Real("n3", "norm", 0.9, 0.1))
+    space.register(Integer("n4", "norm", 1, 2))
 
     newspace = to_configspace(space)
 
@@ -44,3 +45,15 @@ def test_orion_configspace():
 
         assert type(original) == type(converted)
         assert original == converted
+
+
+@pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
+def test_configspace_to_orion_unsupported():
+    from ConfigSpace import ConfigurationSpace
+    from ConfigSpace.hyperparameters import OrdinalHyperparameter
+
+    cspace = ConfigurationSpace()
+    cspace.add_hyperparameters([OrdinalHyperparameter("a", (1, 2, 0, 3))])
+
+    with pytest.raises(NotImplementedError):
+        _ = to_orionspace(cspace)

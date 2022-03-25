@@ -82,7 +82,6 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
         if dim.prior_name in ("normal", "norm"):
             a, b = dim._args
 
-            # TODO: #845 remove python 3.6 special case
             kwargs = dict(
                 name=dim.name,
                 mu=a,
@@ -112,10 +111,9 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
                 log=dim.prior_name == "int_reciprocal",
             )
 
-        if dim.prior_name in ("norm", "normal"):
+        if dim.prior_name in ("int_norm", "normal"):
             a, b = dim._args
 
-            # TODO: #845 remove python 3.6 special case
             kwargs = dict(
                 name=dim.name,
                 mu=a,
@@ -174,7 +172,7 @@ def to_configspace(space: Space) -> ConfigurationSpace:
 @singledispatch
 def to_oriondim(dim: Hyperparameter) -> Dimension:
     """Convert a config space hyperparameter to an orion dimension"""
-    raise NotImplementedError()
+    raise NotImplementedError(f"Dimension {dim} is not supported by Orion")
 
 
 @to_oriondim.register
@@ -254,7 +252,6 @@ def configspace_to_orionspace(cspace: ConfigurationSpace) -> Space:
 
     for _, cdim in cspace.get_hyperparameters_dict().items():
         odim = to_oriondim(cdim)
-        print(cdim, odim)
         assert odim is not None
         space.register(odim)
 
