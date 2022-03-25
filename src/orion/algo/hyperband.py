@@ -237,7 +237,6 @@ class Hyperband(BaseAlgorithm):
             bracket_id = self.trial_to_brackets.get(id_wo_fidelity, None)
             bracket_observed: HyperbandBracket | None = None
             if bracket_id is not None:
-                assert self.brackets is not None
                 bracket_observed = self.brackets[bracket_id]
             else:
                 bracket_observed = None
@@ -481,7 +480,6 @@ class Hyperband(BaseAlgorithm):
         if self.executed_times >= self.repetitions:
             return True
         fidelity_index = self.fidelity_index
-        assert fidelity_index is not None
         n_suggested_with_max_fidelity = 0
         fidelity_dim = self.space[fidelity_index]
         _, max_fidelity_value = fidelity_dim.interval()
