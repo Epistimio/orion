@@ -183,11 +183,7 @@ class Hyperband(BaseAlgorithm):
         # Stores Point id (with no fidelity) -> Bracket (int)
         self.trial_to_brackets: dict[str, int] = {}
 
-        fidelity_index: str | None = self.fidelity_index
-        if fidelity_index is None:
-            raise RuntimeError(SPACE_ERROR)
-
-        fidelity_dim: Fidelity = space[fidelity_index]
+        fidelity_dim: Fidelity = space[self.fidelity_index]
 
         # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
         from orion.core.worker.transformer import TransformedDimension
@@ -196,7 +192,7 @@ class Hyperband(BaseAlgorithm):
         # the 'low', 'high' and 'base' attributes.
         while isinstance(fidelity_dim, TransformedDimension):
             fidelity_dim = fidelity_dim.original_dimension
-        assert isinstance(fidelity_dim, Fidelity), (fidelity_dim, type(fidelity_dim))
+        assert isinstance(fidelity_dim, Fidelity)
 
         self.min_resources = fidelity_dim.low
         self.max_resources = fidelity_dim.high
@@ -467,6 +463,17 @@ class Hyperband(BaseAlgorithm):
                     "have a wrong timestamps."
                 )
                 continue
+
+    @property
+    def fidelity_index(self) -> str:
+        """Compute the dimension name of the space where fidelity is.
+
+        There is always a fidelity dimension in Hyperband. If there isn't one, raises an exception.
+        """
+        fidelity_index = super().fidelity_index
+        if fidelity_index is None:
+            raise RuntimeError(SPACE_ERROR)
+        return fidelity_index
 
     @property
     def is_done(self) -> bool:
