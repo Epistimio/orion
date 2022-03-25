@@ -623,14 +623,18 @@ class HyperbandBracket:
 
         rung_results = self.rungs[rung_id]["results"]
         next_rung = self.rungs[rung_id + 1]["results"]
-        # BUG: What if some of the objectives are None? Then comparison between None and floats here
+        # BUG: https://github.com/Epistimio/orion/issues/858:
+        # What if some of the objectives are None? Then comparison between None and floats here
         # will cause an error. During tests, the objectives are all None, so the comparison doesn't
         # fail!
         # Adding this assert to make this assumption more explicit, while we decide if this is
         # normal.
         assert sum(
             objective is not None for objective, trial in rung_results.values()
-        ) in {0, len(rung_results)}
+        ) in {
+            0,
+            len(rung_results),
+        }, "Assuming objectives are either all None or all floats."
 
         rung = sorted(rung_results.values(), key=lambda pair: pair[0])
 
