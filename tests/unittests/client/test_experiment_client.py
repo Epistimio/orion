@@ -637,8 +637,7 @@ class TestSuggest:
 
             trial = client.suggest()
             assert trial.status == "reserved"
-            # assert trial.params["x"] == 57.57  # BUG: This check is failing atm.
-            # FIXME: Changing the hard-coded value here so the test now passes.
+            # NOTE: This value is related to the rng seed used and the seeding of the Random algo.
             assert trial.params["x"] == 83.40
             assert len(experiment.fetch_trials()) > 5
 
