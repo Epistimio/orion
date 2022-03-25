@@ -389,12 +389,11 @@ class PBT(BaseAlgorithm):
             trial = self._queue.pop(0)
 
             trial_to_branch, new_trial = self._generate_offspring(trial)
-
             if trial_to_branch is None:
                 logger.debug("Skipping trial %s", trial)
                 skipped_trials.append(trial)
                 continue
-            # NOTE: This assumes that new_trial is not None.
+            # NOTE: new_trial isn't None if trial_to_branch is not None.
             assert new_trial is not None
             self.lineages.fork(trial_to_branch, new_trial)
 
@@ -411,7 +410,9 @@ class PBT(BaseAlgorithm):
 
         return branched_trials
 
-    def _generate_offspring(self, trial: Trial) -> tuple[Trial | None, Trial | None]:
+    def _generate_offspring(
+        self, trial: Trial
+    ) -> tuple[Trial, Trial] | tuple[None, None]:
         """Try to promote or fork a given trial."""
 
         new_trial = trial
