@@ -294,10 +294,12 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
 
     def get_id(self, trial: Trial, ignore_fidelity: bool = False) -> str:
         """Compute a unique hash for a trial based on params"""
-        # TODO: Double-check this with @bouthilx: Should we check the registry mapping? Or create a
-        # new transformed trial?
-        transformed_trial = self.transformed_space.transform(trial)
-        return self.algorithm.get_id(transformed_trial, ignore_fidelity=ignore_fidelity)
+        return Trial.compute_trial_hash(
+            trial,
+            ignore_fidelity=ignore_fidelity,
+            ignore_experiment=True,
+            ignore_lie=True,
+        )
 
     @property
     def fidelity_index(self) -> str | None:
