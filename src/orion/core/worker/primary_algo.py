@@ -348,5 +348,6 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
 def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
     """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
     new_transformed_trial = copy.deepcopy(original_trial)
+    # pylint: disable=protected-access
     new_transformed_trial._params = copy.deepcopy(transformed_trial._params)
     return new_transformed_trial
