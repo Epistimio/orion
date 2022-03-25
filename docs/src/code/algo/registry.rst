@@ -1,4 +1,4 @@
-Registries 
+Registries
 ===========
 
 .. autoclass:: orion.algo.registry.Registry
