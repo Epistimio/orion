@@ -20,11 +20,10 @@ import orion.core.worker.experiment
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 from orion.storage.base import LockedAlgorithmState, get_storage
 from orion.testing import OrionState
-from orion.testing.algo import create_algo
 
 
 @pytest.fixture()

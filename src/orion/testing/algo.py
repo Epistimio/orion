@@ -25,7 +25,7 @@ from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.space import build_space
@@ -112,23 +112,6 @@ def customized_mutate_example(search_space, rng, old_value, **kwargs):
     return new_value
 
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
-
-
-def create_algo(
-    algo_type: type[AlgoType], space: Space, **algo_kwargs
-) -> SpaceTransformAlgoWrapper[AlgoType]:
-    transformed_space = build_required_space(
-        original_space=space,
-        type_requirement=algo_type.requires_type,
-        shape_requirement=algo_type.requires_shape,
-        dist_requirement=algo_type.requires_dist,
-    )
-    algo = algo_type(transformed_space, **algo_kwargs)
-    wrapper = SpaceTransformAlgoWrapper(algo, space=space)
-    return wrapper
-
-
 class BaseAlgoTests:
     """Generic Test-suite for HPO algorithms.
 
@@ -196,20 +179,10 @@ class BaseAlgoTests:
         """
         config = copy.deepcopy(config or self.config)
         config.update(kwargs)
-        base_algo_type: Type[
-            orion.algo.base.BaseAlgorithm
-        ] = orion.algo.base.algo_factory.get_class(self.algo_name)
+        base_algo_type = orion.algo.base.algo_factory.get_class(self.algo_name)
         original_space = space or self.create_space()
-        transformed_space = build_required_space(
-            original_space=original_space,
-            type_requirement=base_algo_type.requires_type,
-            shape_requirement=base_algo_type.requires_shape,
-            dist_requirement=base_algo_type.requires_dist,
-        )
-        base_algo = base_algo_type(space=transformed_space, **config)
-        base_algo.max_trials = self.max_trials
-
-        algo = SpaceTransformAlgoWrapper(algorithm=base_algo, space=original_space)
+        algo = create_algo(space=original_space, algo_type=base_algo_type, **config)
+        algo.algorithm.max_trials = self.max_trials
         return algo
 
     def update_space(self, test_space):

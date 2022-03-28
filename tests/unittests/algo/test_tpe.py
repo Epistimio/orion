@@ -23,7 +23,7 @@ from orion.algo.tpe import (
     ramp_up_weights,
 )
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, phase
@@ -661,20 +661,7 @@ class TestTPE_old:
         dim2 = Real("yolo2", "uniform", -2, 4)
         space.register(dim2)
 
-        def _create_algo(space: Space, **tpe_kwargs) -> SpaceTransformAlgoWrapper[TPE]:
-            from orion.core.worker.transformer import build_required_space
-
-            transformed_space = build_required_space(
-                original_space=space,
-                type_requirement=TPE.requires_type,
-                shape_requirement=TPE.requires_shape,
-                dist_requirement=TPE.requires_dist,
-            )
-            algo = TPE(transformed_space, **tpe_kwargs)
-            wrapper = SpaceTransformAlgoWrapper(algo, space=space)
-            return wrapper
-
-        tpe = _create_algo(space=space, seed=1, n_initial_points=10)
+        tpe = create_algo(space=space, algo_type=TPE, seed=1, n_initial_points=10)
         results = numpy.random.random(10)
         for i in range(10):
             trials = tpe.suggest(1)

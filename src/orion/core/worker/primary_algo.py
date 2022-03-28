@@ -24,8 +24,8 @@ AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
 
 def create_algo(
-    space: Space,
     algo_type: type[AlgoType],
+    space: Space,
     **algo_kwargs,
 ) -> SpaceTransformAlgoWrapper[AlgoType]:
     """Creates an algorithm of the given type, taking care of transforming the space if needed."""
