@@ -110,7 +110,7 @@ class SpaceConverter(Generic[T]):
         """Called by real dimension"""
         pass
 
-    def integer(self, dim: "Integer") -> T:
+    def integer(self, dim: Integer) -> T:
         """Called by integer dimension"""
         pass
 
