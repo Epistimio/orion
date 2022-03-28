@@ -409,8 +409,8 @@ MOFA
 The MOdular FActorial Design (`MOFA`_) algorithm is based on factorial design and factorial
 analysis methods to optmimize hyperparameters. It performs multiple iterations each of which
 starts with sampling hyperparameter trial values from an orthogonal latin hypercube to cover
-the search space well while de-correlating hyperparameters. Once all trials in an iteration 
-are returned, MOFA performs ftoactorial analysis to determine which hyperparameters should be 
+the search space well while de-correlating hyperparameters. Once all trials in an iteration
+are returned, MOFA performs ftoactorial analysis to determine which hyperparameters should be
 fixed in value and which hyperparameters require further exploration. As the hyperparameters
 become fixed, the number of trials are reduced in subsequent iterations.
 
@@ -441,7 +441,7 @@ Configuration
                n_levels: 5
                strength: 2
                threshold: 0.1
-               
+
 .. autoclass:: orion.algo.mofa.mofa.MOFA
    :noindex:
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
