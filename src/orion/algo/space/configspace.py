@@ -47,6 +47,10 @@ except ImportError as err:
     CategoricalHyperparameter = DummyType
 
 
+class UnsupportedPrior(Exception):
+    pass
+
+
 def _qantization(dim: Dimension) -> float:
     """Convert precision to the quantization factor"""
     if dim.precision:
@@ -95,7 +99,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
             return NormalFloatHyperparameter(**kwargs)
 
-        return
+        raise UnsupportedPrior(f'Prior "{dim.prior_name}" is not supported')
 
     def integer(self, dim: Integer) -> Optional[IntegerHyperparameter]:
         """Convert a integer dimension into a configspace equivalent"""
@@ -127,7 +131,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
 
             return NormalIntegerHyperparameter(**kwargs)
 
-        return None
+        raise UnsupportedPrior(f'Prior "{dim.prior_name}" is not supported')
 
     def categorical(self, dim: Categorical) -> Optional[CategoricalHyperparameter]:
         """Convert a categorical dimension into a configspace equivalent"""
