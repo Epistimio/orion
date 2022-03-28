@@ -278,6 +278,12 @@ class BaseAlgorithm:
 
     @property
     def _has_suggested_all_possible_values(self) -> bool:
+        """Returns True if the algorithm has more trials in its registry than the number of possible
+        values in the search space.
+
+        If there is a fidelity dimension in the search space, only the trials with the maximum
+        fidelity value are counted.
+        """
         fidelity_index = self.fidelity_index
         if fidelity_index is not None:
             n_suggested_with_max_fidelity = 0
@@ -287,8 +293,7 @@ class BaseAlgorithm:
                 fidelity_value = trial.params[fidelity_index]
                 if fidelity_value >= max_fidelity_value:
                     n_suggested_with_max_fidelity += 1
-            if n_suggested_with_max_fidelity >= self.space.cardinality:
-                return True
+            return n_suggested_with_max_fidelity >= self.space.cardinality
         return self.n_suggested >= self.space.cardinality
 
     @property
