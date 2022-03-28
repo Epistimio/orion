@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import singledispatch
 from math import log10
 from typing import Optional
@@ -216,7 +218,7 @@ def _from_uniform(dim: Hyperparameter) -> Dimension:
 
 @to_oriondim.register(NormalFloatHyperparameter)
 @to_oriondim.register(NormalIntegerHyperparameter)
-def _from_normal(dim: Hyperparameter) -> Dimension:
+def _from_normal(dim: Hyperparameter) -> Integer | Real:
     """Builds a normal dimension from a normal hyperparameter"""
 
     klass = Integer

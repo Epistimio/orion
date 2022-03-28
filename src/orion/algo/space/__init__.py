@@ -28,6 +28,8 @@ scipy documentation for each specific implentation of a random variable type,
 unless noted otherwise!
 
 """
+from __future__ import annotations
+
 import copy
 import logging
 import numbers
@@ -101,27 +103,27 @@ class SpaceConverter(Generic[T]):
         """Call the dimension conversion handler"""
         return getattr(self, _to_snake_case(type(dimension).__name__))(dimension)
 
-    def dimension(self, dim: "Dimension") -> T:
+    def dimension(self, dim: Dimension) -> T:
         """Called when the dimension does not have a decicated handler"""
         pass
 
-    def real(self, dim: "Real") -> T:
+    def real(self, dim: Real) -> T:
         """Called by real dimension"""
         pass
 
-    def integer(self, dim: "Integer") -> T:
+    def integer(self, dim: Integer) -> T:
         """Called by integer dimension"""
         pass
 
-    def categorical(self, dim: "Categorical") -> T:
+    def categorical(self, dim: Categorical) -> T:
         """Called by categorical dimension"""
         pass
 
-    def fidelity(self, dim: "Fidelity") -> T:
+    def fidelity(self, dim: Fidelity) -> T:
         """Called by fidelity dimension"""
         pass
 
-    def space(self, space: "Space") -> None:
+    def space(self, space: Space) -> None:
         """Iterate through a research space and visit each dimensions"""
         for _, dim in space.items():
             self.visit(dim)
