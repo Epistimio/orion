@@ -189,7 +189,7 @@ def _from_categorical(dim: CategoricalHyperparameter) -> Categorical
 
 @to_oriondim.register(UniformIntegerHyperparameter)
 @to_oriondim.register(UniformFloatHyperparameter)
-def _from_uniform(dim: Hyperparameter) -> Dimension:
+def _from_uniform(dim: Hyperparameter) -> Integer | Real:
     """Builds a uniform dimension from a uniform hyperparameter"""
 
     klass = Integer
