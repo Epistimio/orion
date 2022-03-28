@@ -102,7 +102,7 @@ class SpaceConverter(Generic[T]):
         """Call the dimension conversion handler"""
         return getattr(self, _to_snake_case(type(dimension).__name__))(dimension)
 
-    def dimension(self, dim: "Dimension") -> T:
+    def dimension(self, dim: Dimension) -> T:
         """Called when the dimension does not have a decicated handler"""
         pass
 
