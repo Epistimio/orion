@@ -102,18 +102,20 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
 
     @property
     def state_dict(self) -> dict:
-        """Get the state of the registry mapping (and each invididual registry) as a dictionary."""
+        """Get the state of the registry mapping as a dictionary.
+
+        NOTE: This does NOT include the state of the individual registries.
+        """
         return {
-            "original_registry": self.original_registry.state_dict,
-            "transformed_registry": self.transformed_registry.state_dict,
             "_mapping": copy.deepcopy(self._mapping),
         }
 
     def set_state(self, statedict: dict):
-        """Set the state of the registry mapping (and each registry) from the given dictionary."""
-        self.original_registry.set_state(statedict["original_registry"])
-        self.transformed_registry.set_state(statedict["transformed_registry"])
-        self._mapping = statedict["_mapping"]
+        """Set the state of the registry mapping from the given dictionary.
+
+        NOTE: This does NOT set the state of the individual registries.
+        """
+        self._mapping = copy.deepcopy(statedict["_mapping"])
 
     def __iter__(self) -> Iterator[Trial]:
         for trial_id in self._mapping:
