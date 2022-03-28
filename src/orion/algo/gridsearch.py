@@ -219,10 +219,8 @@ class GridSearch(BaseAlgorithm):
     @property
     def is_done(self):
         """Return True when all grid has been covered."""
-        return (
-            super().is_done
-            or self.grid is not None
-            and self.n_suggested >= len(self.grid)
+        return super().is_done or (
+            self.grid is not None and self.n_suggested >= len(self.grid)
         )
 
     @property

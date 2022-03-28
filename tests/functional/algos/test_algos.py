@@ -8,6 +8,9 @@ import numpy
 import pytest
 
 from orion.client import create_experiment, workon
+from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import format_trials
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.testing.state import OrionState
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
@@ -149,9 +152,42 @@ def test_cardinality_stop_uniform(algorithm):
 )
 def test_cardinality_stop_loguniform(algorithm):
     """Test when algo needs to stop because all space is explored (loguniform space)."""
-    discrete_space = copy.deepcopy(space)
-    discrete_space["x"] = "loguniform(0.1, 1, precision=1)"
-    exp = workon(rosenbrock, discrete_space, algorithms=algorithm, max_trials=30)
+    discrete_space = SpaceBuilder().build({"x": "loguniform(0.1, 1, precision=1)"})
+
+    max_trials = 30
+    exp = workon(
+        rosenbrock, discrete_space, algorithms=algorithm, max_trials=max_trials
+    )
+    from orion.algo.gridsearch import GridSearch
+
+    possible_x_values = list(numpy.arange(0.1, 1.1, 0.1).round(1))
+    algo_wrapper: SpaceTransformAlgoWrapper[GridSearch] = exp.algorithms
+    transformed_space = algo_wrapper.transformed_space
+    original_space = algo_wrapper.space
+    assert original_space == discrete_space
+
+    transformed_trials = list(algo_wrapper.algorithm.registry)
+
+    # BUG: GridSearch isn't working here, adding a bunch of potentially useful variables.
+    for x_value in possible_x_values:
+        original_trial = format_trials.dict_to_trial(
+            {"x": x_value}, space=original_space
+        )
+        transformed_trial = transformed_space.transform(original_trial)
+        assert algo_wrapper.algorithm.has_suggested(transformed_trial)
+        assert algo_wrapper.has_suggested(original_trial)
+        assert algo_wrapper.has_observed(original_trial)
+        assert algo_wrapper.algorithm.has_observed(transformed_trial)
+
+    original_trials = list(algo_wrapper.registry)
+    original_xs = [t.params["x"] for t in algo_wrapper.registry]
+    transformed_xs = [t.params["x"] for t in algo_wrapper.algorithm.registry]
+    untransformed_trials = [transformed_space.reverse(t) for t in transformed_trials]
+    untransformed_xs = [t.params["x"] for t in untransformed_trials]
+    assert sorted(set(untransformed_xs)) == possible_x_values
+
+    assert algo_wrapper.algorithm._has_suggested_all_possible_values
+    assert not algo_wrapper.algorithm._has_observed_max_trials
 
     trials = exp.fetch_trials()
     assert len(trials) == 10
