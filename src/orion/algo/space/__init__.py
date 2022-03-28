@@ -114,7 +114,7 @@ class SpaceConverter(Generic[T]):
         """Called by integer dimension"""
         pass
 
-    def categorical(self, dim: "Categorical") -> T:
+    def categorical(self, dim: Categorical) -> T:
         """Called by categorical dimension"""
         pass
 
