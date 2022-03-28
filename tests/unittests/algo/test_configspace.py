@@ -27,13 +27,17 @@ def test_orion_configspace():
     space.register(Real("n3", "norm", 0.9, 0.1))
     space.register(Integer("n4", "norm", 1, 2))
 
+    # Unsupported prior
+    space.register(Integer("a1i", "alpha", 1, 6))
+
     newspace = to_configspace(space)
 
     roundtrip = to_orionspace(newspace)
 
     for k, original in space.items():
         # ConfigSpace does not have a fidelity dimension
-        if k == "f1":
+        # or the alpha prior
+        if k in ("f1", "a1i"):
             continue
 
         converted = roundtrip[k]
