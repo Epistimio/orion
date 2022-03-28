@@ -181,7 +181,7 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
 
 
 @to_oriondim.register
-def _from_categorical(dim: CategoricalHyperparameter) -> Categorical
+def _from_categorical(dim: CategoricalHyperparameter) -> Categorical:
     """Builds a categorical dimension from a categorical hyperparameter"""
     choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
     return Categorical(dim.name, choices)
