@@ -46,7 +46,7 @@ class Registry(Container[Trial]):
 
     def set_state(self, statedict: dict) -> None:
         """Set the state of the registry from the given dictionary."""
-        self._trials = statedict["_trials"]
+        self._trials = copy.deepcopy(statedict["_trials"])
 
     def has_suggested(self, trial: Trial) -> bool:
         """Check if the trial has been suggested."""
