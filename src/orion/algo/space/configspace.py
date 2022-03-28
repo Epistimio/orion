@@ -255,7 +255,7 @@ def configspace_to_orionspace(cspace: ConfigurationSpace) -> Space:
     """
     space = Space()
 
-    for _, cdim in cspace.get_hyperparameters_dict().items():
+    for cdim in cspace.get_hyperparameters_dict().values():
         odim = to_oriondim(cdim)
         space.register(odim)
 
