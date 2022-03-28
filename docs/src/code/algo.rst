@@ -17,4 +17,5 @@ Algorithm modules
    algo/asha
    algo/pbt
    algo/tpe
+   algo/mofa
    algo/parallel_strategy

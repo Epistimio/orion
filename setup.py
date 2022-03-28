@@ -100,6 +100,7 @@ setup_args = dict(
         "psutil",
         "joblib",
         "pytest>=3.0.0",
+        "scikit-optimize",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
@@ -129,7 +130,7 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.7 3.8 3.9".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.8 3.9".split()]
 
 if __name__ == "__main__":
     setup(**setup_args)
