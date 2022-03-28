@@ -57,7 +57,7 @@ def build_root_experiment(space=None, trials=None):
     if space is None:
         space = {"x": "uniform(0, 100)", "y": "uniform(0, 100)", "z": "uniform(0, 100)"}
     if trials is None:
-        trials = [{"x": i, "y": i * 2, "z": i ** 2} for i in range(4)]
+        trials = [{"x": i, "y": i * 2, "z": i**2} for i in range(4)]
 
     root = build_experiment(name="root", max_trials=len(trials), space=space)
 

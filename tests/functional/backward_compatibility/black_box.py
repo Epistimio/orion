@@ -10,7 +10,7 @@ from orion.client import report_results
 def function(x, noise):
     """Evaluate partial information of a quadratic."""
     z = (x - 34.56789) * random.gauss(0, noise)
-    return 4 * z ** 2 + 23.4, 8 * z
+    return 4 * z**2 + 23.4, 8 * z
 
 
 def execute():

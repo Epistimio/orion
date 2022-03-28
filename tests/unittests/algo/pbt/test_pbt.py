@@ -23,7 +23,7 @@ class TestComputeFidelities:
         assert compute_fidelities(10, 10, 20, 1) == list(map(float, range(10, 21)))
 
     def test_other_bases(self):
-        assert compute_fidelities(9, 2, 2 ** 10, 2) == [2 ** i for i in range(1, 11)]
+        assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
 
 
 class TestPBTObserve:

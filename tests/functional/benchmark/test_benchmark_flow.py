@@ -38,7 +38,7 @@ class BirdLike(BenchmarkTask):
 
     def call(self, x):
 
-        y = (2 * x ** 4 + x ** 2 + 2) / (x ** 4 + 1)
+        y = (2 * x**4 + x**2 + 2) / (x**4 + 1)
 
         return [dict(name="birdlike", type="objective", value=y)]
 

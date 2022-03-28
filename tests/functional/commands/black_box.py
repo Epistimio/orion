@@ -9,7 +9,7 @@ from orion.client import report_results
 def function(x):
     """Evaluate partial information of a quadratic."""
     z = x - 34.56789
-    return 4 * z ** 2 + 23.4, 8 * z
+    return 4 * z**2 + 23.4, 8 * z
 
 
 def execute():
