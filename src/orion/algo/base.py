@@ -168,18 +168,10 @@ class BaseAlgorithm:
 
     @property
     def fidelity_index(self):
-        """Compute the dimension name of the space where fidelity is.
-
-        Returns None if there is no fidelity dimension.
-        """
-
-        def _is_fidelity(dim):
-            return dim.type == "fidelity"
-
-        fidelity_dim = [dim for dim in self.space.values() if _is_fidelity(dim)]
-        if fidelity_dim:
-            return fidelity_dim[0].name
-
+        """Returns the name of the first fidelity dimension if there is one, otherwise `None`."""
+        fidelity_dims = [dim for dim in self.space.values() if dim.type == "fidelity"]
+        if fidelity_dims:
+            return fidelity_dims[0].name
         return None
 
     @abstractmethod
