@@ -106,7 +106,7 @@ class SpaceConverter(Generic[T]):
         """Called when the dimension does not have a decicated handler"""
         pass
 
-    def real(self, dim: "Real") -> T:
+    def real(self, dim: Real) -> T:
         """Called by real dimension"""
         pass
 
