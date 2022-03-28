@@ -479,18 +479,9 @@ class Hyperband(BaseAlgorithm):
         """Return True, if all required execution has been done."""
         if self.executed_times >= self.repetitions:
             return True
-        fidelity_index = self.fidelity_index
-        n_suggested_with_max_fidelity = 0
-        fidelity_dim = self.space[fidelity_index]
-        _, max_fidelity_value = fidelity_dim.interval()
-        for trial in self.registry:
-            fidelity_value = trial.params[fidelity_index]
-            if fidelity_value >= max_fidelity_value:
-                n_suggested_with_max_fidelity += 1
-        if n_suggested_with_max_fidelity >= self.space.cardinality:
-            return True
-        # NOTE: this doesn't fall back to super().is_done
-        return False
+        # NOTE: this doesn't fall back to super().is_done, since Hyperband ignores the max_trials
+        # attribute.
+        return self._has_suggested_all_possible_values
 
 
 class HyperbandBracket:

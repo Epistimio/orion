@@ -274,13 +274,27 @@ class BaseAlgorithm:
         By default, the cardinality of the specified search space will be used to check
         if all possible sets of parameters has been tried.
         """
-        if self.n_suggested >= self.space.cardinality:
-            return True
+        return self._has_suggested_all_possible_values or self._has_observed_max_trials
 
-        if self.n_observed >= getattr(self, "max_trials", float("inf")):
-            return True
+    @property
+    def _has_suggested_all_possible_values(self) -> bool:
+        fidelity_index = self.fidelity_index
+        if fidelity_index is not None:
+            n_suggested_with_max_fidelity = 0
+            fidelity_dim = self.space[fidelity_index]
+            _, max_fidelity_value = fidelity_dim.interval()
+            for trial in self.registry:
+                fidelity_value = trial.params[fidelity_index]
+                if fidelity_value >= max_fidelity_value:
+                    n_suggested_with_max_fidelity += 1
+            if n_suggested_with_max_fidelity >= self.space.cardinality:
+                return True
+        return self.n_suggested >= self.space.cardinality
 
-        return False
+    @property
+    def _has_observed_max_trials(self) -> bool:
+        max_trials = getattr(self, "max_trials", float("inf"))
+        return max_trials is not None and self.n_observed >= max_trials
 
     def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
