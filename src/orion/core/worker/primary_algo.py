@@ -254,29 +254,12 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
 
     @property
     def is_done(self):
-        """Return True, if an algorithm holds that there can be no further improvement."""
-        n_suggested = self.n_suggested
-        fidelity_index = self.fidelity_index
-        if fidelity_index is not None:
-            # When there is a fidelity dimension, we only count the trials with the max fidelity
-            # value when comparing to the space cardinality, i.e., the algo is done if it has
-            # suggested all points of the space, with the maximum fidelity value.
-            n_suggested_with_max_fidelity = 0
-            fidelity_dim = self.original_space[fidelity_index]
-            _, max_fidelity_value = fidelity_dim.interval()
-            for trial in self.registry:
-                fidelity_value = trial.params[fidelity_index]
-                if fidelity_value >= max_fidelity_value:
-                    n_suggested_with_max_fidelity += 1
-            n_suggested = n_suggested_with_max_fidelity
-        if n_suggested >= self.original_space.cardinality:
-            return True
-
-        if hasattr(self, "max_trials"):
-            max_trials: int | float = self.max_trials  # type: ignore
-            if self.n_observed > max_trials:
-                return True
-        return self.algorithm.is_done
+        """Return True if the wrapper or the wrapped algorithm is done."""
+        return (
+            BaseAlgorithm.has_suggested_all_possible_values(self)
+            or BaseAlgorithm.has_observed_max_trials(self)
+            or self.algorithm.is_done
+        )
 
     def score(self, trial: Trial) -> float:
         """Allow algorithm to evaluate `point` based on a prediction about
