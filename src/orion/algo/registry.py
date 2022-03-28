@@ -64,12 +64,17 @@ class Registry(Container[Trial]):
         trial_id = _get_id(trial)
         if trial_id in self:
             existing = self._trials[trial_id]
-            logger.debug(
-                f"Overwriting existing trial {existing} with new trial {trial}"
-            )
+            if existing.status != "new" and trial.status == "new":
+                raise RuntimeError(
+                    f"Can't overwrite existing (older) trial {existing} with new trial {trial}!"
+                )
+            logger.debug("Overwriting existing trial %s with %s", existing, trial)
         else:
             logger.debug(
-                f"Registry {id(self)} Registering new trial {trial} ({len(self)} trials in total)"
+                "Registry %s Registering new trial %s (%s trials in total)",
+                id(self),
+                trial,
+                len(self),
             )
         trial_copy = copy.deepcopy(trial)
         self._trials[trial_id] = trial_copy
