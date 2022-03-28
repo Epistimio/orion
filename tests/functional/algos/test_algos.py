@@ -166,9 +166,15 @@ def test_cardinality_stop_loguniform(algorithm):
     original_space = algo_wrapper.space
     assert original_space == discrete_space
 
-    transformed_trials = list(algo_wrapper.algorithm.registry)
-
     # BUG: GridSearch isn't working here, adding a bunch of potentially useful variables.
+    original_trials = list(algo_wrapper.registry)
+    transformed_trials = list(algo_wrapper.algorithm.registry)
+    original_xs = [t.params["x"] for t in algo_wrapper.registry]
+    transformed_xs = [t.params["x"] for t in algo_wrapper.algorithm.registry]
+    untransformed_trials = [transformed_space.reverse(t) for t in transformed_trials]
+    untransformed_xs = [t.params["x"] for t in untransformed_trials]
+    assert sorted(set(untransformed_xs)) == possible_x_values
+
     for x_value in possible_x_values:
         original_trial = format_trials.dict_to_trial(
             {"x": x_value}, space=original_space
@@ -179,15 +185,7 @@ def test_cardinality_stop_loguniform(algorithm):
         assert algo_wrapper.has_observed(original_trial)
         assert algo_wrapper.algorithm.has_observed(transformed_trial)
 
-    original_trials = list(algo_wrapper.registry)
-    original_xs = [t.params["x"] for t in algo_wrapper.registry]
-    transformed_xs = [t.params["x"] for t in algo_wrapper.algorithm.registry]
-    untransformed_trials = [transformed_space.reverse(t) for t in transformed_trials]
-    untransformed_xs = [t.params["x"] for t in untransformed_trials]
-    assert sorted(set(untransformed_xs)) == possible_x_values
-
-    assert algo_wrapper.algorithm._has_suggested_all_possible_values
-    assert not algo_wrapper.algorithm._has_observed_max_trials
+    assert algo_wrapper.algorithm.is_done
 
     trials = exp.fetch_trials()
     assert len(trials) == 10
