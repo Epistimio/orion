@@ -216,7 +216,7 @@ def from_uniform(dim: Hyperparameter) -> Dimension:
 
 @to_oriondim.register(NormalFloatHyperparameter)
 @to_oriondim.register(NormalIntegerHyperparameter)
-def from_normal(dim: Hyperparameter) -> Dimension:
+def from_normal(dim: Hyperparameter) -> Integer | Real:
     """Builds a normal dimension from a normal hyperparameter"""
 
     klass = Integer
