@@ -122,7 +122,7 @@ class SpaceConverter(Generic[T]):
         """Called by fidelity dimension"""
         pass
 
-    def space(self, space: "Space") -> None:
+    def space(self, space: Space) -> None:
         """Iterate through a research space and visit each dimensions"""
         for _, dim in space.items():
             self.visit(dim)
