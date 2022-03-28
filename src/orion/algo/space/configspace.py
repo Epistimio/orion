@@ -58,7 +58,7 @@ def _qantization(dim: Dimension) -> float:
     return None
 
 
-class ToConfigSpace(SpaceConverter[Optional[Hyperparameter]]):
+class ToConfigSpace(SpaceConverter[Hyperparameter]):
     """Convert an Orion space into a configspace"""
 
     def __init__(self) -> None:
@@ -69,7 +69,7 @@ class ToConfigSpace(SpaceConverter[Optional[Hyperparameter]]):
         """Raise an error if the visitor is called on an abstract class"""
         raise NotImplementedError()
 
-    def real(self, dim: Real) -> Optional[FloatHyperparameter]:
+    def real(self, dim: Real) -> FloatHyperparameter:
         """Convert a real dimension into a configspace equivalent"""
         if dim.prior_name in ("reciprocal", "uniform"):
             a, b = dim._args
@@ -101,7 +101,7 @@ class ToConfigSpace(SpaceConverter[Optional[Hyperparameter]]):
 
         raise UnsupportedPrior(f'Prior "{dim.prior_name}" is not supported')
 
-    def integer(self, dim: Integer) -> Optional[IntegerHyperparameter]:
+    def integer(self, dim: Integer) -> IntegerHyperparameter:
         """Convert a integer dimension into a configspace equivalent"""
         if dim.prior_name in ("int_uniform", "int_reciprocal"):
             a, b = dim._args
@@ -133,7 +133,7 @@ class ToConfigSpace(SpaceConverter[Optional[Hyperparameter]]):
 
         raise UnsupportedPrior(f'Prior "{dim.prior_name}" is not supported')
 
-    def categorical(self, dim: Categorical) -> Optional[CategoricalHyperparameter]:
+    def categorical(self, dim: Categorical) -> CategoricalHyperparameter:
         """Convert a categorical dimension into a configspace equivalent"""
         return CategoricalHyperparameter(
             name=dim.name,
