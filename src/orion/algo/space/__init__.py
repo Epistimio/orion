@@ -118,7 +118,7 @@ class SpaceConverter(Generic[T]):
         """Called by categorical dimension"""
         pass
 
-    def fidelity(self, dim: "Fidelity") -> T:
+    def fidelity(self, dim: Fidelity) -> T:
         """Called by fidelity dimension"""
         pass
 
