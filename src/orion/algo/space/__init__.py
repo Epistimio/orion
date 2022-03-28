@@ -28,6 +28,7 @@ scipy documentation for each specific implentation of a random variable type,
 unless noted otherwise!
 
 """
+from __future__ import annotations
 import copy
 import logging
 import numbers
