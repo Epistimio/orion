@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from functools import singledispatch
 from math import log10
-from typing import Optional
 
 from orion.algo.space import (
     Categorical,
