@@ -90,16 +90,16 @@ def _to_snake_case(name: str) -> str:
 T = TypeVar("T")
 
 
-class Visitor(Generic[T]):
-    """Visitor interface to iterate over an Orion search space.
+class SpaceConverter(Generic[T]):
+    """SpaceConverter iterates over an Orion search space.
     This can be used to implement new features for ``orion.algo.space.Space``
     outside of Orion's code base.
 
     """
 
-    def visit(self, dim: "Dimension") -> T:
-        """Make dimension call its handler"""
-        return dim.visit(self)
+    def convert_dimension(self, dimension: "Dimension") -> T:
+        """Call the dimension conversion handler"""
+        return getattr(self, _to_snake_case(type(dimension).__name__))(dimension)
 
     def dimension(self, dim: "Dimension") -> T:
         """Called when the dimension does not have a decicated handler"""
@@ -396,10 +396,6 @@ class Dimension:
         The default value is ``numpy.inf``.
         """
         return numpy.inf
-
-    def visit(self, visitor: Visitor[T]) -> T:
-        """Execute a visitor on the given dimension"""
-        return getattr(visitor, _to_snake_case(self.__class__.__name__))(self)
 
 
 def _is_numeric_array(point):

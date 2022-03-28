@@ -9,7 +9,7 @@ from orion.algo.space import (
     Integer,
     Real,
     Space,
-    Visitor,
+    SpaceConverter,
     to_orionspace,
 )
 
@@ -58,7 +58,7 @@ def _qantization(dim: Dimension) -> float:
     return None
 
 
-class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
+class ToConfigSpace(SpaceConverter[Optional[Hyperparameter]]):
     """Convert an Orion space into a configspace"""
 
     def __init__(self) -> None:
@@ -151,7 +151,7 @@ class ToConfigSpace(Visitor[Optional[Hyperparameter]]):
         dims = []
 
         for _, dim in space.items():
-            cdim = self.visit(dim)
+            cdim = self.convert_dimension(dim)
 
             if cdim:
                 dims.append(cdim)

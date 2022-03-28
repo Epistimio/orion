@@ -1,7 +1,7 @@
 import pytest
 
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space, to_orionspace
-from orion.algo.space.configspace import IMPORT_ERROR, to_configspace, UnsupportedPrior
+from orion.algo.space.configspace import IMPORT_ERROR, UnsupportedPrior, to_configspace
 
 
 @pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
@@ -26,7 +26,6 @@ def test_orion_configspace():
     space.register(Real("n2", "norm", 0.9, 0.1, precision=None))
     space.register(Real("n3", "norm", 0.9, 0.1))
     space.register(Integer("n4", "norm", 1, 2))
-
 
     newspace = to_configspace(space)
 
