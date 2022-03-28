@@ -53,10 +53,10 @@ GRAND_CHILD_SPACE_PRIOR_CHANGE = {
 }
 
 
-CHILD_TRIALS_DUPLICATES = [{"x": i, "y": i * 2, "z": i ** 2} for i in range(2, 8)]
+CHILD_TRIALS_DUPLICATES = [{"x": i, "y": i * 2, "z": i**2} for i in range(2, 8)]
 
 GRAND_CHILD_TRIALS_DUPLICATES = [
-    {"x": i, "y": i * 2, "z": i ** 2} for i in list(range(1, 4)) + list(range(8, 10))
+    {"x": i, "y": i * 2, "z": i**2} for i in list(range(1, 4)) + list(range(8, 10))
 ]
 
 

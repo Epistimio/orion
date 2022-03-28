@@ -73,7 +73,7 @@ def compute_budgets(
     for bracket_ressources in ressources:
         bracket_budgets = []
         for i, min_ressources in enumerate(bracket_ressources[::-1]):
-            budget = (reduction_factor ** i, min_ressources)
+            budget = (reduction_factor**i, min_ressources)
             bracket_budgets.append(budget)
             budgets_tab[len(bracket_ressources) - i - 1].append(budget)
         budgets.append(bracket_budgets[::-1])

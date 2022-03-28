@@ -60,8 +60,8 @@ def compute_budgets(
                 num_brackets - bracket_id
             )
             for i in range(0, num_brackets - bracket_id + 1):
-                n_i = int(num_trials / reduction_factor ** i)
-                min_i = int(min_resources * reduction_factor ** i)
+                n_i = int(num_trials / reduction_factor**i)
+                min_i = int(min_resources * reduction_factor**i)
                 bracket_budgets.append((n_i, min_i))
 
                 if budgets_tab.get(i):

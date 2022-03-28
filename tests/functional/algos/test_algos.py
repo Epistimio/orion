@@ -74,7 +74,7 @@ def rosenbrock(x, noise=None):
         z *= random.gauss(0, noise)
 
     return [
-        {"name": "objective", "type": "objective", "value": 4 * z ** 2 + 23.4},
+        {"name": "objective", "type": "objective", "value": 4 * z**2 + 23.4},
         {"name": "gradient", "type": "gradient", "value": [8 * z]},
     ]
 
