@@ -16,12 +16,13 @@ from typing import Callable, Generic, Iterable, Iterator, Sequence, TypeVar
 T = TypeVar("T")
 V = TypeVar("V")
 
+# TypeVar used in methods that return an object of the same type as `self` (also for subclasses of
+# `TreeNode`).
 Self = TypeVar("Self", bound="TreeNode")
-
-# pylint: disable=too-few-public-methods
 NodeType = TypeVar("NodeType", bound="TreeNode")
 
 
+# pylint: disable=too-few-public-methods
 class PreOrderTraversal(Iterable[NodeType]):
     """Iterate on a tree in a pre-order traversal fashion
 
