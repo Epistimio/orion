@@ -4,7 +4,9 @@ from orion.algo.space import Categorical, Fidelity, Integer, Real, Space, to_ori
 from orion.algo.space.configspace import IMPORT_ERROR, UnsupportedPrior, to_configspace
 
 
-@pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
+pytest.mark.skip(IMPORT_ERROR, reason="Running without ConfigSpace", allow_module_level=True)
+
+
 def test_orion_configspace():
     space = Space()
 
@@ -48,7 +50,6 @@ def test_orion_configspace():
         assert original == converted
 
 
-@pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
 def test_configspace_to_orion_unsupported():
     from ConfigSpace import ConfigurationSpace
     from ConfigSpace.hyperparameters import OrdinalHyperparameter
@@ -60,7 +61,6 @@ def test_configspace_to_orion_unsupported():
         _ = to_orionspace(cspace)
 
 
-@pytest.mark.skipif(IMPORT_ERROR, reason="Running without ConfigSpace")
 def test_orion_configspace_unsupported():
     space = Space()
     space.register(Integer("a1i", "alpha", 1, 6))

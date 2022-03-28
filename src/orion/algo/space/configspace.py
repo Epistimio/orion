@@ -180,7 +180,7 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
 
 
 @to_oriondim.register
-def from_categorical(dim: CategoricalHyperparameter) -> Dimension:
+def _from_categorical(dim: CategoricalHyperparameter) -> Dimension:
     """Builds a categorical dimension from a categorical hyperparameter"""
     choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
     return Categorical(dim.name, choices)
@@ -188,7 +188,7 @@ def from_categorical(dim: CategoricalHyperparameter) -> Dimension:
 
 @to_oriondim.register(UniformIntegerHyperparameter)
 @to_oriondim.register(UniformFloatHyperparameter)
-def from_uniform(dim: Hyperparameter) -> Dimension:
+def _from_uniform(dim: Hyperparameter) -> Dimension:
     """Builds a uniform dimension from a uniform hyperparameter"""
 
     klass = Integer
@@ -216,7 +216,7 @@ def from_uniform(dim: Hyperparameter) -> Dimension:
 
 @to_oriondim.register(NormalFloatHyperparameter)
 @to_oriondim.register(NormalIntegerHyperparameter)
-def from_normal(dim: Hyperparameter) -> Dimension:
+def _from_normal(dim: Hyperparameter) -> Dimension:
     """Builds a normal dimension from a normal hyperparameter"""
 
     klass = Integer
