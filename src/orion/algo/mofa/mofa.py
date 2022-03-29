@@ -84,7 +84,7 @@ class MOFA(BaseAlgorithm):
                 f"threshold must be strictly between 0 and 1! (currently: {threshold})!\n"
             )
 
-        super(MOFA, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             index=index,
