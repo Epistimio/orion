@@ -32,6 +32,9 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "ax": [
+        "ax-platform", "numpy",
+    ],
 }
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 
@@ -63,6 +66,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "ax = orion.algo.axoptimizer:AxOptimizer",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
