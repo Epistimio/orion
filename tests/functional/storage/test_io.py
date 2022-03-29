@@ -38,7 +38,7 @@ def foo(x, sleep_time):
 keys = ["net_in", "net_out"]
 MongoStat = namedtuple("MongoStat", keys)
 
-order_values = dict(b=1 / 1000.0, k=1, m=1000, g=1000 ** 2)
+order_values = dict(b=1 / 1000.0, k=1, m=1000, g=1000**2)
 
 
 def _convert_str_size(size):

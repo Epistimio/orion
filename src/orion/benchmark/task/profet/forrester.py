@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
 
 
 class ProfetForresterTask(ProfetTask):
-    """Simulated Task consisting in training a model on a variant of the Forrester function. """
+    """Simulated Task consisting in training a model on a variant of the Forrester function."""
 
     @dataclass
     class ModelConfig(ProfetTask.ModelConfig):

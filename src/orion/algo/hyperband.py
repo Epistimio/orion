@@ -75,8 +75,8 @@ def compute_budgets(
 
         min_resources = max_resources / reduction_factor ** (num_brackets - bracket_id)
         for i in range(0, num_brackets - bracket_id + 1):
-            n_i = int(num_trials / reduction_factor ** i)
-            min_i = int(min_resources * reduction_factor ** i)
+            n_i = int(num_trials / reduction_factor**i)
+            min_i = int(min_resources * reduction_factor**i)
             budget_tuple = BudgetTuple(n_i, min_i)
             bracket_budgets.append(budget_tuple)
 

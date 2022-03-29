@@ -152,7 +152,7 @@ class TestRegistryMapping:
         assert not mapping
 
     def test_register(self, space: Space, transformed_space: TransformedSpace):
-        """ Tests for the `register` method of the `RegistryMapping` class. """
+        """Tests for the `register` method of the `RegistryMapping` class."""
         original_reg = Registry()
         transformed_reg = Registry()
         mapping = RegistryMapping(
