@@ -258,7 +258,11 @@ class TestRegistration:
         equivalent_original = transformed_space.reverse(equivalent_transformed)
         assert equivalent_original == fixed_original
 
-        # Update the dumb algo so that it now returns the equivalent transformed trial.
+        # Check that has_observed/has_suggested is False for the equivalent trial in the algorithm.
+        assert not algo_wrapper.algorithm.has_suggested(equivalent_transformed)
+        assert not algo_wrapper.algorithm.has_observed(equivalent_transformed)
+
+        # Update the dummy algo so that it now returns the equivalent transformed trial.
         algo_wrapper.algorithm.fixed_suggestion = equivalent_transformed
 
         # Get another suggestion from the wrapper. (the wrapped algo will return the equivalent)
@@ -267,6 +271,15 @@ class TestRegistration:
         # Here the algo wrapper should return an empty list, since the suggested trial is a
         # duplicate of one that was already suggested.
         assert new_suggested_trials == []
+
+        # Check that the equivalent trial was added into the algorithm's registry, and that the
+        # status and results from `trial_with_results` were also copied over.
+        assert equivalent_transformed in algo_wrapper.algorithm.registry
+        trial_in_registry = algo_wrapper.algorithm.registry.get_existing(
+            equivalent_transformed
+        )
+        assert trial_in_registry.status == trial_with_results.status
+        assert trial_in_registry.results == trial_with_results.results
 
         # The algo wrapper has suggested (and observed) a trial that is equivalent to this one.
         if original_status in ["completed", "broken"]:
@@ -299,6 +312,5 @@ class TestRegistration:
         assert algo_wrapper.has_observed(trial_with_results)
         assert algo_wrapper.algorithm.has_observed(transformed_trial_with_results)
 
-        # TODO: Really unsure about these:
-        assert not algo_wrapper.has_suggested(trial_with_results)
-        assert not algo_wrapper.algorithm.has_suggested(transformed_trial_with_results)
+        assert algo_wrapper.has_suggested(trial_with_results)
+        assert algo_wrapper.algorithm.has_suggested(transformed_trial_with_results)
