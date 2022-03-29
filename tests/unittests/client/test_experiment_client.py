@@ -637,8 +637,7 @@ class TestSuggest:
 
             trial = client.suggest()
             assert trial.status == "reserved"
-            # NOTE: This value is related to the rng seed used and the seeding of the Random algo.
-            assert trial.params["x"] == 83.40
+            assert trial.params["x"] == 57.57
             assert len(experiment.fetch_trials()) > 5
 
             assert client._pacemakers[trial.id].is_alive()
