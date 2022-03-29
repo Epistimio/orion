@@ -481,7 +481,7 @@ class Hyperband(BaseAlgorithm):
             return True
         # NOTE: this doesn't fall back to super().is_done, since Hyperband ignores the max_trials
         # attribute.
-        return self._has_suggested_all_possible_values
+        return BaseAlgorithm.has_suggested_all_possible_values(self)
 
 
 class HyperbandBracket:
