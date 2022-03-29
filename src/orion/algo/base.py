@@ -22,6 +22,7 @@ from abc import ABCMeta, abstractmethod
 from orion.algo.registry import Registry
 from orion.algo.space import Fidelity
 from orion.core.utils import GenericFactory, format_trials
+from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -274,7 +275,7 @@ class BaseAlgorithm:
         By default, the cardinality of the specified search space will be used to check
         if all possible sets of parameters has been tried.
         """
-        return self.has_observed_max_trials or self.has_suggested_all_possible_values()
+        return self.has_completed_max_trials or self.has_suggested_all_possible_values()
 
     def has_suggested_all_possible_values(self) -> bool:
         """Returns True if the algorithm has more trials in its registry than the number of possible
@@ -297,14 +298,32 @@ class BaseAlgorithm:
         return self.n_suggested >= self.space.cardinality
 
     @property
-    def has_observed_max_trials(self) -> bool:
-        """Returns True if the algorithm has a `max_trials` attribute, and has observed more trials
+    def has_completed_max_trials(self) -> bool:
+        """Returns True if the algorithm has a `max_trials` attribute, and has completed more trials
         than its value.
         """
         if not hasattr(self, "max_trials"):
             return False
-        max_trials = getattr(self, "max_trials", float("inf"))
-        return max_trials is not None and self.n_observed >= max_trials
+        max_trials = getattr(self, "max_trials")
+        if max_trials is None:
+            return False
+
+        fidelity_index = self.fidelity_index
+
+        def _is_completed(trial: Trial) -> bool:
+            return trial.status == "completed"
+
+        # When a fidelity dimension is present, we only count trials that have the maximum value.
+        if fidelity_index is not None:
+            _, max_fidelity_value = self.space[fidelity_index].interval()
+
+            def _is_completed(trial: Trial) -> bool:
+                return (
+                    trial.status == "completed"
+                    and trial.params[fidelity_index] >= max_fidelity_value
+                )
+
+        return sum(map(_is_completed, self.registry)) >= max_trials
 
     def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
