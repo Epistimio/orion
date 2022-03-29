@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.base`."""
 
+import pytest
+
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Integer, Real, Space
 from orion.core.utils import backward, format_trials
 
@@ -108,3 +111,39 @@ def test_is_done_max_trials(monkeypatch, dumbalgo):
 
     dumbalgo.max_trials = 4
     assert algo.is_done
+
+
+@pytest.mark.parametrize("pass_to_super", [True, False])
+def test_arg_names(pass_to_super: bool):
+    """Test that the `_arg_names` can be determined programmatically when the args aren't passed to
+    `super().__init__(space, **kwargs)`.
+
+    Also checks that the auto-generated configuration dict acts the same way.
+    """
+    # NOTE: If there is a **kwargs argument in __init__ signature, and it is not passed to the
+    # super().__init__(self, **kwargs), then what should the _arg_names be? Should we just raise a
+    # warning in that case? Or just assume that the algo will create its own configuration dict?
+    # (could also raise a warning only inside the `configuration` property, in the case where we
+    # can't fetch the value of the kwargs argument)
+    class SomeAlgo(BaseAlgorithm):
+        def __init__(self, space, foo: int = 123, bar: str = "heyo"):
+            if pass_to_super:
+                super().__init__(space, foo=foo, bar=bar)
+            else:
+                super().__init__(space)
+                self.foo = foo
+                self.bar = bar
+            # Param names should be correct, either way.
+            assert self._param_names == ["foo", "bar"]
+            # Attributes should be set correctly either way:
+            assert self.foo == foo
+            assert self.bar == bar
+
+    space = Space(x=Real("yolo1", "uniform", 1, 4))
+    algo = SomeAlgo(space, foo=111, bar="barry")
+    assert algo.configuration == {
+        "somealgo": {
+            "bar": "barry",
+            "foo": 111,
+        }
+    }
