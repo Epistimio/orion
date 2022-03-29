@@ -221,8 +221,7 @@ Ax
 learning experiments, A/B tests, and simulations. Ax can optimize discrete
 configurations (e.g., variants of an A/B test) using multi-armed bandit
 optimization, and continuous (e.g., integer or floating point)-valued
-configurations using Bayesian optimization. This makes it suitable for a wide
-range of applications.
+configurations using Bayesian optimization.
 
 .. _ax: https://ax.dev/
 

@@ -1,5 +1,5 @@
 """
-:mod:`orion.algo.ax.axoptimizer` -- TODO
+:mod:`orion.algo.axoptimizer` -- TODO
 ========================================
 
 TODO: Write long description
@@ -78,7 +78,7 @@ class AxOptimizer(BaseAlgorithm):
         extra_objectives = set(extra_objectives if extra_objectives else [])
         constraints = constraints if constraints else []
 
-        # Ax needs this property to always be set to build its client
+        # Ax needs its max_trials property to always be set to build its client
         self.max_trials = None
         self._client_state = None
         self._trials_map = {}  # tmp
