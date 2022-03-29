@@ -76,7 +76,7 @@ class Sampler:
                 minus 1. Changing n_levels to %d""",
                 n_levels,
             )
-        n_rows = n_levels ** strength
+        n_rows = n_levels**strength
         logger.debug(
             "MOFA: setting number of trials in this iteration to %d", n_rows * index
         )
