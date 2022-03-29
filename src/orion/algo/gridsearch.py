@@ -219,8 +219,10 @@ class GridSearch(BaseAlgorithm):
     @property
     def is_done(self):
         """Return True when all grid has been covered."""
+        # NOTE: GridSearch doesn't care about the space cardinality, it can just check if the grid
+        # has been completely explored.
         return (
-            super().is_done
+            self.has_observed_max_trials
             or self.grid is not None
             and self.n_suggested >= len(self.grid)
         )

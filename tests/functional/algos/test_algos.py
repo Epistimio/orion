@@ -158,34 +158,10 @@ def test_cardinality_stop_loguniform(algorithm):
     exp = workon(
         rosenbrock, discrete_space, algorithms=algorithm, max_trials=max_trials
     )
-    from orion.algo.gridsearch import GridSearch
-
-    possible_x_values = list(numpy.arange(0.1, 1.1, 0.1).round(1))
-    algo_wrapper: SpaceTransformAlgoWrapper[GridSearch] = exp.algorithms
-    transformed_space = algo_wrapper.transformed_space
-    original_space = algo_wrapper.space
-    assert original_space == discrete_space
-
-    # BUG: GridSearch isn't working here, adding a bunch of potentially useful variables.
-    original_trials = list(algo_wrapper.registry)
-    transformed_trials = list(algo_wrapper.algorithm.registry)
-    original_xs = [t.params["x"] for t in algo_wrapper.registry]
-    transformed_xs = [t.params["x"] for t in algo_wrapper.algorithm.registry]
-    untransformed_trials = [transformed_space.reverse(t) for t in transformed_trials]
-    untransformed_xs = [t.params["x"] for t in untransformed_trials]
-    assert sorted(set(untransformed_xs)) == possible_x_values
-
-    for x_value in possible_x_values:
-        original_trial = format_trials.dict_to_trial(
-            {"x": x_value}, space=original_space
-        )
-        transformed_trial = transformed_space.transform(original_trial)
-        assert algo_wrapper.algorithm.has_suggested(transformed_trial)
-        assert algo_wrapper.has_suggested(original_trial)
-        assert algo_wrapper.has_observed(original_trial)
-        assert algo_wrapper.algorithm.has_observed(transformed_trial)
-
+    algo_wrapper: SpaceTransformAlgoWrapper = exp.algorithms
+    assert algo_wrapper.space == discrete_space
     assert algo_wrapper.algorithm.is_done
+    assert algo_wrapper.is_done
 
     trials = exp.fetch_trials()
     assert len(trials) == 10
