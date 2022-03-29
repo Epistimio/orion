@@ -306,7 +306,7 @@ class MOFA(BaseAlgorithm):
         if len(self.frozen_param_values.items()) == len(self.space.items()):
             return True
 
-        return self.converged or super(MOFA, self).is_done
+        return self.converged or super().is_done
 
 
 def get_factorial_performance_analysis(oa_table, space, n_levels):
