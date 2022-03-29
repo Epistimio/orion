@@ -151,7 +151,7 @@ class MOFA(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(MOFA, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.seed_rng(0)
         self.rng.set_state(state_dict["rng_state"])
         self.completed_trials = copy.deepcopy(state_dict["completed_trials"])
