@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import copy
 from logging import getLogger as get_logger
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.registry import Registry, RegistryMapping
@@ -46,7 +46,7 @@ def create_algo(
 
 
 # pylint: disable=too-many-public-methods
-class SpaceTransformAlgoWrapper(Generic[AlgoType]):
+class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -65,8 +65,8 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
 
     """
 
-    def __init__(self, algorithm: AlgoType, space: Space):
-        self._space = space
+    def __init__(self, space: Space, algorithm: AlgoType):
+        super().__init__(space=space)
         self.algorithm: AlgoType = algorithm
         self.registry = Registry()
         self.registry_mapping = RegistryMapping(
@@ -88,7 +88,7 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
         """
         return self.algorithm.space
 
-    def seed_rng(self, seed):
+    def seed_rng(self, seed: int | Sequence[int] | None) -> None:
         """Seed the state of the algorithm's random number generator."""
         self.algorithm.seed_rng(seed)
 
@@ -253,13 +253,9 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
         return sum(self.has_observed(trial) for trial in self.registry)
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True if the wrapper or the wrapped algorithm is done."""
-        return (
-            BaseAlgorithm.has_suggested_all_possible_values(self)
-            or BaseAlgorithm.has_observed_max_trials(self)
-            or self.algorithm.is_done
-        )
+        return super().is_done or self.algorithm.is_done
 
     def score(self, trial: Trial) -> float:
         """Allow algorithm to evaluate `point` based on a prediction about
@@ -293,11 +289,17 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
         return self.algorithm.should_suspend(trial)
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict:
         """Return tunable elements of this algorithm in a dictionary form
         appropriate for saving.
         """
         # TODO: Return a dict with the wrapped algo's configuration instead?
+        # return {
+        #     type(self).__qualname__: {
+        #         "space": self.space.configuration,
+        #         "algorithm": {self.algorithm.configuration},
+        #     }
+        # }
         return self.algorithm.configuration
 
     @property
@@ -307,15 +309,6 @@ class SpaceTransformAlgoWrapper(Generic[AlgoType]):
         .. note:: Redefining property here without setter, denies base class' setter.
         """
         return self._space
-
-    def get_id(self, trial: Trial, ignore_fidelity: bool = False) -> str:
-        """Compute a unique hash for a trial based on params"""
-        return Trial.compute_trial_hash(
-            trial,
-            ignore_fidelity=ignore_fidelity,
-            ignore_experiment=True,
-            ignore_lie=True,
-        )
 
     @property
     def fidelity_index(self) -> str | None:

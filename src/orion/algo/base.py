@@ -267,52 +267,44 @@ class BaseAlgorithm:
         return self.registry.has_observed(trial)
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Whether the algorithm is done and will not make further suggestions.
 
         Return True, if an algorithm holds that there can be no further improvement.
         By default, the cardinality of the specified search space will be used to check
         if all possible sets of parameters has been tried.
         """
-        return type(self).has_suggested_all_possible_values(self) or type(
-            self
-        ).has_observed_max_trials(self)
+        return self.has_observed_max_trials or self.has_suggested_all_possible_values()
 
-    @staticmethod
-    def has_suggested_all_possible_values(algo) -> bool:
+    def has_suggested_all_possible_values(self) -> bool:
         """Returns True if the algorithm has more trials in its registry than the number of possible
         values in the search space.
 
         If there is a fidelity dimension in the search space, only the trials with the maximum
         fidelity value are counted.
-
-        NOTE: Making this a staticmethod so it can also be used by the algo wrapper. (Since the
-        AlgoWrapper isn't an algorithm atm).
         """
-        fidelity_index = algo.fidelity_index
+        fidelity_index = self.fidelity_index
         if fidelity_index is not None:
             n_suggested_with_max_fidelity = 0
-            fidelity_dim = algo.space[fidelity_index]
+            fidelity_dim = self.space[fidelity_index]
             _, max_fidelity_value = fidelity_dim.interval()
-            for trial in algo.registry:
+            for trial in self.registry:
                 fidelity_value = trial.params[fidelity_index]
                 if fidelity_value >= max_fidelity_value:
                     n_suggested_with_max_fidelity += 1
-            return n_suggested_with_max_fidelity >= algo.space.cardinality
-        return algo.n_suggested >= algo.space.cardinality
+            return n_suggested_with_max_fidelity >= self.space.cardinality
 
-    @staticmethod
-    def has_observed_max_trials(algo) -> bool:
+        return self.n_suggested >= self.space.cardinality
+
+    @property
+    def has_observed_max_trials(self) -> bool:
         """Returns True if the algorithm has a `max_trials` attribute, and has observed more trials
         than its value.
-
-        NOTE: Making this a staticmethod so it can also be used by the algo wrapper. (Since the
-        AlgoWrapper isn't an algorithm atm).
         """
-        if not hasattr(algo, "max_trials"):
+        if not hasattr(self, "max_trials"):
             return False
-        max_trials = getattr(algo, "max_trials", float("inf"))
-        return max_trials is not None and algo.n_observed >= max_trials
+        max_trials = getattr(self, "max_trials", float("inf"))
+        return max_trials is not None and self.n_observed >= max_trials
 
     def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
