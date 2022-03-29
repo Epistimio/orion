@@ -181,7 +181,7 @@ def algo_wrapper():
 
     algo = StupidAlgo(space=transformed_space, fixed_suggestion=fixed_transformed)
 
-    algo_wrapper = SpaceTransformAlgoWrapper(algo, space=original_space)
+    algo_wrapper = SpaceTransformAlgoWrapper(algorithm=algo, space=original_space)
     assert algo_wrapper.algorithm is algo
     return algo_wrapper
 
@@ -225,7 +225,6 @@ class TestRegistration:
         assert not algo_wrapper.algorithm.has_observed(fixed_transformed)
 
         # Now, add some results to the first suggestion, and have the wrapper observe it.
-        # NOTE: This might be the part that needs to be parametrized.
         trial_with_results = copy.deepcopy(fixed_original)
         trial_with_results._status = original_status
         if original_status == "completed":
