@@ -133,7 +133,7 @@ class MOFA(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(MOFA, self).state_dict
+        state_dict = super().state_dict
         state_dict["rng_state"] = self.rng.get_state()
         state_dict["completed_trials"] = copy.deepcopy(self.completed_trials)
         state_dict["duplicates"] = copy.deepcopy(self.duplicates)
