@@ -196,6 +196,9 @@ class BaseAlgorithm:
         -----
         New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
+        IMPORTANT: Algorithms must call `self.register(trial)` for every trial that is returned by
+        this method. This is important for the algorithm to be able to keep track of the trials it
+        has suggested/observed, and for the auto-generated unit-tests to pass.
         """
         pass
 
