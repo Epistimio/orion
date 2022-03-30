@@ -84,7 +84,7 @@ class MOFA(BaseAlgorithm):
                 f"threshold must be strictly between 0 and 1! (currently: {threshold})!\n"
             )
 
-        super(MOFA, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             index=index,
@@ -132,7 +132,7 @@ class MOFA(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(MOFA, self).state_dict
+        state_dict = super().state_dict
         state_dict["rng_state"] = self.rng.get_state()
         state_dict["completed_trials"] = copy.deepcopy(self.completed_trials)
         state_dict["duplicates"] = copy.deepcopy(self.duplicates)
@@ -150,7 +150,7 @@ class MOFA(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(MOFA, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.seed_rng(0)
         self.rng.set_state(state_dict["rng_state"])
         self.completed_trials = copy.deepcopy(state_dict["completed_trials"])
@@ -305,7 +305,7 @@ class MOFA(BaseAlgorithm):
         if len(self.frozen_param_values.items()) == len(self.space.items()):
             return True
 
-        return self.converged or super(MOFA, self).is_done
+        return self.converged or super().is_done
 
 
 def get_factorial_performance_analysis(oa_table, space, n_levels):
