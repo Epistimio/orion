@@ -47,15 +47,15 @@ def test_state_dict(dumbalgo):
     nested_algo = {"DumbAlgo": dict(value=6, scoring=5)}
     algo = dumbalgo(space, value=(1, 1))
     algo.suggest(1)
-    assert not algo.state_dict["_trials_info"]
+    assert not algo.state_dict["registry"]["_trials"]
     backward.algo_observe(
         algo, [format_trials.tuple_to_trial((1, 2), space)], [dict(objective=3)]
     )
-    assert len(algo.state_dict["_trials_info"]) == 1
+    assert len(algo.state_dict["registry"]["_trials"]) == 1
     backward.algo_observe(
         algo, [format_trials.tuple_to_trial((1, 2), space)], [dict(objective=3)]
     )
-    assert len(algo.state_dict["_trials_info"]) == 1
+    assert len(algo.state_dict["registry"]["_trials"]) == 1
 
 
 def test_is_done_cardinality(monkeypatch, dumbalgo):
@@ -72,7 +72,7 @@ def test_is_done_cardinality(monkeypatch, dumbalgo):
             algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)]
         )
 
-    assert len(algo.state_dict["_trials_info"]) == 5
+    assert len(algo.state_dict["registry"]["_trials"]) == 5
     assert algo.is_done
 
     space = Space()
@@ -85,7 +85,7 @@ def test_is_done_cardinality(monkeypatch, dumbalgo):
             algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)]
         )
 
-    assert len(algo.state_dict["_trials_info"]) == 5
+    assert len(algo.state_dict["registry"]["_trials"]) == 5
     assert not algo.is_done
 
 
@@ -103,7 +103,7 @@ def test_is_done_max_trials(monkeypatch, dumbalgo):
             algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)]
         )
 
-    assert len(algo.state_dict["_trials_info"]) == 4
+    assert len(algo.state_dict["registry"]["_trials"]) == 4
     assert not algo.is_done
 
     dumbalgo.max_trials = 4

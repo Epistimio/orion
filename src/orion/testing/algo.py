@@ -1,26 +1,32 @@
 # -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
+from __future__ import annotations
+
 import copy
 import functools
 import inspect
 import itertools
 import logging
 from collections import defaultdict
+from typing import Type, TypeVar
 
 import numpy
 import pytest
 
 import orion.algo.base
 from orion.algo.asha import ASHA
+from orion.algo.base import BaseAlgorithm
 from orion.algo.gridsearch import GridSearch
 from orion.algo.hyperband import Hyperband
 from orion.algo.parallel_strategy import strategy_factory
 from orion.algo.random import Random
+from orion.algo.space import Space
 from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.space import build_space
 
@@ -173,11 +179,9 @@ class BaseAlgoTests:
         """
         config = copy.deepcopy(config or self.config)
         config.update(kwargs)
-        algo = SpaceTransformAlgoWrapper(
-            orion.algo.base.algo_factory.get_class(self.algo_name),
-            space or self.create_space(),
-            **config,
-        )
+        base_algo_type = orion.algo.base.algo_factory.get_class(self.algo_name)
+        original_space = space or self.create_space()
+        algo = create_algo(space=original_space, algo_type=base_algo_type, **config)
         algo.algorithm.max_trials = self.max_trials
         return algo
 
