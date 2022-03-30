@@ -19,6 +19,7 @@ except ImportError:
     has_Ax = False
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 from orion.core.utils import format_trials
 from orion.core.utils.flatten import flatten
 
@@ -69,7 +70,7 @@ class AxOptimizer(BaseAlgorithm):
 
     def __init__(
         self,
-        space,
+        space: Space,
         seed: Optional[int] = None,
         n_initial_trials: Optional[int] = 20,
         extra_objectives: Optional[List[str]] = None,
@@ -161,7 +162,6 @@ class AxOptimizer(BaseAlgorithm):
     def suggest(self, num):
         """Suggest a `num`ber of new sets of parameters.
 
-        TODO: document how suggest work for this algo
 
         Parameters
         ----------
