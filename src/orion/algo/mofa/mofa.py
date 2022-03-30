@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.mofa.sampler import Sampler
+from orion.algo.mofa import sampler
 from orion.algo.mofa.transformer import Transformer
 from orion.algo.space import Real, Space
 from orion.core.utils.format_trials import dict_to_trial
@@ -111,7 +111,6 @@ class MOFA(BaseAlgorithm):
         )
 
     def _generate_trials_unfrozen_params(self, roi_space):
-        sampler = Sampler()
         olh_samples, self.cur_n_levels = sampler.generate_olh_samples(
             roi_space, self.n_levels, self.strength, self.index, self.rng
         )
