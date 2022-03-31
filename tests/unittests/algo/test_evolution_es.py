@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -25,7 +26,7 @@ from orion.algo.evolution_es import (
 from orion.algo.space import Fidelity, Real, Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import create_trial
 
 
@@ -407,6 +408,9 @@ class TestBracketEVES:
         assert (nums_all_equal == 0).all()
 
 
+BUDGETS = [20, 20, 20, 20]
+
+
 class TestGenericEvolutionES(BaseAlgoTests):
     algo_name = "evolutiones"
     config = {
@@ -417,6 +421,16 @@ class TestGenericEvolutionES(BaseAlgoTests):
         "mutate": None,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        *[
+            TestPhase(f"rung{i}", budget, "suggest")
+            for i, budget in enumerate(np.cumsum(BUDGETS))
+        ],
+        TestPhase("rep1-rung1", sum(BUDGETS), "suggest"),
+        TestPhase("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
+    ]
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
@@ -506,19 +520,3 @@ class TestGenericEvolutionES(BaseAlgoTests):
         for j in range(0, rung_id + 1):
             for bracket in brackets:
                 assert len(bracket.rungs[j]["results"]) > 0, (bracket, j)
-
-
-BUDGETS = [20, 20, 20, 20]
-
-
-TestGenericEvolutionES.set_phases(
-    [
-        ("random", 0, "space.sample"),
-        *[
-            (f"rung{i}", budget, "suggest")
-            for i, budget in enumerate(np.cumsum(BUDGETS))
-        ],
-        ("rep1-rung1", sum(BUDGETS), "suggest"),
-        ("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
-    ]
-)
