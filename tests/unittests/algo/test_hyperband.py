@@ -7,7 +7,7 @@ import copy
 import hashlib
 import logging
 import typing
-from typing import Any, Sequence
+from typing import Any, ClassVar, Sequence
 
 import numpy as np
 import pytest
@@ -23,7 +23,7 @@ from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase, phase
 from orion.testing.trial import compare_trials, create_trial
 
 if typing.TYPE_CHECKING:
@@ -998,6 +998,9 @@ class TestHyperband:
         compare_trials(trials[6:], [create_trial_for_hb((1, i)) for i in range(15, 24)])
 
 
+BUDGETS = [20, 8, 3, 1]
+
+
 class TestGenericHyperband(BaseAlgoTests):
     algo_name = "hyperband"
     config = {
@@ -1005,6 +1008,15 @@ class TestGenericHyperband(BaseAlgoTests):
         "repetitions": 3,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        *[
+            TestPhase(f"rung{i}", budget, "suggest")
+            for i, budget in enumerate(np.cumsum(BUDGETS[:-1]))
+        ],
+        TestPhase("rep1-rung1", sum(BUDGETS), "suggest"),
+        TestPhase("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
+    ]
 
     @phase
     def test_suggest_lots(self, mocker, num: int, attr: str):
@@ -1118,18 +1130,3 @@ class TestGenericHyperband(BaseAlgoTests):
             for bracket in brackets:
                 if len(bracket.rungs) > j:
                     assert len(bracket.rungs[j]["results"]) > 0, (bracket, j)
-
-
-BUDGETS = [20, 8, 3, 1]
-
-TestGenericHyperband.set_phases(
-    [
-        ("random", 0, "space.sample"),
-        *[
-            (f"rung{i}", budget, "suggest")
-            for i, budget in enumerate(np.cumsum(BUDGETS[:-1]))
-        ],
-        ("rep1-rung1", sum(BUDGETS), "suggest"),
-        ("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
-    ]
-)

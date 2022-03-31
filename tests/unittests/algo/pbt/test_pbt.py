@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
+from __future__ import annotations
+
+from typing import ClassVar
 
 import pytest
 from base import (
@@ -16,7 +19,7 @@ from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.algo.space import Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests, create_algo
+from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
 
 
 class TestComputeFidelities:
@@ -601,6 +604,12 @@ class TestGenericPBT(BaseAlgoTests):
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
 
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 5, "space.sample"),
+        TestPhase("generation_2", 2 * population_size, "_generate_offspring"),
+        TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
+    ]
+
     def test_no_fidelity(self):
         space = self.create_space({"x": "uniform(0, 1)", "y": "uniform(0, 1)"})
 
@@ -660,12 +669,3 @@ class TestGenericPBT(BaseAlgoTests):
             check_population_size(gen_population_size, depth, expected_population_size)
 
             remaining_num = max(remaining_num - expected_population_size, 0)
-
-
-TestGenericPBT.set_phases(
-    [
-        ("random", 5, "space.sample"),
-        ("generation_2", 2 * population_size, "_generate_offspring"),
-        ("generation_3", 3 * population_size, "_generate_offspring"),
-    ]
-)

@@ -1,6 +1,9 @@
 """Example usage and tests for :mod:`orion.algo.gridsearch`."""
+from __future__ import annotations
+
 import copy
 import logging
+from typing import ClassVar
 
 import numpy.testing
 import pytest
@@ -13,7 +16,7 @@ from orion.algo.gridsearch import (
     real_grid,
 )
 from orion.algo.space import Categorical, Integer, Real, Space
-from orion.testing.algo import BaseAlgoTests, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase, phase
 
 
 def test_categorical_grid():
@@ -167,6 +170,7 @@ def test_build_grid_cannot_limit_size(caplog):
 class TestGridSearch(BaseAlgoTests):
     algo_name = "gridsearch"
     config = {"n_values": 10}
+    phases: ClassVar[list[TestPhase]] = [TestPhase("grid", 0, "suggest")]
 
     @phase
     def test_seed_rng_init(self, mocker, num, attr):
@@ -192,6 +196,3 @@ class TestGridSearch(BaseAlgoTests):
     @pytest.mark.skip(reason="Deterministic algorithm")
     def test_seed_rng(self, mocker, num, attr):
         pass
-
-
-TestGridSearch.set_phases([("grid", 0, "suggest")])

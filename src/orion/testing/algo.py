@@ -8,7 +8,7 @@ import inspect
 import itertools
 import logging
 from collections import defaultdict
-from typing import Type, TypeVar
+from typing import ClassVar, NamedTuple, Type, TypeVar
 
 import numpy
 import pytest
@@ -112,6 +112,19 @@ def customized_mutate_example(search_space, rng, old_value, **kwargs):
     return new_value
 
 
+class TestPhase(NamedTuple):
+    name: str
+    """ Name of the test phase."""
+
+    n_trials: int
+    """ Number of trials after which the phase should begin."""
+
+    method_to_spy: str
+    """ Name of the algorithm's attribute to use to spy.
+    NOTE: need to clarify what exactly this is used for.
+    """
+
+
 class BaseAlgoTests:
     """Generic Test-suite for HPO algorithms.
 
@@ -134,6 +147,12 @@ class BaseAlgoTests:
     config = {}
     max_trials = 200
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
+
+    phases: ClassVar[list[TestPhase]]
+
+    def __init_subclass__(cls) -> None:
+        if hasattr(cls, "phases"):
+            cls.set_phases(cls.phases)
 
     @classmethod
     def set_phases(cls, phases):
