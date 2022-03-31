@@ -120,11 +120,7 @@ def test_arg_names(pass_to_super: bool):
 
     Also checks that the auto-generated configuration dict acts the same way.
     """
-    # NOTE: If there is a **kwargs argument in __init__ signature, and it is not passed to the
-    # super().__init__(self, **kwargs), then what should the _arg_names be? Should we just raise a
-    # warning in that case? Or just assume that the algo will create its own configuration dict?
-    # (could also raise a warning only inside the `configuration` property, in the case where we
-    # can't fetch the value of the kwargs argument)
+
     class SomeAlgo(BaseAlgorithm):
         def __init__(self, space, foo: int = 123, bar: str = "heyo"):
             if pass_to_super:
