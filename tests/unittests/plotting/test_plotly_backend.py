@@ -270,7 +270,7 @@ class TestLPI:
     def test_fidelity(self, monkeypatch):
         """Tests that fidelity is supported"""
         config = mock_space(y="fidelity(1, 200, base=3)")
-        mock_experiment(monkeypatch, y=[1, 3 ** 2, 1, 3 ** 4])
+        mock_experiment(monkeypatch, y=[1, 3**2, 1, 3**4])
         with create_experiment(config, trial_config) as (_, _, experiment):
             plot = lpi(experiment, model_kwargs=dict(random_state=1))
 
@@ -485,7 +485,7 @@ class TestPartialDependencies:
         """Tests that fidelity is supported"""
         mock_train_regressor(monkeypatch)
         config = mock_space(y="fidelity(1, 200, base=3)")
-        mock_experiment(monkeypatch, y=[1, 3 ** 2, 1, 3 ** 4])
+        mock_experiment(monkeypatch, y=[1, 3**2, 1, 3**4])
         with create_experiment(config, trial_config) as (_, _, experiment):
             plot = partial_dependencies(
                 experiment, n_grid_points=5, model_kwargs=dict(random_state=1)

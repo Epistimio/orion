@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.evolution_es`."""
+from __future__ import annotations
 
 import copy
 import hashlib
@@ -14,8 +15,16 @@ from test_hyperband import (
     force_observe,
 )
 
-from orion.algo.evolution_es import BracketEVES, EvolutionES, compute_budgets
+from orion.algo.evolution_es import (
+    BracketEVES,
+    BudgetTuple,
+    EvolutionES,
+    RungDict,
+    compute_budgets,
+)
 from orion.algo.space import Fidelity, Real, Space
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests
 from orion.testing.trial import create_trial
 
@@ -25,6 +34,7 @@ def space():
     """Create a Space with a real dimension and a fidelity value."""
     space = Space()
     space.register(Real("lr", "uniform", 0, 1))
+    # NOTE: Slightly different value than HyperBand (which has (1, 9, 3))
     space.register(Fidelity("epoch", 1, 9, 1))
     return space
 
@@ -51,23 +61,23 @@ def space2():
 @pytest.fixture
 def budgets():
     """Return a configuration for a bracket."""
-    return [(30, 4), (30, 5), (30, 6)]
+    return [BudgetTuple(30, 4), BudgetTuple(30, 5), BudgetTuple(30, 6)]
 
 
 @pytest.fixture
-def evolution(space1):
+def evolution(space1: Space):
     """Return an instance of EvolutionES."""
     return EvolutionES(space1, repetitions=1, nums_population=4)
 
 
 @pytest.fixture
-def bracket(budgets, evolution, space1):
+def bracket(budgets: list[BudgetTuple], evolution: EvolutionES, space1: Space):
     """Return a `Bracket` instance configured with `b_config`."""
     return BracketEVES(evolution, budgets, 1)
 
 
 @pytest.fixture
-def evolution_customer_mutate(space1):
+def evolution_customer_mutate(space1: Space):
     """Return an instance of EvolutionES."""
     return EvolutionES(
         space1,
@@ -84,27 +94,27 @@ def rung_0():
 
 
 @pytest.fixture
-def rung_1(rung_0):
+def rung_1(rung_0: RungDict):
     """Create fake points and objectives for rung 1."""
     points = [trial.params["lr"] for _, trial in sorted(rung_0["results"].values())[:3]]
     return create_rung_from_points(points, n_trials=3, resources=3)
 
 
 @pytest.fixture
-def rung_2(rung_1):
+def rung_2(rung_1: RungDict):
     """Create fake points and objectives for rung 1."""
     points = [trial.params["lr"] for _, trial in sorted(rung_1["results"].values())[:1]]
     return create_rung_from_points(points, n_trials=1, resources=9)
 
 
 @pytest.fixture
-def rung_3(space1):
+def rung_3(space1: Space):
     """Create fake points and objectives for rung 3."""
     points = np.linspace(1, 4, 4)
     keys = list(space1.keys())
     types = [dim.type for dim in space1.values()]
 
-    results = {}
+    results: dict[str, tuple[float, Trial]] = {}
     for point in points:
         trial = create_trial(
             (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)),
@@ -117,9 +127,10 @@ def rung_3(space1):
             ignore_fidelity=True,
             ignore_experiment=True,
         )
+        assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
 
-    return dict(
+    return RungDict(
         n_trials=4,
         resources=1,
         results=results,
@@ -127,13 +138,13 @@ def rung_3(space1):
 
 
 @pytest.fixture
-def rung_4(space1):
+def rung_4(space1: Space):
     """Create duplicated fake points and objectives for rung 4."""
     points = np.linspace(1, 4, 4)
     keys = list(space1.keys())
     types = [dim.type for dim in space1.values()]
 
-    results = {}
+    results: dict[str, tuple[float, Trial]] = {}
     for point in points:
         trial = create_trial(
             (1, point // 2, point // 2),
@@ -147,9 +158,10 @@ def rung_4(space1):
             ignore_fidelity=True,
             ignore_experiment=True,
         )
+        assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
 
-    return dict(
+    return RungDict(
         n_trials=4,
         resources=1,
         results=results,
@@ -163,7 +175,9 @@ def test_compute_budgets():
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
 
 
-def test_customized_mutate_population(space1, rung_3, budgets):
+def test_customized_mutate_population(
+    space1: Space, rung_3: RungDict, budgets: list[BudgetTuple]
+):
     """Verify customized mutated candidates is generated correctly."""
     customerized_dict = {
         "function": "orion.testing.algo.customized_mutate_example",
@@ -241,7 +255,13 @@ def test_customized_mutate_population(space1, rung_3, budgets):
 class TestEvolutionES:
     """Tests for the algo Evolution."""
 
-    def test_register(self, evolution, bracket, rung_0, rung_1):
+    def test_register(
+        self,
+        evolution: EvolutionES,
+        bracket: BracketEVES,
+        rung_0: RungDict,
+        rung_1: RungDict,
+    ):
         """Check that a point is registered inside the bracket."""
         evolution.brackets = [bracket]
         bracket.hyperband = evolution
@@ -261,7 +281,7 @@ class TestEvolutionES:
 class TestBracketEVES:
     """Tests for `BracketEVES` class.."""
 
-    def test_get_teams(self, bracket, rung_3):
+    def test_get_teams(self, bracket: BracketEVES, rung_3: RungDict):
         """Test that correct team is promoted."""
         bracket.rungs[0] = rung_3
         rung, population_range, red_team, blue_team = bracket._get_teams(0)
@@ -271,7 +291,7 @@ class TestBracketEVES:
         assert set(red_team).union(set(blue_team)) == {0, 1, 2, 3}
         assert set(red_team).intersection(set(blue_team)) == set()
 
-    def test_mutate_population(self, bracket, rung_3):
+    def test_mutate_population(self, bracket: BracketEVES, rung_3: RungDict):
         """Verify mutated candidates is generated correctly."""
         red_team = [0, 2]
         blue_team = [1, 3]
@@ -328,7 +348,9 @@ class TestBracketEVES:
         else:
             assert mutated_data[3][1] != org_data[2][1]
 
-    def test_duplicated_mutated_population(self, bracket, rung_4):
+    def test_duplicated_mutated_population(
+        self, bracket: BracketEVES, rung_4: RungDict
+    ):
         """Verify duplicated candidates can be found and processed correctly."""
         red_team = [0, 2]
         blue_team = [0, 2]  # no mutate occur at first.
@@ -362,7 +384,7 @@ class TestBracketEVES:
         assert nums_all_equal[2] == 1
         assert nums_all_equal[3] == 0
 
-    def test_mutate_trials(self, bracket, rung_3):
+    def test_mutate_trials(self, bracket: BracketEVES, rung_3: RungDict):
         """Test that correct trial is promoted."""
         red_team = [0, 2]
         blue_team = [0, 2]
@@ -433,7 +455,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
         assert algo.is_done
 
     @pytest.mark.parametrize("num", [100000, 1])
-    def test_is_done_max_trials(self, num):
+    def test_is_done_max_trials(self, num: int):
         space = self.create_space()
 
         MAX_TRIALS = 10
@@ -456,7 +478,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
     def test_optimize_branin(self):
         pass
 
-    def infer_repetition_and_rung(self, num):
+    def infer_repetition_and_rung(self, num: int):
         budgets = list(np.cumsum(BUDGETS))
         if num >= budgets[-1] * 2:
             return 3, -1
@@ -468,7 +490,9 @@ class TestGenericEvolutionES(BaseAlgoTests):
 
         return 1, budgets.index(num)
 
-    def assert_callbacks(self, spy, num, algo):
+    def assert_callbacks(
+        self, spy, num: int, algo: SpaceTransformAlgoWrapper[EvolutionES]
+    ):
 
         if num == 0:
             return
@@ -488,8 +512,13 @@ BUDGETS = [20, 20, 20, 20]
 
 
 TestGenericEvolutionES.set_phases(
-    [("random", 0, "space.sample")]
-    + [(f"rung{i}", budget, "suggest") for i, budget in enumerate(np.cumsum(BUDGETS))]
-    + [("rep1-rung1", sum(BUDGETS), "suggest")]
-    + [("rep2-rung1", sum(BUDGETS) * 2, "suggest")]
+    [
+        ("random", 0, "space.sample"),
+        *[
+            (f"rung{i}", budget, "suggest")
+            for i, budget in enumerate(np.cumsum(BUDGETS))
+        ],
+        ("rep1-rung1", sum(BUDGETS), "suggest"),
+        ("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
+    ]
 )

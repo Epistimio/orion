@@ -19,3 +19,4 @@ Algorithm modules
    algo/tpe
    algo/mofa
    algo/parallel_strategy
+   algo/registry

@@ -354,13 +354,13 @@ class TestReal(object):
             ("reciprocal", 1e-4, 1e-2, 2, 90 * 2 + 1),
             ("reciprocal", 1e-5, 1e-2, 2, 90 + 90 * 2 + 1),
             ("reciprocal", 5.234e-3, 1.5908e-2, 2, (90 - 52) + 15 + 1),
-            ("reciprocal", 5.234e-3, 1.5908e-2, 4, (9 * 10 ** 3 - 5234) + 1590 + 1),
+            ("reciprocal", 5.234e-3, 1.5908e-2, 4, (9 * 10**3 - 5234) + 1590 + 1),
             (
                 "reciprocal",
                 5.234e-5,
                 1.5908e-2,
                 4,
-                (9 * 10 ** 3 * 3 - 5234) + 1590 + 1,
+                (9 * 10**3 * 3 - 5234) + 1590 + 1,
             ),
             ("uniform", 1e-5, 1e-2, 2, np.inf),
             ("uniform", -3, 4, 3, np.inf),
@@ -885,11 +885,11 @@ class TestSpace(object):
         dim = Fidelity("epoch", 1, 9, 3)
         space.register(dim)
 
-        assert space.cardinality == (4 ** 2) * (6 + 1) * 1
+        assert space.cardinality == (4**2) * (6 + 1) * 1
 
         dim = Integer("yolo3", "uniform", -3, 2, shape=(3, 2))
         space.register(dim)
-        assert space.cardinality == (4 ** 2) * (6 + 1) * 1 * ((2 + 1) ** (3 * 2))
+        assert space.cardinality == (4**2) * (6 + 1) * 1 * ((2 + 1) ** (3 * 2))
 
         dim = Real("yolo4", "norm", 0.9)
         space.register(dim)
