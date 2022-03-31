@@ -103,7 +103,6 @@ class MOFA(BaseAlgorithm):
         # Initialize a dictionary for the frozen values of each hyperparameter
         self.frozen_param_values = {}
 
-    def _initialize(self):
         # Generate the initial set of trials
         self.roi_space = self.space
         self.current_trials_params = self._generate_trials_unfrozen_params(
@@ -189,8 +188,6 @@ class MOFA(BaseAlgorithm):
         New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
         """
-        if not hasattr(self, "current_trials_params"):
-            self._initialize()
 
         if self.n_trials is None or len(self.completed_trials) >= self.n_trials:
             self._prepare_next_iteration()

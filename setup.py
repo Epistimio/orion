@@ -15,6 +15,7 @@ with open("tests/requirements.txt") as f:
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.mofa",
     "orion.algo.pbt",
     "orion.analysis",
     "orion.benchmark",
@@ -63,6 +64,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "mofa = orion.algo.mofa.mofa:MOFA",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
