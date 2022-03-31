@@ -202,7 +202,7 @@ class MOFA(BaseAlgorithm):
             trial_params.update(self.frozen_param_values)
             trial = dict_to_trial(trial_params, self.space)
             if self.has_observed(trial):
-                similar_trial, _ = self._trials_info[self.get_id(trial)]
+                similar_trial = self.registry.get_existing(trial)
                 trial.results = copy.deepcopy(similar_trial.results)
                 trial.status = similar_trial.status
                 self.completed_trials.append(trial)
