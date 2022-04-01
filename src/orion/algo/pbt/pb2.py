@@ -75,7 +75,7 @@ class PB2(PBT):
         exploit=None,
         fork_timeout=60,
     ):
-        super(PB2, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             population_size=population_size,
