@@ -122,7 +122,7 @@ class BOHB(BaseAlgorithm):
 
         self.strategy = strategy_factory.create(**parallel_strategy)
 
-        super(BOHB, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             min_points_in_model=min_points_in_model,
