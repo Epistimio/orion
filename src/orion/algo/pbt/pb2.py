@@ -90,7 +90,7 @@ class PB2(PBT):
         appropriate for saving.
 
         """
-        config = super(PB2, self).configuration
+        config = super().configuration
         config["pb2"].pop("explore")
         return config
 
