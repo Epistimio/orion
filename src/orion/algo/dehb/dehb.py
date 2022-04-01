@@ -63,6 +63,130 @@ CROSSOVER_STRATEGY = [
 FIX_MODES = ["random", "clip"]
 
 
+class _CustomDEHBImpl(DEHBImpl):
+    def f_objective(self, *args, **kwargs):
+        """Not needed for Orion, the objective is called by the worker"""
+        pass
+
+    def _start_new_bracket(self):
+        """Starts a new bracket based on Hyperband"""
+        # start new bracket
+        self.iteration_counter += (
+            1  # iteration counter gives the bracket count or bracket ID
+        )
+        n_configs, budgets = self.get_next_iteration(self.iteration_counter)
+        bracket = SHBracketManager(
+            n_configs=n_configs,
+            budgets=budgets,
+            bracket_id=self.iteration_counter,
+            duplicates=self.duplicates,
+        )
+        self.active_brackets.append(bracket)
+        return bracket
+
+    def register_job(self, job_info: dict) -> None:
+        """Register to DEHB's backend"""
+
+        # pass information of job submission to Bracket Manager
+        for bracket in self.active_brackets:
+            if bracket.bracket_id == job_info["bracket_id"]:
+                # registering is IMPORTANT for Bracket Manager to perform SH
+                bracket.register_job(job_info["budget"])
+                break
+
+    def init_population(self, pop_size: int) -> List[np.array]:
+        """Generate our initial population of sample
+
+        Parameters
+        ----------
+        pop_size: int
+            Number of samples to generate
+
+        """
+        population = self.cs.sample_configuration(size=pop_size)
+        population = [
+            self.configspace_to_vector(individual) for individual in population
+        ]
+        return population
+
+    def observe(self, job_info, cost, fitness):
+        """Observe a completed job"""
+        config = job_info["config"]
+        budget = job_info["budget"]
+        parent_id = job_info["parent_id"]
+        bracket_id = job_info["bracket_id"]
+        info = dict()
+
+        #
+        for bracket in self.active_brackets:
+            if bracket.bracket_id == bracket_id:
+                # bracket job complete
+                # IMPORTANT to perform synchronous SH
+                bracket.complete_job(budget)
+
+        # carry out DE selection
+        if fitness <= self.de[budget].fitness[parent_id]:
+            self.de[budget].population[parent_id] = config
+            self.de[budget].fitness[parent_id] = fitness
+
+        # updating incumbents
+        if self.de[budget].fitness[parent_id] < self.inc_score:
+            self._update_incumbents(
+                config=self.de[budget].population[parent_id],
+                score=self.de[budget].fitness[parent_id],
+                info=info,
+            )
+
+        # book-keeping
+        self._update_trackers(
+            traj=self.inc_score,
+            runtime=cost,
+            history=(config.tolist(), float(fitness), float(cost), float(budget), info),
+        )
+
+    def seed_rng(self, seed: int) -> None:
+        """Seed the state of rngs used by DEHB"""
+        np.random.seed(seed)
+        self.cs.seed(np.random.randint(np.iinfo(np.int32).max))
+
+    @property
+    def state_dict(self) -> dict:
+        """Return a state dict that can be used to reset the state of the algorithm."""
+        state = dict(self.__dict__)
+        state["client"] = None
+        state["logger"] = None
+        for key in [
+            "active_brackets",
+            "iteration_counter",
+            "de",
+            "_max_pop_size",
+            "start",
+            "traj",
+            "runtime",
+            "history",
+        ]:
+            state[key] = getattr(self, key, None)
+
+        return deepcopy(
+            {
+                "state": state,
+                "numpy_GlobalState": np.random.get_state(),
+                "numpy_RandomState": self.cs.random.get_state(),
+            }
+        )
+
+    def set_state(self, state_dict: dict) -> None:
+        """Reset the state of DEHB"""
+        for k, v in state_dict["state"].items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                logger.error("DEHB does not have attribute %s", k)
+
+        np.random.set_state(state_dict["numpy_GlobalState"])
+        self.cs.random.set_state(state_dict["numpy_RandomState"])
+
+
 # pylint: disable=too-many-public-methods
 class DEHB(DEHBImpl, BaseAlgorithm):
     """Differential Evolution with HyperBand
@@ -177,8 +301,21 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
         fidelity_dim = space[fidelity_index]
 
-        # Add derived arguments for when we will init DEHB
-        self.init_kwargs = dict(
+        self.rung = None
+        self.seed = seed
+        self.job_infos = defaultdict(list)
+        self.job_results = dict()
+        self.duplicates = defaultdict(int)
+
+        configspace = self.convert_space(self.space)
+
+        # Initialize
+        self.seed_rng(self.seed)
+        self.dehb = CustomDEHBImpl(
+            self,
+            cs=configspace,
+            configspace=True,
+            dimensions=len(configspace.get_hyperparameters()),
             mutation_factor=mutation_factor,
             crossover_prob=crossover_prob,
             strategy=f"{mutation_strategy}_{crossover_strategy}",
@@ -196,89 +333,13 @@ class DEHB(DEHBImpl, BaseAlgorithm):
             # No need for the user function
             f=None,
         )
-
-        self.rung = None
-        self.cs = None
-        self.seed = seed
-        self.job_infos = defaultdict(list)
-        self.job_results = dict()
-        self.duplicates = defaultdict(int)
-
-    def f_objective(self, *args, **kwargs):
-        """Not needed for Orion, the objective is called by the worker"""
-        pass
-
-    @property
-    def space(self) -> Space:
-        """Space of the optimizer"""
-        return self._space
-
-    @space.setter
-    def space(self, space: Space) -> None:
-        """Setter of optimizer's space.
-
-        We need the transformed algo to initialize DEHB
-        """
-        self._space = space
-        self._initialize()
-
-    def _initialize(self) -> None:
-        # Convert to configpace
-
-        self.cs = convert_space(self.space)
-
-        dimensions = len(self.cs.get_hyperparameters())
-
-        # Initialize
-        self.seed_rng(self.seed)
-        DEHBImpl.__init__(
-            self,
-            cs=self.cs,
-            configspace=True,
-            dimensions=dimensions,
-            **self.init_kwargs,
-        )
         self.rung = len(self.budgets)
-
-    def _start_new_bracket(self):
-        """Starts a new bracket based on Hyperband"""
-        # start new bracket
-        self.iteration_counter += (
-            1  # iteration counter gives the bracket count or bracket ID
-        )
-        n_configs, budgets = self.get_next_iteration(self.iteration_counter)
-        bracket = SHBracketManager(
-            n_configs=n_configs,
-            budgets=budgets,
-            bracket_id=self.iteration_counter,
-            duplicates=self.duplicates,
-        )
-        self.active_brackets.append(bracket)
-        return bracket
 
     @property
     def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = super(DEHB, self).state_dict
-
-        state = dict(self.__dict__)
-        state["client"] = None
-        state["logger"] = None
-        for key in [
-            "active_brackets",
-            "iteration_counter",
-            "de",
-            "_max_pop_size",
-            "start",
-            "traj",
-            "runtime",
-            "history",
-        ]:
-            state[key] = getattr(self, key, None)
-
-        state_dict["numpy_GlobalState"] = np.random.get_state()
-        state_dict["numpy_RandomState"] = self.cs.random.get_state()
-        state_dict["DEHB_statedict"] = state
+        state_dict["DEHB_statedict"] = self.dehb.state_dict
 
         return deepcopy(state_dict)
 
@@ -288,15 +349,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         :param state_dict: Dictionary representing state of an algorithm
         """
         BaseAlgorithm.set_state(self, state_dict)
-
-        for k, v in state_dict["DEHB_statedict"].items():
-            if hasattr(self, k):
-                setattr(self, k, v)
-            else:
-                logger.error("DEHB does not have attribute %s", k)
-
-        np.random.set_state(state_dict["numpy_GlobalState"])
-        self.cs.random.set_state(state_dict["numpy_RandomState"])
+        self.dehb.set_state(state_dict["DEHB_statedict"])
 
     def seed_rng(self, seed: int) -> None:
         """Seed the state of the random number generator.
@@ -307,39 +360,12 @@ class DEHB(DEHBImpl, BaseAlgorithm):
             Integer seed for the random number generator.
 
         """
-        np.random.seed(seed)
-        if hasattr(self, "cs"):
-            self.cs.seed(np.random.randint(np.iinfo(np.int32).max))
-
-    def init_population(self, pop_size: int) -> List[np.array]:
-        """Generate our initial population of sample
-
-        Parameters
-        ----------
-        pop_size: int
-            Number of samples to generate
-
-        """
-        population = self.cs.sample_configuration(size=pop_size)
-        population = [
-            self.configspace_to_vector(individual) for individual in population
-        ]
-        return population
-
-    def register_job(self, job_info: dict) -> None:
-        """Register to DEHB's backend"""
-
-        # pass information of job submission to Bracket Manager
-        for bracket in self.active_brackets:
-            if bracket.bracket_id == job_info["bracket_id"]:
-                # registering is IMPORTANT for Bracket Manager to perform SH
-                bracket.register_job(job_info["budget"])
-                break
+        self.dehb.seed(seed)
 
     @property
     def is_done(self) -> bool:
         """Return True, if an algorithm holds that there can be no further improvement."""
-        return self._is_run_budget_exhausted(None, self.rung, None)
+        return self.dehb._is_run_budget_exhausted(None, self.rung, None)
 
     def sample_to_trial(self, sample: np.array, fidelity: int) -> Trial:
         """Convert a ConfigSpace sample into a trial"""
@@ -357,7 +383,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         return self.format_trial(format_trials.dict_to_trial(to_orion(hps), self.space))
 
     def suggest(self, num: int) -> List[Trial]:
-        """Suggest a `num`ber of new sets of parameters.
+        """Suggest a number of new sets of parameters.
 
         Parameters
         ----------
@@ -382,7 +408,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
             if self.is_done:
                 break
 
-            job_info = DEHBImpl._get_next_job(self)
+            job_info = self.dehb._get_next_job()
             job_info["done"] = 0
 
             # We are generating trials for a bracket that is too high
@@ -394,19 +420,18 @@ class DEHB(DEHBImpl, BaseAlgorithm):
                 job_info["config"], fidelity=job_info["budget"]
             )
 
-            # DEHB may sample 2 very similar trial, that gets the same ID because
-            # for instance the precision is low and rounding the HP values leads to
-            # 2 identical trials. It this case you will have has_suggested(new_trial)
-            # is True, and you will discard this trial.
+            # DEHB may sample 2 identical trials if working in a purely discrete spaceI
+            # It this case you will have has_suggested(new_trial) is True, and you will
+            # discard this trial.
             # It's fine to discard the trial, but we should keep track of the job_info.
             # DEHB does not know that we discarded the trial and will be waiting for the
-            # result.We need to keep track of both job_info so that when we have
+            # result. We need to keep track of both job_info so that when we have
             # the result of the first trial, we assign it to the second job_info as well.
 
             if not self.has_suggested(new_trial):
                 # Store metadata
                 self.job_infos[self.get_id(new_trial)].append(job_info)
-                self.register_job(job_info)
+                self.dehb.register_job(job_info)
 
                 # Standard Orion
                 self.register(new_trial)
@@ -425,7 +450,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
                 # if so observe it right now and discard
                 if result is not None:
-                    self._dehb_observe(job_info, *result)
+                    self.dehb.observe(job_info, *result)
                 else:
                     # else we need to keep track of it to observe it later
                     self.job_infos[self.get_id(new_trial)].append(job_info)
@@ -481,38 +506,4 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
         for job_info in job_infos:
             cost = job_info["budget"]
-            self._dehb_observe(job_info, cost, fitness)
-
-    def _dehb_observe(self, job_info, cost, fitness):
-        config = job_info["config"]
-        budget = job_info["budget"]
-        parent_id = job_info["parent_id"]
-        bracket_id = job_info["bracket_id"]
-        info = dict()
-
-        #
-        for bracket in self.active_brackets:
-            if bracket.bracket_id == bracket_id:
-                # bracket job complete
-                # IMPORTANT to perform synchronous SH
-                bracket.complete_job(budget)
-
-        # carry out DE selection
-        if fitness <= self.de[budget].fitness[parent_id]:
-            self.de[budget].population[parent_id] = config
-            self.de[budget].fitness[parent_id] = fitness
-
-        # updating incumbents
-        if self.de[budget].fitness[parent_id] < self.inc_score:
-            self._update_incumbents(
-                config=self.de[budget].population[parent_id],
-                score=self.de[budget].fitness[parent_id],
-                info=info,
-            )
-
-        # book-keeping
-        self._update_trackers(
-            traj=self.inc_score,
-            runtime=cost,
-            history=(config.tolist(), float(fitness), float(cost), float(budget), info),
-        )
+            self.dehb.observe(job_info, cost, fitness)
