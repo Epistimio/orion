@@ -32,7 +32,7 @@ https://orion.readthedocs.io/en/develop/user/algorithms.html#bohb-algorithm
 
 # SuccessiveHalving gives us tuples of stuff to run but expects the results
 # to be packaged up in jobs so this is filling in for those jobs.
-class FakeJob(object):  # pylint: disable=too-few-public-methods
+class FakeJob:  # pylint: disable=too-few-public-methods
     """
     Minimal HpBandSter Job mock.
 
