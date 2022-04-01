@@ -1322,22 +1322,22 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
         dim = Integer("yolo2", "uniform", -3, 6)
         space.register(dim)
         tspace = build_required_space(space, type_requirement="integer")
-        assert tspace.cardinality == (4 ** 2) * (6 + 1)
+        assert tspace.cardinality == (4**2) * (6 + 1)
 
         dim = Integer("yolo3", "uniform", -3, 6, shape=(2, 1))
         space.register(dim)
         tspace = build_required_space(space, type_requirement="integer")
-        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
+        assert tspace.cardinality == (4**2) * (6 + 1) * ((6 + 1) ** (2 * 1))
 
         tspace = build_required_space(
             space, type_requirement="integer", shape_requirement="flattened"
         )
-        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
+        assert tspace.cardinality == (4**2) * (6 + 1) * ((6 + 1) ** (2 * 1))
 
         tspace = build_required_space(
             space, type_requirement="integer", dist_requirement="linear"
         )
-        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
+        assert tspace.cardinality == (4**2) * (6 + 1) * ((6 + 1) ** (2 * 1))
 
 
 def test_quantization_does_not_violate_bounds():
