@@ -5,7 +5,7 @@ import itertools
 import numpy
 import pytest
 
-from orion.algo.dehb.dehb import UnsupportedConfiguration, IMPORT_ERROR
+from orion.algo.dehb.dehb import IMPORT_ERROR, UnsupportedConfiguration
 from orion.core.utils import backward, format_trials
 from orion.testing.algo import BaseAlgoTests
 
