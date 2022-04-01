@@ -16,7 +16,7 @@ class SHBracketManager(SHBracketManagerImpl):
     """Override the default implementation to ignore duplicated trials in budget accounting"""
 
     def __init__(self, n_configs, budgets, bracket_id=None, duplicates=None):
-        super(SHBracketManager, self).__init__(n_configs, budgets, bracket_id)
+        super().__init__(n_configs, budgets, bracket_id)
         self.duplicates = duplicates
 
     def complete_job(self, budget):
