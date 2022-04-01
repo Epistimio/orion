@@ -600,15 +600,16 @@ class TestExperimentVersioning(object):
             assert exp.version == 1
             assert exp.configuration["algorithms"] == {"random": {"seed": None}}
 
+            new_algo = "gridsearch"
             with caplog.at_level(logging.WARNING):
 
                 exp = experiment_builder.build(
-                    name=parent_version_config["name"], algorithms="gradient_descent"
+                    name=parent_version_config["name"], algorithms=new_algo
                 )
                 assert "Running experiment in a different state" in caplog.text
 
             assert exp.version == 1
-            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+            assert list(exp.configuration["algorithms"].keys())[0] == new_algo
 
             caplog.clear()
             with caplog.at_level(logging.WARNING):
@@ -617,7 +618,7 @@ class TestExperimentVersioning(object):
                 assert "Running experiment in a different state" not in caplog.text
 
             assert exp.version == 1
-            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+            assert list(exp.configuration["algorithms"].keys())[0] == new_algo
 
     def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""

@@ -55,6 +55,7 @@ setup_args = dict(
     packages=packages,
     package_dir={"": "src"},
     include_package_data=True,
+    python_requires=">=3.7",
     entry_points={
         "console_scripts": [
             "orion = orion.core.cli:main",
@@ -86,7 +87,6 @@ setup_args = dict(
     },
     install_requires=[
         "cloudpickle",
-        "dataclasses;python_version<'3.7'",
         "PyYAML",
         "pymongo>=3",
         "numpy",
@@ -135,7 +135,7 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.6 3.7 3.8 3.9".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.7 3.8 3.9".split()]
 
 if __name__ == "__main__":
     setup(**setup_args)

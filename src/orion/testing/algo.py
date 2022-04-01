@@ -1,26 +1,32 @@
 # -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
+from __future__ import annotations
+
 import copy
 import functools
 import inspect
 import itertools
 import logging
 from collections import defaultdict
+from typing import ClassVar, NamedTuple, Type, TypeVar
 
 import numpy
 import pytest
 
 import orion.algo.base
 from orion.algo.asha import ASHA
+from orion.algo.base import BaseAlgorithm
 from orion.algo.gridsearch import GridSearch
 from orion.algo.hyperband import Hyperband
 from orion.algo.parallel_strategy import strategy_factory
 from orion.algo.random import Random
+from orion.algo.space import Space
 from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.space import build_space
 
@@ -106,6 +112,19 @@ def customized_mutate_example(search_space, rng, old_value, **kwargs):
     return new_value
 
 
+class TestPhase(NamedTuple):
+    name: str
+    """ Name of the test phase."""
+
+    n_trials: int
+    """ Number of trials after which the phase should begin."""
+
+    method_to_spy: str
+    """ Name of the algorithm's attribute to use to spy.
+    NOTE: need to clarify what exactly this is used for.
+    """
+
+
 class BaseAlgoTests:
     """Generic Test-suite for HPO algorithms.
 
@@ -128,6 +147,12 @@ class BaseAlgoTests:
     config = {}
     max_trials = 200
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
+
+    phases: ClassVar[list[TestPhase]]
+
+    def __init_subclass__(cls) -> None:
+        if hasattr(cls, "phases"):
+            cls.set_phases(cls.phases)
 
     @classmethod
     def set_phases(cls, phases):
@@ -173,11 +198,9 @@ class BaseAlgoTests:
         """
         config = copy.deepcopy(config or self.config)
         config.update(kwargs)
-        algo = SpaceTransformAlgoWrapper(
-            orion.algo.base.algo_factory.get_class(self.algo_name),
-            space or self.create_space(),
-            **config,
-        )
+        base_algo_type = orion.algo.base.algo_factory.get_class(self.algo_name)
+        original_space = space or self.create_space()
+        algo = create_algo(space=original_space, algo_type=base_algo_type, **config)
         algo.algorithm.max_trials = self.max_trials
         return algo
 

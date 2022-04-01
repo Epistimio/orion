@@ -8,6 +8,9 @@ import numpy
 import pytest
 
 from orion.client import create_experiment, workon
+from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import format_trials
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.testing.state import OrionState
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
@@ -74,7 +77,7 @@ def rosenbrock(x, noise=None):
         z *= random.gauss(0, noise)
 
     return [
-        {"name": "objective", "type": "objective", "value": 4 * z ** 2 + 23.4},
+        {"name": "objective", "type": "objective", "value": 4 * z**2 + 23.4},
         {"name": "gradient", "type": "gradient", "value": [8 * z]},
     ]
 
@@ -131,7 +134,7 @@ def test_simple(algorithm):
     no_fidelity_algorithm_configs.values(),
     ids=list(no_fidelity_algorithm_configs.keys()),
 )
-def test_cardinality_stop(algorithm):
+def test_cardinality_stop_uniform(algorithm):
     """Test when algo needs to stop because all space is explored (dicrete space)."""
     discrete_space = copy.deepcopy(space)
     discrete_space["x"] = "uniform(-10, 5, discrete=True)"
@@ -141,9 +144,24 @@ def test_cardinality_stop(algorithm):
     assert len(trials) == 16
     assert trials[-1].status == "completed"
 
-    discrete_space["x"] = "loguniform(0.1, 1, precision=1)"
-    exp = workon(rosenbrock, discrete_space, algorithms=algorithm, max_trials=30)
-    print(exp.space.cardinality)
+
+@pytest.mark.parametrize(
+    "algorithm",
+    no_fidelity_algorithm_configs.values(),
+    ids=list(no_fidelity_algorithm_configs.keys()),
+)
+def test_cardinality_stop_loguniform(algorithm):
+    """Test when algo needs to stop because all space is explored (loguniform space)."""
+    discrete_space = SpaceBuilder().build({"x": "loguniform(0.1, 1, precision=1)"})
+
+    max_trials = 30
+    exp = workon(
+        rosenbrock, discrete_space, algorithms=algorithm, max_trials=max_trials
+    )
+    algo_wrapper: SpaceTransformAlgoWrapper = exp.algorithms
+    assert algo_wrapper.space == discrete_space
+    assert algo_wrapper.algorithm.is_done
+    assert algo_wrapper.is_done
 
     trials = exp.fetch_trials()
     assert len(trials) == 10
