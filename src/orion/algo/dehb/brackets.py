@@ -7,7 +7,13 @@ from orion.algo.dehb.logger import remove_loguru
 remove_loguru()
 
 
-from dehb.utils import SHBracketManager as SHBracketManagerImpl
+try:
+    from dehb.utils import SHBracketManager as SHBracketManagerImpl
+
+    IMPORT_ERROR = None
+except ImportError as exc:
+    IMPORT_ERROR = exc
+
 
 logger = logging.getLogger(__name__)
 
