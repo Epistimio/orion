@@ -227,7 +227,7 @@ class BOHB(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(BOHB, self).set_state(state_dict)
+        super().set_state(state_dict)
         np.random.set_state(state_dict["rng_state"])
         self.eta = state_dict["eta"]
         self.min_budget = state_dict["min_budget"]
