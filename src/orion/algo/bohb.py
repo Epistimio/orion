@@ -313,7 +313,7 @@ class BOHB(BaseAlgorithm):
            Trials from a `orion.algo.space.Space`.
 
         """
-        super(BOHB, self).observe(trials)
+        super().observe(trials)
         for trial in trials:
             if trial.status == "broken":
                 trial = self.strategy.infer(trial)
