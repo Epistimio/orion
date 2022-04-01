@@ -1,6 +1,6 @@
 """
-:mod:`orion.algo.bohb.bohb -- BOHB
-==================================
+:mod:`orion.algo.bohb` -- BOHB
+==============================
 
 Module for the wrapper around HpBandSter.
 """
@@ -241,9 +241,7 @@ class BOHB(BaseAlgorithm):
         self._setup()
 
     def suggest(self, num):
-        """Suggest a `num`ber of new sets of parameters.
-
-        TODO: document how suggest work for this algo
+        """Suggest a number of new sets of parameters.
 
         Parameters
         ----------
@@ -304,8 +302,6 @@ class BOHB(BaseAlgorithm):
 
     def observe(self, trials):
         """Observe the `trials` new state of result.
-
-        TODO: document how observe work for this algo
 
         Parameters
         ----------
