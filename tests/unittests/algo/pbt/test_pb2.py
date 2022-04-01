@@ -54,6 +54,12 @@ class TestPB2(BaseAlgoTests):
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
 
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 5, "space.sample"),
+        TestPhase("generation_2", 2 * population_size, "_generate_offspring"),
+        TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
+    ]
+
     @pytest.mark.skip(
         reason="There are no good reasons to use PBT if search space is so small"
     )
@@ -86,12 +92,3 @@ class TestPB2(BaseAlgoTests):
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/599")
     def test_optimize_branin(self):
         """Ignored."""
-
-
-TestPB2.set_phases(
-    [
-        ("random", 5, "space.sample"),
-        ("generation_2", 2 * population_size, "_generate_offspring"),
-        ("generation_3", 3 * population_size, "_generate_offspring"),
-    ]
-)
