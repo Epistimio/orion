@@ -209,7 +209,7 @@ class BOHB(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(BOHB, self).state_dict
+        state_dict = super().state_dict
         state_dict["rng_state"] = np.random.get_state()
         state_dict["eta"] = self.eta
         state_dict["min_budget"] = self.min_budget
