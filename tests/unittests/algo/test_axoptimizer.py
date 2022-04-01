@@ -1,5 +1,6 @@
 """Perform integration tests for `orion.algo.ax`."""
 import statistics as stats
+from typing import ClassVar, List
 
 import pytest
 
@@ -68,7 +69,7 @@ class TestAxOptimizer(BaseAlgoTests):
         "extra_objectives": set(),
         "constraints": [],
     }
-    phases: ClassVar[list[TestPhase]] = [
+    phases: ClassVar[List[TestPhase]] = [
         TestPhase("Sobol", 0, "space.sample"),
         TestPhase("BO", N_INIT, "space.sample"),
     ]

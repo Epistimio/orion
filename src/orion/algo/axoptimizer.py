@@ -91,6 +91,11 @@ class AxOptimizer(BaseAlgorithm):
             constraints=constraints,
         )
 
+        # test Ax parameters
+        with self.get_client():
+            pass
+        self._client_state = None
+
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
 
@@ -202,7 +207,6 @@ class AxOptimizer(BaseAlgorithm):
                     )
 
                 new_trial = format_trials.dict_to_trial(parameters, self.space)
-                new_trial = self.format_trial(new_trial)
 
                 if not self.has_suggested(new_trial):
                     self.register(new_trial)
