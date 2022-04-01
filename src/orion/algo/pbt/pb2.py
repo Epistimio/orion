@@ -220,7 +220,7 @@ class PB2(PBT):
         """
         data_trials = []
         current_trials = []
-        for _, (trial, _) in self._trials_info.items():
+        for trial in self.registry:
             if trial.status == "completed":
                 data_trials.append(trial)
             else:
