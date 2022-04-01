@@ -113,7 +113,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
     """
 
-    requires_type = None
+    requires_type: ClassVar[Optional[str]] = None
     requires_dist = None
     requires_shape = "flattened"
 
