@@ -217,7 +217,7 @@ Configuration
 BOHB
 ----
 
-`BOHB`_, is an integration of a Bayesian Optimization algorithm for the 
+`BOHB`_, is an integration of a Bayesian Optimization algorithm for the
 selection of hyperparameters to try at the first rung of Hyperband brackets.
 First batch of Trials will be sampled randomly, but subsequent ones will be
 selected using Bayesian Optimization.

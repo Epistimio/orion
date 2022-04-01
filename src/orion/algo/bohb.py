@@ -32,7 +32,7 @@ https://orion.readthedocs.io/en/develop/user/algorithms.html#bohb-algorithm
 
 # SuccessiveHalving gives us tuples of stuff to run but expects the results
 # to be packaged up in jobs so this is filling in for those jobs.
-class FakeJob(object):  # pylint: disable=too-few-public-methods
+class FakeJob:  # pylint: disable=too-few-public-methods
     """
     Minimal HpBandSter Job mock.
 
@@ -122,7 +122,7 @@ class BOHB(BaseAlgorithm):
 
         self.strategy = strategy_factory.create(**parallel_strategy)
 
-        super(BOHB, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             min_points_in_model=min_points_in_model,
@@ -209,7 +209,7 @@ class BOHB(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(BOHB, self).state_dict
+        state_dict = super().state_dict
         state_dict["rng_state"] = np.random.get_state()
         state_dict["eta"] = self.eta
         state_dict["min_budget"] = self.min_budget
@@ -227,7 +227,7 @@ class BOHB(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(BOHB, self).set_state(state_dict)
+        super().set_state(state_dict)
         np.random.set_state(state_dict["rng_state"])
         self.eta = state_dict["eta"]
         self.min_budget = state_dict["min_budget"]
@@ -309,7 +309,7 @@ class BOHB(BaseAlgorithm):
            Trials from a `orion.algo.space.Space`.
 
         """
-        super(BOHB, self).observe(trials)
+        super().observe(trials)
         for trial in trials:
             if trial.status == "broken":
                 trial = self.strategy.infer(trial)
