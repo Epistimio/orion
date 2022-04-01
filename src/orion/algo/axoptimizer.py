@@ -1,8 +1,6 @@
 """
-:mod:`orion.algo.axoptimizer` -- TODO
-========================================
-
-TODO: Write long description
+:mod:`orion.algo.axoptimizer` -- Ax Wrapper
+===========================================
 """
 import contextlib
 import copy
@@ -95,7 +93,10 @@ class AxOptimizer(BaseAlgorithm):
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
 
-        :param seed: Integer seed for the random number generator.
+        Parameters
+        ----------
+        seed: int
+            Integer seed for the random number generator.
 
         .. note:: Ax does not promise deterministic trials generation and only
            similar trials generation.
@@ -110,8 +111,8 @@ class AxOptimizer(BaseAlgorithm):
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = copy.deepcopy(super().state_dict)
-        # AxClient.to_json_snapshot() seams to be more like the current internal
-        # state of the client than independent a snapshot
+        # NOTE: AxClient.to_json_snapshot() seams to be more like the current internal
+        #       state of the client than an independent snapshot
         state_dict["_client_state"] = copy.deepcopy(self._client_state)
         state_dict["_trials_map"] = copy.deepcopy(self._trials_map)
 
@@ -120,7 +121,10 @@ class AxOptimizer(BaseAlgorithm):
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
-        :param state_dict: Dictionary representing state of an algorithm
+        Parameters
+        ----------
+        state_dict: dict
+            Dictionary representing state of an algorithm
         """
         super().set_state(copy.deepcopy(state_dict))
         self._client_state = copy.deepcopy(state_dict.get("_client_state"))
@@ -160,18 +164,17 @@ class AxOptimizer(BaseAlgorithm):
         self._client_state = client.to_json_snapshot()
 
     def suggest(self, num):
-        """Suggest a `num`ber of new sets of parameters.
-
+        """Suggest a number of new sets of parameters.
 
         Parameters
         ----------
-        num: int, optional
+        num: int
             Number of trials to suggest. The algorithm may return less than the number of trials
             requested.
 
         Returns
         -------
-        list of trials or None
+        list of trials
             A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
             trials to complete), in which case it will return None.
@@ -209,8 +212,6 @@ class AxOptimizer(BaseAlgorithm):
 
     def observe(self, trials):
         """Observe the `trials` new state of result.
-
-        TODO: document how observe work for this algo
 
         Parameters
         ----------
@@ -255,30 +256,6 @@ class AxOptimizer(BaseAlgorithm):
 
                     # Register the unobserved trial
                     self.register(trial)
-
-    @property
-    def is_done(self):
-        """Return True, if an algorithm holds that there can be no further improvement."""
-        # NOTE: Drop if base implementation is fine.
-        return super().is_done
-
-    @property
-    def space(self):
-        """Domain of problem associated with this algorithm's instance."""
-        return super().space
-
-    @space.setter
-    def space(self, space):
-        """Set space."""
-        _space = self._space
-        self._space = space
-
-        if _space != space:
-            # Cleanup and test Ax parameters
-            self._client_state = None
-            with self.get_client():
-                pass
-            self._client_state = None
 
     @classmethod
     def transform_params(cls, orion_params, space):

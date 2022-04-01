@@ -6,7 +6,7 @@ import pytest
 from orion.algo.axoptimizer import has_Ax
 from orion.benchmark.task.base import BenchmarkTask
 from orion.core.utils import backward
-from orion.testing.algo import BaseAlgoTests, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase, phase
 
 if not has_Ax:
     pytest.skip("skipping Ax tests", allow_module_level=True)
@@ -68,6 +68,10 @@ class TestAxOptimizer(BaseAlgoTests):
         "extra_objectives": set(),
         "constraints": [],
     }
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("Sobol", 0, "space.sample"),
+        TestPhase("BO", N_INIT, "space.sample"),
+    ]
 
     def test_configuration_fail(self):
         """Test that Ax configuration is valid"""
@@ -252,12 +256,3 @@ class TestAxOptimizer(BaseAlgoTests):
         )
         # currin
         assert 3 <= stats.mean(objectives_currin[-5:]) <= 10
-
-
-# You may add other phases for test.
-# See https://github.com/Epistimio/orion.algo.skopt/blob/master/tests/integration_test.py
-# for an example where two phases are registered, one for the initial random step, and
-# another for the optimization step with a Gaussian Process.
-TestAxOptimizer.set_phases(
-    [("Sobol", 0, "space.sample"), ("BO", N_INIT, "space.sample")]
-)
