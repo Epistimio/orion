@@ -23,7 +23,8 @@ from orion.core.utils.flatten import flatten
 
 
 class AxOptimizer(BaseAlgorithm):
-    """TODO: Class docstring
+    """Wrapper around the `Ax platform <https://ax.dev/>`_ for multi-objectives
+    optimization and constraints.
 
     Parameters
     ----------
@@ -132,7 +133,7 @@ class AxOptimizer(BaseAlgorithm):
 
     @contextlib.contextmanager
     def get_client(self):
-        """Instantiate a new `AxClient` from previous snapshot"""
+        """Instantiate a new AxClient from previous snapshot"""
         if self._client_state is not None:
             # Copy client state because `from_json_snapshot` modifies it...
             client = AxClient.from_json_snapshot(copy.deepcopy(self._client_state))
