@@ -190,7 +190,7 @@ class _CustomDEHBImpl(DEHBImpl):
 
 
 # pylint: disable=too-many-public-methods
-class DEHB(DEHBImpl, BaseAlgorithm):
+class DEHB(BaseAlgorithm):
     """Differential Evolution with HyperBand
 
     This class is a wrapper around the librairy DEHB:
