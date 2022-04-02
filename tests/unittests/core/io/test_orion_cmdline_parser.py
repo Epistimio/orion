@@ -51,7 +51,7 @@ class WeirdArgument(NamedTuple):
     ]
 )
 def prior_and_prior_type_and_value(request):
-    """ Fixture that gives a prior str, the prior type, and a value. """
+    """Fixture that gives a prior str, the prior type, and a value."""
     prior_str, prior_type, value = request.param
     return prior_str, prior_type, value
 
@@ -67,7 +67,7 @@ def prior_and_prior_type_and_value(request):
     ]
 )
 def weird_argument(request, prior_and_prior_type_and_value: Tuple[str, str, str]):
-    """ Fixture that provides a weird name, along with a prior and value. """
+    """Fixture that provides a weird name, along with a prior and value."""
     weird_param_name = request.param
     prior_str, prior_type, value = prior_and_prior_type_and_value
     return WeirdArgument(

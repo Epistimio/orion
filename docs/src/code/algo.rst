@@ -19,3 +19,4 @@ Algorithm modules
    algo/pbt
    algo/tpe
    algo/parallel_strategy
+   algo/registry

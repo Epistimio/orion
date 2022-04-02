@@ -73,6 +73,8 @@ hierarchy. From the more global to the more specific, there is:
   argument to ``orion`` itself as well as the user's script name and its arguments.
 
 """
+from __future__ import annotations
+
 import copy
 import datetime
 import getpass
@@ -82,7 +84,7 @@ import sys
 
 import orion.core
 import orion.core.utils.backward as backward
-from orion.algo.base import algo_factory
+from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
@@ -98,7 +100,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -504,19 +506,25 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
 
     try:
         backported_config = backward.port_algo_config(config)
-        algo_constructor = algo_factory.get_class(backported_config.pop("of_type"))
-        algo = SpaceTransformAlgoWrapper(
-            algo_constructor, space=space, **backported_config
+        algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(
+            backported_config.pop("of_type")
         )
-        algo.algorithm.max_trials = max_trials
+        # NOTE: the config doesn't have the `of_type` key anymore, it only has the algo's kwargs
+        wrapped_algo = create_algo(
+            space=space, algo_type=algo_constructor, **backported_config
+        )
+        if max_trials is not None:
+            # todo: Create a `max_trials` property or annotation on BaseAlgorithm at some point.
+            wrapped_algo.algorithm.max_trials = max_trials
+
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
         log.warning(str(e))
         log.warning("Algorithm will not be instantiated.")
-        algo = config
+        wrapped_algo = config
 
-    return algo
+    return wrapped_algo
 
 
 def _instantiate_strategy(config=None):
