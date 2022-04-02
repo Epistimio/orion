@@ -345,7 +345,7 @@ class DEHB(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        BaseAlgorithm.set_state(self, state_dict)
+        super().set_state(state_dict)
         self.dehb.set_state(state_dict["DEHB_statedict"])
 
     def seed_rng(self, seed: int | None) -> None:
