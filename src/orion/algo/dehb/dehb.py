@@ -4,19 +4,20 @@
 
 Module for the wrapper around DEHB: https://github.com/automl/DEHB.
 """
-
+from __future__ import annotations
 
 import logging
 from collections import OrderedDict, defaultdict
 from copy import deepcopy
-from typing import List, Optional
+from typing import Any, ClassVar, NamedTuple
 
-import numpy as np
+import numpy
 
+from orion.algo.base import BaseAlgorithm
 from orion.algo.dehb.brackets import SHBracketManager
-from orion.algo.dehb.logger import remove_loguru
-
-remove_loguru()
+from orion.algo.space import Dimension, Space
+from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
 
 try:
     from dehb.optimizers import DEHB as DEHBImpl
@@ -27,10 +28,6 @@ try:
 except ImportError as exc:
     IMPORT_ERROR = exc
 
-from orion.algo.base import BaseAlgorithm
-from orion.algo.space import Space
-from orion.core.utils import format_trials
-from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +60,17 @@ CROSSOVER_STRATEGY = [
 FIX_MODES = ["random", "clip"]
 
 
+class RungResult(NamedTuple):
+    cost: int | float
+    fitness: float
+
+
 class _CustomDEHBImpl(DEHBImpl):
-    def f_objective(self, *args, **kwargs):
+    def f_objective(self, *args, **kwargs) -> None:
         """Not needed for Orion, the objective is called by the worker"""
         pass
 
-    def _start_new_bracket(self):
+    def _start_new_bracket(self) -> SHBracketManager:
         """Starts a new bracket based on Hyperband"""
         # start new bracket
         self.iteration_counter += (
@@ -94,7 +96,7 @@ class _CustomDEHBImpl(DEHBImpl):
                 bracket.register_job(job_info["budget"])
                 break
 
-    def init_population(self, pop_size: int) -> List[np.array]:
+    def init_population(self, pop_size: int) -> list[numpy.ndarray]:
         """Generate our initial population of sample
 
         Parameters
@@ -109,15 +111,13 @@ class _CustomDEHBImpl(DEHBImpl):
         ]
         return population
 
-    def observe(self, job_info, cost, fitness):
+    def observe(self, job_info: dict, cost: int | float, fitness: float) -> None:
         """Observe a completed job"""
-        config = job_info["config"]
-        budget = job_info["budget"]
-        parent_id = job_info["parent_id"]
-        bracket_id = job_info["bracket_id"]
-        info = dict()
+        config: numpy.ndarray = job_info["config"]
+        budget: int | float = job_info["budget"]
+        parent_id: int = job_info["parent_id"]
+        bracket_id: int = job_info["bracket_id"]
 
-        #
         for bracket in self.active_brackets:
             if bracket.bracket_id == bracket_id:
                 # bracket job complete
@@ -129,6 +129,8 @@ class _CustomDEHBImpl(DEHBImpl):
             self.de[budget].population[parent_id] = config
             self.de[budget].fitness[parent_id] = fitness
 
+        # NOTE: This dictionary seams useless in dehb source code.
+        info: dict = dict()
         # updating incumbents
         if self.de[budget].fitness[parent_id] < self.inc_score:
             self._update_incumbents(
@@ -146,8 +148,8 @@ class _CustomDEHBImpl(DEHBImpl):
 
     def seed_rng(self, seed: int) -> None:
         """Seed the state of rngs used by DEHB"""
-        np.random.seed(seed)
-        self.cs.seed(np.random.randint(np.iinfo(np.int32).max))
+        numpy.random.seed(seed)
+        self.cs.seed(numpy.random.randint(numpy.iinfo(numpy.int32).max))
 
     @property
     def state_dict(self) -> dict:
@@ -170,7 +172,7 @@ class _CustomDEHBImpl(DEHBImpl):
         return deepcopy(
             {
                 "state": state,
-                "numpy_GlobalState": np.random.get_state(),
+                "numpy_GlobalState": numpy.random.get_state(),
                 "numpy_RandomState": self.cs.random.get_state(),
             }
         )
@@ -183,7 +185,7 @@ class _CustomDEHBImpl(DEHBImpl):
             else:
                 logger.error("DEHB does not have attribute %s", k)
 
-        np.random.set_state(state_dict["numpy_GlobalState"])
+        numpy.random.set_state(state_dict["numpy_GlobalState"])
         self.cs.random.set_state(state_dict["numpy_RandomState"])
 
 
@@ -237,28 +239,24 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         Max clip when boundary fix method is clip
         Default: ``None``
 
-    max_age: Optional[int]
-        Default: ``np.inf``
-
     """
 
-    requires_type: ClassVar[Optional[str]] = None
-    requires_dist = None
-    requires_shape = "flattened"
+    requires_type: ClassVar[str | None] = None
+    requires_dist: ClassVar[str | None] = None
+    requires_shape: ClassVar[str | None] = "flattened"
 
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        space: Space = None,
-        seed: Optional[int] = None,
+        space: Space,
+        seed: int | None = None,
         mutation_factor: float = 0.5,
         crossover_prob: float = 0.5,
         mutation_strategy: str = "rand1",
         crossover_strategy: str = "bin",
         boundary_fix_type: str = "random",
-        min_clip: Optional[int] = None,
-        max_clip: Optional[int] = None,
-        max_age: Optional[int] = np.inf,
+        min_clip: int | None = None,
+        max_clip: int | None = None,
     ):
         # Sanity Check
         if mutation_strategy not in MUTATION_STRATEGIES:
@@ -280,7 +278,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         # so store the arguments for after the constructor
 
         self._original = space
-        BaseAlgorithm.__init__(
+        super().__init__(
             self,
             space,
             seed=seed,
@@ -291,7 +289,6 @@ class DEHB(DEHBImpl, BaseAlgorithm):
             boundary_fix_type=boundary_fix_type,
             min_clip=min_clip,
             max_clip=max_clip,
-            max_age=max_age,
         )
 
         # Extract fidelity information
@@ -299,19 +296,19 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         if fidelity_index is None:
             raise RuntimeError(SPACE_ERROR)
 
-        fidelity_dim = space[fidelity_index]
+        fidelity_dim: Dimension = space[fidelity_index]
 
-        self.rung = None
+        self.rung: int | None = None
         self.seed = seed
-        self.job_infos = defaultdict(list)
-        self.job_results = dict()
-        self.duplicates = defaultdict(int)
+        self.job_infos: defaultdict[str, list] = defaultdict(list)
+        self.job_results: dict[str, RungResult] = dict()
+        self.duplicates: defaultdict[str, int] = defaultdict(int)
 
         configspace = self.convert_space(self.space)
 
         # Initialize
         self.seed_rng(self.seed)
-        self.dehb = CustomDEHBImpl(
+        self.dehb = _CustomDEHBImpl(
             self,
             cs=configspace,
             configspace=True,
@@ -322,7 +319,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
             min_clip=min_clip,
             max_clip=max_clip,
             boundary_fix_type=boundary_fix_type,
-            max_age=max_age,
+            max_age=numpy.inf,
             # Derived
             min_budget=fidelity_dim.low,
             max_budget=fidelity_dim.high,
@@ -351,12 +348,12 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         BaseAlgorithm.set_state(self, state_dict)
         self.dehb.set_state(state_dict["DEHB_statedict"])
 
-    def seed_rng(self, seed: int) -> None:
+    def seed_rng(self, seed: int | None) -> None:
         """Seed the state of the random number generator.
 
         Parameters
         ----------
-        seed: int
+        seed: int or None
             Integer seed for the random number generator.
 
         """
@@ -367,7 +364,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         """Return True, if an algorithm holds that there can be no further improvement."""
         return self.dehb._is_run_budget_exhausted(None, self.rung, None)
 
-    def sample_to_trial(self, sample: np.array, fidelity: int) -> Trial:
+    def sample_to_trial(self, sample: numpy.ndarray, fidelity: int) -> Trial:
         """Convert a ConfigSpace sample into a trial"""
         config = self.vector_to_configspace(sample)
         hps = OrderedDict()
@@ -382,7 +379,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
         return self.format_trial(format_trials.dict_to_trial(to_orion(hps), self.space))
 
-    def suggest(self, num: int) -> List[Trial]:
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a number of new sets of parameters.
 
         Parameters
@@ -403,12 +400,12 @@ class DEHB(DEHBImpl, BaseAlgorithm):
         New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
         """
-        trials = []
+        trials: Trial = []
         while len(trials) < num:
             if self.is_done:
                 break
 
-            job_info = self.dehb._get_next_job()
+            job_info: dict = self.dehb._get_next_job()
             job_info["done"] = 0
 
             # We are generating trials for a bracket that is too high
@@ -457,7 +454,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
         return trials
 
-    def observe(self, trials: List[Trial]) -> None:
+    def observe(self, trials: list[Trial]) -> None:
         """Observe the `trials` new state of result.
 
         Parameters
@@ -501,8 +498,7 @@ class DEHB(DEHBImpl, BaseAlgorithm):
 
         # Store the result for later, if we sample
         # a trial that is too alike for us to evaluate
-        results = cost, fitness
-        self.job_results[self.get_id(trial)] = results
+        self.job_results[self.get_id(trial)] = RungResult(cost, fitness)
 
         for job_info in job_infos:
             cost = job_info["budget"]
