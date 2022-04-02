@@ -335,7 +335,7 @@ class DEHB(BaseAlgorithm):
     @property
     def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(DEHB, self).state_dict
+        state_dict = super().state_dict
         state_dict["DEHB_statedict"] = self.dehb.state_dict
 
         return deepcopy(state_dict)
