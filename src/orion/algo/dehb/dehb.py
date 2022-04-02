@@ -367,7 +367,7 @@ class DEHB(BaseAlgorithm):
     def sample_to_trial(self, sample: numpy.ndarray, fidelity: int) -> Trial:
         """Convert a ConfigSpace sample into a trial"""
         config = self.vector_to_configspace(sample)
-        hps = OrderedDict()
+        hps = {}
 
         for k, v in self.space.items():
 
