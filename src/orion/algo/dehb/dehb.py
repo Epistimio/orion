@@ -335,7 +335,7 @@ class DEHB(BaseAlgorithm):
     @property
     def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
-        state_dict = super(DEHB, self).state_dict
+        state_dict = super().state_dict
         state_dict["DEHB_statedict"] = self.dehb.state_dict
 
         return deepcopy(state_dict)
@@ -345,7 +345,7 @@ class DEHB(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        BaseAlgorithm.set_state(self, state_dict)
+        super().set_state(state_dict)
         self.dehb.set_state(state_dict["DEHB_statedict"])
 
     def seed_rng(self, seed: int | None) -> None:
@@ -486,7 +486,7 @@ class DEHB(BaseAlgorithm):
         # Get all the job sampled by DEHB, it might be more than one
         job_infos = self.job_infos.get(self.get_id(trial), [])
 
-        if len(job_infos) == 0:
+        if not job_infos:
             # this should be 100% unreachable because we check
             # if the trial was suggested inside `observe`
             logger.error("Could not find trial %s", self.get_id(trial))
