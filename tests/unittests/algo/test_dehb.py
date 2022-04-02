@@ -7,10 +7,17 @@ import pytest
 
 from orion.algo.dehb.dehb import IMPORT_ERROR, UnsupportedConfiguration
 from orion.core.utils import backward, format_trials
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, TestPhase
 
 if IMPORT_ERROR:
     pytest.skip("skipping DEHB tests", allow_module_level=True)
+
+
+# These are the total number of suggestions that the algorithm will make
+# for each "phase" (including previous ones).
+# The maximum number is 32 and then it will be done and stop suggesting mode.
+COUNTS = [8 + 4 * 3, 4 + 2 + 4]
+COUNTS = numpy.cumsum(COUNTS)
 
 
 class TestDEHB(BaseAlgoTests):
@@ -31,6 +38,13 @@ class TestDEHB(BaseAlgoTests):
         "max_age": 12,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        *[
+            TestPhase(f"rung{i}", budget - 1, "space.sample")
+            for i, budget in enumerate(COUNTS)
+        ],
+    ]
 
     def test_config_mut_strategy_isnot_valid(self):
         with pytest.raises(UnsupportedConfiguration):
@@ -111,16 +125,3 @@ class TestDEHB(BaseAlgoTests):
         # Hyperband should ignore max trials.
         assert algo.n_observed > MAX_TRIALS
         assert algo.is_done
-
-
-# These are the total number of suggestions that the algorithm will make
-# for each "phase" (including previous ones).
-# The maximum number is 32 and then it will be done and stop suggesting mode.
-# COUNTS = [8 + 4 * 3, 4 + 2 + 4, 2 + 1, 1]
-COUNTS = [8 + 4 * 3, 4 + 2 + 4]
-COUNTS = numpy.cumsum(COUNTS)
-
-TestDEHB.set_phases(
-    [("random", 0, "space.sample")]
-    + [(f"rung{i}", budget - 1, "space.sample") for i, budget in enumerate(COUNTS)]
-)
