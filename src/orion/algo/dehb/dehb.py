@@ -274,10 +274,6 @@ class DEHB(BaseAlgorithm):
                 f"Boundary fix type {boundary_fix_type} not supported"
             )
 
-        # We need the transformed algo to initialize DEHB
-        # so store the arguments for after the constructor
-
-        self._original = space
         super().__init__(
             self,
             space,
