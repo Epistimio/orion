@@ -72,14 +72,14 @@ class TestDEHB(BaseAlgoTests):
     @pytest.mark.xfail
     def test_is_done_cardinality(self):
         """Fails because of https://github.com/Epistimio/orion/issues/598"""
-        space = self.update_space(
+        space_config = self.update_space(
             {
                 "x": "uniform(0, 4, discrete=True)",
                 "y": "choices(['a', 'b', 'c'])",
                 "z": "loguniform(1, 6, discrete=True)",
             }
         )
-        space = self.create_space(space)
+        space = self.create_space(space_config)
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
