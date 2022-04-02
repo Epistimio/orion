@@ -486,7 +486,7 @@ class DEHB(BaseAlgorithm):
         # Get all the job sampled by DEHB, it might be more than one
         job_infos = self.job_infos.get(self.get_id(trial), [])
 
-        if len(job_infos) == 0:
+        if not job_infos:
             # this should be 100% unreachable because we check
             # if the trial was suggested inside `observe`
             logger.error("Could not find trial %s", self.get_id(trial))
