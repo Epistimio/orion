@@ -1,7 +1,9 @@
 """Perform integration tests for `orion.algo.mofa`."""
+from typing import ClassVar
+
 import pytest
 
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, TestPhase
 
 
 @pytest.fixture(autouse=True)
@@ -22,6 +24,7 @@ class TestMOFA(BaseAlgoTests):
     """Test suite for algorithm MOFA"""
 
     algo_name = "mofa"
+
     config = {
         "seed": 1234,  # Because this is so random
         "index": 1,
@@ -30,30 +33,44 @@ class TestMOFA(BaseAlgoTests):
         "threshold": 0.1,
     }
 
+    n_trials = config["index"] * config["n_levels"] ** config["strength"]
+
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("1st-run", 0, "space.sample"),
+        TestPhase("2nd-run", n_trials, "space.sample"),
+        TestPhase("3rd-run", n_trials * 2, "space.sample"),
+    ]
+
     def get_num(self, num):
         return 1
 
-    def test_config_index_isnot_valid(self):
+    def test_cfg_index_invalid(self):
+        """Tests an invalid index configuration value to MOFA"""
         with pytest.raises(ValueError):
             self.create_algo(config={"index": 0})
 
-    def test_config_nlevels_nonprime_isnot_valid(self):
+    def test_cfg_nlevels_invalid(self):
+        """Tests a number of levels which is not prime"""
         with pytest.raises(ValueError):
             self.create_algo(config={"n_levels": 4})
 
-    def test_config_strength_lt1_isnot_valid(self):
+    def test_cfg_strength_lt1_invalid(self):
+        """Tests an invalid strength value"""
         with pytest.raises(ValueError):
             self.create_algo(config={"strength": 0})
 
-    def test_config_strength_gt2_isnot_valid(self):
+    def test_cfg_strength_gt2_invalid(self):
+        """Tests an invalid strength value"""
         with pytest.raises(ValueError):
             self.create_algo(config={"strength": 3})
 
-    def test_config_threshold_le0_isnot_valid(self):
+    def test_cfg_threshold_le0_invalid(self):
+        """Tests an invalid threshold of 0"""
         with pytest.raises(ValueError):
             self.create_algo(config={"threshold": 0})
 
-    def test_config_threshold_ge1_isnot_valid(self):
+    def test_cfg_threshold_ge1_invalid(self):
+        """Tests and invalid threshold of 1"""
         with pytest.raises(ValueError):
             self.create_algo(config={"threshold": 1})
 
@@ -90,17 +107,3 @@ class TestMOFA(BaseAlgoTests):
 
         assert algo.is_done
         assert len(trials) == space.cardinality
-
-
-n_trials = (
-    TestMOFA.config["index"]
-    * TestMOFA.config["n_levels"] ** TestMOFA.config["strength"]
-)
-
-TestMOFA.set_phases(
-    [
-        ("1st-run", 0, "space.sample"),
-        ("2nd-run", n_trials, "space.sample"),
-        ("3rd-run", n_trials * 2, "space.sample"),
-    ]
-)
