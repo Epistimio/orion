@@ -33,6 +33,10 @@ class MOFA(BaseAlgorithm):
     For more information on the algorithm, see original paper: MOFA: Modular
     Factorial Design for Hyperparameter Optimization https://arxiv.org/abs/2011.09545
 
+    Xiong, Bo, Yimin Huang, Hanrong Ye, Steffen Staab, and Zhenguo Li.
+    "MOFA: Modular Factorial Design for Hyperparameter Optimization."
+    arXiv preprint arXiv:2011.09545 (2020).
+
     Notes
     -----
     Default values for the index, n_levels, and strength (t) parameter are set
