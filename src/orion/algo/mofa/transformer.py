@@ -14,8 +14,8 @@ from orion.core.worker.trial import Trial
 
 
 def fix_shape_intervals(
-    intervals: list(Tuple[float, float])
-) -> list(Tuple[float, float]):
+    intervals: list[Tuple[float, float]]
+) -> list[Tuple[float, float]]:
     """Fix issue for intervals of dims with shape
     (https://github.com/Epistimio/orion/issues/800)
     """
