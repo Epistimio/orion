@@ -2,18 +2,19 @@
 MOFA Sampler module
 """
 
-# from skopt.sampler import Lhs
-# from skopt.space import Space as SkSpace
-
 import logging
+from typing import Tuple
 
 import numpy as np
+from numpy.random import RandomState
 from scipy.stats.qmc import LatinHypercube
+
+from orion.algo.space import Space
 
 logger = logging.getLogger(__name__)
 
 
-def _is_prime(number):
+def _is_prime(number: int) -> bool:
     if number < 2 or (number % 2 == 0 and number > 2):
         return False
     for i in range(3, int(np.sqrt(number - 1)) + 1, 2):
@@ -22,7 +23,7 @@ def _is_prime(number):
     return True
 
 
-def _find_n_levels(dimensions):
+def _find_n_levels(dimensions: int) -> int:
     levels = dimensions - 1
     while True:
         if _is_prime(levels):
@@ -31,7 +32,9 @@ def _find_n_levels(dimensions):
             levels = levels + 1
 
 
-def generate_olh_samples(space, n_levels, strength, index, rng):
+def generate_olh_samples(
+    space: Space, n_levels: int, strength: int, index: int, rng: RandomState
+) -> Tuple[np.array, int]:
     """
     Generates samples from an orthogonal Latin hypercube (OLH)
 
@@ -80,7 +83,7 @@ def generate_olh_samples(space, n_levels, strength, index, rng):
     return np.array(all_samples), n_levels
 
 
-def generate_trials(olh_samples, roi_space):
+def generate_trials(olh_samples: np.array, roi_space: Space) -> list[dict]:
     """
     Generates trials from the given normalized orthogonal Latin hypercube samples
 

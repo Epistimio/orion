@@ -5,10 +5,13 @@
 MOdular FActorial Design (MOFA)
 
 """
+from __future__ import annotations
+
 # pylint: disable=attribute-defined-outside-init,invalid-name
 import copy
 import logging
 from collections import defaultdict
+from typing import Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -18,6 +21,7 @@ from orion.algo.mofa import sampler
 from orion.algo.mofa.transformer import Transformer
 from orion.algo.space import Real, Space
 from orion.core.utils.format_trials import dict_to_trial
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +69,13 @@ class MOFA(BaseAlgorithm):
     requires_shape = "flattened"
 
     def __init__(
-        self, space, seed=None, index=1, n_levels=5, strength=2, threshold=0.1
+        self,
+        space: Space,
+        seed: int | Sequence[int] | None = None,
+        index: int = 1,
+        n_levels: int = 5,
+        strength: int = 2,
+        threshold: float = 0.1,
     ):
         index = int(index)
         n_levels = int(n_levels)
@@ -109,7 +119,7 @@ class MOFA(BaseAlgorithm):
             self.roi_space
         )
 
-    def _generate_trials_unfrozen_params(self, roi_space):
+    def _generate_trials_unfrozen_params(self, roi_space: Space) -> list[dict]:
         olh_samples, self.cur_n_levels = sampler.generate_olh_samples(
             roi_space, self.n_levels, self.strength, self.index, self.rng
         )
@@ -117,7 +127,7 @@ class MOFA(BaseAlgorithm):
         olh_trials = sampler.generate_trials(olh_samples, roi_space)
         return olh_trials
 
-    def seed_rng(self, seed):
+    def seed_rng(self, seed: int) -> None:
         """Seed the state of the random number generator.
 
         Parameters
@@ -129,7 +139,7 @@ class MOFA(BaseAlgorithm):
         self.rng = np.random.RandomState(seed)
 
     @property
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = super().state_dict
         state_dict["rng_state"] = self.rng.get_state()
@@ -144,10 +154,13 @@ class MOFA(BaseAlgorithm):
             )
         return state_dict
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
-        :param state_dict: Dictionary representing state of an algorithm
+        Parameters
+        ----------
+        state_dict: dict
+            Dictionary representing state of an algorithm
         """
         super().set_state(state_dict)
         self.seed_rng(0)
@@ -164,7 +177,7 @@ class MOFA(BaseAlgorithm):
         elif hasattr(self, "current_trials_params"):
             self.current_trials_params = []
 
-    def suggest(self, num):
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a `num`ber of new sets of parameters.
 
         Draws points from a prepared set of samples from an orthonal Latin hypercube.
@@ -177,10 +190,10 @@ class MOFA(BaseAlgorithm):
 
         Returns
         -------
-        list of trials or None
+        list of trials
             A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
-            trials to complete), in which case it will return None.
+            trials to complete), in which case it will return an empty list.
 
 
         Notes
@@ -217,7 +230,7 @@ class MOFA(BaseAlgorithm):
 
         return trials
 
-    def observe(self, trials):
+    def observe(self, trials: list[Trial]) -> None:
         """Observe the `trials` new state of result.
 
         Collects the completed trials until all trials for the current MOFA iteration have been
@@ -251,7 +264,7 @@ class MOFA(BaseAlgorithm):
         if self.n_trials is not None and len(self.completed_trials) >= self.n_trials:
             self._prepare_next_iteration()
 
-    def _prepare_next_iteration(self):
+    def _prepare_next_iteration(self) -> None:
         # Transformer stage
         transformer = Transformer(self.roi_space, self.cur_n_levels)
         oa_table = transformer.generate_oa_table(self.completed_trials)
@@ -297,7 +310,7 @@ class MOFA(BaseAlgorithm):
         return
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True, if an algorithm holds that there can be no further improvement."""
         if len(self.frozen_param_values.items()) == len(self.space.items()):
             return True
@@ -305,7 +318,9 @@ class MOFA(BaseAlgorithm):
         return self.converged or super().is_done
 
 
-def get_factorial_performance_analysis(oa_table, space, n_levels):
+def get_factorial_performance_analysis(
+    oa_table: pd.DataFrame, space: Space, n_levels: int
+) -> pd.DataFrame:
     """Compute the factorial perfomance analysis"""
     levels = list(range(1, n_levels + 1))
     factorial_performance_analysis = [[level] for level in levels]
@@ -327,7 +342,9 @@ def get_factorial_performance_analysis(oa_table, space, n_levels):
     )
 
 
-def get_factorial_importance_analysis(factorial_performance_analysis, space):
+def get_factorial_importance_analysis(
+    factorial_performance_analysis: pd.DataFrame, space: int
+) -> pd.DataFrame:
     """Compute the factorial importance analysis"""
     factorial_importance_analysis = []
     total_marginal_variance = (
@@ -352,8 +369,11 @@ def get_factorial_importance_analysis(factorial_performance_analysis, space):
 
 
 def select_new_region_of_interest(
-    factorial_importance_analysis, space, threshold, n_levels
-):
+    factorial_importance_analysis: pd.DataFrame,
+    space: Space,
+    threshold: float,
+    n_levels: int,
+) -> Tuple[Space, dict]:
     """Select new region of interest and frozen parameter values based on factorial analysis.
 
     Parameters

@@ -2,14 +2,20 @@
 MOFA transformer stage module
 """
 
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 from skopt.space import Space as SkSpace
 
+from orion.algo.space import Space
 from orion.core.utils.flatten import flatten
+from orion.core.worker.trial import Trial
 
 
-def fix_shape_intervals(intervals):
+def fix_shape_intervals(
+    intervals: list(Tuple[float, float])
+) -> list(Tuple[float, float]):
     """Fix issue for intervals of dims with shape
     (https://github.com/Epistimio/orion/issues/800)
     """
@@ -31,13 +37,13 @@ class Transformer:
         Number of levels
     """
 
-    def __init__(self, roi_space, n_levels):
+    def __init__(self, roi_space: Space, n_levels: int):
         self.n_levels = n_levels
         self.space = roi_space
         self.sk_space = SkSpace(fix_shape_intervals(roi_space.interval()))
         self.sk_space.set_transformer("normalize")
 
-    def generate_olh_perf_table(self, trials):
+    def generate_olh_perf_table(self, trials: list[Trial]) -> pd.DataFrame:
         """
         Build an orthogonal Latin hypercube (OLH) performance table from trial parameters
 
@@ -72,21 +78,29 @@ class Transformer:
         return pd.DataFrame(table, columns=list(self.space.keys()) + ["objective"])
 
     @staticmethod
-    def _collapse_levels(olh_perf_table, n_levels):
+    def _collapse_levels(olh_perf_table: pd.DataFrame, n_levels: int) -> pd.DataFrame:
         """
         Collapses the levels of an orthagonal Latin hypercube parameter table
 
         Parameters
         ----------
-        olh_perf_table: `numpy.array`
+        olh_perf_table: `pandas.DataFrame`
             array of normalized trial parameters as floats in range [0., 1.]
+
+        n_levels: int
+            number of levels in the OLH table
+
+        Returns
+        -------
+        A ``pandas.DataFrame`` of the orthogonal array table
+
         """
         oa_table = np.ceil(olh_perf_table.iloc[:, :-1] * (n_levels)).astype(int)
         oa_table[oa_table.iloc[:, :] == 0] = 1
         oa_table["objective"] = olh_perf_table["objective"]
         return oa_table
 
-    def generate_oa_table(self, trials):
+    def generate_oa_table(self, trials: list[Trial]) -> pd.DataFrame:
         """
         Generates the orthogonal array performance table
 
@@ -97,7 +111,7 @@ class Transformer:
 
         Returns
         -------
-        A tuple of two numpy arrays: (OA table of parameters, OA array of trial objective values)
+        A ``pandas.DataFrame`` of the OA table with parameters and trial objective values
         """
         olh_perf_table = self.generate_olh_perf_table(trials)
         return self._collapse_levels(olh_perf_table, self.n_levels)
