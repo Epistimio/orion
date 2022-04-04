@@ -26,7 +26,7 @@ from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase, phase
 
 
 @pytest.fixture()
@@ -775,6 +775,11 @@ class TestTPE(BaseAlgoTests):
         },
     }
 
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        TestPhase("bo", N_INIT + 1, "_suggest_bo"),
+    ]
+
     def test_suggest_init(self, mocker):
         algo = self.create_algo()
         spy = self.spy_phase(mocker, 0, algo, "space.sample")
@@ -933,6 +938,3 @@ class TestTPE(BaseAlgoTests):
 
         assert algo.n_observed == 1
         assert algo.n_suggested == 1
-
-
-TestTPE.set_phases([("random", 0, "space.sample"), ("bo", N_INIT + 1, "_suggest_bo")])

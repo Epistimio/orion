@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.asha`."""
+from __future__ import annotations
+
 import hashlib
 import itertools
 import logging
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -17,7 +20,7 @@ from orion.algo.asha import ASHA, ASHABracket, BudgetTuple, compute_budgets
 from orion.algo.hyperband import RungDict
 from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import create_trial
 
 
@@ -663,6 +666,13 @@ class TestASHA:
         )
 
 
+BUDGETS = [
+    16 + 8,  # rung 0
+    (16 + 8 + 8 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
+    (16 + 8 + 4 + 8 + 4 + 2),  #  rung 2
+]
+
+
 class TestGenericASHA(BaseAlgoTests):
     algo_name = "asha"
     config = {
@@ -672,6 +682,13 @@ class TestGenericASHA(BaseAlgoTests):
         "repetitions": 3,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        *[TestPhase(f"rung{i}", budget, "suggest") for i, budget in enumerate(BUDGETS)],
+        TestPhase("rep1-rung1", BUDGETS[-1] + 16, "suggest"),
+        TestPhase("rep2-rung1", BUDGETS[-1] * 2 + 16, "suggest"),
+    ]
 
     def test_suggest_n(self, mocker, num: int, attr: str):
         algo = self.create_algo()
@@ -772,19 +789,3 @@ class TestGenericASHA(BaseAlgoTests):
         for j in range(0, rung_id + 1):
             for bracket in brackets:
                 assert len(bracket.rungs[j]["results"]) > 0, (bracket, j)
-
-
-BUDGETS = [
-    16 + 8,  # rung 0
-    (16 + 8 + 8 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
-    (16 + 8 + 4 + 8 + 4 + 2),  #  rung 2
-]
-
-TestGenericASHA.set_phases(
-    [
-        ("random", 0, "space.sample"),
-        *[(f"rung{i}", budget, "suggest") for i, budget in enumerate(BUDGETS)],
-        ("rep1-rung1", BUDGETS[-1] + 16, "suggest"),
-        ("rep2-rung1", BUDGETS[-1] * 2 + 16, "suggest"),
-    ]
-)

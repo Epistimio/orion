@@ -16,6 +16,7 @@ Examples
 """
 import copy
 import hashlib
+import inspect
 import logging
 from abc import ABCMeta, abstractmethod
 
@@ -109,7 +110,16 @@ class BaseAlgorithm:
             kwargs,
         )
         self._space = space
-        self._param_names = list(kwargs.keys())
+        if kwargs:
+            param_names = list(kwargs)
+        else:
+            init_signature = inspect.signature(type(self))
+            param_names = [
+                name
+                for name, param in init_signature.parameters.items()
+                if name != "space" and param.kind != param.VAR_KEYWORD
+            ]
+        self._param_names = param_names
         # Instantiate tunable parameters of an algorithm
         for varname, param in kwargs.items():
             setattr(self, varname, param)
