@@ -137,48 +137,72 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
         """
-        transformed_trials = self.algorithm.suggest(num)
-
-        if transformed_trials is None:
-            return None
 
         trials: list[Trial] = []
-        for transformed_trial in transformed_trials:
-            if transformed_trial not in self.transformed_space:
-                raise ValueError(
-                    f"Trial {transformed_trial.id} not contained in space:\n"
-                    f"Params: {transformed_trial.params}\n"
-                    f"Space: {self.transformed_space}"
-                )
-            original = self.transformed_space.reverse(transformed_trial)
-            if original in self.registry:
-                logger.debug(
-                    "Already have a trial that matches %s in the registry.", original
-                )
-                # We already have a trial that is equivalent to this one.
-                # Fetch the actual trial (with the status and possibly results)
-                original = self.registry.get_existing(original)
-                logger.debug("Matching trial (with results/status): %s", original)
+        max_suggest_attempts = 100
 
-                # Copy over the status and results from the original to the transformed trial
-                # and observe it.
-                transformed_trial = _copy_status_and_results(
-                    original_trial=original, transformed_trial=transformed_trial
-                )
-                logger.debug(
-                    "Transformed trial (with results/status): %s", transformed_trial
-                )
-                self.algorithm.observe([transformed_trial])
-            else:
-                # We haven't seen this trial before. Register it.
-                self.registry.register(original)
-                trials.append(original)
+        # NOTE: Should we also do this kind of repeated checking until the algo produces `num`
+        # trials?
 
-            # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it itself
-            # in its `suggest`.
-            # Register the equivalence between these trials.
-            self.registry_mapping.register(original, transformed_trial)
-        return trials
+        for suggest_attempt in range(1, max_suggest_attempts + 1):
+            transformed_trials: list[Trial] | None = self.algorithm.suggest(num)
+            transformed_trials = transformed_trials or []
+
+            for transformed_trial in transformed_trials:
+                if transformed_trial not in self.transformed_space:
+                    raise ValueError(
+                        f"Trial {transformed_trial.id} not contained in space:\n"
+                        f"Params: {transformed_trial.params}\n"
+                        f"Space: {self.transformed_space}"
+                    )
+                original = self.transformed_space.reverse(transformed_trial)
+                if original in self.registry:
+                    logger.debug(
+                        "Already have a trial that matches %s in the registry.",
+                        original,
+                    )
+                    # We already have a trial that is equivalent to this one.
+                    # Fetch the actual trial (with the status and possibly results)
+                    original = self.registry.get_existing(original)
+                    logger.debug("Matching trial (with results/status): %s", original)
+
+                    # Copy over the status and results from the original to the transformed trial
+                    # and observe it.
+                    transformed_trial = _copy_status_and_results(
+                        original_trial=original, transformed_trial=transformed_trial
+                    )
+                    logger.debug(
+                        "Transformed trial (with results/status): %s", transformed_trial
+                    )
+                    self.algorithm.observe([transformed_trial])
+                else:
+                    # We haven't seen this trial before. Register it.
+                    self.registry.register(original)
+                    trials.append(original)
+
+                # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it itself
+                # in its `suggest`.
+                # Register the equivalence between these trials.
+                self.registry_mapping.register(original, transformed_trial)
+
+            if trials:
+                if suggest_attempt > 1:
+                    logger.debug(
+                        f"Succeeded in suggesting new trials after {suggest_attempt} attempts."
+                    )
+                return trials
+
+            if self.is_done:
+                logger.debug(
+                    f"Algorithm is done! (after {suggest_attempt} sampling attempts)."
+                )
+                break
+
+        logger.warning(
+            f"Unable to sample a new trial from the algorithm, even after "
+            f"{max_suggest_attempts} attempts! Returning an empty list."
+        )
+        return []
 
     def observe(self, trials: list[Trial]) -> None:
         """Observe evaluated trials.
