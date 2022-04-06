@@ -180,8 +180,8 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                     self.registry.register(original)
                     trials.append(original)
 
-                # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it itself
-                # in its `suggest`.
+                # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it
+                # itself in its `suggest`.
                 # Register the equivalence between these trials.
                 self.registry_mapping.register(original, transformed_trial)
 
