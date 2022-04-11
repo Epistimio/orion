@@ -116,7 +116,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         self.registry.set_state(state_dict["registry"])
         self.registry_mapping.set_state(state_dict["registry_mapping"])
 
-    def suggest(self, num: int) -> list[Trial] | None:
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a `num` of new sets of parameters.
 
         Parameters
@@ -127,10 +127,10 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
         Returns
         -------
-        list of trials or None
+        list of trials
             A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
-            trials to complete), in which case it will return None.
+            trials to complete), in which case it will return an empty list.
 
         Notes
         -----
@@ -140,7 +140,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         transformed_trials = self.algorithm.suggest(num)
 
         if transformed_trials is None:
-            return None
+            return []
 
         trials: list[Trial] = []
         for transformed_trial in transformed_trials:
