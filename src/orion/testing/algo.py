@@ -151,6 +151,11 @@ class BaseAlgoTests:
     ):
         """Create the algorithm based on config.
 
+        Also initializes the algorithm with the required number of random trials from the previous
+        test phases before returning it.
+
+        If `seed` is passed, then `seed_rng` is called before observing anything.
+
         Parameters
         ----------
         config: dict, optional
@@ -177,6 +182,13 @@ class BaseAlgoTests:
             algo.seed_rng(seed)
 
         n_trials_in_previous_phases = sum(p.n_trials for p in cls._current_phases)
+        if n_trials_in_previous_phases >= cls.max_trials:
+            raise ValueError(
+                f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
+                f"the total number of trials seen so far when in phase #{len(cls._current_phases)} "
+                f"({n_trials_in_previous_phases}). Increasing max_trials might be a good idea. "
+            )
+
         # Force the algo to observe the given number of trials.
         cls.force_observe(n_trials_in_previous_phases, algo)
 
@@ -393,19 +405,6 @@ class BaseAlgoTests:
     def test_seed_rng(self, seed: int):
         """Test that the seeding gives reproducibile results."""
         algo = self.create_algo(seed=seed)
-        assert not algo.is_done, (
-            algo.n_observed,
-            algo.n_suggested,
-            algo.has_completed_max_trials,
-            algo.has_suggested_all_possible_values(),
-            algo.algorithm.has_completed_max_trials,
-            algo.algorithm.has_suggested_all_possible_values(),
-            # algo.algorithm.n_observed,
-            # algo.algorithm.n_suggested,
-            # algo.space.cardinality,
-            # algo.algorithm.space.cardinality,
-            # algo.algorithm.max_trials,
-        )
 
         trial_a = algo.suggest(1)[0]
         trial_b = algo.suggest(1)[0]
