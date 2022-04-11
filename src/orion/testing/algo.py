@@ -8,7 +8,7 @@ import inspect
 import itertools
 import logging
 from collections import defaultdict
-from typing import ClassVar, NamedTuple, Type, TypeVar
+from typing import Callable, ClassVar, NamedTuple, Type, TypeVar, Sequence
 
 import numpy
 import pytest
@@ -30,73 +30,9 @@ from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.space import build_space
 
-algorithms = {
-    "evolutionaryes": "what is the config?",
-}
 
-
-def recursive_getattr(obj, attribute):
-    """Get attribute recursively based on str with pattern sub.(sub.)*name"""
-    attributes = attribute.split(".")
-
-    attribute = getattr(obj, attributes[0])
-    if len(attributes) == 1:
-        return attribute
-
-    return recursive_getattr(attribute, ".".join(attributes[1:]))
-
-
-def spy_attr(mocker, algo, attribute):
-    """Return a mocker.spy object on the algorithms's given `attribute`"""
-    attributes = attribute.split(".")
-    attr_to_mock = attributes[-1]
-    if len(attributes) > 1:
-        obj = recursive_getattr(algo, ".".join(attributes[:-1]))
-    else:
-        obj = algo
-    return mocker.spy(obj, attr_to_mock)
-
-
-methods_with_phase = defaultdict(set)
-
-
-phase_docstring = """\
-This test is parametrizable with phases.
-See ``orion.testing.algo.BaseAlgoTests.set_phases``.\
-"""
-
-
-def phase(method):
-    """Decorator to mark methods that must be parametrized with phases."""
-    class_name = ".".join(method.__qualname__.split(".")[:-1])
-    methods_with_phase[class_name].add(method.__name__)
-
-    if method.__doc__ is None:
-        method.__doc__ = phase_docstring
-    else:
-        method.__doc__ += "\n\n" + phase_docstring
-
-    return method
-
-
-def parametrize_this(cls, method_name, attrs, ids):
-    """Parametrize a method with phases.
-
-    Notes
-    -----
-    We need to replace the method to avoid parametrizing the base one.
-    This is a fugly hack because of pytest limitations with inheritance for test classes.
-    """
-
-    base_method = getattr(cls, method_name)
-
-    def method(self, mocker, num, attr):
-        print(method_name, base_method)
-        return base_method(self, mocker, num, attr)
-
-    setattr(cls, method_name, method)
-
-    pytest.mark.parametrize("num,attr", attrs, ids=ids)(method)
+def phase(some_test):
+    return pytest.mark.usefixtures("phase")(some_test)
 
 
 def customized_mutate_example(search_space, rng, old_value, **kwargs):
@@ -124,6 +60,9 @@ class TestPhase(NamedTuple):
     NOTE: need to clarify what exactly this is used for.
     """
 
+    # just so pytest doesn't complain about this.
+    __test__ = False  # type: ignore
+
 
 class BaseAlgoTests:
     """Generic Test-suite for HPO algorithms.
@@ -149,13 +88,41 @@ class BaseAlgoTests:
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
 
     phases: ClassVar[list[TestPhase]]
+    _current_phases: ClassVar[list[TestPhase]]
 
     def __init_subclass__(cls) -> None:
-        if hasattr(cls, "phases"):
-            cls.set_phases(cls.phases)
+        # cls.set_phases(cls.phases)
+        if not hasattr(cls, "phases") or not cls.phases:
+            raise ValueError(
+                f"Test classes MUST set a value for the `phases` class attribute."
+            )
+        from itertools import accumulate
+
+        # Get the accumulation of phases.
+        incremental_phases: list[list[TestPhase]] = list(
+            accumulate(
+                [[phase] for phase in cls.phases], lambda x, y: x + y, initial=[]
+            )
+        )
+        cls._current_phases = incremental_phases[0]
+
+        @pytest.fixture(
+            # autouse=True,
+            scope="module",
+            params=incremental_phases,
+            ids=[phases[-1].name if phases else "" for phases in incremental_phases],
+        )
+        def phase(request):
+            test_phases: list[TestPhase] = request.param
+            start_phases = cls._current_phases
+            cls._current_phases = test_phases
+            yield test_phases
+            cls._current_phases = start_phases
+
+        cls.phase = staticmethod(phase)
 
     @classmethod
-    def set_phases(cls, phases):
+    def set_phases(cls, phases: Sequence[TestPhase]):
         """Parametrize the tests with different phases.
 
         Some algorithms have different phases that should be tested. For instance
@@ -172,36 +139,49 @@ class BaseAlgoTests:
             str(name of the algorithm's attribute to spy (ex: "space.sample"))
             )
         """
-        ids = [phase[0] for phase in phases]
-        attrs = [phase[1:] for phase in phases]
+        cls.phases = [TestPhase(*phase) for phase in phases]
 
-        cls_methods_with_phase = (
-            methods_with_phase["BaseAlgoTests"] | methods_with_phase[cls.__name__]
-        )
-
-        for method_name in sorted(cls_methods_with_phase):
-            parametrize_this(cls, method_name, attrs, ids)
-
-    def create_algo(self, config=None, space=None, **kwargs):
+    @classmethod
+    def create_algo(
+        cls,
+        config: dict | None = None,
+        space: Space | None = None,
+        seed: int | Sequence[int] | None = None,
+        **kwargs,
+    ):
         """Create the algorithm based on config.
 
         Parameters
         ----------
         config: dict, optional
-            The configuration for the algorithm. ``self.config`` will be used
+            The configuration for the algorithm. ``cls.config`` will be used
             if ``config`` is ``None``.
         space: ``orion.algo.space.Space``, optional
-            Space object to pass to algo. The output of ``self.create_space()``
+            Space object to pass to algo. The output of ``cls.create_space()``
             will be used if ``space`` is ``None``.
         kwargs: dict
             Values to override algorithm configuration.
         """
-        config = copy.deepcopy(config or self.config)
+        config = copy.deepcopy(config or cls.config)
         config.update(kwargs)
-        base_algo_type = orion.algo.base.algo_factory.get_class(self.algo_name)
-        original_space = space or self.create_space()
+        if hasattr(cls, "algo_type"):
+            base_algo_type = cls.algo_type
+        else:
+            base_algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
+
+        original_space = space or cls.create_space()
         algo = create_algo(space=original_space, algo_type=base_algo_type, **config)
-        algo.algorithm.max_trials = self.max_trials
+        algo.algorithm.max_trials = cls.max_trials
+
+        if seed is not None:
+            algo.seed_rng(seed)
+
+        n_trials_in_previous_phases = sum(p.n_trials for p in cls._current_phases)
+        # Force the algo to observe the given number of trials.
+        cls.force_observe(n_trials_in_previous_phases, algo)
+
+        # TODO: Should we check that the algo has indeed observed the right number of trials that we
+        # want, and that the max_trials hasn't been busted, if present?
         return algo
 
     def update_space(self, test_space):
@@ -219,7 +199,8 @@ class BaseAlgoTests:
         space.update(test_space)
         return space
 
-    def create_space(self, space=None):
+    @classmethod
+    def create_space(cls, space: dict | None = None):
         """Create the space object
 
         Parameters
@@ -229,9 +210,12 @@ class BaseAlgoTests:
             if ``space`` is ``None``.
 
         """
-        return SpaceBuilder().build(space if space is not None else self.space)
+        return SpaceBuilder().build(space if space is not None else cls.space)
 
-    def observe_trials(self, trials, algo, objective=0):
+    @classmethod
+    def observe_trials(
+        cls, trials: list[Trial], algo: BaseAlgorithm, objective: float = 0
+    ):
         """Make the algorithm observe trials
 
         Parameters
@@ -248,7 +232,8 @@ class BaseAlgoTests:
             algo, trials, [dict(objective=objective + i) for i in range(len(trials))]
         )
 
-    def get_num(self, num):
+    @classmethod
+    def get_num(cls, num: int):
         """Force number of trials to suggest
 
         Some algorithms must be tested with specific number of suggests at a time (ex: ASHA).
@@ -256,7 +241,8 @@ class BaseAlgoTests:
         """
         return num
 
-    def force_observe(self, num, algo):
+    @classmethod
+    def force_observe(cls, num: int, algo: BaseAlgorithm):
         """Force observe ``num`` trials.
 
         Parameters
@@ -279,7 +265,7 @@ class BaseAlgoTests:
         ids = set()
 
         while not algo.is_done and algo.n_observed < num and failed < MAX_FAILED:
-            trials = algo.suggest(self.get_num(num - algo.n_observed))
+            trials = algo.suggest(cls.get_num(num - algo.n_observed))
             if len(trials) == 0:
                 failed += 1
                 continue
@@ -287,7 +273,7 @@ class BaseAlgoTests:
                 if trial.hash_name in ids:
                     raise RuntimeError(f"algo suggested a duplicate: {trial}")
                 ids.add(trial.hash_name)
-            self.observe_trials(trials, algo, objective)
+            cls.observe_trials(trials, algo, objective)
             objective += len(trials)
 
         if failed >= MAX_FAILED:
@@ -332,7 +318,7 @@ class BaseAlgoTests:
         """
         pass
 
-    def assert_dim_type_supported(self, mocker, num, attr, test_space):
+    def assert_dim_type_supported(self, test_space: dict):
         """Test that a given dimension type is properly supported by the algorithm
 
         This will test that the algorithm sample trials valid for the given type
@@ -340,28 +326,14 @@ class BaseAlgoTests:
 
         Parameters
         ----------
-        mocker: ``pytest_mock.mocker``
-            Mocker from ``pytest_mock``. Should be given by fixtures of the tests.
-        num: int
-            Number of trials to suggest and observe
-        algo: ``orion.algo.base.BaseAlgorithm``
-            The algorithm to test
-        attribute: str
-            The algorithm attribute or method to mock. The path is respective to the
-            algorithm object. For example, a valid value would be `'space.sample'`
-            which will mock ``algo.algorithm.space.sample``.
-
+        test_space: the search space of the test.
         """
         space = self.create_space(self.update_space(test_space))
         algo = self.create_algo(space=space)
 
-        spy = self.spy_phase(mocker, num, algo, attr)
-
         trials = algo.suggest(1)
         assert trials[0] in space
-        spy.call_count == 1
         self.observe_trials(trials, algo, 1)
-        self.assert_callbacks(spy, num + 1, algo)
 
     def test_configuration(self):
         """Test that configuration property attribute contains all class arguments."""
@@ -417,31 +389,40 @@ class BaseAlgoTests:
         assert get_id([1, 1, 1], exp_id=1) == get_id([1, 1, 1], exp_id=2)
 
     @phase
-    def test_seed_rng(self, mocker, num, attr):
+    @pytest.mark.parametrize("seed", [123])
+    def test_seed_rng(self, seed: int):
         """Test that the seeding gives reproducibile results."""
-        algo = self.create_algo()
+        algo = self.create_algo(seed=seed)
+        assert not algo.is_done, (
+            algo.n_observed,
+            algo.n_suggested,
+            algo.has_completed_max_trials,
+            algo.has_suggested_all_possible_values(),
+            algo.algorithm.has_completed_max_trials,
+            algo.algorithm.has_suggested_all_possible_values(),
+            # algo.algorithm.n_observed,
+            # algo.algorithm.n_suggested,
+            # algo.space.cardinality,
+            # algo.algorithm.space.cardinality,
+            # algo.algorithm.max_trials,
+        )
 
-        seed = numpy.random.randint(10000)
-        algo.seed_rng(seed)
-        spy = self.spy_phase(mocker, num, algo, attr)
-        trials = algo.suggest(1)
-        trials[0].id != algo.suggest(1)[0].id
+        trial_a = algo.suggest(1)[0]
+        trial_b = algo.suggest(1)[0]
+        assert trial_a.id != trial_b.id
 
-        new_algo = self.create_algo()
-        new_algo.seed_rng(seed)
-        self.force_observe(algo.n_observed, new_algo)
-        assert trials[0].id == new_algo.suggest(1)[0].id
-
-        self.assert_callbacks(spy, num + 1, new_algo)
+        new_algo = self.create_algo(seed=seed)
+        assert new_algo.n_observed == algo.n_observed
+        trial_c = new_algo.suggest(1)[0]
+        assert trial_c.id == trial_a.id
 
     @phase
-    def test_seed_rng_init(self, mocker, num, attr):
+    def test_seed_rng_init(self):
         """Test that the seeding gives reproducibile results."""
         algo = self.create_algo(seed=1)
-
-        spy = self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(1)
-        algo.suggest(1)[0].id != trials[0].id
+        assert trials is not None
+        assert algo.suggest(1)[0].id != trials[0].id
 
         new_algo = self.create_algo(seed=2)
         self.force_observe(algo.n_observed, new_algo)
@@ -451,16 +432,12 @@ class BaseAlgoTests:
         self.force_observe(algo.n_observed, new_algo)
         assert new_algo.suggest(1)[0].id == trials[0].id
 
-        self.assert_callbacks(spy, num + 1, new_algo)
-
     @phase
-    def test_state_dict(self, mocker, num, attr):
+    @pytest.mark.parametrize("seed", [numpy.random.randint(10000)])
+    def test_state_dict(self, seed: int):
         """Verify that resetting state makes sampling deterministic"""
-        algo = self.create_algo()
+        algo = self.create_algo(seed=seed)
 
-        seed = numpy.random.randint(10000)
-        algo.seed_rng(seed)
-        spy = self.spy_phase(mocker, max(num, 1), algo, attr)
         state = algo.state_dict
         a = algo.suggest(1)[0]
 
@@ -470,30 +447,26 @@ class BaseAlgoTests:
         new_algo.set_state(state)
         assert a.id == new_algo.suggest(1)[0].id
 
-        self.assert_callbacks(spy, num + 1, algo)
-
     @phase
-    def test_suggest_n(self, mocker, num, attr):
+    def test_suggest_n(self):
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(5)
+        assert trials is not None
         assert len(trials) == 5
 
     @phase
-    def test_has_suggested(self, mocker, num, attr):
+    def test_has_suggested(self):
         """Verify that algorithm detects correctly if a trial was suggested"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
         a = algo.suggest(1)[0]
         assert algo.has_suggested(a)
         # NOTE: not algo.has_suggested(some random trial) is tested in test_has_suggested_statedict
 
     @phase
-    def test_has_suggested_statedict(self, mocker, num, attr):
+    def test_has_suggested_statedict(self):
         """Verify that algorithm detects correctly if a trial was suggested even when state was restored."""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.suggest(1)[0]
         state = algo.state_dict
@@ -506,10 +479,9 @@ class BaseAlgoTests:
         assert algo.has_suggested(a)
 
     @phase
-    def test_observe(self, mocker, num, attr):
+    def test_observe(self):
         """Verify that algorithm observes trial without any issues"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.space.sample()[0]
         backward.algo_observe(algo, [a], [dict(objective=1)])
@@ -518,10 +490,9 @@ class BaseAlgoTests:
         backward.algo_observe(algo, [b], [dict(objective=2)])
 
     @phase
-    def test_has_observed(self, mocker, num, attr):
+    def test_has_observed(self):
         """Verify that algorithm detects correctly if a trial was observed"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.suggest(1)[0]
         assert not algo.has_observed(a)
@@ -534,10 +505,9 @@ class BaseAlgoTests:
         assert algo.has_observed(b)
 
     @phase
-    def test_has_observed_statedict(self, mocker, num, attr):
+    def test_has_observed_statedict(self):
         """Verify that algorithm detects correctly if a trial was observed even when state was restored."""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.suggest(1)[0]
         backward.algo_observe(algo, [a], [dict(objective=1)])
@@ -558,45 +528,37 @@ class BaseAlgoTests:
         assert algo.has_observed(b)
 
     @phase
-    def test_n_suggested(self, mocker, num, attr):
+    def test_n_suggested(self):
         """Verify that algorithm returns correct number of suggested trials"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
-        assert algo.n_suggested == num
+        initial = algo.n_suggested
         algo.suggest(1)
-        assert algo.n_suggested == num + 1
+        assert algo.n_suggested == initial + 1
 
-    @phase
-    def test_n_observed(self, mocker, num, attr):
+    def test_n_observed(self, phase: list[TestPhase]):
         """Verify that algorithm returns correct number of observed trials"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
-        assert algo.n_observed == num
+        initial = algo.n_observed
         trials = algo.suggest(1)
-        assert algo.n_observed == num
+        assert algo.n_observed == initial
         assert len(trials) == 1
         self.observe_trials(trials, algo)
-        assert algo.n_observed == num + 1
+        assert algo.n_observed == initial + 1
 
     @phase
-    def test_real_data(self, mocker, num, attr):
+    def test_real_data(self):
         """Test that algorithm supports real dimesions"""
-        self.assert_dim_type_supported(mocker, num, attr, {"x": "uniform(0, 5)"})
+        self.assert_dim_type_supported({"x": "uniform(0, 5)"})
 
     @phase
-    def test_int_data(self, mocker, num, attr):
+    def test_int_data(self):
         """Test that algorithm supports integer dimesions"""
-        self.assert_dim_type_supported(
-            mocker, num, attr, {"x": "uniform(0, 5000, discrete=True)"}
-        )
+        self.assert_dim_type_supported({"x": "uniform(0, 5000, discrete=True)"})
 
     @phase
-    def test_cat_data(self, mocker, num, attr):
+    def test_cat_data(self):
         """Test that algorithm supports categorical dimesions"""
         self.assert_dim_type_supported(
-            mocker,
-            num,
-            attr,
             {  # Add 3 dims so that there exists many possible trials for the test
                 "x": "choices(['a', 0.2, 1, None])",
                 "y": "choices(['a', 0.2, 1, None])",
@@ -605,29 +567,24 @@ class BaseAlgoTests:
         )
 
     @phase
-    def test_logreal_data(self, mocker, num, attr):
+    def test_logreal_data(self):
         """Test that algorithm supports logreal dimesions"""
-        self.assert_dim_type_supported(mocker, num, attr, {"x": "loguniform(1, 5)"})
+        self.assert_dim_type_supported({"x": "loguniform(1, 5)"})
 
     @phase
-    def test_logint_data(self, mocker, num, attr):
+    def test_logint_data(self):
         """Test that algorithm supports loginteger dimesions"""
-        self.assert_dim_type_supported(
-            mocker, num, attr, {"x": "loguniform(1, 100, discrete=True)"}
-        )
+        self.assert_dim_type_supported({"x": "loguniform(1, 100, discrete=True)"})
 
     @phase
-    def test_shape_data(self, mocker, num, attr):
+    def test_shape_data(self):
         """Test that algorithm supports dimesions with shape"""
-        self.assert_dim_type_supported(
-            mocker, num, attr, {"x": "uniform(0, 5, shape=(3, 2))"}
-        )
+        self.assert_dim_type_supported({"x": "uniform(0, 5, shape=(3, 2))"})
 
     @phase
-    def test_broken_trials(self, mocker, num, attr):
+    def test_broken_trials(self):
         """Test that algorithm can handle broken trials"""
         algo = self.create_algo()
-        self.spy_phase(mocker, num, algo, attr)
         trial = algo.suggest(1)[0]
         trial.status = "broken"
         assert not algo.has_observed(trial)
@@ -636,7 +593,7 @@ class BaseAlgoTests:
 
     def test_is_done_cardinality(self):
         """Test that algorithm will stop when cardinality is reached"""
-        space = self.update_space(
+        space = self.create_space(
             {
                 "x": "uniform(0, 4, discrete=True)",
                 "y": "choices(['a', 'b', 'c'])",
@@ -647,6 +604,7 @@ class BaseAlgoTests:
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
+        i = 0
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
             n = algo.n_suggested
