@@ -24,10 +24,10 @@ from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, setup_storage, storage_factory
 from orion.storage.legacy import Legacy
-from orion.testing import OrionState, mocked_datetime
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
+from orion.testing import OrionState, mocked_datetime
 
 
 def pytest_addoption(parser):

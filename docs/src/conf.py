@@ -278,7 +278,7 @@ extlinks = {
 # Enable nitpicky mode - which ensures that all references in the docs
 # resolve.
 
-ignore_attr = [
+ignore_algo_attr = [
     "configuration",
     "is_done",
     "should_suspend",
@@ -299,14 +299,18 @@ ignore_attr = [
 ]
 
 type_hints = [
-    "orion.algo.space.T",
+    "orion.core.utils.tree.T",
+    "orion.core.utils.tree.NodeType",
+    "orion.core.utils.tree.Self",
+    "Self",
+    "AlgoType",
+    "T",
+    "orion.core.worker.primary_algo.AlgoType",
 ]
-
 nitpicky = True
-nitpick_ignore = (
-    [("py:obj", attr) for attr in ignore_attr] +
-    [("py:class", attr) for attr in type_hints]
-)
+nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr] + [
+    ("py:class", annotation_str) for annotation_str in type_hints
+]
 
 ################################################################################
 #                             Numpy Doc Extension                              #

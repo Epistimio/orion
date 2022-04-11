@@ -16,11 +16,14 @@ Examples
 """
 import copy
 import hashlib
+import inspect
 import logging
 from abc import ABCMeta, abstractmethod
 
+from orion.algo.registry import Registry
 from orion.algo.space import Fidelity
 from orion.core.utils import GenericFactory, format_trials
+from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -106,9 +109,17 @@ class BaseAlgorithm:
             type(self).__name__,
             kwargs,
         )
-        self._trials_info = {}  # Stores Unique Trial -> Result
         self._space = space
-        self._param_names = list(kwargs.keys())
+        if kwargs:
+            param_names = list(kwargs)
+        else:
+            init_signature = inspect.signature(type(self))
+            param_names = [
+                name
+                for name, param in init_signature.parameters.items()
+                if name != "space" and param.kind != param.VAR_KEYWORD
+            ]
+        self._param_names = param_names
         # Instantiate tunable parameters of an algorithm
         for varname, param in kwargs.items():
             setattr(self, varname, param)
@@ -116,6 +127,8 @@ class BaseAlgorithm:
         # TODO: move this inside an initialization function.
         if hasattr(self, "seed"):
             self.seed_rng(self.seed)
+
+        self.registry = Registry()
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -129,37 +142,14 @@ class BaseAlgorithm:
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {"_trials_info": copy.deepcopy(dict(self._trials_info))}
+        return {"registry": self.registry.state_dict}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        self._trials_info = state_dict.get("_trials_info")
-
-    def format_trial(self, trial):
-        """Format trial based on space transformations
-
-        This will apply the reverse transformation on the trial and then
-        transform it again.
-
-        Some transformations are lossy and thus the trials suggested by the algorithm could
-        be different when returned to `observe`. Using `format_trial` makes it possible
-        for the algorithm to see the final version of the trial after back and forth
-        transformations. This way it can recognise the trial in `observe` and also
-        avoid duplicates that would have gone unnoticed during suggestion.
-
-        Parameters
-        ----------
-        trial : `orion.core.worker.trial.Trial`
-            Trial from a `orion.algo.space.Space`.
-        """
-
-        if hasattr(self.space, "transform"):
-            trial = self.space.transform(self.space.reverse(trial))
-
-        return trial
+        self.registry.set_state(state_dict["registry"])
 
     def get_id(self, trial, ignore_fidelity=False, ignore_parent=False):
         """Return unique hash for a trials based on params
@@ -169,8 +159,8 @@ class BaseAlgorithm:
 
         Parameters
         ----------
-        point : tuples of array-likes
-            Points from a `orion.algo.space.Space`.
+        trial : Trial
+            trial from a `orion.algo.space.Space`.
         ignore_fidelity: bool, optional
             If True, the fidelity dimension is ignored when computing a unique hash for
             the trial. Defaults to False.
@@ -179,14 +169,6 @@ class BaseAlgorithm:
             the trial. Defaults to False.
 
         """
-
-        # Apply transforms and reverse to see data as it would come from DB
-        # (Some transformations looses some info. ex: Precision transformation)
-
-        # Compute trial hash in the client-facing format.
-        if hasattr(self.space, "reverse"):
-            trial = self.space.reverse(trial)
-
         return trial.compute_trial_hash(
             trial,
             ignore_fidelity=ignore_fidelity,
@@ -197,18 +179,10 @@ class BaseAlgorithm:
 
     @property
     def fidelity_index(self):
-        """Compute the dimension name of the space where fidelity is.
-
-        Returns None if there is no fidelity dimension.
-        """
-
-        def _is_fidelity(dim):
-            return dim.type == "fidelity"
-
-        fidelity_dim = [dim for dim in self.space.values() if _is_fidelity(dim)]
-        if fidelity_dim:
-            return fidelity_dim[0].name
-
+        """Returns the name of the first fidelity dimension if there is one, otherwise `None`."""
+        fidelity_dims = [dim for dim in self.space.values() if dim.type == "fidelity"]
+        if fidelity_dims:
+            return fidelity_dims[0].name
         return None
 
     @abstractmethod
@@ -232,6 +206,9 @@ class BaseAlgorithm:
         -----
         New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
+        IMPORTANT: Algorithms must call `self.register(trial)` for every trial that is returned by
+        this method. This is important for the algorithm to be able to keep track of the trials it
+        has suggested/observed, and for the auto-generated unit-tests to pass.
         """
         pass
 
@@ -252,31 +229,22 @@ class BaseAlgorithm:
     def register(self, trial):
         """Save the trial as one suggested or observed by the algorithm.
 
-        The trial objectives may change without the algorithm having actually observed it.
-        In order to detect this, we assign a tuple ``(trial and trial.objective)``
-        to the key ``self.get_id(trial)`` so that if the objective was not observed, we
-        will see that second item of the tuple is ``None``.
-
         Parameters
         ----------
         trial: ``orion.core.worker.trial.Trial``
-           Trial from a `orion.algo.space.Space`.
-
+           a Trial from `self.space`.
         """
-        self._trials_info[self.get_id(trial)] = (
-            copy.deepcopy(trial),
-            format_trials.get_trial_results(trial) if trial.objective else None,
-        )
+        self.registry.register(trial)
 
     @property
     def n_suggested(self):
         """Number of trials suggested by the algorithm"""
-        return len(self._trials_info)
+        return len(self.registry)
 
     @property
     def n_observed(self):
-        """Number of completed trials observed by the algorithm"""
-        return sum(bool(point[1] is not None) for point in self._trials_info.values())
+        """Number of completed trials observed by the algorithm."""
+        return sum(self.has_observed(trial) for trial in self.registry)
 
     def has_suggested(self, trial):
         """Whether the algorithm has suggested a given point.
@@ -292,7 +260,7 @@ class BaseAlgorithm:
             True if the trial was suggested by the algo, False otherwise.
 
         """
-        return self.get_id(trial) in self._trials_info
+        return self.registry.has_suggested(trial)
 
     def has_observed(self, trial):
         """Whether the algorithm has observed a given point objective.
@@ -310,28 +278,65 @@ class BaseAlgorithm:
             True if the trial's objective was observed by the algo, False otherwise.
 
         """
-        if not self.has_suggested(trial):
-            return False
-        return self._trials_info[self.get_id(trial)][0].status in (
-            "broken",
-            "completed",
-        )
+        return self.registry.has_observed(trial)
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Whether the algorithm is done and will not make further suggestions.
 
         Return True, if an algorithm holds that there can be no further improvement.
         By default, the cardinality of the specified search space will be used to check
         if all possible sets of parameters has been tried.
         """
-        if self.n_suggested >= self.space.cardinality:
-            return True
+        return self.has_completed_max_trials or self.has_suggested_all_possible_values()
 
-        if self.n_observed >= getattr(self, "max_trials", float("inf")):
-            return True
+    def has_suggested_all_possible_values(self) -> bool:
+        """Returns True if the algorithm has more trials in its registry than the number of possible
+        values in the search space.
 
-        return False
+        If there is a fidelity dimension in the search space, only the trials with the maximum
+        fidelity value are counted.
+        """
+        fidelity_index = self.fidelity_index
+        if fidelity_index is not None:
+            n_suggested_with_max_fidelity = 0
+            fidelity_dim = self.space[fidelity_index]
+            _, max_fidelity_value = fidelity_dim.interval()
+            for trial in self.registry:
+                fidelity_value = trial.params[fidelity_index]
+                if fidelity_value >= max_fidelity_value:
+                    n_suggested_with_max_fidelity += 1
+            return n_suggested_with_max_fidelity >= self.space.cardinality
+
+        return self.n_suggested >= self.space.cardinality
+
+    @property
+    def has_completed_max_trials(self) -> bool:
+        """Returns True if the algorithm has a `max_trials` attribute, and has completed more trials
+        than its value.
+        """
+        if not hasattr(self, "max_trials"):
+            return False
+        max_trials = getattr(self, "max_trials")
+        if max_trials is None:
+            return False
+
+        fidelity_index = self.fidelity_index
+
+        def _is_completed(trial: Trial) -> bool:
+            return trial.status == "completed"
+
+        # When a fidelity dimension is present, we only count trials that have the maximum value.
+        if fidelity_index is not None:
+            _, max_fidelity_value = self.space[fidelity_index].interval()
+
+            def _is_completed(trial: Trial) -> bool:
+                return (
+                    trial.status == "completed"
+                    and trial.params[fidelity_index] >= max_fidelity_value
+                )
+
+        return sum(map(_is_completed, self.registry)) >= max_trials
 
     def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about

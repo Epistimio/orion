@@ -449,11 +449,11 @@ def test_io():
     net_in = numpy.array(net_in)
     net_out = numpy.array(net_out)
 
-    NOMINAL_IN_MEAN = 13.0  # KB/s
-    NOMINAL_IN_STD = 44.0  # KB/s
+    NOMINAL_IN_MEAN = 16.45  # KB/s
+    NOMINAL_IN_STD = 77.57  # KB/s
 
-    NOMINAL_OUT_MEAN = 46.0  # KB/s
-    NOMINAL_OUT_STD = 156.0  # KB/s
+    NOMINAL_OUT_MEAN = 57.56  # KB/s
+    NOMINAL_OUT_STD = 276.41  # KB/s
 
     assert net_in.mean() < NOMINAL_IN_MEAN + NOMINAL_IN_STD / numpy.sqrt(
         net_in.shape[0]
