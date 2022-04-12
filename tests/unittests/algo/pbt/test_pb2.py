@@ -2,8 +2,10 @@
 """Perform integration tests for `orion.algo.pb2`."""
 import pytest
 
+from typing import ClassVar
+
 from orion.algo.pbt.pb2_utils import HAS_PB2
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, TestPhase
 
 if not HAS_PB2:
     pytest.skip("PB2 deps not installed", allow_module_level=True)
