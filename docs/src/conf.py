@@ -302,6 +302,7 @@ type_hints = [
     "orion.core.utils.tree.T",
     "orion.core.utils.tree.NodeType",
     "orion.core.utils.tree.Self",
+    "orion.algo.space.T",
     "Self",
     "AlgoType",
     "T",
