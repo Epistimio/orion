@@ -592,14 +592,13 @@ class BaseAlgoTests:
 
     def test_is_done_cardinality(self):
         """Test that algorithm will stop when cardinality is reached"""
-        space = self.create_space(
+        space = SpaceBuilder().build(
             {
                 "x": "uniform(0, 4, discrete=True)",
                 "y": "choices(['a', 'b', 'c'])",
                 "z": "loguniform(1, 6, discrete=True)",
             }
         )
-        space = self.create_space(space)
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
