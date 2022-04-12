@@ -1,8 +1,8 @@
 # pylint: disable=arguments-differ
 """Perform integration tests for `orion.algo.pb2`."""
-import pytest
-
 from typing import ClassVar
+
+import pytest
 
 from orion.algo.pbt.pb2_utils import HAS_PB2
 from orion.testing.algo import BaseAlgoTests, TestPhase
