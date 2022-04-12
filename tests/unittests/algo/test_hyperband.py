@@ -1018,19 +1018,23 @@ class TestGenericHyperband(BaseAlgoTests):
         TestPhase("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
     ]
 
-    @phase
-    def test_suggest_lots(self, mocker, num: int, attr: str):
+    def test_suggest_lots(self):
         """Test that hyperband returns whole rungs when requesting large `num`"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
+        num = algo.n_observed
         points = algo.suggest(10000)
         repetition_id, rung_id = self.infer_repetition_and_rung(num)
         assert points is not None
-        assert len(points) == BUDGETS[rung_id + 1 if rung_id < 3 else 0]
+        assert len(points) == BUDGETS[rung_id + 1 if rung_id < 3 else 0], (
+            BUDGETS,
+            rung_id,
+            repetition_id,
+            num,
+        )
 
-    def test_suggest_n(self, mocker, num: int, attr: str):
+    def test_suggest_n(self):
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
+        num = algo.n_observed
         points = algo.suggest(5)
         repetition_id, rung_id = self.infer_repetition_and_rung(num)
         assert points is not None

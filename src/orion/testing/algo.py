@@ -88,7 +88,7 @@ class BaseAlgoTests:
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
 
     phases: ClassVar[list[TestPhase]]
-    _current_phases: ClassVar[list[TestPhase]]
+    _current_phase: ClassVar[TestPhase]
 
     def __init_subclass__(cls) -> None:
         # cls.set_phases(cls.phases)
@@ -98,26 +98,21 @@ class BaseAlgoTests:
             )
         from itertools import accumulate
 
-        # Get the accumulation of phases.
-        incremental_phases: list[list[TestPhase]] = list(
-            accumulate(
-                [[phase] for phase in cls.phases], lambda x, y: x + y, initial=[]
-            )
-        )
-        cls._current_phases = incremental_phases[0]
+        cls._current_phase = cls.phases[0]
 
         @pytest.fixture(
-            # autouse=True,
+            autouse=False,  # todo; not sure if this should always be true by default.
             scope="module",
-            params=incremental_phases,
-            ids=[phases[-1].name if phases else "" for phases in incremental_phases],
+            params=cls.phases,
+            ids=[phase.name for phase in cls.phases],
         )
         def phase(request):
-            test_phases: list[TestPhase] = request.param
-            start_phases = cls._current_phases
-            cls._current_phases = test_phases
-            yield test_phases
-            cls._current_phases = start_phases
+            test_phase: TestPhase = request.param
+            # Temporarily change the class attribute holding the current phase.
+            original_phase = cls._current_phase
+            cls._current_phase = test_phase
+            yield test_phase
+            cls._current_phase = original_phase
 
         cls.phase = staticmethod(phase)
 
@@ -178,22 +173,23 @@ class BaseAlgoTests:
         algo = create_algo(space=original_space, algo_type=base_algo_type, **config)
         algo.algorithm.max_trials = cls.max_trials
 
+        # NOTE: Should this be called before, or after the rest?
         if seed is not None:
             algo.seed_rng(seed)
 
-        n_trials_in_previous_phases = sum(p.n_trials for p in cls._current_phases)
-        if n_trials_in_previous_phases >= cls.max_trials:
+        n_previous_trials = cls._current_phase.n_trials
+        if n_previous_trials >= cls.max_trials:
             raise ValueError(
                 f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
-                f"the total number of trials seen so far when in phase #{len(cls._current_phases)} "
-                f"({n_trials_in_previous_phases}). Increasing max_trials might be a good idea. "
+                f"the total number of trials seen so far when in phase ({cls._current_phase}). "
+                f"Increasing max_trials might be a good idea. "
             )
 
         # Force the algo to observe the given number of trials.
-        cls.force_observe(n_trials_in_previous_phases, algo)
-
+        cls.force_observe(n_previous_trials, algo)
         # TODO: Should we check that the algo has indeed observed the right number of trials that we
         # want, and that the max_trials hasn't been busted, if present?
+        assert algo.n_observed == n_previous_trials
         return algo
 
     def update_space(self, test_space):
