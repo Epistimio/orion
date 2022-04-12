@@ -4,9 +4,7 @@ from orion.algo.space import Categorical, Fidelity, Integer, Real, Space, to_ori
 from orion.algo.space.configspace import IMPORT_ERROR, UnsupportedPrior, to_configspace
 
 if IMPORT_ERROR:
-    pytest.skip(
-        "Running without ConfigSpace", allow_module_level=True
-    )
+    pytest.skip("Running without ConfigSpace", allow_module_level=True)
 
 
 def test_orion_configspace():
