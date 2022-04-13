@@ -264,16 +264,13 @@ class Hyperband(BaseAlgorithm):
 
         :param seed: Integer seed for the random number generator.
         """
+        self.seed = seed
         self.rng = numpy.random.RandomState(seed)
-        # Keep a copy of the 'initial rng', because it seems like the brackets get created after the
-        # seeding. Therefore we keep a copy so that we can get randomness that only depends on
-        # `seed` in the brackets.
-        self._initial_rng = numpy.random.RandomState(seed)
+        self.seed_brackets(seed)
 
-    def seed_brackets(self) -> None:
-        rng = numpy.random.RandomState()
-        rng.set_state(self._initial_rng.get_state())
-        for bracket in self.brackets:
+    def seed_brackets(self, seed: int | Sequence[int] | None) -> None:
+        rng = numpy.random.RandomState(seed)
+        for bracket in self.brackets[::-1]:
             bracket.seed_rng(tuple(rng.randint(0, 1000000, size=3)))
 
     @property
@@ -282,13 +279,10 @@ class Hyperband(BaseAlgorithm):
         state_dict: dict[str, Any] = super().state_dict
         state_dict.update(
             {
-                "rng_state": copy.deepcopy(self.rng.get_state()),
-                "_initial_rng": copy.deepcopy(self._initial_rng.get_state()),
-                "budgets": copy.deepcopy(self.budgets),
+                "rng_state": self.rng.get_state(),
+                "seed": self.seed,
                 "trial_to_brackets": copy.deepcopy(dict(self.trial_to_brackets)),
-                "brackets": copy.deepcopy(
-                    [bracket.state_dict for bracket in self.brackets]
-                ),
+                "brackets": [bracket.state_dict for bracket in self.brackets],
             }
         )
         return state_dict
@@ -299,24 +293,15 @@ class Hyperband(BaseAlgorithm):
         :param state_dict: Dictionary representing state of an algorithm
         """
         super().set_state(state_dict)
+        self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])
-        self._initial_rng.set_state(state_dict["_initial_rng"])
         self.trial_to_brackets = state_dict["trial_to_brackets"]
-        if len(state_dict["budgets"]) != len(state_dict["brackets"]):
-            raise RuntimeError(
-                f"There is something wrong with the given algorithm's state_dict: "
-                f"There are {len(state_dict['budgets'])} budgets and {len(state_dict['brackets'])} "
-                f"brackets."
-            )
+        while len(self.brackets) < len(state_dict["brackets"]):
+            self.append_brackets()
+        assert len(self.brackets) == len(state_dict["brackets"]), "corrupted state"
 
-        self.budgets = state_dict["budgets"]
-        self.brackets.clear()
-        for i, (budget, bracket_state) in enumerate(
-            zip(self.budgets, state_dict["brackets"])
-        ):
-            bracket = self.create_bracket(i, budget, iteration=self.executed_times + 1)
-            bracket.set_state(bracket_state)
-            self.brackets.append(bracket)
+        for bracket, bracket_state_dict in zip(self.brackets, state_dict["brackets"]):
+            bracket.set_state(bracket_state_dict)
 
     def register_samples(self, bracket: HyperbandBracket, samples: list[Trial]) -> None:
         for sample in samples:
@@ -432,7 +417,7 @@ class Hyperband(BaseAlgorithm):
     def append_brackets(self) -> None:
         self.brackets = self.brackets + self.create_brackets()
         # Reset brackets seeds
-        self.seed_brackets()
+        self.seed_brackets(self.seed)
 
     def create_brackets(self) -> list[HyperbandBracket]:
         return [
@@ -521,7 +506,7 @@ class HyperbandBracket:
             RungDict(resources=budget, n_trials=n_trials, results=OrderedDict())
             for n_trials, budget in budgets
         ]
-        self.rng = numpy.random.RandomState()
+        self.seed = None
         self.repetition_id: int = repetition_id
         self.buffer: int = 10
         self._samples: list[Trial] | None = None
@@ -533,17 +518,11 @@ class HyperbandBracket:
         return {
             "rungs": copy.deepcopy(self.rungs),
             "samples": copy.deepcopy(self._samples),
-            "repetition_id": self.repetition_id,
-            "rng": copy.deepcopy(self.rng.get_state()),
         }
 
     def set_state(self, state_dict: dict) -> None:
         self.rungs = state_dict["rungs"]
         self._samples = state_dict["samples"]
-        if self.repetition_id != state_dict["repetition_id"]:
-            raise RuntimeError(f"Probably loading the wrong state into this bracket!")
-        self.rng = numpy.random.RandomState()
-        self.rng.set_state(state_dict["rng"])
 
     @property
     def is_filled(self) -> bool:
@@ -562,10 +541,19 @@ class HyperbandBracket:
 
         return max_resource
 
+    @property
+    def seed(self):
+        return self._seed
+
+    @seed.setter
+    def seed(self, seed):
+        self._seed = seed
+        self._samples = None
+
     def get_sample(self) -> Trial | None:
         if self._samples is None:
             n_samples = int(self.rungs[0]["n_trials"] * self.buffer)
-            self._samples = self.hyperband.space.sample(n_samples, seed=self.rng)
+            self._samples = self.hyperband.space.sample(n_samples, seed=self.seed)
 
         return self._samples.pop(0) if self._samples else None
 
@@ -745,7 +733,7 @@ class HyperbandBracket:
 
         :param seed: Integer seed for the random number generator.
         """
-        self.rng = numpy.random.RandomState(seed)
+        self.seed = seed
 
     def __repr__(self) -> str:
         """Return representation of bracket with fidelity levels"""
