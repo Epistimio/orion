@@ -126,7 +126,6 @@ class GridSearch(BaseAlgorithm):
         self,
         space: Space,
         n_values: int | dict[str, int] = 100,
-        seed: int | Sequence[int] | None = None,
     ):
         super().__init__(space)
         self.n = 0
@@ -140,9 +139,6 @@ class GridSearch(BaseAlgorithm):
             self.space, n_values_dict, getattr(self, "max_trials", 10000)
         )
         self.index = 0
-        self.seed = seed
-        if seed is not None:
-            self.seed_rng(seed)
 
     @staticmethod
     def build_grid(space: Space, n_values: dict[str, int], max_trials: int = 10000):
