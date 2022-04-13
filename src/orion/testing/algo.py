@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import copy
-import functools
-import inspect
 import itertools
 import logging
-from collections import defaultdict
-from typing import Callable, ClassVar, Generic, NamedTuple, Type, TypeVar, Sequence
+from typing import (
+    ClassVar,
+    Generic,
+    NamedTuple,
+    TypeVar,
+    Sequence,
+)
 
 import numpy
 import pytest
-
 import orion.algo.base
 from orion.algo.asha import ASHA
 from orion.algo.base import BaseAlgorithm
@@ -63,6 +65,17 @@ class TestPhase(NamedTuple):
 
     # just so pytest doesn't complain about this.
     __test__ = False  # type: ignore
+
+
+def _are_equal(a, b) -> bool:
+    """Compare two statedicts and return if they are equal. This is required because of annoying
+    numpy array comparisons and such.
+    """
+    try:
+        numpy.testing.assert_equal(a, b)
+        return True
+    except AssertionError:
+        return False
 
 
 class BaseAlgoTests(Generic[AlgoType]):
@@ -395,7 +408,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         new_algo_state = new_algo.state_dict
 
         different_seed_trial = new_algo.suggest(1)[0]
-        if new_algo_state == state:
+        if _are_equal(new_algo_state, state):
             assert different_seed_trial == first_trial
         else:
             assert different_seed_trial != first_trial
@@ -417,12 +430,12 @@ class BaseAlgoTests(Generic[AlgoType]):
         new_algo = self.create_algo()
         new_state = new_algo.state_dict
         b = new_algo.suggest(1)[0]
-        if new_state != state:
-            # If the state is different, the trials should be different.
-            assert a != b
-        else:
+        if _are_equal(new_state, state):
             # If the state is the same, the trials should be the same.
             assert a == b
+        else:
+            # If the state is different, the trials should be different.
+            assert a != b
 
         new_algo.set_state(state)
         c = new_algo.suggest(1)[0]
