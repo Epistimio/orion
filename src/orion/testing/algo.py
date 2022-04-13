@@ -78,6 +78,11 @@ def _are_equal(a, b) -> bool:
         return False
 
 
+def first_phase_only(test):
+    """Decorator to run a test only on the first phase of the algorithm."""
+    return pytest.mark.usefixtures("first_phase")(test)
+
+
 class BaseAlgoTests(Generic[AlgoType]):
     """Generic Test-suite for HPO algorithms.
 
@@ -97,7 +102,10 @@ class BaseAlgoTests(Generic[AlgoType]):
     """
 
     algo_name: ClassVar[str | None] = None
+
     algo_type: type[AlgoType]
+    """ The type of algorithm under test."""
+
     config: ClassVar[dict] = {}
     max_trials: ClassVar[int] = 200
     space: ClassVar[dict] = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
@@ -137,6 +145,14 @@ class BaseAlgoTests(Generic[AlgoType]):
                     "Subclasses of BaseAlgoTests must set the algo_type or algo_name attributes."
                 )
             cls.algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
+        if not cls.algo_name:
+            cls.algo_name = cls.algo_type.__name__.lower()
+
+    @pytest.fixture(name="first_phase")
+    @classmethod
+    def first_phase(cls, _phase: TestPhase):
+        if _phase != cls.phases[0]:
+            pytest.skip(reason="Test runs only on first phase.")
 
     @classmethod
     def set_phases(cls, phases: Sequence[TestPhase]):
@@ -417,7 +433,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         same_seed_trial = new_algo.suggest(1)[0]
         assert same_seed_trial == first_trial
 
-    @pytest.mark.parametrize("seed", [numpy.random.randint(10000)])
+    @pytest.mark.parametrize("seed", [123, 456])
     def test_state_dict(self, seed: int):
         """Verify that resetting state makes sampling deterministic"""
         algo = self.create_algo(seed=seed)
