@@ -3,29 +3,38 @@
 Grid Search
 ===========
 """
+from __future__ import annotations
+
 import itertools
 import logging
-
+from typing import Sequence
 import numpy
 
+from orion.algo.space import Space
 from orion.algo.base import BaseAlgorithm
-from orion.algo.space import Categorical, Fidelity, Integer, Real
+from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real
 from orion.core.utils import format_trials
 
 log = logging.getLogger(__name__)
 
 
-def grid(dim, num):
+def grid(dim: Dimension, num: int):
     """Build a one-dim grid of num points"""
 
     if dim.type == "categorical":
-        return categorical_grid(dim, num)
+        # NOTE: Following lines have type errors, because we check the type using the `type`
+        # attribute rather than using `isinstance`. This is the right thing to do, since the
+        # TransformedDimension subclasses wouldn't be handled correctly using `isinstance`.
+        # TODO: Would be nice for the different TransformedSpace subclasses to be generics w.r.t.
+        # the type of the wrapped space. This way, we could annotate the functions below with e.g.
+        # `Integer | TransformedSpace[Integer]`.
+        return categorical_grid(dim, num)  # type: ignore
     elif dim.type == "integer":
-        return discrete_grid(dim, num)
+        return discrete_grid(dim, num)  # type: ignore
     elif dim.type == "real":
-        return real_grid(dim, num)
+        return real_grid(dim, num)  # type: ignore
     elif dim.type == "fidelity":
-        return fidelity_grid(dim, num)
+        return fidelity_grid(dim, num)  # type: ignore
     else:
         raise TypeError(
             "Grid Search only supports `real`, `integer`, `categorical` and `fidelity`: "
@@ -35,12 +44,12 @@ def grid(dim, num):
         )
 
 
-def fidelity_grid(dim, num):
+def fidelity_grid(dim: Fidelity, num: int):
     """Build fidelity grid, that is, only top value"""
     return [dim.interval()[1]]
 
 
-def categorical_grid(dim, num):
+def categorical_grid(dim: Categorical, num: int):
     """Build categorical grid, that is, all categories"""
     categories = dim.interval()
     if len(categories) != num:
@@ -51,7 +60,7 @@ def categorical_grid(dim, num):
     return categories
 
 
-def discrete_grid(dim, num):
+def discrete_grid(dim: Integer, num: int):
     """Build discretized real grid"""
     grid = real_grid(dim, num)
 
@@ -75,7 +84,7 @@ def discrete_grid(dim, num):
     return discrete_grid
 
 
-def real_grid(dim, num):
+def real_grid(dim: Real, num: int):
     """Build real grid"""
     if dim.prior_name.endswith("reciprocal"):
         a, b = dim.interval()
@@ -90,11 +99,11 @@ def real_grid(dim, num):
         )
 
 
-def _log_grid(a, b, num):
+def _log_grid(a, b, num: int) -> numpy.ndarray:
     return numpy.exp(_lin_grid(numpy.log(a), numpy.log(b), num))
 
 
-def _lin_grid(a, b, num):
+def _lin_grid(a, b, num: int) -> numpy.ndarray:
     return numpy.linspace(a, b, num=num)
 
 
@@ -113,32 +122,38 @@ class GridSearch(BaseAlgorithm):
     requires_dist = None
     requires_shape = "flattened"
 
-    def __init__(self, space, n_values=100, seed=None):
-        super().__init__(space, n_values=n_values, seed=seed)
+    def __init__(
+        self,
+        space: Space,
+        n_values: int | dict[str, int] = 100,
+        seed: int | Sequence[int] | None = None,
+    ):
+        super().__init__(space)
         self.n = 0
-        self.grid = None
-
-    def _initialize(self):
-        """Initialize the grid once the space is transformed"""
-        n_values = self.n_values
-        if not isinstance(n_values, dict):
-            n_values = {name: self.n_values for name in self.space.keys()}
-
+        self.n_values = n_values
+        n_values_dict = (
+            {name: n_values for name in self.space.keys()}
+            if not isinstance(n_values, dict)
+            else n_values
+        )
         self.grid = self.build_grid(
-            self.space, n_values, getattr(self, "max_trials", 10000)
+            self.space, n_values_dict, getattr(self, "max_trials", 10000)
         )
         self.index = 0
+        self.seed = seed
+        if seed is not None:
+            self.seed_rng(seed)
 
     @staticmethod
-    def build_grid(space, n_values, max_trials=10000):
+    def build_grid(space: Space, n_values: dict[str, int], max_trials: int = 10000):
         """Build a grid of trials
 
         Parameters
         ----------
         n_values: int or dict
-            Number of trials for each dimensions, or dictionary specifying number of trials for each
-            dimension independently (name, n_values). For categorical dimensions, n_values will not be
-            used, and all categories will be used to build the grid.
+            Dictionary specifying number of trials for each dimension independently
+            (name, n_values). For categorical dimensions, n_values will not be used, and all
+            categories will be used to build the grid.
         max_trials: int
             Maximum number of trials for the grid. If n_values lead to more trials than max_trials,
             the n_values will be adjusted down. Will raise ValueError if it is impossible to build
@@ -147,6 +162,7 @@ class GridSearch(BaseAlgorithm):
         """
         adjust = 0
         n_trials = float("inf")
+        coordinates: list[list] = []
 
         while n_trials > max_trials:
             coordinates = []
@@ -174,14 +190,14 @@ class GridSearch(BaseAlgorithm):
         return list(itertools.product(*coordinates))
 
     @property
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = super().state_dict
         state_dict["grid"] = self.grid
         state_dict["index"] = self.index
         return state_dict
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
         Parameters
@@ -204,8 +220,6 @@ class GridSearch(BaseAlgorithm):
             trials to complete), in which case it will return None.
 
         """
-        if self.grid is None:
-            self._initialize()
         trials = []
         while len(trials) < num and self.index < len(self.grid):
             trial = format_trials.tuple_to_trial(self.grid[self.index], self.space)
