@@ -281,6 +281,7 @@ class Hyperband(BaseAlgorithm):
             {
                 "rng_state": self.rng.get_state(),
                 "seed": self.seed,
+                "budgets": copy.deepcopy(self.budgets),
                 "trial_to_brackets": copy.deepcopy(dict(self.trial_to_brackets)),
                 "brackets": [bracket.state_dict for bracket in self.brackets],
             }
@@ -296,6 +297,8 @@ class Hyperband(BaseAlgorithm):
         self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])
         self.trial_to_brackets = state_dict["trial_to_brackets"]
+        self.budgets = state_dict["budgets"]
+        self.brackets.clear()
         while len(self.brackets) < len(state_dict["brackets"]):
             self.append_brackets()
         assert len(self.brackets) == len(state_dict["brackets"]), "corrupted state"
