@@ -118,9 +118,6 @@ class Consumer(object):
             True if the trial was successfully executed. False if the trial is broken.
 
         """
-        log.debug("Consumer context: %s", trial.working_dir)
-        os.makedirs(trial.working_dir, exist_ok=True)
-
         results_file = self._consume(trial, trial.working_dir)
 
         log.debug("Parsing results from file and fill corresponding Trial object.")
@@ -197,9 +194,16 @@ class Consumer(object):
 
         return env
 
-    def _consume(self, trial, workdirname):
+    def _prepare_config(self, trial, workdirname):
+        log.debug("Consumer context: %s", trial.working_dir)
+        os.makedirs(trial.working_dir, exist_ok=True)
+
+        if self.template_builder.file_config_path:
+            _, suffix = os.path.splitext(self.template_builder.file_config_path)
+        else:
+            suffix = ".conf"
         config_file = tempfile.NamedTemporaryFile(
-            mode="w", prefix="trial_", suffix=".conf", dir=workdirname, delete=False
+            mode="w", prefix="trial_", suffix=suffix, dir=workdirname, delete=False
         )
         config_file.close()
         log.debug("New temp config file: %s", config_file.name)
@@ -209,6 +213,10 @@ class Consumer(object):
         results_file.close()
         log.debug("New temp results file: %s", results_file.name)
 
+        return config_file, results_file
+
+    def _consume(self, trial, workdirname):
+        config_file, results_file = self._prepare_config(trial, workdirname)
         log.debug("Building command line argument and configuration for trial.")
         env = self.get_execution_environment(trial, results_file.name)
         cmd_args = self.template_builder.format(
