@@ -11,7 +11,7 @@ from __future__ import annotations
 import copy
 import logging
 from collections import OrderedDict
-from typing import Any, NamedTuple, Optional, Sequence
+from typing import Any, Generic, NamedTuple, Optional, Sequence, TypeVar
 
 import numpy
 import numpy as np
@@ -348,7 +348,7 @@ class Hyperband(BaseAlgorithm):
 
         return samples
 
-    def suggest(self, num: int) -> list[Trial] | None:
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a number of new sets of parameters.
 
         Sample new points until first rung is filled. Afterwards
@@ -487,12 +487,15 @@ class Hyperband(BaseAlgorithm):
         return self.has_suggested_all_possible_values()
 
 
-class HyperbandBracket:
+Owner = TypeVar("Owner", bound=Hyperband)
+
+
+class HyperbandBracket(Generic[Owner]):
     """Bracket of rungs for the algorithm Hyperband.
 
     Parameters
     ----------
-    hyperband: `Hyperband` algorithm
+    owner: `Hyperband` algorithm
         The hyperband algorithm object which this bracket will be part of.
     budgets: list of tuple
         Each tuple gives the (n_trials, resource_budget) for the respective rung.
@@ -501,10 +504,8 @@ class HyperbandBracket:
 
     """
 
-    def __init__(
-        self, hyperband: Hyperband, budgets: list[BudgetTuple], repetition_id: int
-    ):
-        self.hyperband = hyperband
+    def __init__(self, owner: Owner, budgets: list[BudgetTuple], repetition_id: int):
+        self.owner = owner
         self.rungs: list[RungDict] = [
             RungDict(resources=budget, n_trials=n_trials, results=OrderedDict())
             for n_trials, budget in budgets
@@ -535,7 +536,7 @@ class HyperbandBracket:
     def get_trial_max_resource(self, trial: Trial) -> int | float:
         """Return the max resource value that has been tried for a trial"""
         max_resource: int | float = 0
-        _id_wo_fidelity = self.hyperband.get_id(
+        _id_wo_fidelity = self.owner.get_id(
             trial, ignore_fidelity=True, ignore_parent=True
         )
         for rung in self.rungs:
@@ -556,7 +557,7 @@ class HyperbandBracket:
     def get_sample(self) -> Trial | None:
         if self._samples is None:
             n_samples = int(self.rungs[0]["n_trials"] * self.buffer)
-            self._samples = self.hyperband.space.sample(n_samples, seed=self.seed)
+            self._samples = self.owner.space.sample(n_samples, seed=self.seed)
 
         return self._samples.pop(0) if self._samples else None
 
@@ -568,23 +569,21 @@ class HyperbandBracket:
         if request == 0:
             return []
         # BUG: Shouldn't this be `sample_from_bracket`?
-        return self.hyperband.sample_for_bracket(
+        return self.owner.sample_for_bracket(
             request, self, buffer=should_have_n_trials * 10 / request
         )
 
     def register(self, trial: Trial) -> None:
         """Register a trial in the corresponding rung"""
         results = self._get_results(trial)
-        trial_id = self.hyperband.get_id(
-            trial, ignore_fidelity=True, ignore_parent=True
-        )
+        trial_id = self.owner.get_id(trial, ignore_fidelity=True, ignore_parent=True)
         results[trial_id] = (
             trial.objective.value if trial.objective else None,
             copy.deepcopy(trial),
         )
 
     def _get_results(self, trial: Trial) -> dict:
-        fidelity = flatten(trial.params)[self.hyperband.fidelity_index]
+        fidelity = flatten(trial.params)[self.owner.fidelity_index]
         rung_results = [
             rung["results"] for rung in self.rungs if rung["resources"] == fidelity
         ]
@@ -629,7 +628,6 @@ class HyperbandBracket:
             0,
             len(rung_results),
         }, "Assuming objectives are either all None or all floats."
-
         rung = sorted(rung_results.values(), key=lambda pair: pair[0])
 
         if not rung:
@@ -641,7 +639,7 @@ class HyperbandBracket:
         while len(trials) + len(next_rung) < should_have_n_trials:
             objective, trial = rung[i]
             assert objective is not None
-            _id = self.hyperband.get_id(trial, ignore_fidelity=True, ignore_parent=True)
+            _id = self.owner.get_id(trial, ignore_fidelity=True, ignore_parent=True)
             if _id not in next_rung:
                 trials.append(trial)
             i += 1
@@ -709,7 +707,7 @@ class HyperbandBracket:
                         trial=candidate,
                         past_rung=rung_id,
                         past_fidelity=flatten(candidate.params)[
-                            self.hyperband.fidelity_index
+                            self.owner.fidelity_index
                         ],
                         new_rung=rung_id + 1,
                         new_fidelity=self.rungs[rung_id + 1]["resources"],
@@ -719,12 +717,10 @@ class HyperbandBracket:
                 candidate = candidate.branch(
                     status="new",
                     params={
-                        self.hyperband.fidelity_index: self.rungs[rung_id + 1][
-                            "resources"
-                        ]
+                        self.owner.fidelity_index: self.rungs[rung_id + 1]["resources"]
                     },
                 )
-                if not self.hyperband.has_suggested(candidate):
+                if not self.owner.has_suggested(candidate):
                     trials.append(candidate)
 
             return trials[:num]

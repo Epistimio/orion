@@ -23,7 +23,7 @@ from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests, TestPhase, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import compare_trials, create_trial
 
 if typing.TYPE_CHECKING:
