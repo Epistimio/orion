@@ -176,10 +176,10 @@ class Hyperband(BaseAlgorithm):
         seed: int | Sequence[int] | None = None,
         repetitions: int | float = numpy.inf,
     ):
-        # NOTE: Need to set the attribute before calling super().__init__ because it calls seed_rng.
-        self.brackets: list[HyperbandBracket] = []
-        super().__init__(space, repetitions=repetitions, seed=seed)
+        super().__init__(space)
         self.seed = seed
+        self.repetitions = repetitions
+        self.brackets: list[HyperbandBracket] = []
         # Stores Point id (with no fidelity) -> Bracket (int)
         self.trial_to_brackets: dict[str, int] = {}
 

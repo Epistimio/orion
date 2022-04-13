@@ -212,7 +212,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         if seed is not None:
             algo.seed_rng(seed)
 
-        if cls._current_phase is not None:
+        if cls._current_phase is not None and cls._current_phase.n_trials > 0:
             n_previous_trials = cls._current_phase.n_trials
             if n_previous_trials >= cls.max_trials:
                 raise ValueError(

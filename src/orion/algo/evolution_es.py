@@ -152,8 +152,6 @@ class EvolutionES(Hyperband):
             else 1
         )
 
-        self._param_names += ["nums_population", "mutate", "max_retries"]
-
         self.hurdles: list[float | np.ndarray] = []
 
         self.population: dict[int, list[int]] = {}
@@ -187,17 +185,17 @@ class EvolutionES(Hyperband):
 
     def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict"""
-        super().set_state(state_dict)
         self.population = state_dict["population"]
         self.performance = state_dict["performance"]
         self.hurdles = state_dict["hurdles"]
+        super().set_state(state_dict)
 
     def _get_bracket(self, trial: Trial) -> BracketEVES:
         """Get the bracket of a trial during observe"""
         return self.brackets[-1]
 
 
-class BracketEVES(HyperbandBracket):
+class BracketEVES(HyperbandBracket[EvolutionES]):
     """Bracket of rungs for the algorithm Hyperband.
 
     Parameters
@@ -212,21 +210,20 @@ class BracketEVES(HyperbandBracket):
     """
 
     def __init__(
-        self, evolution_es: EvolutionES, budgets: list[BudgetTuple], repetition_id: int
+        self, owner: EvolutionES, budgets: list[BudgetTuple], repetition_id: int
     ):
-        super().__init__(evolution_es, budgets, repetition_id)
-        self.eves = evolution_es
+        super().__init__(owner, budgets, repetition_id)
         self.search_space_without_fidelity = []
         self._candidates: dict[int, list[Trial]] = {}
 
         self.mutate_attr: dict = {}
-        if evolution_es.mutate:
-            if isinstance(evolution_es.mutate, str):
-                self.mutate_attr = {"function": evolution_es.mutate}
-            elif isinstance(evolution_es.mutate, dict):
-                self.mutate_attr = copy.deepcopy(evolution_es.mutate)
+        if owner.mutate:
+            if isinstance(owner.mutate, str):
+                self.mutate_attr = {"function": owner.mutate}
+            elif isinstance(owner.mutate, dict):
+                self.mutate_attr = copy.deepcopy(owner.mutate)
             else:
-                raise ValueError(f"Unsupported type for mutate: {evolution_es.mutate}")
+                raise ValueError(f"Unsupported type for mutate: {owner.mutate}")
         function_string = self.mutate_attr.pop(
             "function", "orion.algo.mutate_functions.default_mutate"
         )
@@ -240,7 +237,7 @@ class BracketEVES(HyperbandBracket):
 
     @property
     def space(self) -> Space:
-        return self.eves.space
+        return self.owner.space
 
     @property
     def state_dict(self) -> dict:
@@ -260,27 +257,27 @@ class BracketEVES(HyperbandBracket):
         rung = self.rungs[rung_id]["results"]
 
         population_range = (
-            self.eves.nums_population
-            if len(list(rung.values())) > self.eves.nums_population
+            self.owner.nums_population
+            if len(list(rung.values())) > self.owner.nums_population
             else len(list(rung.values()))
         )
 
         rung_trials = list(rung.values())
         for trial_index in range(population_range):
             objective, trial = rung_trials[trial_index]
-            self.eves.performance[trial_index] = objective
+            self.owner.performance[trial_index] = objective
             for ith_dim in self.search_space_without_fidelity:
-                self.eves.population[ith_dim][trial_index] = trial.params[
+                self.owner.population[ith_dim][trial_index] = trial.params[
                     self.space[ith_dim].name
                 ]
 
-        population_index = list(range(self.eves.nums_population))
-        red_team = self.eves.rng.choice(
-            population_index, self.eves.nums_comp_pairs, replace=False
+        population_index = list(range(self.owner.nums_population))
+        red_team = self.owner.rng.choice(
+            population_index, self.owner.nums_comp_pairs, replace=False
         )
         diff_list = list(set(population_index).difference(set(red_team)))
-        blue_team = self.eves.rng.choice(
-            diff_list, self.eves.nums_comp_pairs, replace=False
+        blue_team = self.owner.rng.choice(
+            diff_list, self.owner.nums_comp_pairs, replace=False
         )
 
         return rung, population_range, red_team.tolist(), blue_team.tolist()
@@ -302,20 +299,20 @@ class BracketEVES(HyperbandBracket):
             for i, _ in enumerate(red_team):
                 winner, loser = (
                     (red_team, blue_team)
-                    if self.eves.performance[red_team[i]]
-                    < self.eves.performance[blue_team[i]]
+                    if self.owner.performance[red_team[i]]
+                    < self.owner.performance[blue_team[i]]
                     else (blue_team, red_team)
                 )
 
                 winner_list.append(winner[i])
                 loser_list.append(loser[i])
-                hurdles += self.eves.performance[winner[i]]
+                hurdles += self.owner.performance[winner[i]]
                 self._mutate(winner[i], loser[i])
 
             hurdles /= len(red_team)
-            self.eves.hurdles.append(hurdles)
+            self.owner.hurdles.append(hurdles)
 
-            logger.debug("Evolution hurdles are: %s", str(self.eves.hurdles))
+            logger.debug("Evolution hurdles are: %s", str(self.owner.hurdles))
 
         trials = []
         trial_ids = set()
@@ -325,32 +322,32 @@ class BracketEVES(HyperbandBracket):
             while True:
                 point = list(point)
                 point[
-                    list(self.space.keys()).index(self.eves.fidelity_index)
+                    list(self.space.keys()).index(self.owner.fidelity_index)
                 ] = fidelity
 
                 for j in self.search_space_without_fidelity:
-                    point[j] = self.eves.population[j][i]
+                    point[j] = self.owner.population[j][i]
 
                 trial = format_trials.tuple_to_trial(point, self.space)
-                trial_id = self.eves.get_id(trial)
+                trial_id = self.owner.get_id(trial)
 
                 if trial_id in trial_ids:
                     nums_all_equal[i] += 1
                     logger.debug("find equal one, continue to mutate.")
                     self._mutate(i, i)
-                elif self.eves.has_suggested(trial):
+                elif self.owner.has_suggested(trial):
                     nums_all_equal[i] += 1
                     logger.debug("find one already suggested, continue to mutate.")
                     self._mutate(i, i)
                 else:
                     break
-                if nums_all_equal[i] > self.eves.max_retries:
+                if nums_all_equal[i] > self.owner.max_retries:
                     logger.warning(
                         "Can not Evolve any more. You can make an early stop."
                     )
                     break
 
-            if nums_all_equal[i] < self.eves.max_retries:
+            if nums_all_equal[i] < self.owner.max_retries:
                 trials.append(trial)
                 trial_ids.add(trial_id)
             else:
@@ -369,14 +366,14 @@ class BracketEVES(HyperbandBracket):
 
         candidates: list[Trial] = []
         for candidate in self._candidates[rung_id]:
-            if not self.eves.has_suggested(candidate):
+            if not self.owner.has_suggested(candidate):
                 candidates.append(candidate)
         return candidates
 
     def _mutate(self, winner_id: int, loser_id: int) -> None:
-        select_genes_key_list = self.eves.rng.choice(
+        select_genes_key_list = self.owner.rng.choice(
             self.search_space_without_fidelity,
-            self.eves.nums_mutate_gene,
+            self.owner.nums_mutate_gene,
             replace=False,
         )
         self.copy_winner(winner_id, loser_id)
@@ -384,13 +381,13 @@ class BracketEVES(HyperbandBracket):
 
         for i, _ in enumerate(select_genes_key_list):
             space = self.space.values()[select_genes_key_list[i]]
-            old = self.eves.population[select_genes_key_list[i]][loser_id]
-            new = self.mutate_func(space, self.eves.rng, old, **kwargs)
-            self.eves.population[select_genes_key_list[i]][loser_id] = new
+            old = self.owner.population[select_genes_key_list[i]][loser_id]
+            new = self.mutate_func(space, self.owner.rng, old, **kwargs)
+            self.owner.population[select_genes_key_list[i]][loser_id] = new
 
-        self.eves.performance[loser_id] = -1
+        self.owner.performance[loser_id] = -1
 
     def copy_winner(self, winner_id: int, loser_id: int) -> None:
         """Copy winner to loser"""
         for key in self.search_space_without_fidelity:
-            self.eves.population[key][loser_id] = self.eves.population[key][winner_id]
+            self.owner.population[key][loser_id] = self.owner.population[key][winner_id]
