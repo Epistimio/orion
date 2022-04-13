@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import copy
 from logging import getLogger as get_logger
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Optional, Sequence, TypeVar, overload
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.registry import Registry, RegistryMapping
@@ -122,7 +122,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         Parameters
         ----------
         num: int
-            Number of points to suggest. The algorithm may return less than the number of points
+            Number of trials to suggest. The algorithm may return less than the number of trials
             requested.
 
         Returns

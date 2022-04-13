@@ -16,7 +16,7 @@ from orion.algo.gridsearch import (
     real_grid,
 )
 from orion.algo.space import Categorical, Integer, Real, Space
-from orion.testing.algo import BaseAlgoTests, TestPhase, phase
+from orion.testing.algo import BaseAlgoTests
 
 
 def test_categorical_grid():
@@ -170,9 +170,7 @@ def test_build_grid_cannot_limit_size(caplog):
 class TestGridSearch(BaseAlgoTests):
     algo_name = "gridsearch"
     config = {"n_values": 10}
-    phases: ClassVar[list[TestPhase]] = [TestPhase("grid", 0, "suggest")]
 
-    @phase
     def test_suggest_lots(self):
         """Test that gridsearch returns the whole grid when requesting more points"""
         algo = self.create_algo()

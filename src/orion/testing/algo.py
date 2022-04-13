@@ -8,7 +8,7 @@ import inspect
 import itertools
 import logging
 from collections import defaultdict
-from typing import Callable, ClassVar, NamedTuple, Type, TypeVar, Sequence
+from typing import Callable, ClassVar, Generic, NamedTuple, Type, TypeVar, Sequence
 
 import numpy
 import pytest
@@ -25,14 +25,15 @@ from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.primary_algo import (
+    SpaceTransformAlgoWrapper,
+    create_algo,
+)
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.space import build_space
 
-
-def phase(some_test):
-    return pytest.mark.usefixtures("phase")(some_test)
+AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
 
 def customized_mutate_example(search_space, rng, old_value, **kwargs):
@@ -64,7 +65,7 @@ class TestPhase(NamedTuple):
     __test__ = False  # type: ignore
 
 
-class BaseAlgoTests:
+class BaseAlgoTests(Generic[AlgoType]):
     """Generic Test-suite for HPO algorithms.
 
     This test-suite covers all typical cases for HPO algorithms. To use it for a new algorithm,
@@ -82,39 +83,47 @@ class BaseAlgoTests:
     crash. See ``tests/unittests/algo/test_tpe.py`` for an example.
     """
 
-    algo_name = None
-    config = {}
-    max_trials = 200
-    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
+    algo_name: ClassVar[str | None] = None
+    algo_type: type[AlgoType]
+    config: ClassVar[dict] = {}
+    max_trials: ClassVar[int] = 200
+    space: ClassVar[dict] = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
 
-    phases: ClassVar[list[TestPhase]]
-    _current_phase: ClassVar[TestPhase]
+    phases: ClassVar[list[TestPhase]] = []
+    """ Test phases for the algorithms. Leave empty if the algorithm only has one phase."""
+
+    _current_phase: ClassVar[TestPhase | None] = None
 
     def __init_subclass__(cls) -> None:
-        # cls.set_phases(cls.phases)
-        if not hasattr(cls, "phases") or not cls.phases:
-            raise ValueError(
-                f"Test classes MUST set a value for the `phases` class attribute."
+        # NOTE: It makes sense to run all the algo tests for each phase, since every test
+        # is expected to use `self.create_algo`.
+        if cls.phases:
+
+            @pytest.fixture(
+                name="_phase",
+                autouse=True,
+                scope="module",
+                params=cls.phases,
+                ids=[phase.name for phase in cls.phases],
             )
-        from itertools import accumulate
+            def phase(request):
+                test_phase: TestPhase = request.param
+                # Temporarily change the class attribute holding the current phase.
+                original_phase = cls._current_phase
+                cls._current_phase = test_phase
+                yield test_phase
+                cls._current_phase = original_phase
 
-        cls._current_phase = cls.phases[0]
+            # Store it somewhere on the class so it gets included in the test scope.
+            cls.phase: pytest.fixture = staticmethod(phase)  # type: ignore
 
-        @pytest.fixture(
-            autouse=False,  # todo; not sure if this should always be true by default.
-            scope="module",
-            params=cls.phases,
-            ids=[phase.name for phase in cls.phases],
-        )
-        def phase(request):
-            test_phase: TestPhase = request.param
-            # Temporarily change the class attribute holding the current phase.
-            original_phase = cls._current_phase
-            cls._current_phase = test_phase
-            yield test_phase
-            cls._current_phase = original_phase
-
-        cls.phase = staticmethod(phase)
+        # Set the `algo_type` attribute.
+        if not hasattr(cls, "algo_type") or not cls.algo_type:
+            if not cls.algo_name:
+                raise RuntimeError(
+                    "Subclasses of BaseAlgoTests must set the algo_type or algo_name attributes."
+                )
+            cls.algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
 
     @classmethod
     def set_phases(cls, phases: Sequence[TestPhase]):
@@ -164,35 +173,33 @@ class BaseAlgoTests:
         """
         config = copy.deepcopy(config or cls.config)
         config.update(kwargs)
-        if hasattr(cls, "algo_type"):
-            base_algo_type = cls.algo_type
-        else:
-            base_algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
 
         original_space = space or cls.create_space()
-        algo = create_algo(space=original_space, algo_type=base_algo_type, **config)
+        algo = create_algo(space=original_space, algo_type=cls.algo_type, **config)
+        # TODO: Add a `max_trials` attribute on the BaseAlgorithm class.
         algo.algorithm.max_trials = cls.max_trials
 
-        # NOTE: Should this be called before, or after the rest?
+        # Seed the randomness before we observe anything.
         if seed is not None:
             algo.seed_rng(seed)
 
-        n_previous_trials = cls._current_phase.n_trials
-        if n_previous_trials >= cls.max_trials:
-            raise ValueError(
-                f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
-                f"the total number of trials seen so far when in phase ({cls._current_phase}). "
-                f"Increasing max_trials might be a good idea. "
-            )
+        if cls._current_phase is not None:
+            n_previous_trials = cls._current_phase.n_trials
+            if n_previous_trials >= cls.max_trials:
+                raise ValueError(
+                    f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
+                    f"the total number of trials seen so far when in phase ({cls._current_phase}). "
+                    f"Increasing max_trials might be a good idea. "
+                )
 
-        # Force the algo to observe the given number of trials.
-        cls.force_observe(n_previous_trials, algo)
-        # TODO: Should we check that the algo has indeed observed the right number of trials that we
-        # want, and that the max_trials hasn't been busted, if present?
-        assert algo.n_observed == n_previous_trials
+            # Force the algo to observe the given number of trials.
+            cls.force_observe(n_previous_trials, algo)
+            # TODO: Should we check that the algo has indeed observed the right number of trials that we
+            # want, and that the max_trials hasn't been busted, if present?
+            assert algo.n_observed == n_previous_trials
         return algo
 
-    def update_space(self, test_space):
+    def update_space(self, test_space: dict) -> dict:
         """Get complete space configuration with partial overwrite
 
         The values passed in ``test_space`` will override the default values
@@ -200,7 +207,7 @@ class BaseAlgoTests:
 
         Parameters
         ----------
-        test_space: dic
+        test_space: dict
             The configuration for the space.
         """
         space = copy.deepcopy(self.space)
@@ -246,6 +253,8 @@ class BaseAlgoTests:
 
         Some algorithms must be tested with specific number of suggests at a time (ex: ASHA).
         This method can be overriden to change ``num`` based on the special needs.
+
+        TODO: Remove this or give it a better name.
         """
         return num
 
@@ -288,43 +297,6 @@ class BaseAlgoTests:
             raise RuntimeError(
                 f"Algorithm cannot sample more than {algo.n_observed} trials. Is it normal?"
             )
-
-    def spy_phase(self, mocker, num, algo, attribute):
-        """Force observe ``num`` trials and then mock a given method to count calls.
-
-        Parameters
-        ----------
-        mocker: ``pytest_mock.mocker``
-            Mocker from ``pytest_mock``. Should be given by fixtures of the tests.
-        num: int
-            Number of trials to suggest and observe
-        algo: ``orion.algo.base.BaseAlgorithm``
-            The algorithm to test
-        attribute: str
-            The algorithm attribute or method to mock. The path is respective to the
-            algorithm object. For example, a valid value would be `'space.sample'`
-            which will mock ``algo.algorithm.space.sample``.
-        """
-        self.force_observe(num, algo)
-        spy = spy_attr(mocker, algo.algorithm, attribute)
-        return spy
-
-    def assert_callbacks(self, spy, num, algo):
-        """Callback to make special asserts at end of tests
-
-        Override this method in algorithm test-suite to customize verifications done at end
-        of tests.
-
-        Parameters
-        ----------
-        spy: Mocked object
-            Object mocked by ``BaseAlgoTests.spy_phase``.
-        num: int
-            number of trials of the phase.
-        algo: ``orion.algo.base.BaseAlgorithm``
-            The algorithm being tested.
-        """
-        pass
 
     def assert_dim_type_supported(self, test_space: dict):
         """Test that a given dimension type is properly supported by the algorithm
@@ -396,7 +368,6 @@ class BaseAlgoTests:
         # Experiment id is ignored
         assert get_id([1, 1, 1], exp_id=1) == get_id([1, 1, 1], exp_id=2)
 
-    @phase
     @pytest.mark.parametrize("seed", [123])
     def test_seed_rng(self, seed: int):
         """Test that the seeding gives reproducibile results."""
@@ -404,30 +375,35 @@ class BaseAlgoTests:
 
         trial_a = algo.suggest(1)[0]
         trial_b = algo.suggest(1)[0]
-        assert trial_a.id != trial_b.id
+        assert trial_a != trial_b
 
         new_algo = self.create_algo(seed=seed)
         assert new_algo.n_observed == algo.n_observed
         trial_c = new_algo.suggest(1)[0]
-        assert trial_c.id == trial_a.id
+        assert trial_c == trial_a
 
-    @phase
     def test_seed_rng_init(self):
         """Test that the seeding gives reproducibile results."""
         algo = self.create_algo(seed=1)
-        trials = algo.suggest(1)
-        assert trials is not None
-        assert algo.suggest(1)[0].id != trials[0].id
+        state = algo.state_dict
+
+        first_trial = algo.suggest(1)[0]
+        second_trial = algo.suggest(1)[0]
+        assert first_trial != second_trial
 
         new_algo = self.create_algo(seed=2)
-        self.force_observe(algo.n_observed, new_algo)
-        assert new_algo.suggest(1)[0].id != trials[0].id
+        new_algo_state = new_algo.state_dict
+
+        different_seed_trial = new_algo.suggest(1)[0]
+        if new_algo_state == state:
+            assert different_seed_trial == first_trial
+        else:
+            assert different_seed_trial != first_trial
 
         new_algo = self.create_algo(seed=1)
-        self.force_observe(algo.n_observed, new_algo)
-        assert new_algo.suggest(1)[0].id == trials[0].id
+        same_seed_trial = new_algo.suggest(1)[0]
+        assert same_seed_trial == first_trial
 
-    @phase
     @pytest.mark.parametrize("seed", [numpy.random.randint(10000)])
     def test_state_dict(self, seed: int):
         """Verify that resetting state makes sampling deterministic"""
@@ -436,13 +412,22 @@ class BaseAlgoTests:
         state = algo.state_dict
         a = algo.suggest(1)[0]
 
+        # NOTE: This is not necessarily true for all algorithms. For instance, if the algo doesn't
+        # have any RNG (e.g. GridSearch), this will fail.
         new_algo = self.create_algo()
-        assert a.id != new_algo.suggest(1)[0].id
+        new_state = new_algo.state_dict
+        b = new_algo.suggest(1)[0]
+        if new_state != state:
+            # If the state is different, the trials should be different.
+            assert a != b
+        else:
+            # If the state is the same, the trials should be the same.
+            assert a == b
 
         new_algo.set_state(state)
-        assert a.id == new_algo.suggest(1)[0].id
+        c = new_algo.suggest(1)[0]
+        assert a == c
 
-    @phase
     def test_suggest_n(self):
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
         algo = self.create_algo()
@@ -450,7 +435,6 @@ class BaseAlgoTests:
         assert trials is not None
         assert len(trials) == 5
 
-    @phase
     def test_has_suggested(self):
         """Verify that algorithm detects correctly if a trial was suggested"""
         algo = self.create_algo()
@@ -458,7 +442,6 @@ class BaseAlgoTests:
         assert algo.has_suggested(a)
         # NOTE: not algo.has_suggested(some random trial) is tested in test_has_suggested_statedict
 
-    @phase
     def test_has_suggested_statedict(self):
         """Verify that algorithm detects correctly if a trial was suggested even when state was restored."""
         algo = self.create_algo()
@@ -473,7 +456,6 @@ class BaseAlgoTests:
         algo.set_state(state)
         assert algo.has_suggested(a)
 
-    @phase
     def test_observe(self):
         """Verify that algorithm observes trial without any issues"""
         algo = self.create_algo()
@@ -484,7 +466,6 @@ class BaseAlgoTests:
         b = algo.suggest(1)[0]
         backward.algo_observe(algo, [b], [dict(objective=2)])
 
-    @phase
     def test_has_observed(self):
         """Verify that algorithm detects correctly if a trial was observed"""
         algo = self.create_algo()
@@ -499,7 +480,6 @@ class BaseAlgoTests:
         backward.algo_observe(algo, [b], [dict(objective=2)])
         assert algo.has_observed(b)
 
-    @phase
     def test_has_observed_statedict(self):
         """Verify that algorithm detects correctly if a trial was observed even when state was restored."""
         algo = self.create_algo()
@@ -522,7 +502,6 @@ class BaseAlgoTests:
         algo.set_state(state)
         assert algo.has_observed(b)
 
-    @phase
     def test_n_suggested(self):
         """Verify that algorithm returns correct number of suggested trials"""
         algo = self.create_algo()
@@ -530,7 +509,7 @@ class BaseAlgoTests:
         algo.suggest(1)
         assert algo.n_suggested == initial + 1
 
-    def test_n_observed(self, phase: list[TestPhase]):
+    def test_n_observed(self):
         """Verify that algorithm returns correct number of observed trials"""
         algo = self.create_algo()
         initial = algo.n_observed
@@ -540,17 +519,14 @@ class BaseAlgoTests:
         self.observe_trials(trials, algo)
         assert algo.n_observed == initial + 1
 
-    @phase
     def test_real_data(self):
         """Test that algorithm supports real dimesions"""
         self.assert_dim_type_supported({"x": "uniform(0, 5)"})
 
-    @phase
     def test_int_data(self):
         """Test that algorithm supports integer dimesions"""
         self.assert_dim_type_supported({"x": "uniform(0, 5000, discrete=True)"})
 
-    @phase
     def test_cat_data(self):
         """Test that algorithm supports categorical dimesions"""
         self.assert_dim_type_supported(
@@ -561,22 +537,18 @@ class BaseAlgoTests:
             },
         )
 
-    @phase
     def test_logreal_data(self):
         """Test that algorithm supports logreal dimesions"""
         self.assert_dim_type_supported({"x": "loguniform(1, 5)"})
 
-    @phase
     def test_logint_data(self):
         """Test that algorithm supports loginteger dimesions"""
         self.assert_dim_type_supported({"x": "loguniform(1, 100, discrete=True)"})
 
-    @phase
     def test_shape_data(self):
         """Test that algorithm supports dimesions with shape"""
         self.assert_dim_type_supported({"x": "uniform(0, 5, shape=(3, 2))"})
 
-    @phase
     def test_broken_trials(self):
         """Test that algorithm can handle broken trials"""
         algo = self.create_algo()

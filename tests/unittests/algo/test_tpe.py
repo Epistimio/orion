@@ -914,7 +914,6 @@ class TestTPE(BaseAlgoTests):
         assert algo.n_suggested == RANGE
         assert algo.n_observed == RANGE
 
-    @phase
     def test_stuck_exploiting(self, mocker, num: int, attr: str):
         """Test that algo drops out when exploiting an already explored region."""
         algo = self.create_algo()
