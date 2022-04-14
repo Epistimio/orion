@@ -167,9 +167,6 @@ class StupidAlgo(BaseAlgorithm):
         if not self.has_suggested(self.fixed_suggestion):
             self.register(self.fixed_suggestion)
             return [self.fixed_suggestion]
-        # TODO: Does it make sense for the algorithm to just not suggest anything, if it has already
-        # suggested this one? Does this make sense? Or should it keep suggesting it over and over
-        # again?
         return []
 
 
