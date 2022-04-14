@@ -217,22 +217,15 @@ class PBT(BaseAlgorithm):
 
         self.lineages = Lineages()
 
-        super().__init__(
-            space,
-            seed=seed,
-            population_size=population_size,
-            generations=generations,
-            exploit=exploit,
-            explore=explore,
-            fork_timeout=fork_timeout,
-        )
-        # TODO: Get rid of overlap with super().__init__
+        super().__init__(space)
         self.seed = seed
         self.population_size = population_size
         self.generations = generations
         self.exploit = exploit
         self.explore = explore
         self.fork_timeout = fork_timeout
+        if seed is not None:
+            self.seed_rng(seed=seed)
 
     @property
     def space(self) -> Space:
@@ -249,7 +242,7 @@ class PBT(BaseAlgorithm):
         """Random Number Generator"""
         return self.random_search.rng
 
-    def seed_rng(self, seed: int) -> None:
+    def seed_rng(self, seed: int | Sequence[int] | None) -> None:
         """Seed the state of the random number generator.
 
         Parameters
@@ -377,7 +370,14 @@ class PBT(BaseAlgorithm):
 
     def _get_depth_of(self, fidelity: Any) -> int:
         """Get the depth of a fidelity in the lineages"""
-        return self.fidelities.index(fidelity)
+        # BUG: Issue with rounding, asking for fidelity of `10` but list has `10.00000004`.
+        if fidelity in self.fidelities:
+            return self.fidelities.index(fidelity)
+        elif fidelity in numpy.round(self.fidelities, decimals=4):
+            return numpy.round(self.fidelities, decimals=4).tolist().index(fidelity)
+        raise RuntimeError(
+            f"Fidelity {fidelity} not found in the fidelities {self.fidelities}."
+        )
 
     def _fork_lineages(self, num: int) -> list[Trial]:
         """Try to promote or fork up to ``num`` trials from the queue."""

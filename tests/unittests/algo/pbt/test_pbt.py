@@ -562,8 +562,9 @@ generations = 5
 
 
 @pytest.mark.usefixtures("no_shutil_copytree")
-class TestGenericPBT(BaseAlgoTests):
+class TestGenericPBT(BaseAlgoTests[PBT]):
     algo_name = "pbt"
+    algo_type = PBT
     max_trials = population_size * generations
     config = {
         "seed": 123456,
