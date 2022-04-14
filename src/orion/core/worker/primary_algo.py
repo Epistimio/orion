@@ -73,6 +73,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             original_registry=self.registry,
             transformed_registry=self.algorithm.registry,
         )
+        self.max_suggest_attempts = 100
 
     @property
     def original_space(self) -> Space:
@@ -139,9 +140,8 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         """
 
         trials: list[Trial] = []
-        max_suggest_attempts = 100
 
-        for suggest_attempt in range(1, max_suggest_attempts + 1):
+        for suggest_attempt in range(1, self.max_suggest_attempts + 1):
             transformed_trials: list[Trial] | None = self.algorithm.suggest(num)
             transformed_trials = transformed_trials or []
 
