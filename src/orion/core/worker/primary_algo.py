@@ -141,9 +141,6 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         trials: list[Trial] = []
         max_suggest_attempts = 100
 
-        # NOTE: Should we also do this kind of repeated checking until the algo produces `num`
-        # trials?
-
         for suggest_attempt in range(1, max_suggest_attempts + 1):
             transformed_trials: list[Trial] | None = self.algorithm.suggest(num)
             transformed_trials = transformed_trials or []
