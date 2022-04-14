@@ -694,10 +694,10 @@ class TestGenericASHA(BaseAlgoTests):
     ]
     _current_phase: TestPhase
 
-    def test_suggest_n(self):
+    def test_suggest_n(self, phase: TestPhase):
         algo = self.create_algo()
         trials = algo.suggest(5)
-        num = self._current_phase.n_trials
+        num = phase.n_trials
         if num == BUDGETS[-1]:
             # Rung 2 has 2 trials for bracket 1, 1 trial for bracket 2
             assert len(trials) == 2 + 1

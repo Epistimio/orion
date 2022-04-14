@@ -814,13 +814,12 @@ class TestTPE(BaseAlgoTests):
         # Verify point was sampled randomly, not using BO
         assert spy.call_count == 2
 
-    def test_suggest_n(self):
+    def test_suggest_n(self, phase: TestPhase):
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
         algo = self.create_algo()
-        assert self._current_phase
         points = algo.suggest(5)
         assert points is not None
-        if self._current_phase.n_trials == 0:
+        if phase.n_trials == 0:
             assert len(points) == 5
         else:
             assert len(points) == 1
