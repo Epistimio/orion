@@ -236,7 +236,10 @@ class ASHABracket(HyperbandBracket[ASHA]):
     """
 
     def __init__(
-        self, owner: ASHA, budgets: list[BudgetTuple], repetition_id: int,
+        self,
+        owner: ASHA,
+        budgets: list[BudgetTuple],
+        repetition_id: int,
     ):
         super().__init__(owner=owner, budgets=budgets, repetition_id=repetition_id)
 

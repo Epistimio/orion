@@ -186,7 +186,7 @@ class BaseAlgorithm:
         return None
 
     @abstractmethod
-    def suggest(self, num):
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a `num` of new sets of parameters.
 
         Parameters

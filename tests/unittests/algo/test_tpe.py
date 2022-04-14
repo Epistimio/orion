@@ -844,7 +844,7 @@ class TestTPE(BaseAlgoTests):
 
         monkeypatch.setattr(GMMSampler, "sample", sample)
         with pytest.raises(
-            RuntimeError, match=fr"Failed to sample in interval \({low}, {high}\)"
+            RuntimeError, match=rf"Failed to sample in interval \({low}, {high}\)"
         ):
             algo.suggest(1)
 
