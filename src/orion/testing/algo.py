@@ -58,9 +58,11 @@ class TestPhase(NamedTuple):
     n_trials: int
     """ Number of trials after which the phase should begin."""
 
-    method_to_spy: str
-    """ Name of the algorithm's attribute to use to spy.
-    NOTE: need to clarify what exactly this is used for.
+    method_to_spy: str | None = None
+    """ Name of the method or function that is supposed to create the trials during that test phase.
+
+    This is currently unused. Tests could potentially pass this as an argument to mocker.spy to
+    check that the method is called the right number of times during each phase.
     """
 
     # just so pytest doesn't complain about this.
@@ -119,19 +121,27 @@ class BaseAlgoTests(Generic[AlgoType]):
         # NOTE: It makes sense to run all the algo tests for each phase, since every test
         # is expected to use `self.create_algo`.
         if cls.phases:
+            # The first test phase should always have 0 as its n_trials, since algorithms are
+            # supposed to work starting from 0 trials.
+            assert cls.phases[0].n_trials == 0
 
             @pytest.fixture(
-                name="_phase",
+                name="phase",
                 autouse=True,
                 scope="module",
                 params=cls.phases,
                 ids=[phase.name for phase in cls.phases],
             )
-            def phase(request):
+            def phase(request, mocker):
                 test_phase: TestPhase = request.param
                 # Temporarily change the class attribute holding the current phase.
                 original_phase = cls._current_phase
                 cls._current_phase = test_phase
+                # NOTE: If we want to actually use this spy stuff, We could create a spy for each
+                # phase, and then in create_algo, after the force_observe, for each (phase, spy)
+                # pair, check that the call_count is equal to phase.n_trials - prev_phase.n_trials
+                # or something similar.
+                spy = mocker.spy(cls, test_phase.method_to_spy)
                 yield test_phase
                 cls._current_phase = original_phase
 
