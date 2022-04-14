@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
 from __future__ import annotations
+
 from typing import ClassVar
 
 from orion.algo.random import Random

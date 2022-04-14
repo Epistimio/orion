@@ -8,11 +8,11 @@ from __future__ import annotations
 import itertools
 import logging
 from typing import Sequence
+
 import numpy
 
-from orion.algo.space import Space
 from orion.algo.base import BaseAlgorithm
-from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real
+from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
 from orion.core.utils import format_trials
 
 log = logging.getLogger(__name__)
