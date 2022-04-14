@@ -197,7 +197,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
         logger.warning(
             f"Unable to sample a new trial from the algorithm, even after "
-            f"{max_suggest_attempts} attempts! Returning an empty list."
+            f"{self.max_suggest_attempts} attempts! Returning an empty list."
         )
         return []
 
