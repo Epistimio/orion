@@ -95,10 +95,10 @@ class BaseAlgoTests(Generic[AlgoType]):
     crash. See ``tests/unittests/algo/test_tpe.py`` for an example.
     """
 
-    algo_name: ClassVar[str | None] = None
-
     algo_type: type[AlgoType]
     """ The type of algorithm under test."""
+
+    algo_name: ClassVar[str | None] = None
 
     config: ClassVar[dict] = {}
     max_trials: ClassVar[int] = 200
@@ -125,6 +125,7 @@ class BaseAlgoTests(Generic[AlgoType]):
                 ids=[phase.name for phase in cls.phases],
             )
             def phase(request):
+                """Fixture to parametrize tests with different phases."""
                 test_phase: TestPhase = request.param
                 # Temporarily change the class attribute holding the current phase.
                 original_phase = cls._current_phase
@@ -137,13 +138,14 @@ class BaseAlgoTests(Generic[AlgoType]):
                 cls._current_phase = original_phase
 
             # Store it somewhere on the class so it gets included in the test scope.
-            cls.phase: pytest.fixture = staticmethod(phase)  # type: ignore
+            cls.phase = staticmethod(phase)  # type: ignore
 
         # Set the `algo_type` attribute.
         if not hasattr(cls, "algo_type") or not cls.algo_type:
             if not cls.algo_name:
                 raise RuntimeError(
-                    "Subclasses of BaseAlgoTests must set the algo_type or algo_name attributes."
+                    f"Subclasses of BaseAlgoTests must set the algo_type or algo_name attributes, "
+                    f"but class {cls.__qualname__} does not have either."
                 )
             cls.algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
         if not cls.algo_name:
@@ -151,9 +153,21 @@ class BaseAlgoTests(Generic[AlgoType]):
 
     @pytest.fixture(name="first_phase")
     @classmethod
-    def first_phase(cls, _phase: TestPhase):
-        if _phase != cls.phases[0]:
+    def first_phase(cls, phase: TestPhase):
+        if phase != cls.phases[0]:
             pytest.skip(reason="Test runs only on first phase.")
+
+    @classmethod
+    def duration_of(cls, phase: TestPhase) -> int:
+        """ Returns the number of trials in the given phase. """
+        phase_index = cls.phases.index(phase)
+        start_n_trials = phase.n_trials
+        end_n_trials = (
+            cls.phases[phase_index + 1].n_trials
+            if phase_index + 1 < len(cls.phases)
+            else cls.max_trials
+        )
+        return end_n_trials - start_n_trials
 
     @classmethod
     def set_phases(cls, phases: Sequence[TestPhase]):
