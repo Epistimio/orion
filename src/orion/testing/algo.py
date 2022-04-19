@@ -124,7 +124,7 @@ class BaseAlgoTests(Generic[AlgoType]):
                 params=cls.phases,
                 ids=[phase.name for phase in cls.phases],
             )
-            def phase(request, mocker):
+            def phase(request):
                 test_phase: TestPhase = request.param
                 # Temporarily change the class attribute holding the current phase.
                 original_phase = cls._current_phase
@@ -133,7 +133,6 @@ class BaseAlgoTests(Generic[AlgoType]):
                 # phase, and then in create_algo, after the force_observe, for each (phase, spy)
                 # pair, check that the call_count is equal to phase.n_trials - prev_phase.n_trials
                 # or something similar.
-                spy = mocker.spy(cls, test_phase.method_to_spy)
                 yield test_phase
                 cls._current_phase = original_phase
 
