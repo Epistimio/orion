@@ -224,8 +224,6 @@ class BaseAlgoTests(Generic[AlgoType]):
 
             # Force the algo to observe the given number of trials.
             cls.force_observe(num=n_previous_trials, algo=algo)
-            # TODO: Should we check that the algo has indeed observed the right number of trials that we
-            # want, and that the max_trials hasn't been busted, if present?
             assert algo.n_observed == n_previous_trials
 
         return algo
