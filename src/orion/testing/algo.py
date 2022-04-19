@@ -217,7 +217,7 @@ class BaseAlgoTests(Generic[AlgoType]):
             n_previous_trials = cls._current_phase.n_trials
             if n_previous_trials >= cls.max_trials:
                 raise ValueError(
-                    f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
+                    f"Test isn't configured properly: max_trials ({cls.max_trials}) is smaller than "
                     f"the total number of trials seen so far when in phase ({cls._current_phase}). "
                     f"Increasing max_trials might be a good idea. "
                 )
