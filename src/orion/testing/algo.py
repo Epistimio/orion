@@ -441,11 +441,10 @@ class BaseAlgoTests(Generic[AlgoType]):
         state = algo.state_dict
         a = algo.suggest(1)[0]
 
-        # NOTE: This is not necessarily true for all algorithms. For instance, if the algo doesn't
-        # have any RNG (e.g. GridSearch), this will fail.
         new_algo = self.create_algo()
         new_state = new_algo.state_dict
         b = new_algo.suggest(1)[0]
+        # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this will be True:
         if _are_equal(new_state, state):
             # If the state is the same, the trials should be the same.
             assert a == b
