@@ -127,6 +127,17 @@ class TestDimensionBuilder(object):
         assert "Parameter" in str(exc.value)
         assert "size" in str(exc.value.__cause__)
 
+    def test_build_fails_because_of_invalid_arguments_for_custom_prior(
+        self, dimbuilder
+    ):
+        """Build fails because ValueError happens on init of builtin prior."""
+        with pytest.raises(ValueError) as exc:
+            dimbuilder.build("yolo2", "fidelity(0, 10, base=1)")
+        assert "Parameter" in str(exc.value)
+        assert "Minimum resources must be a positive number." in str(
+            exc.value.__cause__
+        )
+
     def test_build_gaussian(self, dimbuilder):
         """Check that gaussian/normal/norm is built into reciprocal correctly."""
         dim = dimbuilder.build("yolo", "gaussian(3, 5)")

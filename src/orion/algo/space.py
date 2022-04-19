@@ -880,13 +880,13 @@ class Fidelity(Dimension):
     # pylint:disable=super-init-not-called
     def __init__(self, name, low, high, base=2):
         if low <= 0:
-            raise AttributeError("Minimum resources must be a positive number.")
+            raise ValueError("Minimum resources must be a positive number.")
         elif low > high:
-            raise AttributeError(
+            raise ValueError(
                 "Minimum resources must be smaller than maximum resources."
             )
         if base < 1:
-            raise AttributeError("Base should be greater than or equal to 1")
+            raise ValueError("Base should be greater than or equal to 1")
         self.name = name
         self.low = int(low)
         self.high = int(high)
