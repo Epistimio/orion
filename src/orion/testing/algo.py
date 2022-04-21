@@ -159,7 +159,7 @@ class BaseAlgoTests(Generic[AlgoType]):
 
     @classmethod
     def duration_of(cls, phase: TestPhase) -> int:
-        """ Returns the number of trials in the given phase. """
+        """Returns the number of trials in the given phase. """
         phase_index = cls.phases.index(phase)
         start_n_trials = phase.n_trials
         end_n_trials = (
