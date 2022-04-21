@@ -117,7 +117,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         self.registry.set_state(state_dict["registry"])
         self.registry_mapping.set_state(state_dict["registry_mapping"])
 
-    def suggest(self, num: int) -> list[Trial] | None:
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a `num` of new sets of parameters.
 
         Parameters
