@@ -67,6 +67,16 @@ def _(_, dim):
 def _(_, dim):
     lower, upper = dim.interval()
     if dim.shape:
+        # Temporary fix pending [#800]
+        # ng.p.Array expects an array with a shape or a float
+        # an array with an empty shape is not valid
+        # so we cast it to a float
+        if hasattr(lower, "shape") and lower.shape == ():
+            lower = float(lower)
+
+        if hasattr(upper, "shape") and upper.shape == ():
+            upper = float(upper)
+
         return ng.p.Array(lower=lower, upper=upper, shape=_intshape(dim.shape))
     else:
         return ng.p.Scalar(lower=lower, upper=upper)
@@ -91,6 +101,15 @@ def _(self, dim):
 
 
 @to_ng_space.register("real", "norm")
+def _(_, dim):
+    if dim.shape:
+        raise NotImplementedError("Array with normal prior cannot be converted.")
+    return ng.p.Scalar(init=dim.original_dimension.prior.mean()).set_mutation(
+        sigma=dim.original_dimension.prior.std()
+    )
+
+
+@to_ng_space.register("real", "normal")
 def _(_, dim):
     if dim.shape:
         raise NotImplementedError("Array with normal prior cannot be converted.")
