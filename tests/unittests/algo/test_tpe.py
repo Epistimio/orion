@@ -775,45 +775,58 @@ class TestTPE(BaseAlgoTests):
             },
         },
     }
-    max_trials: ClassVar[int] = 100
+    max_trials: ClassVar[int] = 30
 
     phases: ClassVar[list[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
-        TestPhase("bo", N_INIT + 1, "_suggest_bo"),
+        TestPhase("bo", N_INIT, "_suggest_bo"),
     ]
 
     @first_phase_only
-    def test_suggest_init(self):
+    def test_suggest_init(self, first_phase: TestPhase):
+        """Test that the first call to `suggest` returns all the random initial points
+        (and only those).
+        """
         algo = self.create_algo()
-        points = algo.suggest(1000)
+        first_phase_length = self.duration_of(first_phase)
+        # Ask for more than the number of points in the first phase.
+        points = algo.suggest(first_phase_length * 3)
         assert points is not None
-        assert len(points) == N_INIT
+        assert len(points) == first_phase_length
 
     @first_phase_only
-    def test_suggest_init_missing(self):
+    def test_suggest_init_missing(self, first_phase: TestPhase):
         algo = self.create_algo()
         missing = 3
-        self.force_observe(algo=algo, num=N_INIT - missing)
-        points = algo.suggest(1000)
+        first_phase_length = self.duration_of(first_phase)
+        self.force_observe(algo=algo, num=first_phase_length - missing)
+        # Ask for more than the number of points in the first phase.
+        points = algo.suggest(first_phase_length * 3)
         assert points is not None
         assert len(points) == missing
 
     @first_phase_only
-    def test_suggest_init_overflow(self, mocker):
+    def test_suggest_init_overflow(self, mocker, first_phase: TestPhase):
         algo = self.create_algo()
-        self.force_observe(algo=algo, num=N_INIT - 1)
+        first_phase_length = self.duration_of(first_phase)
+
+        self.force_observe(algo=algo, num=first_phase_length - 1)
         spy = mocker.spy(algo.algorithm.space, "sample")
-        # Now reaching N_INIT
-        points = algo.suggest(1000)
+        # Now reaching end of the first phase, by asking more points than the length of the
+        # first phase.
+        points = algo.suggest(first_phase_length * 3)
         assert points is not None
         assert len(points) == 1
+
         # Verify point was sampled randomly, not using BO
         assert spy.call_count == 1
-        # Overflow above N_INIT
+
+        # Next call to suggest should still be in first phase, since we still haven't observed that
+        # missing random trial.
         points = algo.suggest(1000)
         assert points is not None
         assert len(points) == 1
-        # Verify point was sampled randomly, not using BO
+        # Verify trial was sampled randomly, not using BO
         assert spy.call_count == 2
 
     def test_suggest_n(self, phase: TestPhase):
@@ -828,9 +841,11 @@ class TestTPE(BaseAlgoTests):
             assert len(trials) == min(5, n_remaining)
 
     @first_phase_only
-    def test_thin_real_space(self, monkeypatch):
+    def test_thin_real_space(self, monkeypatch, first_phase: TestPhase):
         algo = self.create_algo()
-        self.force_observe(N_INIT + 1, algo)
+
+        first_phase_duration = self.duration_of(first_phase)
+        self.force_observe(num=first_phase_duration, algo=algo)
 
         original_sample = GMMSampler.sample
 
@@ -863,6 +878,8 @@ class TestTPE(BaseAlgoTests):
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
+        # Prevent the algo from exiting early because of a max_trials limit.
+        algo.algorithm.max_trials = None
         i = 0
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done

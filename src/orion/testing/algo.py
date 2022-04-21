@@ -655,6 +655,9 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
+        # Prevent the algo from exiting early because of a max_trials limit.
+        algo.algorithm.max_trials = None
+
         i = 0
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
