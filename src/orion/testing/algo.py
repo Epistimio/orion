@@ -5,7 +5,8 @@ import copy
 import inspect
 import itertools
 import logging
-from typing import ClassVar, Generic, NamedTuple, Sequence, TypeVar
+from dataclasses import dataclass, field
+from typing import ClassVar, Generic, Sequence, TypeVar
 
 import numpy
 import pytest
@@ -36,7 +37,8 @@ def customized_mutate_example(search_space, rng, old_value, **kwargs):
     return new_value
 
 
-class TestPhase(NamedTuple):
+@dataclass
+class TestPhase:
     name: str
     """ Name of the test phase."""
 
@@ -49,6 +51,25 @@ class TestPhase(NamedTuple):
     This is currently unused. Tests could potentially pass this as an argument to mocker.spy to
     check that the method is called the right number of times during each phase.
     """
+
+    # The previous phase or None if this is the first one.
+    prev: TestPhase | None = field(default=None, repr=False)
+    # The next phase, or an int with max_trials.
+    next: TestPhase | int | None = field(default=None, repr=False)
+
+    @property
+    def length(self) -> int:
+        """Returns the duration of this test phase, in number of trials."""
+        assert self.next
+        next_start = (
+            self.next.n_trials if isinstance(self.next, TestPhase) else self.next
+        )
+        return next_start - self.n_trials
+
+    @property
+    def end_n_trials(self) -> int:
+        """Returns the end of this test phase (either start of next phase or max_trials)."""
+        return self.n_trials + self.length
 
 
 # just so pytest doesn't complain about this.
@@ -151,6 +172,16 @@ class BaseAlgoTests(Generic[AlgoType]):
                 f"(for example, {cls._max_last_phase_trials}), so tests run efficiently."
             )
 
+        # Inform the TestPhase object of their neighbours.
+        # This can be used by tests to get the duration, start, end, etc of the phases.
+        previous: TestPhase | None = None
+        for i, test_phase in enumerate(cls.phases):
+            if previous is not None:
+                previous.next = test_phase
+            test_phase.prev = previous
+            previous = test_phase
+        cls.phases[-1].next = cls.max_trials
+
         @pytest.fixture(
             name="phase",
             autouse=True,
@@ -173,18 +204,6 @@ class BaseAlgoTests(Generic[AlgoType]):
 
         # Store it somewhere on the class so it gets included in the test scope.
         cls.phase = phase  # type: ignore
-
-    @classmethod
-    def duration_of(cls, phase: TestPhase) -> int:
-        """Returns the number of trials in the given phase."""
-        phase_index = cls.phases.index(phase)
-        start_n_trials = phase.n_trials
-        end_n_trials = (
-            cls.phases[phase_index + 1].n_trials
-            if phase_index + 1 < len(cls.phases)
-            else cls.max_trials
-        )
-        return end_n_trials - start_n_trials
 
     @pytest.fixture()
     def first_phase(self, phase: TestPhase):
@@ -224,14 +243,13 @@ class BaseAlgoTests(Generic[AlgoType]):
         config: dict | None = None,
         space: Space | None = None,
         seed: int | Sequence[int] | None = None,
+        n_observed_trials: int | None = None,
         **kwargs,
     ) -> SpaceTransformAlgoWrapper[AlgoType]:
         """Create the algorithm based on config.
 
         Also initializes the algorithm with the required number of random trials from the previous
         test phases before returning it.
-
-        If `seed` is passed, then `seed_rng` is called before observing anything.
 
         Parameters
         ----------
@@ -241,6 +259,13 @@ class BaseAlgoTests(Generic[AlgoType]):
         space: ``orion.algo.space.Space``, optional
             Space object to pass to algo. The output of ``cls.create_space()``
             will be used if ``space`` is ``None``.
+        seed: int | Sequence[int], optional
+            When passed, `seed_rng` is called before observing anything.
+        n_observed_trials: int | None, optional
+            Number of trials that the algorithm should have already observed when returned.
+            When ``None`` (default), observes the number of trials at which the current phase
+            begins.
+            When set to 0, the algorithm will be freshly initialized.
         kwargs: dict
             Values to override algorithm configuration.
         """
@@ -256,13 +281,14 @@ class BaseAlgoTests(Generic[AlgoType]):
         if seed is not None:
             algo.seed_rng(seed)
 
-        if cls._current_phase is not None and cls._current_phase.n_trials > 0:
-            n_previous_trials = cls._current_phase.n_trials
+        if n_observed_trials is None:
+            n_observed_trials = cls._current_phase.n_trials
 
+        if n_observed_trials:
+            assert n_observed_trials > 0
             # Force the algo to observe the given number of trials.
-            cls.force_observe(num=n_previous_trials, algo=algo)
-            assert algo.n_observed == n_previous_trials
-
+            cls.force_observe(num=n_observed_trials, algo=algo)
+        assert algo.n_observed == n_observed_trials
         return algo
 
     def update_space(self, test_space: dict) -> dict:
@@ -483,27 +509,46 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert same_seed_trial == first_trial
 
     @pytest.mark.parametrize("seed", [123, 456])
-    def test_state_dict(self, seed: int):
-        """Verify that resetting state makes sampling deterministic"""
-        algo = self.create_algo(seed=seed)
+    def test_state_dict(self, seed: int, phase: TestPhase):
+        """Verify that resetting state makes sampling deterministic.
 
+        Uses different initial conditions for the new algo, and checks that it always gives the same
+        suggestion as the original algo after set_state is used.
+        """
+        algo = self.create_algo(seed=seed)
         state = algo.state_dict
         a = algo.suggest(1)[0]
 
-        new_algo = self.create_algo()
-        new_state = new_algo.state_dict
-        b = new_algo.suggest(1)[0]
-        # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this will be True:
-        if _are_equal(new_state, state):
-            # If the state is the same, the trials should be the same.
-            assert a == b
-        else:
-            # If the state is different, the trials should be different.
-            assert a != b
+        different_initial_n_trials = [
+            0,
+            phase.n_trials - 3,
+            phase.n_trials,
+            phase.n_trials + 2,
+            self.max_trials - 1,
+            self.max_trials,
+        ]
+        # Clamp the number of initial trials between 0 and max_trials, and also remove any
+        # duplicates.
+        different_initial_n_trials = sorted(
+            {min(max(0, n), self.max_trials) for n in different_initial_n_trials}
+        )
 
-        new_algo.set_state(state)
-        c = new_algo.suggest(1)[0]
-        assert a == c
+        for n_initial_trials in different_initial_n_trials:
+            new_algo = self.create_algo(n_observed_trials=n_initial_trials)
+            new_state = new_algo.state_dict
+            b = new_algo.suggest(1)[0]
+            # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this will be
+            # True:
+            if _are_equal(new_state, state):
+                # If the state is the same, the trials should be the same.
+                assert a == b
+            else:
+                # If the state is different, the trials should be different.
+                assert a != b
+
+            new_algo.set_state(state)
+            c = new_algo.suggest(1)[0]
+            assert a == c
 
     def test_suggest_n(self):
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""

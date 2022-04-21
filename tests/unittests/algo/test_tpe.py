@@ -22,7 +22,7 @@ from orion.algo.tpe import (
     ramp_up_weights,
 )
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
@@ -788,33 +788,30 @@ class TestTPE(BaseAlgoTests):
         (and only those).
         """
         algo = self.create_algo()
-        first_phase_length = self.duration_of(first_phase)
         # Ask for more than the number of points in the first phase.
-        points = algo.suggest(first_phase_length * 3)
+        points = algo.suggest(first_phase.length * 3)
         assert points is not None
-        assert len(points) == first_phase_length
+        assert len(points) == first_phase.length
 
     @first_phase_only
     def test_suggest_init_missing(self, first_phase: TestPhase):
         algo = self.create_algo()
         missing = 3
-        first_phase_length = self.duration_of(first_phase)
-        self.force_observe(algo=algo, num=first_phase_length - missing)
+        self.force_observe(algo=algo, num=first_phase.length - missing)
         # Ask for more than the number of points in the first phase.
-        points = algo.suggest(first_phase_length * 3)
+        points = algo.suggest(first_phase.length * 3)
         assert points is not None
         assert len(points) == missing
 
     @first_phase_only
     def test_suggest_init_overflow(self, mocker, first_phase: TestPhase):
         algo = self.create_algo()
-        first_phase_length = self.duration_of(first_phase)
 
-        self.force_observe(algo=algo, num=first_phase_length - 1)
+        self.force_observe(algo=algo, num=first_phase.length - 1)
         spy = mocker.spy(algo.algorithm.space, "sample")
         # Now reaching end of the first phase, by asking more points than the length of the
         # first phase.
-        points = algo.suggest(first_phase_length * 3)
+        points = algo.suggest(first_phase.length * 3)
         assert points is not None
         assert len(points) == 1
 
@@ -844,8 +841,7 @@ class TestTPE(BaseAlgoTests):
     def test_thin_real_space(self, monkeypatch, first_phase: TestPhase):
         algo = self.create_algo()
 
-        first_phase_duration = self.duration_of(first_phase)
-        self.force_observe(num=first_phase_duration, algo=algo)
+        self.force_observe(num=first_phase.length, algo=algo)
 
         original_sample = GMMSampler.sample
 
