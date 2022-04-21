@@ -898,7 +898,6 @@ class TestTPE(BaseAlgoTests):
     @first_phase_only
     def test_log_integer(self, monkeypatch):
         """Verify that log integer dimensions do not go out of bound."""
-        # TODO: This test is now failing, there's something going on with the mapping/transforms.
         RANGE = 100
         # NOTE: Here we're passing the 'original' space, not the transformed space.
         algo = self.create_algo(
