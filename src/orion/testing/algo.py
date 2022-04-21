@@ -11,21 +11,14 @@ import numpy
 import pytest
 
 import orion.algo.base
-from orion.algo.asha import ASHA
 from orion.algo.base import BaseAlgorithm
-from orion.algo.gridsearch import GridSearch
-from orion.algo.hyperband import Hyperband
 from orion.algo.parallel_strategy import strategy_factory
-from orion.algo.random import Random
 from orion.algo.space import Space
-from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
-from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
-from orion.testing.space import build_space
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
