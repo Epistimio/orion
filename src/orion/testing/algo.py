@@ -106,7 +106,6 @@ class BaseAlgoTests(Generic[AlgoType]):
     algo_name: ClassVar[str | None] = None
 
     config: ClassVar[dict] = {}
-    max_trials: ClassVar[int] = 200
     space: ClassVar[dict] = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
 
     phases: ClassVar[list[TestPhase]] = [TestPhase("default", 0, "sample")]
@@ -114,14 +113,50 @@ class BaseAlgoTests(Generic[AlgoType]):
 
     _current_phase: ClassVar[TestPhase]
 
+    max_trials: ClassVar[int]
+
+    # The max number of trials required to sufficiently test out the last phase of the algorithm.
+    # Used as a 'delta', so that max_trials is limited to the last phase n_trials + delta.
+    _max_last_phase_trials: ClassVar[int] = 10
+
     def __init_subclass__(cls) -> None:
-        # NOTE: It makes sense to run all the algo tests for each phase, since every test
-        # is expected to use `self.create_algo`.
+
+        # Set the `algo_type` attribute, if necessary.
+        if not hasattr(cls, "algo_type") or not cls.algo_type:
+            if not cls.algo_name:
+                raise RuntimeError(
+                    f"Subclasses of BaseAlgoTests must set the algo_type or algo_name attributes, "
+                    f"but class {cls.__qualname__} does not have either."
+                )
+            cls.algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
+        if not cls.algo_name:
+            cls.algo_name = cls.algo_type.__name__.lower()
 
         # The first test phase should always have 0 as its n_trials, since algorithms are
         # supposed to work starting from 0 trials.
         assert cls.phases[0].n_trials == 0
         cls._current_phase = cls.phases[0]
+
+        assert cls.phases == sorted(cls.phases, key=lambda v: v.n_trials)
+
+        # Set a default value for the maximum number of trials programmatically.
+
+        last_phase_start = cls.phases[-1].n_trials
+        if not hasattr(cls, "max_trials"):
+            cls.max_trials = last_phase_start + cls._max_last_phase_trials
+        elif last_phase_start > cls.max_trials - cls._max_last_phase_trials:
+            raise ValueError(
+                f"Test isn't configured properly: max_trials ({cls.max_trials}) should be "
+                f"larger than the start of the last phase ({cls.phases[-1].n_trials}) + delta "
+                f"{cls._max_last_phase_trials}, for the last phase to be properly tested. "
+            )
+        elif last_phase_start > cls.max_trials + cls._max_last_phase_trials:
+            raise ValueError(
+                f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
+                f"necessary, making tests longer to run. Set max_trials to a value that is "
+                f"smaller than the start of the last phase ({last_phase_start}) + some delta "
+                f"(for example, {cls._max_last_phase_trials}), so tests run efficiently."
+            )
 
         @pytest.fixture(
             name="phase",
@@ -146,17 +181,6 @@ class BaseAlgoTests(Generic[AlgoType]):
         # Store it somewhere on the class so it gets included in the test scope.
         cls.phase = phase  # type: ignore
 
-        # Set the `algo_type` attribute, if necessary.
-        if not hasattr(cls, "algo_type") or not cls.algo_type:
-            if not cls.algo_name:
-                raise RuntimeError(
-                    f"Subclasses of BaseAlgoTests must set the algo_type or algo_name attributes, "
-                    f"but class {cls.__qualname__} does not have either."
-                )
-            cls.algo_type = orion.algo.base.algo_factory.get_class(cls.algo_name)
-        if not cls.algo_name:
-            cls.algo_name = cls.algo_type.__name__.lower()
-
     @classmethod
     def duration_of(cls, phase: TestPhase) -> int:
         """Returns the number of trials in the given phase."""
@@ -170,14 +194,16 @@ class BaseAlgoTests(Generic[AlgoType]):
         return end_n_trials - start_n_trials
 
     @pytest.fixture()
-    def first_phase(self, phase: TestPhase) -> None:
+    def first_phase(self, phase: TestPhase):
         if phase != type(self).phases[0]:
             pytest.skip(reason="Test runs only on first phase.")
+        return phase
 
     @pytest.fixture()
-    def last_phase(self, phase: TestPhase) -> None:
+    def last_phase(self, phase: TestPhase):
         if phase != type(self).phases[-1]:
             pytest.skip(reason="Test runs only on last phase.")
+        return phase
 
     @classmethod
     def set_phases(cls, phases: Sequence[TestPhase]):
@@ -239,12 +265,6 @@ class BaseAlgoTests(Generic[AlgoType]):
 
         if cls._current_phase is not None and cls._current_phase.n_trials > 0:
             n_previous_trials = cls._current_phase.n_trials
-            if n_previous_trials >= cls.max_trials:
-                raise ValueError(
-                    f"Test isn't configured properly: max_trials ({cls.max_trials}) is smaller than "
-                    f"the total number of trials seen so far when in phase ({cls._current_phase}). "
-                    f"Increasing max_trials might be a good idea. "
-                )
 
             # Force the algo to observe the given number of trials.
             cls.force_observe(num=n_previous_trials, algo=algo)
