@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.tpe`."""
 from __future__ import annotations
 
@@ -257,9 +256,11 @@ class TestCategoricalSampler:
 
         assert numpy.all(cat_sampler.weights == weights)
 
-    def test_sample(self, tpe: TPE):
+    @pytest.mark.parametrize("seed", [123, 456])
+    def test_sample(self, tpe: TPE, seed: int):
         """Test CategoricalSampler sample function"""
-        obs = numpy.random.randint(0, 10, 100)
+        rng = numpy.random.RandomState(seed)
+        obs = rng.randint(0, 10, 100)
         choices = ["a", "b", 11, 15, 17, 18, 19, 20, 25, "c"]
         cat_sampler = CategoricalSampler(tpe, obs, choices)
 
@@ -270,7 +271,7 @@ class TestCategoricalSampler:
         assert numpy.all(points < 10)
 
         weights = numpy.linspace(1, 10, num=10) ** 3
-        numpy.random.shuffle(weights)
+        rng.shuffle(weights)
         weights = weights / weights.sum()
         cat_sampler = CategoricalSampler(tpe, obs, choices)
         cat_sampler.weights = weights
@@ -774,6 +775,7 @@ class TestTPE(BaseAlgoTests):
             },
         },
     }
+    max_trials: ClassVar[int] = 100
 
     phases: ClassVar[list[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
@@ -817,12 +819,13 @@ class TestTPE(BaseAlgoTests):
     def test_suggest_n(self, phase: TestPhase):
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
         algo = self.create_algo()
-        points = algo.suggest(5)
-        assert points is not None
+        trials = algo.suggest(5)
+        assert trials is not None
+        n_remaining = self.max_trials - phase.n_trials
         if phase.n_trials == 0:
-            assert len(points) == 5
+            assert len(trials) == 5
         else:
-            assert len(points) == 1
+            assert len(trials) == min(5, n_remaining)
 
     @first_phase_only
     def test_thin_real_space(self, monkeypatch):
