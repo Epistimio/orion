@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 """Generic tests for Algorithms"""
 from __future__ import annotations
 
 import copy
+import inspect
 import itertools
 import logging
 from typing import ClassVar, Generic, NamedTuple, Sequence, TypeVar
@@ -57,8 +57,9 @@ class TestPhase(NamedTuple):
     check that the method is called the right number of times during each phase.
     """
 
-    # just so pytest doesn't complain about this.
-    __test__ = False  # type: ignore
+
+# just so pytest doesn't complain about this.
+TestPhase.__test__ = False  # type: ignore
 
 
 def _are_equal(a, b) -> bool:
@@ -77,6 +78,11 @@ def first_phase_only(test):
     return pytest.mark.usefixtures("first_phase")(test)
 
 
+def last_phase_only(test):
+    """Decorator to run a test only on the last test phase of the algorithm."""
+    return pytest.mark.usefixtures("last_phase")(test)
+
+
 class BaseAlgoTests(Generic[AlgoType]):
     """Generic Test-suite for HPO algorithms.
 
@@ -87,12 +93,11 @@ class BaseAlgoTests(Generic[AlgoType]):
     configuration for the algorithm that contains all its arguments. The base space can be redefine
     if needed with the attribute ``space``.
 
-    Many algorithms have different phases that should be tested. For instance
-    TPE have a first phase of random search and a second of Bayesian Optimization.
-    The random search and Bayesian optimization are different implementations and both should be
-    tested. For this reason, the class method ``orion.testing.algo.BaseAlgoTests.set_phases`` must
-    be called to parametrize the tests with phases. Failure to doing so will causes the tests to
-    crash. See ``tests/unittests/algo/test_tpe.py`` for an example.
+    Most algorithms have different phases that should be tested. For instance TPE has a first phase
+    of random search and a second of Bayesian Optimization. The random search and Bayesian
+    optimization phases use different logic and should both be tested.
+    The `phases` class attribute can be set to parametrize all tests with each phase.
+    See ``tests/unittests/algo/test_tpe.py`` for an example.
     """
 
     algo_type: type[AlgoType]
@@ -104,43 +109,44 @@ class BaseAlgoTests(Generic[AlgoType]):
     max_trials: ClassVar[int] = 200
     space: ClassVar[dict] = {"x": "uniform(0, 1)", "y": "uniform(0, 1)"}
 
-    phases: ClassVar[list[TestPhase]] = []
-    """ Test phases for the algorithms. Leave empty if the algorithm only has one phase."""
+    phases: ClassVar[list[TestPhase]] = [TestPhase("default", 0, "sample")]
+    """ Test phases for the algorithms. Overwrte this if the algorithm has more than one phase."""
 
-    _current_phase: ClassVar[TestPhase | None] = None
+    _current_phase: ClassVar[TestPhase]
 
     def __init_subclass__(cls) -> None:
         # NOTE: It makes sense to run all the algo tests for each phase, since every test
         # is expected to use `self.create_algo`.
-        if cls.phases:
-            # The first test phase should always have 0 as its n_trials, since algorithms are
-            # supposed to work starting from 0 trials.
-            assert cls.phases[0].n_trials == 0
 
-            @pytest.fixture(
-                name="phase",
-                autouse=True,
-                scope="module",
-                params=cls.phases,
-                ids=[phase.name for phase in cls.phases],
-            )
-            def phase(request):
-                """Fixture to parametrize tests with different phases."""
-                test_phase: TestPhase = request.param
-                # Temporarily change the class attribute holding the current phase.
-                original_phase = cls._current_phase
-                cls._current_phase = test_phase
-                # NOTE: If we want to actually use this spy stuff, We could create a spy for each
-                # phase, and then in create_algo, after the force_observe, for each (phase, spy)
-                # pair, check that the call_count is equal to phase.n_trials - prev_phase.n_trials
-                # or something similar.
-                yield test_phase
-                cls._current_phase = original_phase
+        # The first test phase should always have 0 as its n_trials, since algorithms are
+        # supposed to work starting from 0 trials.
+        assert cls.phases[0].n_trials == 0
+        cls._current_phase = cls.phases[0]
 
-            # Store it somewhere on the class so it gets included in the test scope.
-            cls.phase = staticmethod(phase)  # type: ignore
+        @pytest.fixture(
+            name="phase",
+            autouse=True,
+            params=cls.phases,
+            ids=[phase.name for phase in cls.phases],
+        )
+        def phase(cls, request: pytest.FixtureRequest):
+            """Fixture to parametrize tests with different phases."""
+            test_phase: TestPhase = request.param  # type: ignore
 
-        # Set the `algo_type` attribute.
+            # Temporarily change the class attribute holding the current phase.
+            original_phase = cls._current_phase
+            cls._current_phase = test_phase
+            # NOTE: If we want to actually use this spy stuff, We could create a spy for each
+            # phase, and then in create_algo, after the force_observe, for each (phase, spy)
+            # pair, check that the call_count is equal to phase.n_trials - prev_phase.n_trials
+            # or something similar.
+            yield test_phase
+            cls._current_phase = original_phase
+
+        # Store it somewhere on the class so it gets included in the test scope.
+        cls.phase = phase  # type: ignore
+
+        # Set the `algo_type` attribute, if necessary.
         if not hasattr(cls, "algo_type") or not cls.algo_type:
             if not cls.algo_name:
                 raise RuntimeError(
@@ -151,15 +157,9 @@ class BaseAlgoTests(Generic[AlgoType]):
         if not cls.algo_name:
             cls.algo_name = cls.algo_type.__name__.lower()
 
-    @pytest.fixture(name="first_phase")
-    @classmethod
-    def first_phase(cls, phase: TestPhase):
-        if phase != cls.phases[0]:
-            pytest.skip(reason="Test runs only on first phase.")
-
     @classmethod
     def duration_of(cls, phase: TestPhase) -> int:
-        """Returns the number of trials in the given phase. """
+        """Returns the number of trials in the given phase."""
         phase_index = cls.phases.index(phase)
         start_n_trials = phase.n_trials
         end_n_trials = (
@@ -168,6 +168,16 @@ class BaseAlgoTests(Generic[AlgoType]):
             else cls.max_trials
         )
         return end_n_trials - start_n_trials
+
+    @pytest.fixture()
+    def first_phase(self, phase: TestPhase) -> None:
+        if phase != type(self).phases[0]:
+            pytest.skip(reason="Test runs only on first phase.")
+
+    @pytest.fixture()
+    def last_phase(self, phase: TestPhase) -> None:
+        if phase != type(self).phases[-1]:
+            pytest.skip(reason="Test runs only on last phase.")
 
     @classmethod
     def set_phases(cls, phases: Sequence[TestPhase]):
@@ -215,11 +225,11 @@ class BaseAlgoTests(Generic[AlgoType]):
         kwargs: dict
             Values to override algorithm configuration.
         """
-        config = copy.deepcopy(config or cls.config)
-        config.update(kwargs)
+        algo_kwargs = copy.deepcopy(config or cls.config)
+        algo_kwargs.update(kwargs)
 
         original_space = space or cls.create_space()
-        algo = create_algo(space=original_space, algo_type=cls.algo_type, **config)
+        algo = create_algo(space=original_space, algo_type=cls.algo_type, **algo_kwargs)
         # TODO: Add a `max_trials` attribute on the BaseAlgorithm class.
         algo.algorithm.max_trials = cls.max_trials
 
@@ -295,7 +305,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         """Force number of trials to suggest
 
         Some algorithms must be tested with specific number of suggests at a time (ex: ASHA).
-        This method can be overriden to change ``num`` based on the special needs.
+        This method can be overridden to change ``num`` based on the special needs.
 
         TODO: Remove this or give it a better name.
         """
@@ -358,6 +368,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert trials[0] in space
         self.observe_trials(trials, algo, 1)
 
+    @first_phase_only
     def test_configuration(self):
         """Test that configuration property attribute contains all class arguments."""
         algo = self.create_algo()
@@ -413,7 +424,7 @@ class BaseAlgoTests(Generic[AlgoType]):
 
     @pytest.mark.parametrize("seed", [123])
     def test_seed_rng(self, seed: int):
-        """Test that the seeding gives reproducibile results."""
+        """Test that the seeding gives reproducible results."""
         algo = self.create_algo(seed=seed)
 
         trial_a = algo.suggest(1)[0]
@@ -426,15 +437,24 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert trial_c == trial_a
 
     def test_seed_rng_init(self):
-        """Test that the seeding gives reproducibile results."""
-        algo = self.create_algo(seed=1)
+        """Test that if the algo has a `seed` constructor argument, creating the with that argument
+        is reproducible.
+        """
+        if "seed" not in inspect.signature(self.algo_type).parameters:
+            pytest.skip(reason="algo does not have a seed as a constructor argument.")
+
+        config = self.config.copy()
+        config["seed"] = 1
+        algo = self.create_algo(config=config)
         state = algo.state_dict
 
         first_trial = algo.suggest(1)[0]
         second_trial = algo.suggest(1)[0]
         assert first_trial != second_trial
 
-        new_algo = self.create_algo(seed=2)
+        config = self.config.copy()
+        config["seed"] = 2
+        new_algo = self.create_algo(config=config)
         new_algo_state = new_algo.state_dict
 
         different_seed_trial = new_algo.suggest(1)[0]
@@ -443,7 +463,9 @@ class BaseAlgoTests(Generic[AlgoType]):
         else:
             assert different_seed_trial != first_trial
 
-        new_algo = self.create_algo(seed=1)
+        config = self.config.copy()
+        config["seed"] = 1
+        new_algo = self.create_algo(config=config)
         same_seed_trial = new_algo.suggest(1)[0]
         assert same_seed_trial == first_trial
 
@@ -562,15 +584,15 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert algo.n_observed == initial + 1
 
     def test_real_data(self):
-        """Test that algorithm supports real dimesions"""
+        """Test that algorithm supports real dimensions"""
         self.assert_dim_type_supported({"x": "uniform(0, 5)"})
 
     def test_int_data(self):
-        """Test that algorithm supports integer dimesions"""
+        """Test that algorithm supports integer dimensions"""
         self.assert_dim_type_supported({"x": "uniform(0, 5000, discrete=True)"})
 
     def test_cat_data(self):
-        """Test that algorithm supports categorical dimesions"""
+        """Test that algorithm supports categorical dimensions"""
         self.assert_dim_type_supported(
             {  # Add 3 dims so that there exists many possible trials for the test
                 "x": "choices(['a', 0.2, 1, None])",
@@ -580,15 +602,15 @@ class BaseAlgoTests(Generic[AlgoType]):
         )
 
     def test_logreal_data(self):
-        """Test that algorithm supports logreal dimesions"""
+        """Test that algorithm supports logreal dimensions"""
         self.assert_dim_type_supported({"x": "loguniform(1, 5)"})
 
     def test_logint_data(self):
-        """Test that algorithm supports loginteger dimesions"""
+        """Test that algorithm supports loginteger dimensions"""
         self.assert_dim_type_supported({"x": "loguniform(1, 100, discrete=True)"})
 
     def test_shape_data(self):
-        """Test that algorithm supports dimesions with shape"""
+        """Test that algorithm supports dimensions with shape"""
         self.assert_dim_type_supported({"x": "uniform(0, 5, shape=(3, 2))"})
 
     def test_broken_trials(self):
@@ -600,6 +622,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         algo.observe([trial])
         assert algo.has_observed(trial)
 
+    @first_phase_only
     def test_is_done_cardinality(self):
         """Test that algorithm will stop when cardinality is reached"""
         space = SpaceBuilder().build(
@@ -627,35 +650,45 @@ class BaseAlgoTests(Generic[AlgoType]):
 
         assert algo.is_done
 
-    def test_is_done_max_trials(self):
+    @last_phase_only
+    def test_is_done_max_trials(self, phase: TestPhase):
         """Test that algorithm will stop when max trials is reached"""
         algo = self.create_algo()
+        # NOTE: Once https://github.com/Epistimio/orion/pull/883 is merged, we could update this to
+        # force observe self.max_trials - phase.n_trials instead.
         self.force_observe(self.max_trials, algo)
-
         assert algo.is_done
 
+    @first_phase_only
     def test_optimize_branin(self):
-        """Test that algorithm optimizes somehow (this is on-par with random search)"""
-        MAX_TRIALS = 20
+        """Test that algorithm optimizes a simple task comparably to random search."""
+        max_trials = 20
         task = Branin()
         space = self.create_space(task.get_search_space())
-        algo = self.create_algo(config={}, space=space)
-        algo.algorithm.max_trials = MAX_TRIALS
+        algo = self.create_algo(space=space)
+        algo.algorithm.max_trials = max_trials
         safe_guard = 0
-        trials = []
-        objectives = []
-        while trials or not algo.is_done:
-            if safe_guard >= MAX_TRIALS:
-                break
+        trials: list[Trial] = []
+        objectives: list[float] = []
 
-            if not trials:
-                trials = algo.suggest(MAX_TRIALS - len(objectives))
+        for i in range(max_trials):
+            trials = algo.suggest(max_trials - len(objectives))
+            results = [task(**trial.params) for trial in trials]
+            # NOTE: This is true for the branin task. If we ever test other tasks, this could vary.
+            assert all(len(result) == 1 for result in results)
+            new_objectives = [result[0]["value"] for result in results]
 
-            trial = trials.pop(0)
-            results = task(trial.params["x"])
-            objectives.append(results[0]["value"])
-            backward.algo_observe(algo, [trial], [dict(objective=objectives[-1])])
+            # NOTE: Not ideal that we have to unpack and repack the results of the task.
+            results_for_backward_observe = [
+                {"objective": objective} for objective in new_objectives
+            ]
+            backward.algo_observe(algo, trials, results_for_backward_observe)
             safe_guard += 1
+
+            objectives.extend(new_objectives)
+
+            if algo.is_done:
+                break
 
         assert algo.is_done
         assert min(objectives) <= 10
