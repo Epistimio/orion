@@ -160,16 +160,18 @@ class BaseAlgoTests(Generic[AlgoType]):
             cls.max_trials = last_phase_start + cls._max_last_phase_trials
         elif last_phase_start > cls.max_trials - cls._max_last_phase_trials:
             raise ValueError(
-                f"Test isn't configured properly: max_trials ({cls.max_trials}) should be "
-                f"larger than the start of the last phase ({cls.phases[-1].n_trials}) + delta "
-                f"{cls._max_last_phase_trials}, for the last phase to be properly tested. "
+                f"Test class {cls.__qualname__} isn't configured properly:\n"
+                f"max_trials ({cls.max_trials}) should be larger than the start of the last phase "
+                f"({cls.phases[-1].n_trials}) + delta ({cls._max_last_phase_trials}), for the last "
+                f"phase to be properly tested. "
             )
         elif last_phase_start > cls.max_trials + cls._max_last_phase_trials:
             raise ValueError(
-                f"Test isn't configured properly: max_trials ({cls.max_trials}) is larger than "
-                f"necessary, making tests longer to run. Set max_trials to a value that is "
-                f"smaller than the start of the last phase ({last_phase_start}) + some delta "
-                f"(for example, {cls._max_last_phase_trials}), so tests run efficiently."
+                f"Test class {cls.__qualname__} isn't configured properly:\n"
+                f"max_trials ({cls.max_trials}) is larger than necessary, making tests longer to "
+                f"run. Set max_trials to a value that is smaller than the start of the last phase "
+                f"({last_phase_start}) + some delta (for example, {cls._max_last_phase_trials}), "
+                f"so tests run efficiently."
             )
 
         # Inform the TestPhase object of their neighbours.
