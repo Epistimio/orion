@@ -14,6 +14,8 @@ Examples
 >>> algo_factory.create('some_fancy_algo', space, **some_fancy_algo_config)
 
 """
+from __future__ import annotations
+
 import copy
 import hashlib
 import inspect
