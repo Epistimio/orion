@@ -809,33 +809,22 @@ class TestTPE(BaseAlgoTests):
 
         self.force_observe(algo=algo, num=first_phase.length - 1)
         spy = mocker.spy(algo.algorithm.space, "sample")
-        # Now reaching end of the first phase, by asking more points than the length of the
+        # Now reaching end of the first phase, by asking more trials than the length of the
         # first phase.
-        points = algo.suggest(first_phase.length * 3)
-        assert points is not None
-        assert len(points) == 1
+        trials = algo.suggest(first_phase.length * 3)
+        assert trials is not None
+        assert len(trials) == 1
 
-        # Verify point was sampled randomly, not using BO
+        # Verify trial was sampled randomly, not using BO
         assert spy.call_count == 1
 
         # Next call to suggest should still be in first phase, since we still haven't observed that
         # missing random trial.
-        points = algo.suggest(1000)
-        assert points is not None
-        assert len(points) == 1
+        trials = algo.suggest(first_phase.length * 3)
+        assert trials is not None
+        assert len(trials) == 1
         # Verify trial was sampled randomly, not using BO
         assert spy.call_count == 2
-
-    def test_suggest_n(self, phase: TestPhase):
-        """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
-        algo = self.create_algo()
-        trials = algo.suggest(5)
-        assert trials is not None
-        n_remaining = self.max_trials - phase.n_trials
-        if phase.n_trials == 0:
-            assert len(trials) == 5
-        else:
-            assert len(trials) == min(5, n_remaining)
 
     @first_phase_only
     def test_thin_real_space(self, monkeypatch, first_phase: TestPhase):
