@@ -306,6 +306,7 @@ type_hints = [
     "AlgoType",
     "T",
     "orion.core.worker.primary_algo.AlgoType",
+    "orion.algo.hyperband.Owner",
 ]
 nitpicky = True
 nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr] + [
