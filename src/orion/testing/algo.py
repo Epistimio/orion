@@ -7,6 +7,7 @@ import itertools
 import logging
 from dataclasses import dataclass, field
 from typing import ClassVar, Generic, Sequence, TypeVar
+from typing_extensions import Literal
 
 import numpy
 import pytest
@@ -97,6 +98,36 @@ def last_phase_only(test):
     return pytest.mark.usefixtures("last_phase")(test)
 
 
+def create_initial_conditions_fixture(
+    cls: type[BaseAlgoTests], name: str = "initial_n_trials"
+):
+    """Create a fixture that is parametrized to return different initial conditions (number of
+    trials) to be used in tests.
+
+    The initial conditions include 0 (fresh), cls.max_trials, the start of each test phase, as well
+    as some other random values in the interval [0, cls.max_trials]
+    """
+    initial_n_trials: list[int] = [0, cls.max_trials]
+    # Note: Can skip first phase here since its start is always 0.
+    initial_n_trials.extend(phase.n_trials for phase in cls.phases[0:])
+    rng = numpy.random.default_rng(123)
+    random_values = rng.integers(0, cls.max_trials, size=100)
+    # Add three random values that aren't already in the initial conditions.
+    initial_n_trials.extend(
+        itertools.islice(
+            itertools.filterfalse(initial_n_trials.__contains__, random_values), 3
+        )
+    )
+    initial_n_trials = sorted(initial_n_trials)
+
+    @pytest.fixture(name=name, params=initial_n_trials)
+    def _initial_n_trials(request):
+        """Fixture to return the initial number of trials for the state_dict test."""
+        return request.param
+
+    return _initial_n_trials
+
+
 class BaseAlgoTests(Generic[AlgoType]):
     """Generic Test-suite for HPO algorithms.
 
@@ -133,6 +164,10 @@ class BaseAlgoTests(Generic[AlgoType]):
     # Used as a 'delta', so that max_trials is limited to the last phase n_trials + delta.
     _max_last_phase_trials: ClassVar[int] = 10
 
+    # Fixtures available as class attributes:
+    initial_n_trials: ClassVar[pytest.fixture]  # type: ignore
+    phase: ClassVar[pytest.fixture]  # type: ignore
+
     def __init_subclass__(cls) -> None:
 
         # Set the `algo_type` attribute, if necessary.
@@ -160,10 +195,10 @@ class BaseAlgoTests(Generic[AlgoType]):
         # NOTE: Because we auto-generate a max_trials for each class based on its phases, and we
         # have a default phase above, all subclasses of BaseAlgoTests will have an auto-generated
         # value for max_trials (even abstract ones for e.g. plugins).
-        # In concrete test classes, which use different phases, need to compare their max_trials
-        # property (and not the value from their base classes) with their phases, to check that
-        # things make sense.
-        # This is why we use "not in cls.__dict__" instead of "not hasattr(cls, "max_trials")":
+        # For concrete test classes who use different phases than their parent, but don't define a
+        # max_trials property, we want to auto-generate its value, and not use the max_trials of
+        # their base class.
+        # This is why we use `not in cls.__dict__` instead of `not hasattr(cls, "max_trials")`:
         if "max_trials" not in cls.__dict__:
             cls.max_trials = last_phase_start + cls._max_last_phase_trials
         elif last_phase_start > cls.max_trials - cls._max_last_phase_trials:
@@ -183,9 +218,9 @@ class BaseAlgoTests(Generic[AlgoType]):
             )
 
         # Inform the TestPhase object of their neighbours.
-        # This can be used by tests to get the duration, start, end, etc of the phases.
+        # This can be used by tests to get the duration, start, end, etc of the test phases.
         previous: TestPhase | None = None
-        for i, test_phase in enumerate(cls.phases):
+        for test_phase in cls.phases:
             if previous is not None:
                 previous.next = test_phase
             test_phase.prev = previous
@@ -214,6 +249,12 @@ class BaseAlgoTests(Generic[AlgoType]):
 
         # Store it somewhere on the class so it gets included in the test scope.
         cls.phase = phase  # type: ignore
+
+        # Create some random initial conditions to use for tests, including the start of each
+        # phase.
+        cls.initial_n_trials = staticmethod(
+            create_initial_conditions_fixture(cls, name="initial_n_trials")
+        )
 
     @pytest.fixture()
     def first_phase(self, phase: TestPhase):
@@ -519,46 +560,35 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert same_seed_trial == first_trial
 
     @pytest.mark.parametrize("seed", [123, 456])
-    def test_state_dict(self, seed: int, phase: TestPhase):
+    def test_state_dict(self, seed: int, initial_n_trials: int):
         """Verify that resetting state makes sampling deterministic.
 
-        Uses different initial conditions for the new algo, and checks that it always gives the same
-        suggestion as the original algo after set_state is used.
+        The "source" algo is initialized at the start of each phase.
+        The "target" algo instance is set to different initial conditions.
+        This checks that it always gives the same suggestion as the original algo after set_state
+        is used.
         """
+
         algo = self.create_algo(seed=seed)
         state = algo.state_dict
         a = algo.suggest(1)[0]
 
-        different_initial_n_trials = [
-            0,
-            phase.n_trials - 3,
-            phase.n_trials,
-            phase.n_trials + 2,
-            self.max_trials - 1,
-            self.max_trials,
-        ]
-        # Clamp the number of initial trials between 0 and max_trials, and also remove any
-        # duplicates.
-        different_initial_n_trials = sorted(
-            {min(max(0, n), self.max_trials) for n in different_initial_n_trials}
-        )
+        # Create a new algo, without setting a seed.
+        new_algo = self.create_algo(n_observed_trials=initial_n_trials)
+        new_state = new_algo.state_dict
+        b = new_algo.suggest(1)[0]
+        # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this could be
+        # True:
+        if _are_equal(new_state, state):
+            # If the state is the same, the trials should be the same.
+            assert a == b
+        else:
+            # If the state is different, the trials should be different.
+            assert a != b
 
-        for n_initial_trials in different_initial_n_trials:
-            new_algo = self.create_algo(n_observed_trials=n_initial_trials)
-            new_state = new_algo.state_dict
-            b = new_algo.suggest(1)[0]
-            # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this will be
-            # True:
-            if _are_equal(new_state, state):
-                # If the state is the same, the trials should be the same.
-                assert a == b
-            else:
-                # If the state is different, the trials should be different.
-                assert a != b
-
-            new_algo.set_state(state)
-            c = new_algo.suggest(1)[0]
-            assert a == c
+        new_algo.set_state(state)
+        c = new_algo.suggest(1)[0]
+        assert a == c
 
     def test_suggest_n(self):
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
