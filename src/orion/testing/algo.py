@@ -156,7 +156,15 @@ class BaseAlgoTests(Generic[AlgoType]):
         # Set a default value for the maximum number of trials programmatically.
 
         last_phase_start = cls.phases[-1].n_trials
-        if not hasattr(cls, "max_trials"):
+
+        # NOTE: Because we auto-generate a max_trials for each class based on its phases, and we
+        # have a default phase above, all subclasses of BaseAlgoTests will have an auto-generated
+        # value for max_trials (even abstract ones for e.g. plugins).
+        # In concrete test classes, which use different phases, need to compare their max_trials
+        # property (and not the value from their base classes) with their phases, to check that
+        # things make sense.
+        # This is why we use "not in cls.__dict__" instead of "not hasattr(cls, "max_trials")":
+        if "max_trials" not in cls.__dict__:
             cls.max_trials = last_phase_start + cls._max_last_phase_trials
         elif last_phase_start > cls.max_trials - cls._max_last_phase_trials:
             raise ValueError(
