@@ -370,7 +370,8 @@ class PBT(BaseAlgorithm):
 
     def _get_depth_of(self, fidelity: Any) -> int:
         """Get the depth of a fidelity in the lineages"""
-        # BUG: Issue with rounding, asking for fidelity of `10` but list has `10.00000004`.
+        # NOTE: There is an issue with rounding, asking for fidelity of `10` but list has
+        # `10.00000004`. This is a hacky fix.
         if fidelity in self.fidelities:
             return self.fidelities.index(fidelity)
         elif fidelity in numpy.round(self.fidelities, decimals=4):
