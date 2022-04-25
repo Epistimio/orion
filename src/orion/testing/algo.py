@@ -7,10 +7,10 @@ import itertools
 import logging
 from dataclasses import dataclass, field
 from typing import ClassVar, Generic, Sequence, TypeVar
-from typing_extensions import Literal
 
 import numpy
 import pytest
+from typing_extensions import Literal
 
 import orion.algo.base
 from orion.algo.base import BaseAlgorithm
