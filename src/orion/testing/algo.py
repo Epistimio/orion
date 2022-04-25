@@ -10,7 +10,6 @@ from typing import ClassVar, Generic, Sequence, TypeVar
 
 import numpy
 import pytest
-from typing_extensions import Literal
 
 import orion.algo.base
 from orion.algo.base import BaseAlgorithm
@@ -96,36 +95,6 @@ def first_phase_only(test):
 def last_phase_only(test):
     """Decorator to run a test only on the last test phase of the algorithm."""
     return pytest.mark.usefixtures("last_phase")(test)
-
-
-def create_initial_conditions_fixture(
-    cls: type[BaseAlgoTests], name: str = "initial_n_trials"
-):
-    """Create a fixture that is parametrized to return different initial conditions (number of
-    trials) to be used in tests.
-
-    The initial conditions include 0 (fresh), cls.max_trials, the start of each test phase, as well
-    as some other random values in the interval [0, cls.max_trials]
-    """
-    initial_n_trials: list[int] = [0, cls.max_trials]
-    # Note: Can skip first phase here since its start is always 0.
-    initial_n_trials.extend(phase.n_trials for phase in cls.phases[0:])
-    rng = numpy.random.default_rng(123)
-    random_values = rng.integers(0, cls.max_trials, size=100)
-    # Add three random values that aren't already in the initial conditions.
-    initial_n_trials.extend(
-        itertools.islice(
-            itertools.filterfalse(initial_n_trials.__contains__, random_values), 3
-        )
-    )
-    initial_n_trials = sorted(initial_n_trials)
-
-    @pytest.fixture(name=name, params=initial_n_trials)
-    def _initial_n_trials(request):
-        """Fixture to return the initial number of trials for the state_dict test."""
-        return request.param
-
-    return _initial_n_trials
 
 
 class BaseAlgoTests(Generic[AlgoType]):
@@ -249,12 +218,6 @@ class BaseAlgoTests(Generic[AlgoType]):
 
         # Store it somewhere on the class so it gets included in the test scope.
         cls.phase = phase  # type: ignore
-
-        # Create some random initial conditions to use for tests, including the start of each
-        # phase.
-        cls.initial_n_trials = staticmethod(
-            create_initial_conditions_fixture(cls, name="initial_n_trials")
-        )
 
     @pytest.fixture()
     def first_phase(self, phase: TestPhase):
@@ -560,7 +523,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         assert same_seed_trial == first_trial
 
     @pytest.mark.parametrize("seed", [123, 456])
-    def test_state_dict(self, seed: int, initial_n_trials: int):
+    def test_state_dict(self, seed: int, phase: TestPhase):
         """Verify that resetting state makes sampling deterministic.
 
         The "source" algo is initialized at the start of each phase.
@@ -574,7 +537,14 @@ class BaseAlgoTests(Generic[AlgoType]):
         a = algo.suggest(1)[0]
 
         # Create a new algo, without setting a seed.
-        new_algo = self.create_algo(n_observed_trials=initial_n_trials)
+
+        # The other algorithm is initialized at the start of the next phase.
+        n_initial_trials = phase.end_n_trials
+        # Use max_trials-1 so the algo can always sample at least one trial.
+        if n_initial_trials == self.max_trials:
+            n_initial_trials -= 1
+
+        new_algo = self.create_algo(n_observed_trials=n_initial_trials)
         new_state = new_algo.state_dict
         b = new_algo.suggest(1)[0]
         # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this could be
