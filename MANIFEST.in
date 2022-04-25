@@ -28,6 +28,7 @@ prune docs/src/reference
 recursive-include src *.py
 recursive-include tests *.py *.yaml *.json *.txt *.yml *.in LICENSE
 include tests/requirements.txt
+include .pre-commit-config.yaml
 
 # Include examples
 recursive-include examples *.md *.py *.pkl *.yaml *.ipynb */requirements.txt
