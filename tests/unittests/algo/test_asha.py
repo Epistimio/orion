@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.asha`."""
 from __future__ import annotations
 
 import hashlib
-import itertools
 import logging
 from typing import ClassVar
 
@@ -16,7 +14,7 @@ from test_hyperband import (
     force_observe,
 )
 
-from orion.algo.asha import ASHA, ASHABracket, BudgetTuple, compute_budgets
+from orion.algo.asha import ASHA, ASHABracket, compute_budgets
 from orion.algo.hyperband import RungDict
 from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
@@ -672,7 +670,7 @@ class TestASHA:
 BUDGETS = [
     16 + 8,  # rung 0
     (16 + 8 + 8 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
-    (16 + 8 + 4 + 8 + 4 + 2),  #  rung 2
+    (16 + 8 + 4 + 8 + 4 + 2),  # rung 2
 ]
 
 
@@ -693,16 +691,6 @@ class TestGenericASHA(BaseAlgoTests):
         TestPhase("rep2-rung1", BUDGETS[-1] * 2 + 16, "suggest"),
     ]
     _current_phase: TestPhase
-
-    def test_suggest_n(self, phase: TestPhase):
-        algo = self.create_algo()
-        trials = algo.suggest(5)
-        num = phase.n_trials
-        if num == BUDGETS[-1]:
-            # Rung 2 has 2 trials for bracket 1, 1 trial for bracket 2
-            assert len(trials) == 2 + 1
-        else:
-            assert len(trials) == 5
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
