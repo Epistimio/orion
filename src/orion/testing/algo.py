@@ -738,31 +738,34 @@ class BaseAlgoTests(Generic[AlgoType]):
         space = self.create_space(task.get_search_space())
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = max_trials
-        safe_guard = 0
-        trials: list[Trial] = []
-        objectives: list[float] = []
 
-        for i in range(max_trials):
-            trials = algo.suggest(max_trials - len(objectives))
+        all_suggested_trials: list[Trial] = []
+        all_objectives: list[float] = []
+
+        # NOTE: Some algos work more effectively if they are asked to produce a batch of trials,
+        # rather than a single trial at a time.
+        max_batch_size = 5
+
+        while len(all_suggested_trials) < max_trials and not algo.is_done:
+            trials = algo.suggest(max_batch_size)
+            all_suggested_trials.extend(trials)
+
             results = [task(**trial.params) for trial in trials]
             # NOTE: This is true for the branin task. If we ever test other tasks, this could vary.
             assert all(len(result) == 1 for result in results)
             new_objectives = [result[0]["value"] for result in results]
+            all_objectives.extend(new_objectives)
 
             # NOTE: Not ideal that we have to unpack and repack the results of the task.
             results_for_backward_observe = [
                 {"objective": objective} for objective in new_objectives
             ]
-            backward.algo_observe(algo, trials, results_for_backward_observe)
-            safe_guard += 1
-
-            objectives.extend(new_objectives)
-
-            if algo.is_done:
-                break
+            backward.algo_observe(
+                algo=algo, trials=trials, results=results_for_backward_observe
+            )
 
         assert algo.is_done
-        assert min(objectives) <= 10
+        assert min(all_objectives) <= 10
 
 
 class BaseParallelStrategyTests:
