@@ -14,12 +14,6 @@ from orion.testing.state import OrionState
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
 
-space = {"x": "uniform(-50, 50)"}
-
-
-space_with_fidelity = {"x": space["x"], "noise": "fidelity(1,10,4)"}
-
-
 algorithm_configs = {
     "random": {"random": {"seed": 1}},
     "gridsearch": {"gridsearch": {"n_values": 40}},
@@ -67,16 +61,21 @@ fidelity_only_algorithm_configs = {
 }
 
 
+space = {"x": "uniform(-50, 50)"}
+space_with_fidelity = {"x": space["x"], "noise": "fidelity(1,10,4)"}
+
+
 def rosenbrock(x, noise=None):
     """Evaluate partial information of a quadratic."""
     z = x - 34.56789
     if noise:
         noise = (1 - noise / 10) + 0.0001
         z *= random.gauss(0, noise)
-
+    y = 4 * z**2 + 23.4
+    dy_dx = 8 * z
     return [
-        {"name": "objective", "type": "objective", "value": 4 * z**2 + 23.4},
-        {"name": "gradient", "type": "gradient", "value": [8 * z]},
+        {"name": "objective", "type": "objective", "value": y},
+        {"name": "gradient", "type": "gradient", "value": dy_dx},
     ]
 
 
