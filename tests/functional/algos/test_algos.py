@@ -169,7 +169,12 @@ def test_cardinality_stop_loguniform(algorithm):
 
 
 @pytest.mark.parametrize(
-    "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
+    "algorithm",
+    [
+        pytest.param(value, marks=pytest.mark.skipif(key == "tpe", reason="Flaky test"))
+        for key, value in algorithm_configs.items()
+    ],
+    ids=list(algorithm_configs.keys()),
 )
 def test_with_fidelity(algorithm):
     """Test a scenario with fidelity."""
