@@ -124,7 +124,8 @@ def parallel_coordinates(
     if df.empty:
         return go.Figure()
 
-    trial = experiment.fetch_trials_by_status("completed")[0]
+    trial = experiment.fetch_trials_by_status(
+        "completed", with_evc_tree=with_evc_tree)[0]
 
     flattened_space = build_required_space(
         experiment.space, shape_requirement="flattened"
@@ -518,7 +519,8 @@ def regret(
     if df.empty:
         return fig
 
-    trial = experiment.fetch_trials_by_status("completed")[0]
+    trial = experiment.fetch_trials_by_status(
+        "completed", with_evc_tree=with_evc_tree)[0]
 
     fig.add_scatter(
         y=df["objective"],
