@@ -64,7 +64,7 @@ WORKING = {
     "CauchyLHSSearch": {},
     "CauchyOnePlusOne": _deterministic_first_point,
     "CauchyScrHammersleySearch": _deterministic_points,
-    "ChainMetaModelSQP": _CAN_suggest_more_than_one,
+    "ChainMetaModelSQP": merge_dicts(_CAN_suggest_more_than_one, _max_trials_hangs),
     "DE": {},
     "DiagonalCMA": {},
     "DiscreteBSOOnePlusOne": _deterministic_first_point,
