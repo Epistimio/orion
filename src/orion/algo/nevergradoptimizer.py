@@ -4,8 +4,8 @@
 
 TODO: Write long description
 """
-import pickle
 import logging
+import pickle
 
 try:
     import nevergrad as ng
@@ -17,7 +17,6 @@ except ImportError as err:
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.format_trials import dict_to_trial
-
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +274,12 @@ class NevergradOptimizer(BaseAlgorithm):
             is_sequential = algo.optim.no_parallelization
 
         if is_sequential and algo.num_ask > (algo.num_tell - algo.num_tell_not_asked):
-            logger.debug("Cannot produce new trials because %d > (%d - %d)", algo.num_ask, algo.num_tell, algo.num_tell_not_asked)
+            logger.debug(
+                "Cannot produce new trials because %d > (%d - %d)",
+                algo.num_ask,
+                algo.num_tell,
+                algo.num_tell_not_asked,
+            )
             return False
 
         return True
