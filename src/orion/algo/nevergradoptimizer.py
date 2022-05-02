@@ -5,6 +5,7 @@
 TODO: Write long description
 """
 import pickle
+import logging
 
 try:
     import nevergrad as ng
@@ -16,6 +17,9 @@ except ImportError as err:
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.format_trials import dict_to_trial
+
+
+logger = logging.getLogger(__name__)
 
 
 class SpaceConverter(dict):
@@ -240,6 +244,7 @@ class NevergradOptimizer(BaseAlgorithm):
 
         else:
             self._trial_mapping[tid] = (trial, [suggestion])
+
         return not seen
 
     def _ask(self):
@@ -251,10 +256,12 @@ class NevergradOptimizer(BaseAlgorithm):
                 " https://github.com/Epistimio/orion.algo.nevergrad/issues"
             )
         new_trial = dict_to_trial(suggestion.kwargs, self.space)
+
         if self._associate_trial(new_trial, suggestion):
             self.register(new_trial)
             return new_trial
         else:
+            logger.debug("Ignoring duplicated trial")
             return None
 
     def _can_produce(self):
@@ -263,10 +270,12 @@ class NevergradOptimizer(BaseAlgorithm):
 
         algo = self.algo
         is_sequential = algo.no_parallelization
+
         if not is_sequential and hasattr(algo, "optim"):
             is_sequential = algo.optim.no_parallelization
 
         if is_sequential and algo.num_ask > (algo.num_tell - algo.num_tell_not_asked):
+            logger.debug("Cannot produce new trials because %d > (%d - %d)", algo.num_ask, algo.num_tell, algo.num_tell_not_asked)
             return False
 
         return True
@@ -298,8 +307,10 @@ class NevergradOptimizer(BaseAlgorithm):
         attempts = 0
         max_attempts = num + 100
         trials = []
+
         while len(trials) < num and attempts < max_attempts and self._can_produce():
             attempts += 1
+
             trial = self._ask()
             if trial is not None:
                 trials.append(trial)

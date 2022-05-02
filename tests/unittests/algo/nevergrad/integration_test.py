@@ -142,6 +142,7 @@ WORKING = {
 
 HANGING_IN_MAX_TRIALS = {
     "BO": _max_trials_hangs,
+    "ChainMetaModelSQP": _max_trials_hangs,
     "ChainCMAPowell": _max_trials_hangs,
     "ChainDiagonalCMAPowell": _max_trials_hangs,
     "ChainMetaModelPowell": _max_trials_hangs,
