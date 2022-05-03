@@ -245,7 +245,11 @@ class PerturbExplore(BaseExplore):
             CategoricalDimension object defining the search space for this dimension.
 
         """
-        return rng.choice(dim.interval())
+        # NOTE: Can't use rng.choice otherwise the interval is an array of strings
+        #       and the value is casted.
+        choices = dim.interval()
+        choice = choices[rng.randint(len(choices))]
+        return choice
 
     def __call__(self, rng, space, params):
         """Execute perturbation

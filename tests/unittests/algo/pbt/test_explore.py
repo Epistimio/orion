@@ -153,8 +153,7 @@ class TestPerturb:
     def test_perturb_cat(self):
         explore = PerturbExplore()
         rng = RNGStub()
-        rng.randint = lambda low, high, size: [1]
-        rng.choice = lambda choices: choices[0]
+        rng.randint = lambda low, high=None, size=None: [1] if size else 1
 
         dim = Categorical("name", ["one", "two", 3, 4.0])
         assert explore.perturb_cat(rng, "whatever", dim) in dim
@@ -162,10 +161,9 @@ class TestPerturb:
     def test_perturb(self, space):
         explore = PerturbExplore()
         rng = RNGStub()
-        rng.randint = lambda low, high, size: [1]
+        rng.randint = lambda low, high=None, size=None: numpy.ones(size) if size else 1
         rng.random = lambda: 1.0
         rng.normal = lambda mean, variance: 0.0
-        rng.choice = lambda choices: choices[0]
 
         params = {"x": 1.0, "y": 2, "z": 0, "f": 10}
         new_params = explore(rng, space, params)
@@ -175,10 +173,9 @@ class TestPerturb:
     def test_perturb_hierarchical_params(self, hspace):
         explore = PerturbExplore()
         rng = RNGStub()
-        rng.randint = lambda low, high, size: [1]
+        rng.randint = lambda low, high=None, size=None: numpy.ones(size) if size else 1
         rng.random = lambda: 1.0
         rng.normal = lambda mean, variance: 0.0
-        rng.choice = lambda choices: choices[0]
 
         params = {"numerical": {"x": 1.0, "y": 2, "f": 10}, "z": 0}
         new_params = explore(rng, hspace, params)
