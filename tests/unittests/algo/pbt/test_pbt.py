@@ -26,11 +26,11 @@ class TestComputeFidelities:
         assert compute_fidelities(10, 10, 20, 1) == list(map(float, range(10, 21)))
 
     def test_other_bases(self):
-        assert compute_fidelities(9, 2, 2 ** 10, 2) == [2 ** i for i in range(1, 11)]
+        assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
 
     def test_fidelity_upgrades(self, space):
         pbt = _create_algo(space).algorithm
-        fidelities = compute_fidelities(9, 2, 2 ** 10, 2)
+        fidelities = compute_fidelities(9, 2, 2**10, 2)
         pbt.fidelity_upgrades.keys() == fidelities[:-1]
         pbt.fidelity_upgrades.values() == fidelities[1:]
 
