@@ -7,8 +7,8 @@ Performs checks and organizes required transformations of points.
 """
 from __future__ import annotations
 
-import os
 import copy
+import os
 from logging import getLogger as get_logger
 from typing import Any, Generic, Optional, Sequence, TypeVar
 

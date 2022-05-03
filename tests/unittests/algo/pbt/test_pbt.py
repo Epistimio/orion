@@ -1,10 +1,10 @@
 """Example usage and tests for :mod:`orion.algo.random`."""
 from __future__ import annotations
 
-from typing import ClassVar
-
 import os
 import shutil
+from typing import ClassVar
+
 import pytest
 from base import ExploitStub, ExploreStub, sample_trials
 

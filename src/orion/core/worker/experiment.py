@@ -7,12 +7,12 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
-import os
 import contextlib
 import copy
 import datetime
 import inspect
 import logging
+import os
 from dataclasses import dataclass, field
 
 import pandas
