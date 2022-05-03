@@ -407,7 +407,8 @@ Configuration
 Nevergrad
 ---------
 
-`Nevergrad`_ is a derivative-free optimization platform providing a library of algorithms for hyperparameter search.
+`Nevergrad`_ is a derivative-free optimization platform providing
+a library of algorithms for hyperparameter search.
 
 .. _nevergrad: https://facebookresearch.github.io/nevergrad/
 

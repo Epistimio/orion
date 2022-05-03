@@ -1,8 +1,9 @@
 """
-:mod:`orion.algo.nevergrad.nevergradoptimizer -- TODO
-=================================================
+Nevergrad Optimizer
+===================
 
-TODO: Write long description
+Wraps the nevergrad library to expose its algorithm to orion
+
 """
 import logging
 import pickle
@@ -152,12 +153,18 @@ NOT_WORKING = {
 
 
 class NevergradOptimizer(BaseAlgorithm):
-    """TODO: Class docstring
+    """Wraps the nevergrad library to expose its algorithm to orion
 
     Parameters
     ----------
     space: `orion.algo.space.Space`
         Optimisation space with priors for each dimension.
+    model_name: str
+        Nevergrad model to use as optimizer
+    budget: int
+        Maximal number of trial to generated
+    num_workers: int
+        Number of worker to use
     seed: None, int or sequence of int
         Seed for the random number generator used to sample new trials.
         Default: ``None``
@@ -219,7 +226,11 @@ class NevergradOptimizer(BaseAlgorithm):
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
-        :param state_dict: Dictionary representing state of an algorithm
+        Parameters
+        ----------
+        state_dict: dict
+            Dictionary representing state of an algorithm
+
         """
         super().set_state(state_dict)
         self.algo = pickle.loads(state_dict["algo"])
@@ -230,7 +241,10 @@ class NevergradOptimizer(BaseAlgorithm):
     def _associate_trial(self, trial, suggestion):
         """Associate a trial with a Nevergrad suggestion.
 
-        Returns True if the trial was not seen before, false otherwise.
+        Returns
+        -------
+        True if the trial was not seen before, false otherwise.
+
         """
         tid = self.get_id(trial)
         seen = tid in self._trial_mapping
@@ -285,9 +299,7 @@ class NevergradOptimizer(BaseAlgorithm):
         return True
 
     def suggest(self, num):
-        """Suggest a `num`ber of new sets of parameters.
-
-        TODO: document how suggest work for this algo
+        """Suggest a number of new sets of parameters.
 
         Parameters
         ----------
@@ -301,11 +313,6 @@ class NevergradOptimizer(BaseAlgorithm):
             A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
             trials to complete), in which case it will return None.
-
-
-        Notes
-        -----
-        New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
 
         """
         attempts = 0
@@ -326,9 +333,7 @@ class NevergradOptimizer(BaseAlgorithm):
         return trials
 
     def observe(self, trials):
-        """Observe the `trials` new state of result.
-
-        TODO: document how observe work for this algo
+        """Observe the trials new state of result.
 
         Parameters
         ----------
