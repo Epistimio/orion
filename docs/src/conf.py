@@ -215,7 +215,7 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ["_version", "utils._appdirs"]
+autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad"]
 
 # -- Gallery configuration -----------------------------------------------
 
