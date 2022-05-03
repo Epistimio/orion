@@ -7,6 +7,7 @@ Performs checks and organizes required transformations of points.
 """
 from __future__ import annotations
 
+import os
 import copy
 from logging import getLogger as get_logger
 from typing import Any, Generic, Optional, Sequence, TypeVar
@@ -175,6 +176,14 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                     # We haven't seen this trial before. Register it.
                     self.registry.register(original)
                     trials.append(original)
+                    # If the suggested trial has an exp_working_dir it means it was forked.
+                    if transformed_trial.exp_working_dir and os.path.exists(
+                        transformed_trial.working_dir
+                    ):
+                        print("to rename", transformed_trial.working_dir)
+                        print("to", original.working_dir)
+                        print(original.params_repr())
+                        os.rename(transformed_trial.working_dir, original.working_dir)
 
                 # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it
                 # itself in its `suggest`.
@@ -353,4 +362,7 @@ def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) ->
     new_transformed_trial = copy.deepcopy(original_trial)
     # pylint: disable=protected-access
     new_transformed_trial._params = copy.deepcopy(transformed_trial._params)
+    new_transformed_trial.experiment = None
+    if original_trial.exp_working_dir and os.path.exists(original_trial.working_dir):
+        os.symlink(original_trial.working_dir, new_transformed_trial.working_dir)
     return new_transformed_trial
