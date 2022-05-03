@@ -62,7 +62,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-  test-long:
+  test-algo:
     needs: pretest
     runs-on: ${{ matrix.platform }}
     strategy:
@@ -70,6 +70,7 @@ jobs:
       matrix:
         platform: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
+        algo: [nevergrad]
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
@@ -85,7 +86,7 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test with tox
-      run: tox -e nevergrad
+      run: tox -e algo -- tests/unittests/algo/${{ matrix.algo }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
@@ -184,7 +185,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   pypi:
-    needs: [test, backward-compatibility, test-long]
+    needs: [test, backward-compatibility, test-algo]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -214,7 +215,7 @@ jobs:
         user: __token__
         password: ${{ secrets.pypi_password }}
   conda:
-    needs: [test, backward-compatibility, test-long]
+    needs: [test, backward-compatibility, test-algo]
     runs-on: ubuntu-latest
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
