@@ -272,6 +272,7 @@ class Trial:
             raise ValueError(f"Some parameters are not part of base trial: {params}")
 
         return Trial(
+            experiment=self.experiment,
             status=status,
             params=config_params,
             parent=self.id,
@@ -527,7 +528,7 @@ class Trial:
             ignore_experiment = True
 
         experiment_repr = ""
-        if not ignore_experiment:
+        if not ignore_experiment and trial.experiment is not None:
             experiment_repr = str(trial.experiment)
 
         lie_repr = ""
