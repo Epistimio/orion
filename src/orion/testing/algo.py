@@ -355,7 +355,6 @@ class BaseAlgoTests:
         space = self.create_space(self.update_space(test_space))
         algo = self.create_algo(space=space)
 
-        print(space)
         spy = self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(1)
         assert len(trials) > 0
