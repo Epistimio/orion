@@ -86,7 +86,7 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test with tox
-      run: tox -e algo -- tests/unittests/algo/${{ matrix.algo }}
+      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
