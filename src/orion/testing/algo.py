@@ -358,7 +358,6 @@ class BaseAlgoTests:
         print(space)
         spy = self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(1)
-        print(trials)
         assert len(trials) > 0
         assert trials[0] in space
         spy.call_count == 1
