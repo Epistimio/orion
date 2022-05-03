@@ -145,6 +145,7 @@ def sample_trials(
             trial = trial.branch(params=params)
 
         trial = space.transform(space.reverse(trial))
+        trial.experiment = 1
 
         trial.exp_working_dir = exp_working_dir
 

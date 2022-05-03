@@ -3,16 +3,22 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import os
+import shutil
 import pytest
 from base import ExploitStub, ExploreStub, sample_trials
 
 from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.algo.space import Space
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
 
 pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
+
+
+def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
+    return create_algo(PBT, space=space, **pbt_kwargs)
 
 
 class TestComputeFidelities:
@@ -20,11 +26,13 @@ class TestComputeFidelities:
         assert compute_fidelities(10, 10, 20, 1) == list(map(float, range(10, 21)))
 
     def test_other_bases(self):
-        assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
+        assert compute_fidelities(9, 2, 2 ** 10, 2) == [2 ** i for i in range(1, 11)]
 
-
-def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
-    return create_algo(PBT, space=space, **pbt_kwargs)
+    def test_fidelity_upgrades(self, space):
+        pbt = _create_algo(space).algorithm
+        fidelities = compute_fidelities(9, 2, 2 ** 10, 2)
+        pbt.fidelity_upgrades.keys() == fidelities[:-1]
+        pbt.fidelity_upgrades.values() == fidelities[1:]
 
 
 class TestPBTObserve:
@@ -249,6 +257,7 @@ class TestPBTSuggest:
 
         new_params_expected["f"] = 10.9
 
+        assert new_trial.experiment == trial_to_branch.experiment
         assert trial_to_branch is exploited_trial
         assert new_trial is not None
         assert new_trial.params["f"] == new_params_expected["f"]
@@ -548,6 +557,58 @@ class TestPBTSuggest:
         assert len(pbt.suggest(num)) == num
         pbt_sample_mock.assert_called_with(2)
         pbt_fork_mock.assert_called_with(2)
+
+    def test_suggest_copy_working_dir(self, space, mocker, tmp_path):
+        shutil.rmtree(tmp_path)
+        os.makedirs(tmp_path)
+
+        generations = 5
+        population_size = 10
+        pbt = create_algo(
+            PBT,
+            space,
+            population_size=population_size,
+            generations=generations,
+        )
+
+        i = generations * population_size
+        all_trials = []
+        while not pbt.is_done:
+            trials = pbt.suggest(1)
+            assert len(trials) == 1
+            trial = trials[0]
+            if not trial.exp_working_dir:
+                trial.experiment = 1
+                trial.exp_working_dir = tmp_path
+                assert trial.params["f"] == 1
+                os.makedirs(trial.working_dir)
+            else:
+                # NOTE: This weird handling is taking care of in experiment.register...
+                previous_working_dir = trial.working_dir
+                trial.experiment = 1
+                os.rename(previous_working_dir, trial.working_dir)
+            with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
+                f.write(trial.params_repr() + "\n")
+            trial.status = "completed"
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=i)
+            )
+            i -= 1
+            pbt.observe([trial])
+            all_trials.append(trial)
+
+        def build_params_hist(trial):
+            params = [trial.params_repr()]
+            while trial.parent:
+                trial = pbt.algorithm.registry[trial.parent]
+                params.append(trial.params_repr())
+            return params[::-1]
+
+        for trial in all_trials:
+            params = build_params_hist(trial)
+            assert len(params) == pbt.algorithm.fidelities.index(trial.params["f"]) + 1
+            with open(os.path.join(trial.working_dir, "hist.txt"), "r") as f:
+                assert "\n".join(params) == f.read().strip("\n")
 
 
 population_size = 10

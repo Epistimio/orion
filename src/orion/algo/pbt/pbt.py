@@ -365,6 +365,9 @@ class PBT(BaseAlgorithm):
             branched_trial = trial.branch(
                 params={self.fidelity_dim.name: self.fidelity_dim.low}
             )
+            # NOTE: We are using branching as a simple way to update the fidelity, we should not keep the
+            #       parent id since it is not a mutation from a parent trial.
+            branched_trial.parent = None
             self.register(branched_trial)
             trials.append(branched_trial)
 
@@ -521,10 +524,17 @@ class PBT(BaseAlgorithm):
                     )
 
             elif trial.status == "completed":
-                logger.debug(
-                    "Trial %s is completed, queuing it to attempt forking.", trial
-                )
-                self._queue.append(trial)
+                if trial.params[self.fidelity_index] == self.fidelities[-1]:
+                    logger.debug(
+                        "Trial %s is completed at full fidelity (%s). Not forking.",
+                        trial,
+                        self.fidelities[-1],
+                    )
+                else:
+                    logger.debug(
+                        "Trial %s is completed, queuing it to attempt forking.", trial
+                    )
+                    self._queue.append(trial)
 
     def observe(self, trials: list[Trial]):
         """Observe the trials and queue those available for promotion or forking.
