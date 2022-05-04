@@ -182,7 +182,7 @@ class MOFA(BaseAlgorithm):
             self.current_trials_params = []
 
     def suggest(self, num: int) -> list[Trial]:
-        """Suggest a `num`ber of new sets of parameters.
+        """Suggest a number of new sets of parameters.
 
         Draws points from a prepared set of samples from an orthonal Latin hypercube.
 

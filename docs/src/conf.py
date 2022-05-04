@@ -256,6 +256,7 @@ intersphinx_mapping = {
     "plotly": ("https://plotly.com/python-api-reference/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None)
 }
 
 
