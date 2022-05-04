@@ -410,7 +410,7 @@ The MOdular FActorial Design (`MOFA`_) algorithm is based on factorial design an
 analysis methods to optmimize hyperparameters. It performs multiple iterations each of which
 starts with sampling hyperparameter trial values from an orthogonal latin hypercube to cover
 the search space well while de-correlating hyperparameters. Once all trials in an iteration
-are returned, MOFA performs ftoactorial analysis to determine which hyperparameters should be
+are returned, MOFA performs factorial analysis to determine which hyperparameters should be
 fixed in value and which hyperparameters require further exploration. As the hyperparameters
 become fixed, the number of trials are reduced in subsequent iterations.
 
@@ -446,6 +446,35 @@ Configuration
    :noindex:
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      requires_dist, requires_type
+
+
+.. _nevergrad-algorithm:
+
+
+Nevergrad
+---------
+
+`Nevergrad`_ is a derivative-free optimization platform providing
+a library of algorithms for hyperparameter search.
+
+.. _nevergrad: https://facebookresearch.github.io/nevergrad/
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            nevergrad:
+                seed: null
+                budget: 1000
+                num_workers: 10
+                model_name: NGOpt
+
+
+.. autoclass:: orion.algo.nevergradoptimizer.NevergradOptimizer
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
+
 
 
 Algorithm Plugins

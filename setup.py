@@ -33,6 +33,7 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 
@@ -65,6 +66,7 @@ setup_args = dict(
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
             "mofa = orion.algo.mofa.mofa:MOFA",
+            "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",

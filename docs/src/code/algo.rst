@@ -18,5 +18,6 @@ Algorithm modules
    algo/pbt
    algo/tpe
    algo/mofa
+   algo/nevergrad
    algo/parallel_strategy
    algo/registry
