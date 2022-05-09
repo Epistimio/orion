@@ -438,6 +438,36 @@ Configuration
                      requires_dist, requires_type
 
 
+.. _nevergrad-algorithm:
+
+
+Nevergrad
+---------
+
+`Nevergrad`_ is a derivative-free optimization platform providing
+a library of algorithms for hyperparameter search.
+
+.. _nevergrad: https://facebookresearch.github.io/nevergrad/
+
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            nevergrad:
+                seed: null
+                budget: 1000
+                num_workers: 10
+                model_name: NGOpt
+
+
+.. autoclass:: orion.algo.nevergradoptimizer.NevergradOptimizer
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
+
+
+
 Algorithm Plugins
 =================
 

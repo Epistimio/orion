@@ -321,7 +321,8 @@ class Runner:
             new_futures.append(future)
 
         self.futures.extend(new_futures)
-        log.debug("Scheduled new trials")
+        if new_futures:
+            log.debug("Scheduled new trials")
         return len(new_futures)
 
     def gather(self):
@@ -331,7 +332,8 @@ class Runner:
         )
 
         to_be_raised = None
-        log.debug(f"Gathered new results {len(results)}")
+        if results:
+            log.debug(f"Gathered new results {len(results)}")
         # register the results
         # NOTE: For Ptera instrumentation
         trials = 0  # pylint:disable=unused-variable

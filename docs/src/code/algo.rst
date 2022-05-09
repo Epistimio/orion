@@ -18,5 +18,6 @@ Algorithm modules
    algo/ax
    algo/pbt
    algo/tpe
+   algo/nevergrad
    algo/parallel_strategy
    algo/registry

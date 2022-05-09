@@ -35,6 +35,7 @@ extras_require = {
     "ax": [
         "ax-platform", "numpy",
     ],
+    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 
@@ -67,6 +68,7 @@ setup_args = dict(
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
             "ax = orion.algo.axoptimizer:AxOptimizer",
+            "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
