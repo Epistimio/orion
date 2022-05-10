@@ -1,6 +1,7 @@
 """Perform integration tests for `orion.algo.mofa`."""
 from __future__ import annotations
 
+import sys
 from typing import ClassVar
 
 import pytest
@@ -22,6 +23,7 @@ def _config(request):
     yield
 
 
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
 class TestMOFA(BaseAlgoTests):
     """Test suite for algorithm MOFA"""
 
