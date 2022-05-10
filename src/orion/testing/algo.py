@@ -418,6 +418,7 @@ class BaseAlgoTests(Generic[AlgoType]):
         algo = self.create_algo(space=space)
 
         trials = algo.suggest(1)
+        assert len(trials) > 0
         assert trials[0] in space
         self.observe_trials(trials, algo, 1)
 
