@@ -38,6 +38,7 @@ extras_require = {
         "dehb @ git+https://github.com/automl/DEHB.git@development",
         "sspace @ git+https://github.com/Epistimio/sample-space.git",
     ],
+    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 
@@ -70,6 +71,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
