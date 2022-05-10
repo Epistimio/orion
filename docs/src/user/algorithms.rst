@@ -219,7 +219,7 @@ DEHB
 
 
 `DEHB`_, is an integration of a Differential Evolutionary algorithm with Hyperband.
-While :ref:`BOHB-algorithm`, uses Bayesian Optimization to select the hyperparameter to try
+While BOHB, uses Bayesian Optimization to select the hyperparameter to try
 at the first rung of subsequent brackets, DEHB uses Differential Evolution for both
 selecting the hyperparameters to try at the first rung of subsequent brackets and to mutate
 best sets of hyperparameters when promoting trials inside a bracket.

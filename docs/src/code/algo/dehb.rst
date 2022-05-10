@@ -6,6 +6,3 @@ DEHB
 
 .. automodule:: orion.algo.dehb.brackets
    :members:
-
-.. automodule:: orion.algo.dehb.logger
-   :members:
