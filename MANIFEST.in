@@ -4,6 +4,7 @@ include *.rst
 include ROADMAP.md
 include CODE_OF_CONDUCT.md
 include CONTRIBUTING.md
+include CITATION.bib
 exclude RESEARCH.md
 
 # Control and setup helpers
