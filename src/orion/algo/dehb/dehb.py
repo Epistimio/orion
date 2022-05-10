@@ -15,7 +15,7 @@ import numpy
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.dehb.brackets import SHBracketManager
-from orion.algo.space import Dimension, Space
+from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
 
@@ -26,6 +26,10 @@ try:
 
     IMPORT_ERROR = None
 except ImportError as exc:
+
+    class DEHBImpl:
+        pass
+
     IMPORT_ERROR = exc
 
 
@@ -66,6 +70,10 @@ class RungResult(NamedTuple):
 
 
 class _CustomDEHBImpl(DEHBImpl):
+    def __init__(self, duplicates, **kwargs):
+        self.duplicates = duplicates
+        super().__init__(**kwargs)
+
     def f_objective(self, *args, **kwargs) -> None:
         """Not needed for Orion, the objective is called by the worker"""
         pass
@@ -150,6 +158,8 @@ class _CustomDEHBImpl(DEHBImpl):
         """Seed the state of rngs used by DEHB"""
         numpy.random.seed(seed)
         self.cs.seed(numpy.random.randint(numpy.iinfo(numpy.int32).max))
+        # Reset sub population
+        self.reset()
 
     @property
     def state_dict(self) -> dict:
@@ -275,7 +285,6 @@ class DEHB(BaseAlgorithm):
             )
 
         super().__init__(
-            self,
             space,
             seed=seed,
             mutation_factor=mutation_factor,
@@ -288,11 +297,19 @@ class DEHB(BaseAlgorithm):
         )
 
         # Extract fidelity information
-        fidelity_index = self.fidelity_index
-        if fidelity_index is None:
+        if self.fidelity_index is None:
             raise RuntimeError(SPACE_ERROR)
 
-        fidelity_dim: Dimension = space[fidelity_index]
+        fidelity_dim: Fidelity = space[self.fidelity_index]
+
+        # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
+        from orion.core.worker.transformer import TransformedDimension
+
+        # NOTE: Currently bypassing (possibly more than one) `TransformedDimension` wrappers to get
+        # the 'low', 'high' and 'base' attributes.
+        while isinstance(fidelity_dim, TransformedDimension):
+            fidelity_dim = fidelity_dim.original_dimension
+        assert isinstance(fidelity_dim, Fidelity)
 
         self.rung: int | None = None
         self.seed = seed
@@ -300,12 +317,11 @@ class DEHB(BaseAlgorithm):
         self.job_results: dict[str, RungResult] = dict()
         self.duplicates: defaultdict[str, int] = defaultdict(int)
 
-        configspace = self.convert_space(self.space)
+        configspace = convert_space(self.space)
 
         # Initialize
-        self.seed_rng(self.seed)
         self.dehb = _CustomDEHBImpl(
-            self,
+            duplicates=self.duplicates,
             cs=configspace,
             configspace=True,
             dimensions=len(configspace.get_hyperparameters()),
@@ -326,7 +342,8 @@ class DEHB(BaseAlgorithm):
             # No need for the user function
             f=None,
         )
-        self.rung = len(self.budgets)
+        self.seed_rng(self.seed)
+        self.rung = len(self.dehb.budgets)
 
     @property
     def state_dict(self) -> dict:
@@ -353,7 +370,8 @@ class DEHB(BaseAlgorithm):
             Integer seed for the random number generator.
 
         """
-        self.dehb.seed(seed)
+        if hasattr(self, "dehb"):
+            self.dehb.seed_rng(seed)
 
     @property
     def is_done(self) -> bool:
@@ -362,7 +380,7 @@ class DEHB(BaseAlgorithm):
 
     def sample_to_trial(self, sample: numpy.ndarray, fidelity: int) -> Trial:
         """Convert a ConfigSpace sample into a trial"""
-        config = self.vector_to_configspace(sample)
+        config = self.dehb.vector_to_configspace(sample)
         hps = {}
 
         for k, v in self.space.items():
@@ -373,7 +391,7 @@ class DEHB(BaseAlgorithm):
             else:
                 hps[k] = config[k]
 
-        return self.format_trial(format_trials.dict_to_trial(to_orion(hps), self.space))
+        return format_trials.dict_to_trial(to_orion(hps), self.space)
 
     def suggest(self, num: int) -> list[Trial]:
         """Suggest a number of new sets of parameters.

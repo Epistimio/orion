@@ -1,6 +1,7 @@
 """Perform integration tests for `orion.algo.dehb`."""
 
 import itertools
+from typing import ClassVar
 
 import numpy
 import pytest
@@ -35,7 +36,6 @@ class TestDEHB(BaseAlgoTests):
         "boundary_fix_type": "clip",
         "min_clip": None,
         "max_clip": None,
-        "max_age": 12,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
     phases: ClassVar[list[TestPhase]] = [
