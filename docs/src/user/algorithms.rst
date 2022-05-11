@@ -416,6 +416,9 @@ become fixed, the number of trials are reduced in subsequent iterations.
 
 .. _MOFA: https://arxiv.org/abs/2011.09545
 
+.. note::
+
+   MOFA requires Python v3.8 or greater and scipy v1.8 or greater.
 
 .. note::
 

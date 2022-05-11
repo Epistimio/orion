@@ -15,6 +15,8 @@ from typing import Sequence, Tuple
 
 import numpy as np
 import pandas as pd
+import scipy
+from packaging import version
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.mofa import sampler
@@ -44,6 +46,8 @@ class MOFA(BaseAlgorithm):
 
     The number of trials N for a single MOFA iteration is set to ``N = index * n_levels^t``.
     The ``--exp-max-trials`` should be a multiple of N.
+
+    MOFA requires Python v3.8 or greater and scipy v1.8 or greater.
 
     Parameters
     ----------
@@ -81,6 +85,9 @@ class MOFA(BaseAlgorithm):
         strength: int = 2,
         threshold: float = 0.1,
     ):
+        if version.parse(scipy.__version__) < version.parse("1.8"):
+            raise RuntimeError("MOFA algorithm requires scipy version >= 1.8.")
+
         index = int(index)
         n_levels = int(n_levels)
         threshold = float(threshold)

@@ -1,11 +1,14 @@
 """Perform integration tests for `orion.algo.mofa`."""
 from __future__ import annotations
 
-import sys
 from typing import ClassVar
 
 import pytest
+import scipy
+from packaging import version
 
+from orion.algo.mofa.mofa import MOFA
+from orion.algo.space import Space
 from orion.testing.algo import BaseAlgoTests, TestPhase
 
 
@@ -23,7 +26,17 @@ def _config(request):
     yield
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="requires python3.8 or higher")
+def test_scipy_version():
+    try:
+        algo = MOFA(Space())
+    except RuntimeError:
+        assert version.parse(scipy.__version__) < version.parse("1.8")
+
+
+@pytest.mark.skipif(
+    version.parse(scipy.__version__) < version.parse("1.8"),
+    reason="requires scipy v1.8 or higher",
+)
 class TestMOFA(BaseAlgoTests):
     """Test suite for algorithm MOFA"""
 
