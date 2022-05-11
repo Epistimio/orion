@@ -1,13 +1,17 @@
 """Perform integration tests for `orion.algo.nevergrad`."""
+from typing import ClassVar
+
 import nevergrad as ng
 import pytest
+from pytest import MarkDecorator
 
 from orion.algo.nevergradoptimizer import NOT_WORKING as NOT_WORKING_MODEL_NAMES
-from orion.benchmark.task.branin import Branin
-from orion.core.utils import backward
-from orion.testing.algo import BaseAlgoTests, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase
 
 TEST_MANY_TRIALS = 20
+
+_AlgoName = str
+_TestName = str
 
 xfail = pytest.mark.xfail
 
@@ -44,16 +48,16 @@ _CAN_suggest_more_than_one = {"test_suggest_n": None}
 _max_trials_hangs = {"test_is_done_max_trials": "skip"}
 
 
-def merge_dicts(*dicts):
+def merge_dicts(*dicts: dict) -> dict:
     """Merge dictionaries into first one."""
-    merged_dict = dict()
-    for dict_to_merge in dicts:
+    merged_dict = dicts[0].copy()
+    for dict_to_merge in dicts[1:]:
         merged_dict.update(dict_to_merge)
 
     return merged_dict
 
 
-WORKING = {
+WORKING: dict[_AlgoName, dict[_TestName, MarkDecorator]] = {
     "cGA": {},
     "ASCMADEthird": {},
     "AdaptiveDiscreteOnePlusOne": _deterministic_first_point,
@@ -196,120 +200,75 @@ HANGING = {
     "RCobyla": {},
 }
 
-WIP = {}
 
-MODEL_NAMES = merge_dicts(WORKING, NOT_WORKING)
-# MODEL_NAMES = WIP
+MODEL_NAMES: dict[_AlgoName, dict[_TestName, MarkDecorator]] = merge_dicts(
+    WORKING, NOT_WORKING
+)
+
+from pytest import FixtureRequest
 
 
 @pytest.fixture(autouse=True, params=MODEL_NAMES.keys())
-def _config(request):
+def _config(request: FixtureRequest):
     """Fixture that parametrizes the configuration used in the tests below."""
-    tweaks = MODEL_NAMES[request.param]
+    model_name: str = request.param
 
-    if ng.optimizers.registry[request.param].no_parallelization:
+    if model_name in NOT_WORKING:
+        pytest.skip(reason=f"Model {model_name} is not supported.")
+
+    tweaks = MODEL_NAMES[model_name]
+
+    if ng.optimizers.registry[model_name].no_parallelization:
         num_workers = 1
-        # tweaks = {**_not_parallel, **tweaks}
     else:
         num_workers = 10
 
-    TestNevergradOptimizer.config["model_name"] = request.param
+    TestNevergradOptimizer.config["model_name"] = model_name
     TestNevergradOptimizer.config["num_workers"] = num_workers
 
-    if request.param in NOT_WORKING:
-        request.node.add_marker(
-            xfail(reason=f"Model {request.param} is not supported.")
-        )
-        yield
-        return
-
-    test_name, _ = request.node.name.split("[")
+    test_name = request.function.__name__
     mark = tweaks.get(test_name, None)
 
+    # TODO: Ask @Delaunay what this does
     if (
         test_name == "test_seed_rng_init"
-        and request.getfixturevalue("num") > 0
+        and request.getfixturevalue("phase").n_trials > 0
         and mark
+        and mark.name == "xfail"
+        and mark.kwargs["reason"].startswith("First generated point")
     ):
-        if mark.name == "xfail" and mark.kwargs["reason"].startswith(
-            "First generated point"
-        ):
-            mark = None
+        mark = None
+
     if mark == "skip":
-        pytest.skip("Skip test")
+        pytest.skip(reason="Skipping test")
     elif mark:
         request.node.add_marker(mark)
     yield
 
 
-# Test suite for algorithms. You may reimplement some of the tests to adapt them to your algorithm
-# Full documentation is available at https://orion.readthedocs.io/en/stable/code/testing/algo.html
-# Look for algorithms tests in https://github.com/Epistimio/orion/blob/master/tests/unittests/algo
-# for examples of customized tests.
 class TestNevergradOptimizer(BaseAlgoTests):
-    """Test suite for algorithm NevergradOptimizer"""
+    """Test suite for the NevergradOptimizer algorithm."""
 
     algo_name = "nevergradoptimizer"
     config = {
         "seed": 1234,  # Because this is so random
         "budget": 200,
     }
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        TestPhase("optim", TEST_MANY_TRIALS, "space.sample"),
+    ]
 
-    @phase
-    def test_normal_data(self, mocker, num, attr):
+    def test_normal_data(self):
         """Test that algorithm supports normal dimensions"""
-        self.assert_dim_type_supported(mocker, num, attr, {"x": "normal(2, 5)"})
+        self.assert_dim_type_supported({"x": "normal(2, 5)"})
 
-    def get_num(self, num):
-        return min(num, 5)
-
-    def test_optimize_branin(self):
-        """Test that algorithm optimizes somehow (this is on-par with random search)"""
-        MAX_TRIALS = 20  # pylint: disable=invalid-name
-        task = Branin()
-        space = self.create_space(task.get_search_space())
-        algo = self.create_algo(config={}, space=space)
-        algo.algorithm.max_trials = MAX_TRIALS
-        safe_guard = 0
-        trials = []
-        objectives = []
-        while trials or not algo.is_done:
-            if safe_guard >= MAX_TRIALS:
-                break
-
-            if not trials:
-                remaining = MAX_TRIALS - len(objectives)
-                trials = algo.suggest(self.get_num(remaining))
-                if not trials:
-                    assert algo.is_done
-                    break
-
-            trial = trials.pop(0)
-            results = task(trial.params["x"])
-            objectives.append(results[0]["value"])
-            backward.algo_observe(algo, [trial], [dict(objective=objectives[-1])])
-            safe_guard += 1
-
-        assert algo.is_done
-        assert min(objectives) <= 10
-
-    def test_suggest_n(self, mocker, num, attr):
+    def test_suggest_n(self):
         """Verify that suggest returns correct number of trials if ``num`` is specified in
         ``suggest``.
         """
         algo = self.create_algo()
-        self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(5)
+        # This condition in the original test is not respected.
+        # assert len(trials) == 5
         assert 5 >= len(trials) >= 1
-
-
-# You may add other phases for test.
-# See https://github.com/Epistimio/orion.algo.skopt/blob/master/tests/integration_test.py
-# for an example where two phases are registered, one for the initial random step, and
-# another for the optimization step with a Gaussian Process.
-TestNevergradOptimizer.set_phases(
-    [
-        ("random", 0, "space.sample"),
-        (TEST_MANY_TRIALS, 20, "space.sample"),
-    ]
-)
