@@ -490,9 +490,10 @@ class BaseAlgoTests(Generic[AlgoType]):
         trial_c = new_algo.suggest(1)[0]
         assert trial_c == trial_a
 
+    @first_phase_only
     def test_seed_rng_init(self):
-        """Test that if the algo has a `seed` constructor argument, creating the with that argument
-        is reproducible.
+        """Test that if the algo has a `seed` constructor argument and a value is passed, the
+        suggested trials are reproducible.
         """
         if "seed" not in inspect.signature(self.algo_type).parameters:
             pytest.skip(reason="algo does not have a seed as a constructor argument.")
