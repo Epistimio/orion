@@ -5,59 +5,67 @@ Nevergrad Optimizer
 Wraps the nevergrad library to expose its algorithm to orion
 
 """
+from __future__ import annotations
+
 import logging
 import pickle
+from typing import Callable, Iterable, Sequence, SupportsInt
+
+from orion.core.worker.trial import Trial
 
 try:
     import nevergrad as ng
+    from nevergrad.parametrization.container import Instrumentation
+    from nevergrad.parametrization.core import Parameter
 
     IMPORT_ERROR = None
 
 except ImportError as err:
     IMPORT_ERROR = err
 
+
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
 from orion.core.utils.format_trials import dict_to_trial
 
 logger = logging.getLogger(__name__)
 
+registry: dict[tuple[str, str], Callable[[Dimension], Parameter]] = {}
 
-class SpaceConverter(dict):
-    """Convert Orion's search space to a different format."""
 
-    def register(self, typ, prior):
-        """Register a conversion function for the given type and prior."""
+def register(dimension_type: str, prior: str):
+    """Register a conversion function for the given type and prior."""
 
-        def deco(func):
-            self[typ, prior] = func
-            return func
+    def deco(func):
+        registry[dimension_type, prior] = func
+        return func
 
-        return deco
+    return deco
 
-    def __call__(self, space):
+
+def to_ng_space(orion_space: Space) -> Instrumentation:
+    """Convert an orion space to a nevergrad space."""
+    if IMPORT_ERROR:
+        raise IMPORT_ERROR
+    converted_dimensions: dict[str, Parameter] = {}
+    for name, dim in orion_space.items():
         try:
-            return ng.p.Instrumentation(
-                **{
-                    name: self[dim.type, dim.prior_name](self, dim)
-                    for name, dim in space.items()
-                }
-            )
+            converted_dimensions[name] = registry[dim.type, dim.prior_name](dim)
         except KeyError as exc:
-            raise KeyError(
+            raise RuntimeError(
                 f"Dimension with type and prior: {exc.args[0]} cannot be converted to nevergrad."
-            )
+            ) from exc
+
+    return ng.p.Instrumentation(**converted_dimensions)
 
 
-to_ng_space = SpaceConverter()
-
-
-def _intshape(shape):
+def _intshape(shape: Iterable[SupportsInt]) -> tuple[int, ...]:
     # ng.p.Array does not accept np.int64 in shapes, they have to be ints
     return tuple(int(x) for x in shape)
 
 
-@to_ng_space.register("categorical", "choices")
-def _(_, dim):
+@register("categorical", "choices")
+def _(dim: Categorical):
     if dim.shape:
         raise NotImplementedError("Array of Categorical cannot be converted.")
     if len(set(dim.original_dimension.prior.pk)) != 1:
@@ -67,8 +75,8 @@ def _(_, dim):
     return ng.p.Choice(dim.interval())
 
 
-@to_ng_space.register("real", "uniform")
-def _(_, dim):
+@register("real", "uniform")
+def _(dim: Dimension):
     lower, upper = dim.interval()
     if dim.shape:
         # Temporary fix pending [#800]
@@ -86,26 +94,27 @@ def _(_, dim):
         return ng.p.Scalar(lower=lower, upper=upper)
 
 
-@to_ng_space.register("integer", "int_uniform")
-def _(self, dim):
-    return self["real", "uniform"](self, dim).set_integer_casting()
+@register("integer", "int_uniform")
+def _(dim: Integer):
+    return registry["real", "uniform"](dim).set_integer_casting()
 
 
-@to_ng_space.register("real", "reciprocal")
-def _(_, dim):
+@register("integer", "int_reciprocal")
+def _(dim: Integer):
+    return registry["real", "reciprocal"](dim).set_integer_casting()
+
+
+@register("real", "reciprocal")
+def _(dim: Real):
     if dim.shape:
         raise NotImplementedError("Array with reciprocal prior cannot be converted.")
     lower, upper = dim.interval()
     return ng.p.Log(lower=lower, upper=upper, exponent=2)
 
 
-@to_ng_space.register("integer", "int_reciprocal")
-def _(self, dim):
-    return self["real", "reciprocal"](self, dim).set_integer_casting()
-
-
-@to_ng_space.register("real", "norm")
-def _(_, dim):
+@register("real", "norm")
+@register("real", "normal")
+def _(dim: Real):
     if dim.shape:
         raise NotImplementedError("Array with normal prior cannot be converted.")
     return ng.p.Scalar(init=dim.original_dimension.prior.mean()).set_mutation(
@@ -113,17 +122,8 @@ def _(_, dim):
     )
 
 
-@to_ng_space.register("real", "normal")
-def _(_, dim):
-    if dim.shape:
-        raise NotImplementedError("Array with normal prior cannot be converted.")
-    return ng.p.Scalar(init=dim.original_dimension.prior.mean()).set_mutation(
-        sigma=dim.original_dimension.prior.std()
-    )
-
-
-@to_ng_space.register("fidelity", "None")
-def _(_, dim):
+@register("fidelity", "None")
+def _(dim: Fidelity):
     if dim.shape:
         raise NotImplementedError("Array of Fidelity cannot be converted.")
     _, upper = dim.interval()
@@ -176,10 +176,21 @@ class NevergradOptimizer(BaseAlgorithm):
     requires_shape = None
 
     def __init__(
-        self, space, model_name="NGOpt", seed=None, budget=100, num_workers=10
+        self,
+        space: Space,
+        model_name: str = "NGOpt",
+        seed: int | Sequence[int] | None = None,
+        budget: int = 100,
+        num_workers: int = 10,
     ):
         if IMPORT_ERROR:
             raise IMPORT_ERROR
+
+        super().__init__(space)
+        self.model_name = model_name
+        self.seed = seed
+        self.budget = budget
+        self.num_workers = num_workers
 
         if model_name in NOT_WORKING:
             raise ValueError(f"Model {model_name} is not supported.")
@@ -192,13 +203,10 @@ class NevergradOptimizer(BaseAlgorithm):
         self._trial_mapping = {}
         self._fresh = True
         self._is_done = False
-        super().__init__(
-            space,
-            model_name=model_name,
-            seed=seed,
-            budget=budget,
-            num_workers=num_workers,
-        )
+
+        self.seed = seed
+        if seed is not None:
+            self.seed_rng(seed)
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -215,11 +223,12 @@ class NevergradOptimizer(BaseAlgorithm):
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = super().state_dict
-        state_dict["algo"] = pickle.dumps(self.algo)
+        state_dict["algo"] = pickle.dumps(self.algo)  # type: ignore
         state_dict["_is_done"] = self._is_done
         state_dict["_fresh"] = self._fresh
         state_dict["_trial_mapping"] = {
-            tid: list(sugg) for tid, sugg in self._trial_mapping.items()
+            trial_id: list(suggestions)
+            for trial_id, suggestions in self._trial_mapping.items()
         }
         return state_dict
 
@@ -238,7 +247,7 @@ class NevergradOptimizer(BaseAlgorithm):
         self._fresh = state_dict["_fresh"]
         self._trial_mapping = state_dict["_trial_mapping"]
 
-    def _associate_trial(self, trial, suggestion):
+    def _associate_trial(self, trial: Trial, suggestion: Parameter):
         """Associate a trial with a Nevergrad suggestion.
 
         Returns
@@ -246,17 +255,17 @@ class NevergradOptimizer(BaseAlgorithm):
         True if the trial was not seen before, false otherwise.
 
         """
-        tid = self.get_id(trial)
-        seen = tid in self._trial_mapping
+        trial_id = self.get_id(trial)
+        seen = trial_id in self._trial_mapping
         if seen:
-            orig_trial, existing = self._trial_mapping[tid]
+            orig_trial, existing = self._trial_mapping[trial_id]
             if orig_trial.status == "completed":
                 self.algo.tell(suggestion, orig_trial.objective.value)
             else:
                 existing.append(suggestion)
 
         else:
-            self._trial_mapping[tid] = (trial, [suggestion])
+            self._trial_mapping[trial_id] = (trial, [suggestion])
 
         return not seen
 
@@ -298,7 +307,7 @@ class NevergradOptimizer(BaseAlgorithm):
 
         return True
 
-    def suggest(self, num):
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a number of new sets of parameters.
 
         Parameters
@@ -309,7 +318,7 @@ class NevergradOptimizer(BaseAlgorithm):
 
         Returns
         -------
-        list of trials or None
+        list of trials
             A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
             trials to complete), in which case it will return None.
@@ -317,7 +326,7 @@ class NevergradOptimizer(BaseAlgorithm):
         """
         attempts = 0
         max_attempts = num + 100
-        trials = []
+        trials: list[Trial] = []
 
         while len(trials) < num and attempts < max_attempts and self._can_produce():
             attempts += 1
@@ -332,7 +341,7 @@ class NevergradOptimizer(BaseAlgorithm):
         self._fresh = False
         return trials
 
-    def observe(self, trials):
+    def observe(self, trials: list[Trial]) -> None:
         """Observe the trials new state of result.
 
         Parameters
@@ -357,5 +366,5 @@ class NevergradOptimizer(BaseAlgorithm):
         super().observe(trials)
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         return self._is_done or super().is_done
