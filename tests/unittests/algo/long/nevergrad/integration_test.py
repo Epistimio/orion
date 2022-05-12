@@ -1,14 +1,15 @@
 """Perform integration tests for `orion.algo.nevergrad`."""
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import nevergrad as ng
 import pytest
-from pytest import MarkDecorator
+from pytest import FixtureRequest, MarkDecorator
 
 from orion.algo.nevergradoptimizer import NOT_WORKING as NOT_WORKING_MODEL_NAMES
+from orion.algo.nevergradoptimizer import NevergradOptimizer
 from orion.testing.algo import BaseAlgoTests, TestPhase
 
-TEST_MANY_TRIALS = 20
+TEST_MANY_TRIALS = 10
 
 _AlgoName = str
 _TestName = str
@@ -52,8 +53,16 @@ def merge_dicts(*dicts: dict) -> dict:
     """Merge dictionaries into first one."""
     merged_dict = dicts[0].copy()
     for dict_to_merge in dicts[1:]:
+        for key, value in dict_to_merge.items():
+            if key not in merged_dict or value == merged_dict[key]:
+                merged_dict[key] = value
+            else:
+                raise ValueError(
+                    f"Test {key} already has a mark we don't want to overwrite: \n"
+                    f"- existing:  {merged_dict[key]} "
+                    f"- new value: {value}"
+                )
         merged_dict.update(dict_to_merge)
-
     return merged_dict
 
 
@@ -93,7 +102,15 @@ WORKING: dict[_AlgoName, dict[_TestName, MarkDecorator]] = {
     "MetaTuneRecentering": _deterministic_points,
     "MixES": {},
     "MultiCMA": {},
-    "MultiScaleCMA": {},
+    "MultiScaleCMA": {
+        # NOTE: Only fails at the optimization phase.
+        # This gets set manually below, since it doesn't seem easy to parameterize the xfail using
+        # the value of the current phase, and restructuring this whole dict to have another level
+        # wouldn't be nice either.
+        "test_state_dict": pytest.mark.xfail(
+            reason="BUG: seems unable to generate the required number of trials",
+        )
+    },
     "MutDE": {},
     "NaiveIsoEMNA": _no_tell_without_ask,
     "NaiveTBPSA": {},
@@ -195,30 +212,26 @@ NOT_WORKING = {
 missing_models = set(NOT_WORKING.keys()) ^ set(NOT_WORKING_MODEL_NAMES)
 assert missing_models == set()
 
-HANGING = {
-    "Cobyla": {},
-    "RCobyla": {},
-}
-
 
 MODEL_NAMES: dict[_AlgoName, dict[_TestName, MarkDecorator]] = merge_dicts(
     WORKING, NOT_WORKING
 )
 
-from pytest import FixtureRequest
-
 
 @pytest.fixture(autouse=True, params=MODEL_NAMES.keys())
 def _config(request: FixtureRequest):
     """Fixture that parametrizes the configuration used in the tests below."""
-    model_name: str = request.param
+    test_name = request.function.__name__
+
+    model_name: str = request.param  # type: ignore
+    model_type = ng.optimizers.registry[model_name]
 
     if model_name in NOT_WORKING:
         pytest.skip(reason=f"Model {model_name} is not supported.")
 
     tweaks = MODEL_NAMES[model_name]
 
-    if ng.optimizers.registry[model_name].no_parallelization:
+    if model_type.no_parallelization:
         num_workers = 1
     else:
         num_workers = 10
@@ -226,31 +239,45 @@ def _config(request: FixtureRequest):
     TestNevergradOptimizer.config["model_name"] = model_name
     TestNevergradOptimizer.config["num_workers"] = num_workers
 
-    test_name = request.function.__name__
     mark = tweaks.get(test_name, None)
+    current_phase: TestPhase = request.getfixturevalue("phase")
 
-    # TODO: Ask @Delaunay what this does
     if (
-        test_name == "test_seed_rng_init"
+        mark
+        and test_name == "test_seed_rng_init"
         and request.getfixturevalue("phase").n_trials > 0
-        and mark
-        and mark.name == "xfail"
-        and mark.kwargs["reason"].startswith("First generated point")
+        and mark in _deterministic_first_point.values()
     ):
+        # Remove the mark, because The algo always gives back the same first trial, regardless of
+        # the seed. This means that since `test_seed_rng_init` expects different seeds to give
+        # different results, the test will fail if we're at the first phase, but pass in other
+        # phases.
         mark = None
+
+    if model_name == "MultiScaleCMA" and test_name == "test_state_dict":
+        # NOTE: Only fails at the optimization phase.
+        if current_phase.n_trials == 0:
+            mark = None
 
     if mark == "skip":
         pytest.skip(reason="Skipping test")
     elif mark:
         request.node.add_marker(mark)
+
+    start = TestNevergradOptimizer.max_trials
+    if model_name == "MultiScaleCMA" and test_name == "test_state_dict":
+        TestNevergradOptimizer.max_trials = 20
+
     yield
+
+    TestNevergradOptimizer.max_trials = start
 
 
 class TestNevergradOptimizer(BaseAlgoTests):
     """Test suite for the NevergradOptimizer algorithm."""
 
-    algo_name = "nevergradoptimizer"
-    config = {
+    algo_type = NevergradOptimizer
+    config: dict[str, Any] = {
         "seed": 1234,  # Because this is so random
         "budget": 200,
     }
