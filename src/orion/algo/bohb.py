@@ -13,7 +13,7 @@ try:
     from hpbandster.optimizers.iterations import SuccessiveHalving
     from sspace.convert import convert_space, reverse, transform
 
-    has_HPBANDSTER = True
+    has_HpBandSter = True
 except ImportError:
     CG_BOHB = None
     SuccessiveHalving = None
@@ -21,6 +21,7 @@ except ImportError:
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.parallel_strategy import strategy_factory
+from orion.algo.space import Fidelity
 from orion.core.utils.format_trials import dict_to_trial
 
 SPACE_ERROR = """
@@ -143,6 +144,17 @@ class BOHB(BaseAlgorithm):
             raise RuntimeError(SPACE_ERROR)
         fidelity_dim = self.space[fidelity_index]
 
+        fidelity_dim: Fidelity = space[self.fidelity_index]
+
+        # NOTE: This isn't a Fidelity, it's a TransformedDimension<Fidelity>
+        from orion.core.worker.transformer import TransformedDimension
+
+        # NOTE: Currently bypassing (possibly more than one) `TransformedDimension` wrappers to get
+        # the 'low', 'high' and 'base' attributes.
+        while isinstance(fidelity_dim, TransformedDimension):
+            fidelity_dim = fidelity_dim.original_dimension
+        assert isinstance(fidelity_dim, Fidelity)
+
         self.min_budget = fidelity_dim.low
         self.max_budget = fidelity_dim.high
         self.eta = fidelity_dim.base
@@ -157,17 +169,6 @@ class BOHB(BaseAlgorithm):
             self.eta, -np.linspace(self.max_sh_iter - 1, 0, self.max_sh_iter)
         )
 
-    # This whole space thing is because of https://github.com/Epistimio/orion/issues/802
-    @property
-    def space(self):
-        return self._space
-
-    @space.setter
-    def space(self, space):
-        self._space = space
-        self._deferred_init()
-
-    def _deferred_init(self):
         self.bohb = CG_BOHB(  # pylint: disable=attribute-defined-outside-init
             configspace=convert_space(self.space),
             min_points_in_model=self.min_points_in_model,
@@ -183,7 +184,7 @@ class BOHB(BaseAlgorithm):
         ss = self.max_sh_iter - 1 - (iteration % self.max_sh_iter)
 
         # number of configurations in that bracket
-        n0 = int(np.floor((self.max_sh_iter) / (ss + 1)) * self.eta**ss)
+        n0 = int(np.floor((self.max_sh_iter) / (ss + 1)) * self.eta ** ss)
         ns = [max(int(n0 * (self.eta ** (-i))), 1) for i in range(ss + 1)]
 
         return SuccessiveHalving(
@@ -273,7 +274,7 @@ class BOHB(BaseAlgorithm):
                 run = iteration.get_next_run()
                 if run is None:
                     break
-                new_trial = self.format_trial(run_to_trial(run))
+                new_trial = run_to_trial(run)
 
                 # This means the job was already suggested and we have a result
                 result = self.trial_results.get(self.get_id(new_trial), None)

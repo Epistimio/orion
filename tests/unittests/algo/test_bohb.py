@@ -30,6 +30,24 @@ class TestBOHB(BaseAlgoTests):
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
 
+    def test_missing_fidelity(self):
+        with pytest.raises(RuntimeError):
+            space = self.create_space(dict(x="uniform(0, 1)"))
+            self.create_algo(space=space)
+
+    def test_default_strategy(self):
+        algo = self.create_algo(config=dict(parallel_strategy=None))
+        assert algo.algorithm.strategy.configuration == {
+            "of_type": "statusbasedparallelstrategy",
+            "default_strategy": {"of_type": "noparallelstrategy"},
+            "strategy_configs": {
+                "broken": {
+                    "default_result": float("inf"),
+                    "of_type": "maxparallelstrategy",
+                },
+            },
+        }
+
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/599")
     def test_optimize_branin(self):
         pass
