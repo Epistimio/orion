@@ -23,7 +23,7 @@ from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests, TestPhase, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import compare_trials, create_trial
 
 if typing.TYPE_CHECKING:
@@ -171,7 +171,7 @@ class TestHyperbandBracket:
 
     def test_register(self, hyperband: Hyperband, bracket: HyperbandBracket):
         """Check that a point is correctly registered inside a bracket."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         trial = create_trial_for_hb((1, 0.0), 0.0)
         trial_id = hyperband.get_id(trial, ignore_fidelity=True)
 
@@ -185,7 +185,7 @@ class TestHyperbandBracket:
 
     def test_bad_register(self, hyperband: Hyperband, bracket: HyperbandBracket):
         """Check that a non-valid point is not registered."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         with pytest.raises(IndexError) as ex:
             bracket.register(create_trial_for_hb((55, 0.0), 0.0))
@@ -196,7 +196,7 @@ class TestHyperbandBracket:
         self, hyperband: Hyperband, bracket: HyperbandBracket, rung_0: RungDict
     ):
         """Test that correct point is promoted."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
 
         points = bracket.get_candidates(0)
@@ -208,7 +208,7 @@ class TestHyperbandBracket:
     ):
         """Test that get_candidate gives us the next best thing if point is already in rung 1."""
         trial = create_trial_for_hb((1, 0.0), None)
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
         assert trial.objective is not None
         bracket.rungs[1]["results"][hyperband.get_id(trial, ignore_fidelity=True)] = (
@@ -228,7 +228,7 @@ class TestHyperbandBracket:
         rung_1: RungDict,
     ):
         """Test that get_candidate returns `None` if rung 1 is full."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
         bracket.rungs[1] = rung_1
 
@@ -240,7 +240,7 @@ class TestHyperbandBracket:
         self, hyperband: Hyperband, bracket: HyperbandBracket, rung_0: RungDict
     ):
         """Test the get_candidate return None if trials are not completed."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
         rung = bracket.rungs[0]["results"]
 
@@ -265,7 +265,7 @@ class TestHyperbandBracket:
         self, hyperband: Hyperband, bracket: HyperbandBracket, rung_1: RungDict
     ):
         """Check if a valid modified candidate is returned by update_rungs."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[1] = rung_1
         trial = create_trial_for_hb((3, 0.0), 0.0)
 
@@ -280,7 +280,7 @@ class TestHyperbandBracket:
         self, hyperband: Hyperband, bracket: HyperbandBracket, rung_1: RungDict
     ):
         """Check if no candidate is returned by update_rungs."""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         candidates = bracket.promote(1)
 
@@ -295,7 +295,7 @@ class TestHyperbandBracket:
         rung_2: RungDict,
     ):
         """Test to get the max resource R for a particular trial"""
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
 
         assert bracket.get_trial_max_resource(trial=create_trial_for_hb((1, 0.0))) == 1
@@ -336,7 +336,7 @@ class TestHyperband:
     ):
         """Check that a point is registered inside the bracket."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs = [rung_0, rung_1]
         trial = create_trial_for_hb((1, 0.0), 0.0)
         trial_id = hyperband.get_id(trial, ignore_fidelity=True)
@@ -468,7 +468,7 @@ class TestHyperband:
     ):
         """Test that a new point is sampled."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         mock_samples(
             hyperband, [create_trial_for_hb(("fidelity", i)) for i in range(10)]
@@ -486,7 +486,7 @@ class TestHyperband:
         the same hyperband execution.
         """
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         fidelity = 1
 
@@ -515,7 +515,7 @@ class TestHyperband:
         the same hyperband execution.
         """
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         zhe_point = list(
             map(create_trial_for_hb, [(1, 0.0), (1, 1.0), (1, 1.0), (1, 2.0)])
@@ -563,7 +563,7 @@ class TestHyperband:
         hyperband.repetitions = 2
         bracket = HyperbandBracket(hyperband, budgets, 1)
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         for i in range(9):
             force_observe(hyperband, create_trial_for_hb((1, i), objective=i))
@@ -621,7 +621,7 @@ class TestHyperband:
     ):
         """Test that sampling inf collisions will return None."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         zhe_trial = create_trial_for_hb(("fidelity", 0.0))
         hyperband.trial_to_brackets[
@@ -657,7 +657,7 @@ class TestHyperband:
     ):
         """Test that correct point is promoted and returned."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
 
         points = hyperband.suggest(100)
@@ -672,7 +672,7 @@ class TestHyperband:
     ):
         """Test that identic objectives are handled properly"""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         n_trials = 9
         resources = 1
@@ -712,7 +712,7 @@ class TestHyperband:
     ):
         """Test that Hyperband bracket detects when rung is filled."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
 
         rung = bracket.rungs[0]["results"]
@@ -774,7 +774,7 @@ class TestHyperband:
     ):
         """Test that Hyperband bracket detects when rung is ready."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
         bracket.rungs[0] = rung_0
 
         rung = bracket.rungs[0]["results"]
@@ -840,7 +840,7 @@ class TestHyperband:
     ):
         """Test that Hyperband opts out when rungs are not ready."""
         hyperband.brackets = [bracket]
-        bracket.hyperband = hyperband
+        assert bracket.owner is hyperband
 
         bracket.rungs[0] = rung_0
 
@@ -1018,19 +1018,23 @@ class TestGenericHyperband(BaseAlgoTests):
         TestPhase("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
     ]
 
-    @phase
-    def test_suggest_lots(self, mocker, num: int, attr: str):
+    def test_suggest_lots(self):
         """Test that hyperband returns whole rungs when requesting large `num`"""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
+        num = algo.n_observed
         points = algo.suggest(10000)
         repetition_id, rung_id = self.infer_repetition_and_rung(num)
         assert points is not None
-        assert len(points) == BUDGETS[rung_id + 1 if rung_id < 3 else 0]
+        assert len(points) == BUDGETS[rung_id + 1 if rung_id < 3 else 0], (
+            BUDGETS,
+            rung_id,
+            repetition_id,
+            num,
+        )
 
-    def test_suggest_n(self, mocker, num: int, attr: str):
+    def test_suggest_n(self):
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
+        num = algo.n_observed
         points = algo.suggest(5)
         repetition_id, rung_id = self.infer_repetition_and_rung(num)
         assert points is not None
