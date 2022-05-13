@@ -7,7 +7,6 @@ from typing import ClassVar
 
 import pytest
 from hebo.models.model_factory import model_dict
-from orion.testing.algo import BaseAlgoTests, TestPhase
 from pymoo.factory import get_algorithm_options
 
 from orion.algo.hebo.hebo_algo import (
@@ -16,6 +15,7 @@ from orion.algo.hebo.hebo_algo import (
     ModelName,
     properly_seeded_models,
 )
+from orion.testing.algo import BaseAlgoTests, TestPhase
 
 if typing.TYPE_CHECKING:
     from _pytest.fixtures import SubRequest

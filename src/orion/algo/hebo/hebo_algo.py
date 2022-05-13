@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import typing
 import warnings
 from dataclasses import dataclass
 from logging import getLogger as get_logger
@@ -15,15 +16,13 @@ from typing import Any, ClassVar, Optional
 
 import numpy as np
 import pandas as pd
+from typing_extensions import Literal, TypedDict  # type: ignore
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.hebo.random_state import RandomState
 from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.worker.trial import Trial
-from typing_extensions import Literal, TypedDict  # type: ignore
-
-from orion.algo.hebo.random_state import RandomState
-import typing
 
 _HEBO_REQUIRED = None
 try:
