@@ -63,9 +63,9 @@ class TestDEHB(BaseAlgoTests):
             space = self.create_space(dict(x="uniform(0, 1)"))
             self.create_algo(space=space)
 
-    def test_suggest_n(self, mocker, num, attr):
+    def test_suggest_n(self):
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
+        num = algo.n_observed
         trials = algo.suggest(3)
         assert len(trials) == 3
 
