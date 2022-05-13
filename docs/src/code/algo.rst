@@ -20,3 +20,4 @@ Algorithm modules
    algo/nevergrad
    algo/parallel_strategy
    algo/registry
+   algo/hebo
