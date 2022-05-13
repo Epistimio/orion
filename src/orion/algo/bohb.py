@@ -184,7 +184,7 @@ class BOHB(BaseAlgorithm):
         ss = self.max_sh_iter - 1 - (iteration % self.max_sh_iter)
 
         # number of configurations in that bracket
-        n0 = int(np.floor((self.max_sh_iter) / (ss + 1)) * self.eta ** ss)
+        n0 = int(np.floor((self.max_sh_iter) / (ss + 1)) * self.eta**ss)
         ns = [max(int(n0 * (self.eta ** (-i))), 1) for i in range(ss + 1)]
 
         return SuccessiveHalving(
