@@ -1,4 +1,6 @@
 """Perform integration tests for `orion.algo.nevergrad`."""
+from __future__ import annotations
+
 from typing import Any, ClassVar
 
 import nevergrad as ng

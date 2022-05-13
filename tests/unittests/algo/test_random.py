@@ -9,7 +9,7 @@ from orion.algo.random import Random
 from orion.testing.algo import BaseAlgoTests
 
 
-class TestRandomSearch(BaseAlgoTests[Random]):
+class TestRandomSearch(BaseAlgoTests):
     """Tests for the Random algorithm."""
 
     algo_type: ClassVar[type[Random]] = Random

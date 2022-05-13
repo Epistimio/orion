@@ -6,7 +6,7 @@ import inspect
 import itertools
 import logging
 from dataclasses import dataclass, field
-from typing import ClassVar, Generic, Sequence, TypeVar
+from typing import ClassVar, Sequence, TypeVar
 
 import numpy
 import pytest
@@ -97,7 +97,11 @@ def last_phase_only(test):
     return pytest.mark.usefixtures("last_phase")(test)
 
 
-class BaseAlgoTests(Generic[AlgoType]):
+# NOTE: Can't make the test class generic in python 3.7, because it adds a __new__ constructor to
+# the type, which prevents it being collected.
+
+
+class BaseAlgoTests:
     """Generic Test-suite for HPO algorithms.
 
     This test-suite covers all typical cases for HPO algorithms. To use it for a new algorithm,
