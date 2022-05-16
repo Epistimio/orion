@@ -3,6 +3,7 @@
 ========================
 
 """
+import copy
 import logging
 import time
 
@@ -90,8 +91,8 @@ class PB2(PBT):
         appropriate for saving.
 
         """
-        config = super().configuration
-        config["pb2"].pop("explore")
+        config = copy.deepcopy(super().configuration)
+        config["pb2"].pop("explore", None)
         return config
 
     def _generate_offspring(self, trial):
