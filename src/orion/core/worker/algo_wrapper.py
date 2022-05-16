@@ -119,17 +119,19 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
     @property
     def n_suggested(self):
         """Number of trials suggested by the algorithm"""
-        return self.algorithm.n_suggested
+        # TODO: Double check that this makes sense. We only count the number of trials form the
+        # target task that we suggested.
+        return super().n_suggested
 
     @property
     def n_observed(self):
-        """Number of completed trials observed by the algorithm"""
-        return self.algorithm.n_observed
+        """Number of completed trials observed by the algorithm."""
+        return super().n_observed
 
     @property
     def is_done(self) -> bool:
         """Return True, if an algorithm holds that there can be no further improvement."""
-        return self.algorithm.is_done
+        return super().is_done or self.algorithm.is_done
 
     def score(self, trial: Trial) -> float:
         return self.algorithm.score(self.transform(trial))
@@ -153,6 +155,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                 continue
             value = getattr(self, attrname)
             if attrname == "algorithm":
+                # Store the configuration of the algorithm instead of the algorithm itself.
                 value = value.configuration
             dict_form[attrname] = value
 
