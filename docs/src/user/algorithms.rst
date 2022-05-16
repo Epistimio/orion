@@ -448,17 +448,18 @@ Configuration
 ~~~~~~~~~~~~~
 
 .. code-block:: yaml
-  experiment:
-    algorithms:
-      hebo:
-        seed: null
-        seed: 1234
-        parameters: 
-          model_name: catboost
-          random_samples: 5
-          acquisition_class: hebo.acquisitions.acq.MACE
-          evolutionary_strategy: nsga2
-          model_config: null
+
+   experiment:
+      algorithms:
+         hebo:
+            seed: null
+            seed: 1234
+            parameters:
+               model_name: catboost
+               random_samples: 5
+               acquisition_class: hebo.acquisitions.acq.MACE
+               evolutionary_strategy: nsga2
+               model_config: null
 
 .. autoclass:: orion.algo.hebo.hebo_algo.HEBO
    :noindex:
