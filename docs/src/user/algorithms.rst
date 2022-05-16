@@ -212,6 +212,51 @@ Configuration
                      executed_times, compute_bracket_idx
 
 
+.. _BOHB-algorithm:
+
+BOHB
+----
+
+`BOHB`_, is an integration of a Bayesian Optimization algorithm for the
+selection of hyperparameters to try at the first rung of Hyperband brackets.
+First batch of Trials will be sampled randomly, but subsequent ones will be
+selected using Bayesian Optimization.
+See :ref:`hyperband-algorithm` for more information on how to use multi-fidelity algorithms.
+
+.. _BOHB: https://arxiv.org/abs/1807.01774
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      bohb:
+        min_points_in_model: 20
+        top_n_percent: 15
+        num_samples: 64
+        random_fraction: 0.33
+        bandwidth_factor: 3
+        min_bandwidth": 1e-3
+        parallel_strategy:
+          of_type: StatusBasedParallelStrategy
+          strategy_configs:
+             broken:
+                of_type: MaxParallelStrategy
+
+
+.. autoclass:: orion.algo.bohb.BOHB
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+
 .. _PBT:
 
 Population Based Training (PBT)
