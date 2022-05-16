@@ -452,7 +452,6 @@ Configuration
    experiment:
       algorithms:
          hebo:
-            seed: null
             seed: 1234
             parameters:
                model_name: catboost
