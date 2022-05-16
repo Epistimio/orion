@@ -1,27 +1,23 @@
 """ ABC for a wrapper around an Algorithm. """
-from abc import ABC
-from contextlib import contextmanager
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar, Union
+from __future__ import annotations
 
-import numpy as np
+from contextlib import contextmanager
+from typing import Any, Generic, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
-# Type aliases
-Point = Union[Tuple, List[float], np.ndarray]
-Results = List[Dict]
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
 
-class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
+class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
     """Base class for a Wrapper around an algorithm."""
 
-    def __init__(self, space: Space, **kwargs):
+    def __init__(self, space: Space, algorithm: AlgoType):
         # NOTE: This field is created automatically in the BaseAlgorithm class.
-        self._algorithm: AlgoType
-        super().__init__(space, **kwargs)
+        super().__init__(space)
+        self._algorithm = algorithm
 
     @property
     def algorithm(self) -> AlgoType:
@@ -34,27 +30,6 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """
         return self._algorithm
 
-    @algorithm.setter
-    def algorithm(self, value: AlgoType) -> None:
-        """Sets the wrapped algorithm. Can only be called once.
-
-        Parameters
-        ----------
-        value : AlgoType
-            The algorithm wrapped by this Wrapped.
-
-        Raises
-        ------
-        RuntimeError
-            If `self._algorithm` is already set.
-        """
-        _algorithm = getattr(self, "_algorithm", None)
-        if _algorithm is not None and value is not _algorithm:
-            raise RuntimeError(
-                "Can't change the value of `algorithm` after it's been set!"
-            )
-        self._algorithm = value
-
     @property
     def unwrapped(self) -> BaseAlgorithm:
         """Returns the unwrapped algorithm (the root).
@@ -66,23 +41,28 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """
         return self.algorithm.unwrapped
 
-    def seed_rng(self, seed: Optional[int]) -> None:
+    def seed_rng(self, seed: int | Sequence[int] | None) -> None:
         """Seed the state of the algorithm's random number generator."""
         self.algorithm.seed_rng(seed)
 
     @property
-    def state_dict(self) -> Dict:
-        """Return a state dict that can be used to reset the state of the algorithm."""
+    def state_dict(self) -> dict:
+        """Return a state dict that can be used to reset the state of the algorithm.
+
+        AlgoWrappers should overwrite this and add any additional state they are responsible for.
+        """
         return self.algorithm.state_dict
 
-    def set_state(self, state_dict: Dict) -> None:
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
+
+        AlgoWrappers should overwrite this and restore any additional state they have.
         """
         self.algorithm.set_state(state_dict)
 
-    def suggest(self, num: int = 1) -> List[Point]:
+    def suggest(self, num: int = 1) -> list[Trial]:
         """Suggest a `num` of new sets of parameters.
 
         :param num: how many sets to be suggested.
@@ -92,15 +72,17 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """
         return self.algorithm.suggest(num)
 
-    def observe(
-        self, points: List[Union[List, Tuple, np.ndarray]], results: List[Dict]
-    ):
-        """Observe evaluation `results` corresponding to list of `points` in
-        space.
+    def observe(self, trials: list[Trial]):
+        """Observe the `results` of the evaluation of the `trials` in the
+        process defined in user's script.
 
-        .. seealso:: `orion.algo.base.BaseAlgorithm.observe`
+        Parameters
+        ----------
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
+
         """
-        self.algorithm.observe(points, results)
+        self.algorithm.observe(trials)
 
     @property
     def n_suggested(self):
@@ -117,39 +99,32 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """Return True, if an algorithm holds that there can be no further improvement."""
         return self.algorithm.is_done
 
-    def score(self, point: Point) -> float:
-        """Allow algorithm to evaluate `point` based on a prediction about
-        this parameter set's performance. Return a subjective measure of expected
-        performance.
-
-        By default, return the same score any parameter (no preference).
-        """
+    def score(self, point: Trial) -> float:
         return self.algorithm.score(point)
 
-    def judge(self, point: Point, measurements: Any) -> Optional[Dict]:
-        """Inform an algorithm about online `measurements` of a running trial.
-
-        The algorithm can return a dictionary of data which will be provided
-        as a response to the running environment. Default is None response.
-
-        """
+    def judge(self, point: Trial, measurements: Any) -> dict | None:
         return self.algorithm.judge(point, measurements)
 
-    @property
-    def should_suspend(self) -> bool:
-        """Allow algorithm to decide whether a particular running trial is still
-        worth to complete its evaluation, based on information provided by the
-        `judge` method.
-
-        """
-        return self.algorithm.should_suspend
+    def should_suspend(self, trial: Trial) -> bool:
+        return self.algorithm.should_suspend(trial)
 
     @property
-    def configuration(self) -> Dict:
+    def configuration(self) -> dict:
         """Return tunable elements of this algorithm in a dictionary form
         appropriate for saving.
+
+        Subclasses should overwrite this method and add any of their state.
         """
-        return self.algorithm.configuration
+        dict_form = dict()
+        for attrname in self._param_names:
+            if attrname.startswith("_"):  # Do not log _space or others in conf
+                continue
+            value = getattr(self, attrname)
+            if attrname == "algorithm":
+                value = value.configuration
+            dict_form[attrname] = value
+
+        return {self.__class__.__name__.lower(): dict_form}
 
     @contextmanager
     def warm_start_mode(self):
@@ -166,30 +141,3 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType], ABC):
         """
         with self.algorithm.warm_start_mode():
             yield
-
-    @property
-    def trials_info(self) -> Dict[str, Tuple[Point, Results]]:
-        """ "read-only" property for the dict of points/trials of the wrapped algorithm."""
-        return self._trials_info
-
-    @property
-    def _trials_info(self) -> Dict[str, Tuple[Point, Results]]:
-        """Proxy for the `_trials_info` field of the wrapped algorithm.
-
-        NOTE: Adding this property just to make sure that if an algo wrapper doesn't
-        override a BaseAlgorithm method (for example when new methods / properties get
-        added to BaseAlgorithm but aren't yet overridden in AlgoWrapper), then things
-        don't accidentally get changed in the Wrapper's `_trials_info` rather than in
-        the wrapped algorithm's.
-        """
-        return self.algorithm._trials_info  # type: ignore
-
-    @_trials_info.setter
-    def _trials_info(self, value: Dict[str, Trial]) -> None:
-        if self.algorithm is None:
-            # this is being set as part of '__init__' of the base class: ignore.
-            # This __trials_info_set attribute should be False.
-            assert not getattr(self, "__trials_info_set", False)
-            self.__trials_info_set = True
-            return
-        self.unwrapped._trials_info = value

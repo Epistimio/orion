@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Base Search Algorithm
 =====================
@@ -16,15 +15,13 @@ Examples
 """
 from __future__ import annotations
 
-import copy
-import hashlib
 import inspect
 import logging
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
+from contextlib import contextmanager
 
 from orion.algo.registry import Registry
-from orion.algo.space import Fidelity
-from orion.core.utils import GenericFactory, format_trials
+from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -139,7 +136,6 @@ class BaseAlgorithm:
 
         .. note:: This methods does nothing if the algorithm is deterministic.
         """
-        pass
 
     @property
     def state_dict(self):
@@ -212,7 +208,6 @@ class BaseAlgorithm:
         this method. This is important for the algorithm to be able to keep track of the trials it
         has suggested/observed, and for the auto-generated unit-tests to pass.
         """
-        pass
 
     def observe(self, trials):
         """Observe the `results` of the evaluation of the `trials` in the
@@ -324,24 +319,23 @@ class BaseAlgorithm:
             return False
 
         fidelity_index = self.fidelity_index
-
-        def _is_completed(trial: Trial) -> bool:
-            return trial.status == "completed"
-
+        max_fidelity_value = None
         # When a fidelity dimension is present, we only count trials that have the maximum value.
         if fidelity_index is not None:
             _, max_fidelity_value = self.space[fidelity_index].interval()
 
-            def _is_completed(trial: Trial) -> bool:
-                return (
-                    trial.status == "completed"
-                    and trial.params[fidelity_index] >= max_fidelity_value
-                )
+        def _is_completed(trial: Trial) -> bool:
+            if fidelity_index is None:
+                return trial.status == "completed"
+            return (
+                trial.status == "completed"
+                and trial.params[fidelity_index] >= max_fidelity_value
+            )
 
         return sum(map(_is_completed, self.registry)) >= max_trials
 
     def score(self, trial):  # pylint:disable=no-self-use,unused-argument
-        """Allow algorithm to evaluate `point` based on a prediction about
+        """Allow algorithm to evaluate `trial` based on a prediction about
         this parameter set's performance.
 
         By default, return the same score any parameter (no preference).
@@ -353,7 +347,7 @@ class BaseAlgorithm:
 
         Returns
         -------
-        A subjective measure of expected perfomance.
+        A subjective measure of expected performance.
 
         """
         return 0
@@ -417,6 +411,26 @@ class BaseAlgorithm:
     def space(self, space):
         """Set space."""
         self._space = space
+
+    @property
+    def unwrapped(self):
+        return self
+
+    @contextmanager
+    def warm_start_mode(self):
+        """Context manager that is used while using points from similar experiments to
+        bootstrap (warm-start) the algorithm.
+
+        The idea behind this is that we don't want the algorithm to modify its state the
+        same way it would if it were observing regular points. For example, the number
+        of "used" trials shouldn't increase, etc.
+
+        New Algorithms or Algo wrappers can implement this method to control how the
+        state of the algo is affected by observing trials from other tasks than the
+        current (target) task.
+        """
+
+        yield
 
 
 algo_factory = GenericFactory(BaseAlgorithm)
