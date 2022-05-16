@@ -29,10 +29,15 @@ repos:
     rev: v2.31.0
     hooks:
       - id: pyupgrade
-        # TODO: remove `--keep-runtime-typing` option
-        args: ["--py37-plus", "--keep-runtime-typing"]
+        args: ["--py37-plus"]
   - repo: https://github.com/PyCQA/autoflake
     rev: v1.4
     hooks:
       - id: autoflake
         args: ["--in-place", "--expand-star-imports", "--remove-all-unused-imports", "--ignore-init-module-imports"]
+
+  - repo: https://github.com/PyCQA/doc8
+    rev: 0.8.1
+    hooks:
+      - id: doc8
+        args: ["--max-line-length=100", "--file-encoding=utf-8"]
