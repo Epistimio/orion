@@ -33,6 +33,7 @@ extras_require = {
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
+    "hebo": ["numpy", "torch", "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",],
 }
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 

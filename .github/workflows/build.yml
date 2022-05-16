@@ -66,11 +66,11 @@ jobs:
     needs: pretest
     runs-on: ${{ matrix.platform }}
     strategy:
-      max-parallel: 4
+      max-parallel: 6
       matrix:
         platform: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
-        algo: [nevergrad]
+        algo: [nevergrad, hebo]
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
