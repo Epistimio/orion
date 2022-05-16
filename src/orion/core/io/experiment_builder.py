@@ -9,7 +9,7 @@ configuration.
 The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
 when the user request an experiment with specific options. One can easily create a new experiment
 with ``Experiment('some_experiment_name')``, but the configuration of a _writable_ experiment is
-less straighforward. This is because there is many sources of configuration and they have a strict
+less straightforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
@@ -100,7 +100,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import create_algo
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ log = logging.getLogger(__name__)
 ##
 
 
-def build(name, version=None, branching=None, **config):
+def build(name, version=None, branching=None, knowledge_base=None, **config):
     """Build an experiment object
 
     If new, ``space`` argument must be provided, else all arguments are fetched from the database
@@ -178,13 +178,18 @@ def build(name, version=None, branching=None, **config):
 
     if "space" not in config:
         raise NoConfigurationError(
-            "Experiment {} does not exist in DB and space was not defined.".format(name)
+            f"Experiment {name} does not exist in DB and space was not defined."
         )
 
     if len(config["space"]) == 0:
         raise NoConfigurationError("No prior found. Please include at least one.")
 
-    experiment = create_experiment(mode="x", **copy.deepcopy(config))
+    experiment = create_experiment(
+        mode="x",
+        knowledge_base=knowledge_base,
+        **copy.deepcopy(config),
+    )
+
     if experiment.id is None:
         log.debug("Experiment not found in DB. Now attempting registration in DB.")
         try:
@@ -380,7 +385,8 @@ def create_experiment(name, version, mode, space, **kwargs):
         Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
-
+    knowledge_base: AbstractKnowledgeBase, optional
+        Knowledge base, or Knowledge base configuration.
     """
     experiment = Experiment(name=name, version=version, mode=mode)
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
@@ -390,12 +396,14 @@ def create_experiment(name, version, mode, space, **kwargs):
     experiment.max_broken = kwargs.get(
         "max_broken", orion.core.config.experiment.max_broken
     )
+    knowledge_base = kwargs.get("knowledge_base")
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(
         experiment.space,
         experiment.max_trials,
         kwargs.get("algorithms"),
         ignore_unavailable=mode != "x",
+        knowledge_base=knowledge_base,
     )
     # TODO: Remove for v0.4
     _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
@@ -488,7 +496,9 @@ def _instantiate_space(config):
     return SpaceBuilder().build(config)
 
 
-def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
+def _instantiate_algo(
+    space, max_trials, config=None, ignore_unavailable=False, knowledge_base=None
+):
     """Instantiate the algorithm object
 
     Parameters
@@ -509,14 +519,30 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
         algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(
             backported_config.pop("of_type")
         )
+
         # NOTE: the config doesn't have the `of_type` key anymore, it only has the algo's kwargs
         wrapped_algo = create_algo(
             space=space, algo_type=algo_constructor, **backported_config
         )
+        # TODO: Adapt this: Needs to happen before creating the algo!
+        if knowledge_base is not None:
+            from orion.core.worker.multi_task_algo import MultiTaskAlgo
+
+            wrapped_algo = MultiTaskAlgo(
+                space=space, algorithm_config=config, knowledge_base=knowledge_base
+            )
+
+            # NOTE: need to wrap the algo with this as well.
         if max_trials is not None:
             # todo: Create a `max_trials` property or annotation on BaseAlgorithm at some point.
             wrapped_algo.algorithm.max_trials = max_trials
 
+        else:
+            algo = SpaceTransformAlgoWrapper(
+                algo_constructor, space=space, **backported_config
+            )
+
+        algo.algorithm.max_trials = max_trials
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
@@ -633,7 +659,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
         name_conflict = conflicts.get([ExperimentNameConflict])[0]
         if not name_conflict.is_resolved and not version:
             log.debug(
-                "A race condition likely occured during conflicts resolutions. "
+                "A race condition likely occurred during conflicts resolutions. "
                 "Now rolling back and attempting re-building the branched experiment."
             )
             raise RaceCondition(

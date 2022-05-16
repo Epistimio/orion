@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Common testing support module
 =============================
@@ -127,18 +126,17 @@ def generate_benchmark_experiments_trials(
     gen_trials = []
     algo_num = len(benchmark_algorithms)
     for i in range(task_number * algo_num):
-        import copy
 
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
-        exp["name"] = "experiment-name-{}".format(i)
+        exp["name"] = f"experiment-name-{i}"
         exp["algorithms"] = benchmark_algorithms[i % algo_num]["algorithm"]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)
         for j in range(max_trial):
             trial = copy.deepcopy(trial_config)
-            trial["_id"] = "{}{}".format(i, j)
+            trial["_id"] = f"{i}{j}"
             trial["experiment"] = i
             trials = generate_trials(trial, ["completed"])
             gen_trials.extend(trials)
@@ -166,7 +164,7 @@ def create_study_experiments(
         experiments = []
         experiments_info = []
         for i in range(task_number * len(n_workers) * len(algorithms)):
-            experiment = experiment_builder.build("experiment-name-{}".format(i))
+            experiment = experiment_builder.build(f"experiment-name-{i}")
 
             executor = Joblib(n_workers=workers[i], backend="threading")
             client = ExperimentClient(experiment, executor=executor)
@@ -198,7 +196,9 @@ def mock_space_iterate(monkeypatch):
 
 
 @contextmanager
-def create_experiment(exp_config=None, trial_config=None, statuses=None):
+def create_experiment(
+    exp_config=None, trial_config=None, statuses=None, knowledge_base=None
+):
     """Context manager for the creation of an ExperimentClient and storage init"""
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")

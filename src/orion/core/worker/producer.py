@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Produce and register samples to try
 ===================================
@@ -6,14 +5,21 @@ Produce and register samples to try
 Suggest new parameter sets which optimize the objective.
 
 """
+from __future__ import annotations
+
 import logging
+import typing
 
 from orion.core.io.database import DuplicateKeyError
+
+if typing.TYPE_CHECKING:
+    from orion.core.worker.knowledge_base import AbstractKnowledgeBase
+
 
 log = logging.getLogger(__name__)
 
 
-class Producer(object):
+class Producer:
     """Produce suggested sets of problem's parameter space to try out.
 
     It uses an `Experiment`s `BaseAlgorithm` object to observe trial results
@@ -22,7 +28,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment):
+    def __init__(self, experiment, knowledge_base: AbstractKnowledgeBase | None = None):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -30,6 +36,9 @@ class Producer(object):
         """
         log.debug("Creating Producer object.")
         self.experiment = experiment
+        self.knowledge_base: AbstractKnowledgeBase | None = knowledge_base
+        # Indicates whether the algo has been warm-started with the knowledge base.
+        self.warm_started = False
 
     def observe(self, trial):
         """Observe a trial to update algorithm's status"""
