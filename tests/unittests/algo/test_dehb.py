@@ -8,7 +8,7 @@ import pytest
 
 from orion.algo.dehb.dehb import IMPORT_ERROR, UnsupportedConfiguration
 from orion.core.utils import backward, format_trials
-from orion.testing.algo import BaseAlgoTests, TestPhase
+from orion.testing.algo import BaseAlgoTests, TestPhase, last_phase_only
 
 if IMPORT_ERROR:
     pytest.skip("skipping DEHB tests", allow_module_level=True)
@@ -102,19 +102,16 @@ class TestDEHB(BaseAlgoTests):
     def test_optimize_branin(self):
         pass
 
-    # pylint: disable=arguments-differ
-    @pytest.mark.parametrize("num", [100000, 1])
-    def test_is_done_max_trials(self, num):
-        space = self.create_space()
-
+    @last_phase_only
+    def test_is_done_max_trials(self, phase: TestPhase):
         # pylint: disable=invalid-name
         MAX_TRIALS = 10
-        algo = self.create_algo(space=space)
+        algo = self.create_algo()
         algo.algorithm.max_trials = MAX_TRIALS
 
         objective = 0
         while not algo.is_done:
-            trials = algo.suggest(num)
+            trials = algo.suggest(1)
 
             assert trials is not None
 
