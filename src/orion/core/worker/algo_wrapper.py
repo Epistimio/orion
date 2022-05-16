@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from typing import Any, Generic, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.registry import RegistryMapping
 from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
@@ -12,12 +13,29 @@ AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
 
 class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
-    """Base class for a Wrapper around an algorithm."""
+    """Base class for a Wrapper around an algorithm.
+
+    Applies some transformation to the incoming trials before they get passed to the underlying
+    algorithm, and applies the reverse transformation to the trials suggested by the algorithm
+    before they are suggested by the wrapper.
+    """
 
     def __init__(self, space: Space, algorithm: AlgoType):
         # NOTE: This field is created automatically in the BaseAlgorithm class.
         super().__init__(space)
         self._algorithm = algorithm
+        self.registry_mapping = RegistryMapping(
+            original_registry=self.registry,
+            transformed_registry=self.algorithm.registry,
+        )
+
+    def transform(self, trial: Trial) -> Trial:
+        """Transform a trial from the space of the wrapper to the space of the wrapped algorithm."""
+        return trial
+
+    def reverse_transform(self, trial: Trial) -> Trial:
+        """Transform a trial from the space of the wrapped algo to the space of the wrapper."""
+        return trial
 
     @property
     def algorithm(self) -> AlgoType:
@@ -70,7 +88,16 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
-        return self.algorithm.suggest(num)
+        transformed_trials = self.algorithm.suggest(num)
+        original_trials = []
+        for transformed_trial in transformed_trials:
+            original_trial = self.reverse_transform(transformed_trial)
+            self.register(original_trial)
+            original_trials.append(original_trial)
+            # NOTE: Also register the trial equivalence in the registry mapping.
+            self.registry_mapping.register(original_trial, transformed_trial)
+
+        return original_trials
 
     def observe(self, trials: list[Trial]):
         """Observe the `results` of the evaluation of the `trials` in the
@@ -82,7 +109,12 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
            Trials from a `orion.algo.space.Space`.
 
         """
-        self.algorithm.observe(trials)
+        transformed_trials: list[Trial] = []
+        for trial in trials:
+            self.register(trial)
+            transformed_trial = self.transform(trial)
+            transformed_trials.append(transformed_trial)
+        self.algorithm.observe(transformed_trials)
 
     @property
     def n_suggested(self):
@@ -99,14 +131,14 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         """Return True, if an algorithm holds that there can be no further improvement."""
         return self.algorithm.is_done
 
-    def score(self, point: Trial) -> float:
-        return self.algorithm.score(point)
+    def score(self, trial: Trial) -> float:
+        return self.algorithm.score(self.transform(trial))
 
-    def judge(self, point: Trial, measurements: Any) -> dict | None:
-        return self.algorithm.judge(point, measurements)
+    def judge(self, trial: Trial, measurements: Any) -> dict | None:
+        return self.algorithm.judge(self.transform(trial), measurements)
 
     def should_suspend(self, trial: Trial) -> bool:
-        return self.algorithm.should_suspend(trial)
+        return self.algorithm.should_suspend(self.transform(trial))
 
     @property
     def configuration(self) -> dict:
