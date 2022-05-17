@@ -30,6 +30,15 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
 
 extras_require = {
     "test": tests_require,
+    "docs": [
+        "matplotlib",
+        "numpydoc",
+        "sphinx",
+        "sphinx_rtd_theme",
+        "sphinxcontrib.httpdomain",
+        "sphinx-autoapi",
+        "sphinx_gallery",
+    ],
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
@@ -43,9 +52,10 @@ extras_require = {
         "ConfigSpace",
         "sspace @ git+https://github.com/Epistimio/sample-space.git",
     ],
+    "pb2": ["GPy"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
-extras_require["all"] = list(set(sum(extras_require.values(), [])))
+extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 setup_args = dict(
     name="orion",
@@ -76,6 +86,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "pb2 = orion.algo.pbt.pb2:PB2",
             "bohb = orion.algo.bohb:BOHB",
             "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
         ],
