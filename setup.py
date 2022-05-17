@@ -41,7 +41,7 @@ extras_require = {
     "bohb": [
         "hpbandster",
         "ConfigSpace",
-        "sspace @ git+https://github.com/Epistimio/sample-space",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git",
     ],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
