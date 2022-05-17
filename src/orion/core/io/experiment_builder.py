@@ -100,7 +100,8 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.knowledge_base import KnowledgeBase
+from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -497,7 +498,11 @@ def _instantiate_space(config):
 
 
 def _instantiate_algo(
-    space, max_trials, config=None, ignore_unavailable=False, knowledge_base=None
+    space: Space,
+    max_trials: int | None,
+    config: dict | None = None,
+    ignore_unavailable: bool = False,
+    knowledge_base: KnowledgeBase | None = None,
 ):
     """Instantiate the algorithm object
 
@@ -511,38 +516,31 @@ def _instantiate_algo(
         Otherwise, raise Factory error.
 
     """
-    if not config:
-        config = orion.core.config.experiment.algorithms
-
+    config = config or orion.core.config.experiment.algorithms
     try:
+        # FIXME: This doesn't quite work atm. The algo should usually also now include the config
+        # of the wrappers.
+        wrapped_algo_config = config
+
         backported_config = backward.port_algo_config(config)
         algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(
             backported_config.pop("of_type")
         )
+        # TODO: For nested algo configs, we need to also make sure that they aren't dicts
+        from orion.core.worker.algo_wrappers import AlgoWrapper
 
+        assert not issubclass(algo_constructor, AlgoWrapper), algo_constructor
         # NOTE: the config doesn't have the `of_type` key anymore, it only has the algo's kwargs
         wrapped_algo = create_algo(
-            space=space, algo_type=algo_constructor, **backported_config
+            space=space,
+            algo_type=algo_constructor,
+            knowledge_base=knowledge_base,
+            **backported_config,
         )
-        # TODO: Adapt this: Needs to happen before creating the algo!
-        if knowledge_base is not None:
-            from orion.core.worker.multi_task_algo import MultiTaskAlgo
-
-            wrapped_algo = MultiTaskAlgo(
-                space=space, algorithm_config=config, knowledge_base=knowledge_base
-            )
-
-            # NOTE: need to wrap the algo with this as well.
         if max_trials is not None:
             # todo: Create a `max_trials` property or annotation on BaseAlgorithm at some point.
-            wrapped_algo.algorithm.max_trials = max_trials
+            wrapped_algo.unwrapped.max_trials = max_trials
 
-        else:
-            algo = SpaceTransformAlgoWrapper(
-                algo_constructor, space=space, **backported_config
-            )
-
-        algo.algorithm.max_trials = max_trials
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
