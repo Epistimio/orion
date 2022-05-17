@@ -280,8 +280,6 @@ Configuration
 
   experiment:
 
-    strategy: StubParallelStrategy
-
     algorithms:
       pbt:
         population_size: 50
@@ -319,6 +317,58 @@ Configuration
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration, requires_type, rng, register
 
+
+.. _PB2:
+
+Population Based Bandits (PB2)
+------------------------------
+
+Population Based Bandits is a variant of Population Based Training using probabilistic model to
+guide
+the search instead of relying on purely random perturbations.
+PB2 implementation uses a time-varying Gaussian process to model the optimization curves
+during training. This implementation is based on `ray-tune`_ implementation. Oríon's version
+supports discrete and categorical dimensions, and offers better resiliency to broken
+trials by using back-tracking.
+
+.. _ray-tune: https://github.com/ray-project/ray/blob/master/python/ray/tune/schedulers/pb2_utils.py
+
+See documentation below for more information on the algorithm and how to use it.
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+
+    algorithms:
+      pb2:
+        population_size: 50
+        generations: 10
+        fork_timeout: 60
+        exploit:
+          of_type: PipelineExploit
+          exploit_configs:
+            - of_type: BacktrackExploit
+              min_forking_population: 5
+              truncation_quantile: 0.9
+              candidate_pool_ratio: 0.2
+            - of_type: TruncateExploit
+              min_forking_population: 5
+              truncation_quantile: 0.8
+              candidate_pool_ratio: 0.2
+
+
+
+.. autoclass:: orion.algo.pbt.pb2.PB2
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, requires_type, rng, register
 
 
 .. _tpe-algorithm:

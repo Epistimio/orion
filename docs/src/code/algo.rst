@@ -17,6 +17,7 @@ Algorithm modules
    algo/asha
    algo/bohb
    algo/pbt
+   algo/pb2
    algo/tpe
    algo/nevergrad
    algo/parallel_strategy
