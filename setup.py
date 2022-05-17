@@ -37,6 +37,7 @@ extras_require = {
         "ConfigSpace",
         "dehb @ git+https://github.com/automl/DEHB.git@development",
         "sspace @ git+https://github.com/Epistimio/sample-space.git",
+    ],
     "bohb": [
         "hpbandster",
         "ConfigSpace",
