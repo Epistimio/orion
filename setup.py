@@ -37,6 +37,10 @@ extras_require = {
         "ConfigSpace",
         "dehb @ git+https://github.com/automl/DEHB.git@development",
         "sspace @ git+https://github.com/Epistimio/sample-space.git",
+    "bohb": [
+        "hpbandster",
+        "ConfigSpace",
+        "sspace @ git+https://github.com/Epistimio/sample-space",
     ],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
@@ -71,6 +75,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "bohb = orion.algo.bohb:BOHB",
             "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
         ],
         "Database": [

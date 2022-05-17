@@ -16,6 +16,7 @@ Algorithm modules
    algo/hyperband
    algo/asha
    algo/dehb
+   algo/bohb
    algo/pbt
    algo/tpe
    algo/nevergrad
