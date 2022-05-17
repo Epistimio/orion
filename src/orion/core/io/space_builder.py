@@ -198,7 +198,7 @@ class DimensionBuilder(object):
         if not hasattr(self, name):
             return None
         try:
-            dimension = eval("self." + expression, globals_, {"self": self})
+            dimension = eval("self." + expression, globals_, locals_)
             return dimension
         except AttributeError as error:
             raise AttributeError(f"Parameter '{name}': {error}") from error
