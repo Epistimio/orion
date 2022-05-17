@@ -14,6 +14,8 @@ Examples
 >>> algo_factory.create('some_fancy_algo', space, **some_fancy_algo_config)
 
 """
+from __future__ import annotations
+
 import copy
 import hashlib
 import inspect
@@ -186,7 +188,7 @@ class BaseAlgorithm:
         return None
 
     @abstractmethod
-    def suggest(self, num):
+    def suggest(self, num: int) -> list[Trial]:
         """Suggest a `num` of new sets of parameters.
 
         Parameters

@@ -564,6 +564,7 @@ generations = 5
 @pytest.mark.usefixtures("no_shutil_copytree")
 class TestGenericPBT(BaseAlgoTests):
     algo_name = "pbt"
+    algo_type = PBT
     max_trials = population_size * generations
     config = {
         "seed": 123456,
@@ -605,7 +606,7 @@ class TestGenericPBT(BaseAlgoTests):
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
 
     phases: ClassVar[list[TestPhase]] = [
-        TestPhase("random", 5, "space.sample"),
+        TestPhase("random", 0, "space.sample"),
         TestPhase("generation_2", 2 * population_size, "_generate_offspring"),
         TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
     ]
