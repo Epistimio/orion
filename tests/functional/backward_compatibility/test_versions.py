@@ -49,7 +49,7 @@ def get_evc_argument(version):
 
 def has_python_api(version):
     """Whether the python api exist in given version"""
-    return not version in ["0.1.6", "0.1.7"]
+    return version not in ["0.1.6", "0.1.7"]
 
 
 def clean_mongodb():

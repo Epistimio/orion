@@ -17,6 +17,8 @@ from sklearn import datasets
 from sklearn.model_selection import cross_validate
 from sklearn.svm import SVC
 
+# flake8: noqa: E265
+
 
 def main(C, gamma, tol, class_weight, joblib_backend="loky"):
 

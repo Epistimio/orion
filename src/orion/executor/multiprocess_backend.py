@@ -5,7 +5,6 @@ import pickle
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from multiprocessing import Process
-from multiprocessing.pool import AsyncResult
 from multiprocessing.pool import Pool as PyPool
 
 import cloudpickle

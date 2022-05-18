@@ -279,12 +279,8 @@ class ReadOnlyDB:
     #                     Attributes
     valid_attributes = (
         ["host", "name", "port", "username", "password"]
-        +
-        # Properties
-        ["is_connected"]
-        +
-        # Methods
-        ["initiate_connection", "close_connection", "read", "count"]
+        + ["is_connected"]  # Properties
+        + ["initiate_connection", "close_connection", "read", "count"]  # Methods
     )
 
     def __init__(self, database):

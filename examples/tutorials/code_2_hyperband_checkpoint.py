@@ -47,6 +47,7 @@ First things first, the imports.
 # noqa
 import os
 
+# flake8: noqa
 import numpy
 import torch
 import torch.nn as nn

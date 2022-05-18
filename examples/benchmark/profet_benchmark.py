@@ -11,7 +11,7 @@ from logging import getLogger as get_logger
 from pathlib import Path
 from typing import List, Type
 
-from orion.algo.base import OptimizationAlgorithm
+from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task.profet import (
@@ -20,6 +20,7 @@ from orion.benchmark.task.profet import (
     ProfetSvmTask,
     ProfetXgBoostTask,
 )
+from orion.benchmark.task.base import BenchmarkTask
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 try:
@@ -34,7 +35,7 @@ logger = get_logger("orion")
 logger.setLevel(logging.DEBUG)
 
 
-algos_available = set(OptimizationAlgorithm.types.keys()) - {"primaryalgo"}
+algos_available = set(algo_factory.get_classes().keys())
 
 
 @dataclass

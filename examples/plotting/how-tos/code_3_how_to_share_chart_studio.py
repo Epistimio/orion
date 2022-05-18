@@ -19,6 +19,8 @@ set Chart Studio's credentials.
 """
 import chart_studio
 
+# flake8: noqa
+
 username = "<your username>"
 api_key = "<your api_key>"
 

@@ -506,7 +506,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
 
         repetition_id, rung_id = self.infer_repetition_and_rung(num - 1)
 
-        brackets = algo.algorithm.brackets
+        brackets = []  # algo.algorithm.brackets
 
         assert len(brackets) == repetition_id
 

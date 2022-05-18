@@ -319,19 +319,19 @@ class BaseAlgorithm:
             return False
 
         fidelity_index = self.fidelity_index
-
-        def _is_completed(trial: Trial) -> bool:
-            return trial.status == "completed"
+        max_fidelity_value = None
 
         # When a fidelity dimension is present, we only count trials that have the maximum value.
         if fidelity_index is not None:
             _, max_fidelity_value = self.space[fidelity_index].interval()
 
-            def _is_completed(trial: Trial) -> bool:
-                return (
-                    trial.status == "completed"
-                    and trial.params[fidelity_index] >= max_fidelity_value
-                )
+        def _is_completed(trial: Trial) -> bool:
+            if fidelity_index is None:
+                return trial.status == "completed"
+            return (
+                trial.status == "completed"
+                and trial.params[fidelity_index] >= max_fidelity_value
+            )
 
         return sum(map(_is_completed, self.registry)) >= max_trials
 

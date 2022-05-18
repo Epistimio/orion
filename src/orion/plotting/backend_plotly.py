@@ -280,7 +280,7 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
 
     objective = get_objective_name(competitions)
     fig.update_layout(
-        title=f"Average Rankings",
+        title="Average Rankings",
         xaxis_title=f"Trials ordered by {order_by} time",
         yaxis_title=f"Ranking based on {objective}",
         hovermode="x",

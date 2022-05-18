@@ -32,6 +32,7 @@ except ImportError as err:
     warnings.warn(RuntimeWarning(_ERROR_MSG.format(err)))
     # NOTE: Need to set some garbage dummy values, so that the documentation can be generated without
     # actually having these values.
+
     def get_default_architecture(
         input_dimensionality: int, classification: bool = False, n_hidden: int = 500
     ) -> Any:

@@ -263,7 +263,7 @@ Notes
 ======
 
 Transformations
---------------
+---------------
 
 Some algorithms only support limited types of dimensions. In such case, these algorithms define
 the type required, and then a wrapper transforms the space to make it compatible.
