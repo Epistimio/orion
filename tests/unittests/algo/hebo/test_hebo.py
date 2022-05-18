@@ -152,6 +152,7 @@ def increase_max_trials_for_branin_task(request: SubRequest):
     models_that_suck_at_branin_task: list[ModelName] = [
         "catboost",
         "gpy",
+        "gumbel",
         "deep_ensemble",
         "fe_deep_ensemble",
         "masked_deep_ensemble",
