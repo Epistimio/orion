@@ -15,22 +15,13 @@ from orion.algo.hebo.hebo_algo import (
     ModelName,
     properly_seeded_models,
 )
-from orion.testing.algo import BaseAlgoTests, TestPhase
+from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
 if typing.TYPE_CHECKING:
     from _pytest.fixtures import SubRequest
 _model_names = sorted(model_dict.keys())
 _es_names = sorted(dict(get_algorithm_options()).keys())
 
-
-# def xfail_param(*args, reason: str, raises=()):
-#     """Adds a xfail mark to the given param."""
-#     return pytest.param(*args, marks=pytest.mark.xfail(reason=reason, raises=raises))
-
-
-# def skip_param(*args, reason: str, raises=None):  # pylint:disable=unused-argument
-#     """Adds a skip mark to the given param."""
-#     return pytest.param(*args, marks=pytest.mark.skip(reason=reason))
 
 RUN_QUICK = True
 # NOTE: Can set this to either `skip_param` or `xfail_param` to make the tests shorter or stricter.
@@ -69,7 +60,7 @@ _numpy_broadcasting_issue = skip_or_xfail_mark(
     reason="ES has a numpy broadcasting issue",
     raises=ValueError,
 )
-evolutionary_strategy_marks: dict[EvolutionStrategyName, list[pytest.MarkDecorator]] = {
+evolutionary_strategy_marks: dict[EvolutionStrategyName, list[pytest.MarkDecorator]] = {  # type: ignore
     "nsga2": [],
     "de": [_poor_constructor],
     "brkga": [_poor_constructor],
@@ -86,7 +77,7 @@ evolutionary_strategy_marks: dict[EvolutionStrategyName, list[pytest.MarkDecorat
     "ga": [_tournament_selection_bool_casting],
     "pso": [_numpy_broadcasting_issue],
 }
-default = skip_or_xfail_mark(reason=f"Isn't explicitly supported.")
+default = skip_or_xfail_mark(reason="Isn't explicitly supported.")
 
 
 @pytest.fixture(
@@ -126,11 +117,10 @@ def xfail_if_unseeded_model_chosen(request: SubRequest):
     # It seems like the signature of these tests can't be changed, because of `@phase` and/or
     # `parametrize_this`.
     tests_that_check_seeding = [
-        "test_seed_rng",  # TestHEBO.test_seed_rng,
-        "test_seed_rng_init",  # TestHEBO.test_seed_rng_init,
-        "test_state_dict",  # TestHEBO.test_state_dict,
+        TestHEBO.test_seed_rng,
+        TestHEBO.test_seed_rng_init,
+        TestHEBO.test_state_dict,
     ]
-    assert all(hasattr(TestHEBO, test_name) for test_name in tests_that_check_seeding)
 
     model_name: str = request.getfixturevalue("model_name")
 
@@ -149,7 +139,7 @@ def xfail_if_unseeded_model_chosen(request: SubRequest):
     # NOTE: Also can't use `request.function` because of `parametrize_this`, since it points
     # to the local closure inside `parametrize_this`.
     # if request.function in test_that_check_seeding:
-    if any(f_name in request.node.name for f_name in tests_that_check_seeding):
+    if any(func == request.function for func in tests_that_check_seeding):
         request.node.add_marker(
             pytest.mark.xfail(
                 reason=f"This model name {model_name} is not properly seeded.",
@@ -177,8 +167,6 @@ def increase_max_trials_for_branin_task(request: SubRequest):
     else:
         yield
 
-
-from orion.testing.algo import TestPhase, first_phase_only
 
 # Number of initial random points.
 N_INIT = 5
