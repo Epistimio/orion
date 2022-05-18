@@ -147,30 +147,8 @@ def xfail_if_unseeded_model_chosen(request: SubRequest):
         )
 
 
-@pytest.fixture(autouse=True)
-def increase_max_trials_for_branin_task(request: SubRequest):
-    models_that_suck_at_branin_task: list[ModelName] = [
-        "catboost",
-        "gpy",
-        "gumbel",
-        "deep_ensemble",
-        "fe_deep_ensemble",
-        "masked_deep_ensemble",
-    ]
-    model_name: ModelName = request.getfixturevalue("model_name")
-    if (
-        request.function.__name__ == "test_optimize_branin"
-        and model_name in models_that_suck_at_branin_task
-    ):
-        TestHEBO.branin_task_max_trials += 20
-        yield
-        TestHEBO.branin_task_max_trials -= 20
-    else:
-        yield
-
-
 # Number of initial random points.
-N_INIT = 5
+N_INIT = 10
 
 
 class TestHEBO(BaseAlgoTests):
