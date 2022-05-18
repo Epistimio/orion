@@ -115,7 +115,7 @@ fig
 # Dependency approximation
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 # By default, the hyperparameters are marginalized over 50 points. This may be suitable
-# for a small 2-D search space but likely unsufficient for 5 dimensions or more.
+# for a small 2-D search space but likely insufficient for 5 dimensions or more.
 # Here is an example with only 5 samples.
 
 start = time.perf_counter()

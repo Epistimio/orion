@@ -31,7 +31,7 @@ fig = experiment.plot.regret()
 fig
 
 #%%
-# The objective of the trials is overlayed as a scatter plot under the regret curve.
+# The objective of the trials is overlaid as a scatter plot under the regret curve.
 # Thanks to this we can see whether the algorithm focused its optimization close to the
 # optimum (if all points are close to the regret curve near the end) or if it explored far
 # from it (if many points are far from the regret curve near the end). We can see in this example

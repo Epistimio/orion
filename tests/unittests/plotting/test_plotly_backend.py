@@ -577,7 +577,7 @@ class TestPartialDependencies:
         )
 
     def test_one_param(self, monkeypatch):
-        """Test ploting a space with only 1 dim"""
+        """Test plotting a space with only 1 dim"""
         mock_train_regressor(monkeypatch)
         config = mock_space(y=None)
         mock_experiment(monkeypatch, y="drop")

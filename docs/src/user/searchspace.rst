@@ -86,7 +86,7 @@ to make them compatible with specific algorithms
 Real
 ----
 
-All continous priors are automatically casted to :class:`Real`.
+All continuous priors are automatically casted to :class:`Real`.
 
 .. _integer-dim:
 
@@ -99,7 +99,7 @@ distributions can be casted to :class:`Integer` by setting ``discrete=True``
 
 .. warning::
 
-   We recommend using continous priors with ``discrete=True``
+   We recommend using continuous priors with ``discrete=True``
    as there is an issue with scipy discrete distribution because of incorrect interval. Issue
    is documented
    `here <https://github.com/Epistimio/orion/issues/49>`_.
@@ -136,7 +136,7 @@ Argument to cast a continuous distribution into :ref:`integer-dim`. Defaults to 
 ex: ``uniform(0, 10, default_value=5)``
 
 Dimensions can be set to a default value so that commandline call `insert` can support insertion
-without specifing this hyperparameter, assigning it the default value. This is also usefull in when
+without specifying this hyperparameter, assigning it the default value. This is also useful in when
 using the :ref:`EVC system`, so that experiments where an hyperparameter is deleted or added can
 adapt trials from other experiments by using the default value.
 
@@ -262,7 +262,7 @@ and the corresponding path is passed to the user script instead of the original 
 Notes
 ======
 
-Tranformations
+Transformations
 --------------
 
 Some algorithms only support limited types of dimensions. In such case, these algorithms define
