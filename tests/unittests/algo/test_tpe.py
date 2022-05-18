@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.tpe`."""
 from __future__ import annotations
 
 import copy
 import itertools
 import timeit
-from typing import Sequence
+from typing import ClassVar
 
 import numpy
 import numpy as np
@@ -23,10 +22,10 @@ from orion.algo.tpe import (
     ramp_up_weights,
 )
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests, TestPhase, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
 
 @pytest.fixture()
@@ -221,7 +220,7 @@ class TestCategoricalSampler:
 
     def test_cat_sampler_creation(self, tpe: TPE):
         """Test CategoricalSampler creation"""
-        obs = [0, 3, 9]
+        obs: list | numpy.ndarray = [0, 3, 9]
         choices = list(range(-5, 5))
         cat_sampler = CategoricalSampler(tpe, obs, choices)
         assert len(cat_sampler.weights) == len(choices)
@@ -257,9 +256,11 @@ class TestCategoricalSampler:
 
         assert numpy.all(cat_sampler.weights == weights)
 
-    def test_sample(self, tpe: TPE):
+    @pytest.mark.parametrize("seed", [123, 456])
+    def test_sample(self, tpe: TPE, seed: int):
         """Test CategoricalSampler sample function"""
-        obs = numpy.random.randint(0, 10, 100)
+        rng = numpy.random.RandomState(seed)
+        obs = rng.randint(0, 10, 100)
         choices = ["a", "b", 11, 15, 17, 18, 19, 20, 25, "c"]
         cat_sampler = CategoricalSampler(tpe, obs, choices)
 
@@ -270,7 +271,7 @@ class TestCategoricalSampler:
         assert numpy.all(points < 10)
 
         weights = numpy.linspace(1, 10, num=10) ** 3
-        numpy.random.shuffle(weights)
+        rng.shuffle(weights)
         weights = weights / weights.sum()
         cat_sampler = CategoricalSampler(tpe, obs, choices)
         cat_sampler.weights = weights
@@ -774,57 +775,62 @@ class TestTPE(BaseAlgoTests):
             },
         },
     }
+    max_trials: ClassVar[int] = 30
 
     phases: ClassVar[list[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
-        TestPhase("bo", N_INIT + 1, "_suggest_bo"),
+        TestPhase("bo", N_INIT, "_suggest_bo"),
     ]
 
-    def test_suggest_init(self, mocker):
+    @first_phase_only
+    def test_suggest_init(self, first_phase: TestPhase):
+        """Test that the first call to `suggest` returns all the random initial points
+        (and only those).
+        """
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, 0, algo, "space.sample")
-        points = algo.suggest(1000)
+        # Ask for more than the number of points in the first phase.
+        points = algo.suggest(first_phase.length * 3)
         assert points is not None
-        assert len(points) == N_INIT
+        assert len(points) == first_phase.length
 
-    def test_suggest_init_missing(self, mocker):
+    @first_phase_only
+    def test_suggest_init_missing(self, first_phase: TestPhase):
         algo = self.create_algo()
         missing = 3
-        spy = self.spy_phase(mocker, N_INIT - missing, algo, "space.sample")
-        points = algo.suggest(1000)
+        self.force_observe(algo=algo, num=first_phase.length - missing)
+        # Ask for more than the number of points in the first phase.
+        points = algo.suggest(first_phase.length * 3)
         assert points is not None
         assert len(points) == missing
 
-    def test_suggest_init_overflow(self, mocker):
+    @first_phase_only
+    def test_suggest_init_overflow(self, mocker, first_phase: TestPhase):
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, N_INIT - 1, algo, "space.sample")
-        # Now reaching N_INIT
-        points = algo.suggest(1000)
-        assert points is not None
-        assert len(points) == 1
-        # Verify point was sampled randomly, not using BO
+
+        self.force_observe(algo=algo, num=first_phase.length - 1)
+        spy = mocker.spy(algo.algorithm.space, "sample")
+        # Now reaching end of the first phase, by asking more trials than the length of the
+        # first phase.
+        trials = algo.suggest(first_phase.length * 3)
+        assert trials is not None
+        assert len(trials) == 1
+
+        # Verify trial was sampled randomly, not using BO
         assert spy.call_count == 1
-        # Overflow above N_INIT
-        points = algo.suggest(1000)
-        assert points is not None
-        assert len(points) == 1
-        # Verify point was sampled randomly, not using BO
+
+        # Next call to suggest should still be in first phase, since we still haven't observed that
+        # missing random trial.
+        trials = algo.suggest(first_phase.length * 3)
+        assert trials is not None
+        assert len(trials) == 1
+        # Verify trial was sampled randomly, not using BO
         assert spy.call_count == 2
 
-    def test_suggest_n(self, mocker, num, attr):
-        """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
+    @first_phase_only
+    def test_thin_real_space(self, monkeypatch, first_phase: TestPhase):
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
-        points = algo.suggest(5)
-        assert points is not None
-        if num == 0:
-            assert len(points) == 5
-        else:
-            assert len(points) == 1
 
-    def test_thin_real_space(self, monkeypatch):
-        algo = self.create_algo()
-        self.force_observe(N_INIT + 1, algo)
+        self.force_observe(num=first_phase.length, algo=algo)
 
         original_sample = GMMSampler.sample
 
@@ -839,25 +845,26 @@ class TestTPE(BaseAlgoTests):
             return original_sample(self, num, attempts=attempts)
 
         monkeypatch.setattr(GMMSampler, "sample", sample)
-        with pytest.raises(RuntimeError) as exc:
+        with pytest.raises(
+            RuntimeError, match=rf"Failed to sample in interval \({low}, {high}\)"
+        ):
             algo.suggest(1)
 
-        assert exc.match(f"Failed to sample in interval \({low}, {high}\)")
-
+    @first_phase_only
     def test_is_done_cardinality(self):
         # TODO: Support correctly loguniform(discrete=True)
         #       See https://github.com/Epistimio/orion/issues/566
-        space = self.update_space(
-            {
-                "x": "uniform(0, 4, discrete=True)",
-                "y": "choices(['a', 'b', 'c'])",
-                "z": "uniform(1, 6, discrete=True)",
-            }
-        )
-        space = self.create_space(space)
+        space_dict = {
+            "x": "uniform(0, 4, discrete=True)",
+            "y": "choices(['a', 'b', 'c'])",
+            "z": "uniform(1, 6, discrete=True)",
+        }
+        space = self.create_space(space_dict)
         assert space.cardinality == 5 * 3 * 6
 
         algo = self.create_algo(space=space)
+        # Prevent the algo from exiting early because of a max_trials limit.
+        algo.algorithm.max_trials = None
         i = 0
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
@@ -873,17 +880,14 @@ class TestTPE(BaseAlgoTests):
 
         assert algo.is_done
 
+    @first_phase_only
     def test_log_integer(self, monkeypatch):
         """Verify that log integer dimensions do not go out of bound."""
-        # TODO: This test is now failing, there's something going on with the mapping/transforms.
         RANGE = 100
         # NOTE: Here we're passing the 'original' space, not the transformed space.
         algo = self.create_algo(
             space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
         )
-        # algo = TPE(
-        #     space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
-        # )
 
         algo.algorithm.max_trials = RANGE * 2
         values = list(range(1, RANGE + 1))
@@ -914,11 +918,10 @@ class TestTPE(BaseAlgoTests):
         assert algo.n_suggested == RANGE
         assert algo.n_observed == RANGE
 
-    @phase
-    def test_stuck_exploiting(self, mocker, num: int, attr: str):
+    @first_phase_only
+    def test_stuck_exploiting(self, monkeypatch):
         """Test that algo drops out when exploiting an already explored region."""
         algo = self.create_algo()
-        spy = self.spy_phase(mocker, 0, algo, "space.sample")
 
         trials = algo.space.sample(1)
         assert trials is not None
@@ -930,8 +933,8 @@ class TestTPE(BaseAlgoTests):
         def _suggest_random(self: TPE, num: int) -> list[Trial]:
             return self._suggest(num, sample)
 
-        mocker.patch("orion.algo.tpe.TPE._suggest_random", _suggest_random)
-        mocker.patch("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+        monkeypatch.setattr(TPE, "_suggest_random", _suggest_random)
+        monkeypatch.setattr(TPE, "_suggest_bo", _suggest_random)
 
         with pytest.raises(RuntimeError):
             self.force_observe(2, algo)

@@ -212,6 +212,51 @@ Configuration
                      executed_times, compute_bracket_idx
 
 
+.. _BOHB-algorithm:
+
+BOHB
+----
+
+`BOHB`_, is an integration of a Bayesian Optimization algorithm for the
+selection of hyperparameters to try at the first rung of Hyperband brackets.
+First batch of Trials will be sampled randomly, but subsequent ones will be
+selected using Bayesian Optimization.
+See :ref:`hyperband-algorithm` for more information on how to use multi-fidelity algorithms.
+
+.. _BOHB: https://arxiv.org/abs/1807.01774
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      bohb:
+        min_points_in_model: 20
+        top_n_percent: 15
+        num_samples: 64
+        random_fraction: 0.33
+        bandwidth_factor: 3
+        min_bandwidth": 1e-3
+        parallel_strategy:
+          of_type: StatusBasedParallelStrategy
+          strategy_configs:
+             broken:
+                of_type: MaxParallelStrategy
+
+
+.. autoclass:: orion.algo.bohb.BOHB
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+
 .. _PBT:
 
 Population Based Training (PBT)
@@ -234,8 +279,6 @@ Configuration
 .. code-block:: yaml
 
   experiment:
-
-    strategy: StubParallelStrategy
 
     algorithms:
       pbt:
@@ -274,6 +317,58 @@ Configuration
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration, requires_type, rng, register
 
+
+.. _PB2:
+
+Population Based Bandits (PB2)
+------------------------------
+
+Population Based Bandits is a variant of Population Based Training using probabilistic model to
+guide
+the search instead of relying on purely random perturbations.
+PB2 implementation uses a time-varying Gaussian process to model the optimization curves
+during training. This implementation is based on `ray-tune`_ implementation. Oríon's version
+supports discrete and categorical dimensions, and offers better resiliency to broken
+trials by using back-tracking.
+
+.. _ray-tune: https://github.com/ray-project/ray/blob/master/python/ray/tune/schedulers/pb2_utils.py
+
+See documentation below for more information on the algorithm and how to use it.
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+
+    algorithms:
+      pb2:
+        population_size: 50
+        generations: 10
+        fork_timeout: 60
+        exploit:
+          of_type: PipelineExploit
+          exploit_configs:
+            - of_type: BacktrackExploit
+              min_forking_population: 5
+              truncation_quantile: 0.9
+              candidate_pool_ratio: 0.2
+            - of_type: TruncateExploit
+              min_forking_population: 5
+              truncation_quantile: 0.8
+              candidate_pool_ratio: 0.2
+
+
+
+.. autoclass:: orion.algo.pbt.pb2.PB2
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, requires_type, rng, register
 
 
 .. _tpe-algorithm:

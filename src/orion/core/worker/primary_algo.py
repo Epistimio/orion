@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Sanitizing wrapper of main algorithm
 ====================================
@@ -123,15 +122,15 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         Parameters
         ----------
         num: int
-            Number of points to suggest. The algorithm may return less than the number of points
+            Number of trials to suggest. The algorithm may return less than the number of trials
             requested.
 
         Returns
         -------
-        list of trials or None
+        list of trials
             A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
-            trials to complete), in which case it will return None.
+            trials to complete), in which case it will return an empty list.
 
         Notes
         -----

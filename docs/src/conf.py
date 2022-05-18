@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Oríon documentation build configuration file.
 
@@ -25,7 +24,6 @@ How to document -- sources:
    5. `Cross-reference <http://www.sphinx-doc.org/en/stable/domains.html#python-roles>`_
 
 """
-import glob
 import os
 import re
 import sys
@@ -59,7 +57,7 @@ extensions = (
 )
 
 # General information about the project.
-project = u"orion"
+project = "orion"
 _full_version = orion.__version__
 author = orion.__author__
 copyright = orion.__copyright__
@@ -185,7 +183,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "orion.tex", u"Oríon Documentation", u"Epistímio", "manual"),
+    (master_doc, "orion.tex", "Oríon Documentation", "Epistímio", "manual"),
 ]
 
 
@@ -307,6 +305,8 @@ type_hints = [
     "AlgoType",
     "T",
     "orion.core.worker.primary_algo.AlgoType",
+    "orion.algo.hyperband.Owner",
+    "nevergrad.parametrization.container.Instrumentation",
 ]
 nitpicky = True
 nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr] + [
