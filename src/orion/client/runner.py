@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=too-many-arguments
 # pylint:disable=too-many-instance-attributes
 """
@@ -32,7 +31,7 @@ from orion.storage.base import LockAcquisitionTimeout
 log = logging.getLogger(__name__)
 
 
-class Protected(object):
+class Protected:
     """Prevent a signal to be raised during the execution of some code"""
 
     def __init__(self):
@@ -362,7 +361,7 @@ class Runner:
                     self.client.release(trial, status="interrupted")
                     continue
 
-                # Regular exception, might be caused by the choosen hyperparameters
+                # Regular exception, might be caused by the chosen hyperparameters
                 # themselves rather than the code in particular (like Out of Memory error
                 # for big batch sizes)
                 exception = result.exception

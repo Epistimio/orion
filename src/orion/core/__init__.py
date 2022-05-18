@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Oríon is an asynchronous distributed framework for black-box function optimization.
 
@@ -68,7 +67,7 @@ def define_config():
         "debug",
         option_type=bool,
         default=False,
-        help="Turn Oríon into debug mode. Storage will be overriden to in-memory EphemeralDB.",
+        help="Turn Oríon into debug mode. Storage will be overridden to in-memory EphemeralDB.",
     )
 
     return config
@@ -500,7 +499,7 @@ def define_evc_config(config):
         default=False,
         env_var="ORION_EVC_ORION_VERSION_CHANGE",
         help=(
-            "Set orion version change as resolved if branching event occured"
+            "Set orion version change as resolved if branching event occurred"
             "Child and parent experiment have access to all trials from each other "
             "when the only difference between them is the orion version used during execution."
         ),

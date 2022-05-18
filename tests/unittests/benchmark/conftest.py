@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Common fixtures and utils for benchmark unit tests."""
 
 import pytest
 
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.task import CarromTable, RosenBrock
-from orion.benchmark.task.profet.profet_task import MetaModelConfig
-from orion.testing import generate_trials
 
 
 @pytest.fixture()

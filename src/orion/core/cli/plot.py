@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the plot command
 ========================
@@ -94,7 +93,7 @@ def get_output(experiment, output, kind, out_type):
     """Create output file name based on experiment name, plot kind and file type.
 
     If the output filename is provided, it is appended with the file type if filename
-    does not already has the corresponding extention. (ex output.name -> output.name.png)
+    does not already has the corresponding extension. (ex output.name -> output.name.png)
     """
 
     if not output:

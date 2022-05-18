@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parallel Strategies
 ===================
@@ -24,7 +23,7 @@ CORRUPTED_DB_WARNING = """\
 Trial `%s` has an objective but status is not completed.
 This is likely due to a corrupted database, possibly because of
 database timeouts. Try setting manually status to `completed`.
-You can find documention to do this at
+You can find documentation to do this at
 https://orion.readthedocs.io/en/stable/user/storage.html#storage-backend.
 
 If you encounter this issue often, please consider reporting it to
@@ -46,9 +45,7 @@ def get_objective(trial: Trial) -> float | None:
     elif len(objectives) == 1:
         objective = objectives[0]
     elif len(objectives) > 1:
-        raise RuntimeError(
-            "Trial {} has {} objectives".format(trial.id, len(objectives))
-        )
+        raise RuntimeError(f"Trial {trial.id} has {len(objectives)} objectives")
 
     return objective
 
@@ -60,7 +57,7 @@ def get_objective(trial: Trial) -> float | None:
 
 # We want stub parallel strategy for Hyperband/ASHA/TPE for broken
 # We want MaxParallelStrategy for TPE.
-# It is so algorithm dependant, it should be within the algorithms.
+# It is so algorithm dependent, it should be within the algorithms.
 # strategy:
 #   broken:
 #       StubParallelStrategy:
@@ -294,7 +291,7 @@ class MeanParallelStrategy(ParallelStrategy):
 
     def lie(self, trial: Trial) -> Trial.Result | None:
         """See ParallelStrategy.lie"""
-        result = super(MeanParallelStrategy, self).lie(trial)
+        result = super().lie(trial)
         if result:
             return result
 

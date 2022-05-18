@@ -1,7 +1,5 @@
 import warnings
 
-import joblib
-
 from orion.executor.multiprocess_backend import PoolExecutor
 
 
@@ -12,4 +10,4 @@ class Joblib(PoolExecutor):
             "Use PoolExecutor instead.",
             DeprecationWarning,
         )
-        super(Joblib, self).__init__(n_workers=n_workers, backend=backend)
+        super().__init__(n_workers=n_workers, backend=backend)

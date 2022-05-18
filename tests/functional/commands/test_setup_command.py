@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test of the setup command."""
 import builtins
 import os
@@ -12,10 +11,10 @@ from orion.core.io.database import database_factory
 
 
 class _mock_input:
-    """Mock `input` to return a serie of strings."""
+    """Mock `input` to return a series of strings."""
 
     def __init__(self, values):
-        """Set the serie of values"""
+        """Set the series of values"""
         self.values = values
 
     def __call__(self, *args):
@@ -38,7 +37,7 @@ def test_creation_when_not_existing(monkeypatch, tmp_path):
 
     assert os.path.exists(config_path)
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content == {"database": {"type": "mongodb", "name": "name", "host": "host"}}
@@ -59,7 +58,7 @@ def test_creation_when_exists(monkeypatch, tmp_path):
 
     orion.core.cli.main(["db", "setup"])
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content != dump
@@ -78,7 +77,7 @@ def test_stop_creation_when_exists(monkeypatch, tmp_path):
 
     orion.core.cli.main(["db", "setup"])
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content == dump
@@ -109,7 +108,7 @@ def test_invalid_database(monkeypatch, tmp_path, capsys):
 
     orion.core.cli.main(["db", "setup"])
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content == {
@@ -135,7 +134,7 @@ def test_defaults(monkeypatch, tmp_path):
 
     orion.core.cli.main(["db", "setup"])
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content == {
@@ -151,7 +150,7 @@ def test_ephemeraldb(monkeypatch, tmp_path):
 
     orion.core.cli.main(["db", "setup"])
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content == {"database": {"type": "ephemeraldb"}}
@@ -167,7 +166,7 @@ def test_pickleddb(monkeypatch, tmp_path):
 
     orion.core.cli.main(["db", "setup"])
 
-    with open(config_path, "r") as output:
+    with open(config_path) as output:
         content = yaml.safe_load(output)
 
     assert content == {"database": {"type": "pickleddb", "host": host}}

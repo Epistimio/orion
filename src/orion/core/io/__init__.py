@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Input/output functions for interaction with user's script
 =========================================================

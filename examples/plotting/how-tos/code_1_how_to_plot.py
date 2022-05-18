@@ -101,7 +101,7 @@ fig.show()
 #                            experiment's unique name;
 #                            (default: None - specified either here or in a config)
 #    -u USER, --user USER  user associated to experiment's unique name;
-#                            (default: $USER - can be overriden either here or in a config)
+#                            (default: $USER - can be overridden either here or in a config)
 #    -v VERSION, --version VERSION
 #                            specific version of experiment to fetch; (default: None - latest experiment.)
 #    -c path-to-config, --config path-to-config

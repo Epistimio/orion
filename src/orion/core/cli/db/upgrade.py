@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to upgrade DB schemes
 ============================
@@ -168,7 +167,6 @@ def update_indexes(database):
 # pylint: disable=unused-argument
 def upgrade_mongodb(database):
     """Update mongo specific db scheme."""
-    pass
 
 
 def upgrade_pickledb(database):

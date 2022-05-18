@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Non permanent database
 ======================
@@ -141,7 +140,7 @@ class EphemeralDB(Database):
         return {}
 
 
-class EphemeralCollection(object):
+class EphemeralCollection:
     """Non permanent collection
 
     This collection is meant for debugging purposes within the EphemeralDB.
@@ -335,7 +334,7 @@ class EphemeralCollection(object):
         self.create_index("_id", unique=True)
 
 
-class EphemeralDocument(object):
+class EphemeralDocument:
     """Non permanent document
 
     This document is meant for debugging purposes within the EphemeralDB.
@@ -417,7 +416,7 @@ class EphemeralDocument(object):
 
         # All given keys are 0 (with possible exception of _id)
         if n_keys == 0:
-            new_keys = dict((key, 1) for key in self._data.keys() if key not in keys)
+            new_keys = {key: 1 for key in self._data.keys() if key not in keys}
             new_keys["_id"] = keys.get("_id", 1)
             keys = new_keys
 
@@ -428,7 +427,7 @@ class EphemeralDocument(object):
     def select(self, keys):
         """Only select or only drop the specified keys
 
-        For a pair (key, value) in the dictionnary, value=0 means the key will not be included
+        For a pair (key, value) in the dictionary, value=0 means the key will not be included
         while value=1 means it will.
 
         All specified keys should be 0 or 1. They cannot have different values with the exception

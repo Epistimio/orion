@@ -9,9 +9,7 @@ levels.
 """
 import argparse
 import contextlib
-import functools
 import multiprocessing
-import os
 import subprocess
 import sys
 import time
@@ -22,10 +20,6 @@ import numpy
 from ptera import probing
 
 from orion.client import build_experiment
-from orion.client.runner import Runner
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
-from orion.core.worker.experiment import Experiment
 from orion.testing import OrionState
 
 

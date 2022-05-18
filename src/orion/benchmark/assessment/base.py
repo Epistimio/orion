@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Base definition of Assessment
 ==============================
@@ -59,7 +58,6 @@ class BenchmarkAssessment(ABC):
         >>> {"AverageRank": {"RosenBrock": {"rankings": plotly.graph_objects.Figure}}}
 
         """
-        pass
 
     @property
     def configuration(self):

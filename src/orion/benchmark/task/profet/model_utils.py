@@ -1,7 +1,6 @@
 """ Options and utilities for training the profet meta-model from Emukit. """
 import json
 import pickle
-import typing
 import warnings
 from abc import ABC
 from copy import deepcopy
@@ -219,7 +218,7 @@ class MetaModelConfig(ABC):
                 raise RuntimeError(
                     f"Download finished, but file {file} still doesn't exist!"
                 )
-        with open(file, "r") as f:
+        with open(file) as f:
             res = json.load(f)
         X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
         if len(X.shape) == 1:

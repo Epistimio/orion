@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Common testing support module
 =============================
@@ -129,11 +128,12 @@ def generate_benchmark_experiments_trials(
     for i in range(task_number * algo_num):
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
-        exp["name"] = "experiment-name-{}".format(i)
+        exp["name"] = f"experiment-name-{i}"
         exp["algorithms"] = benchmark_algorithms[i % algo_num]["algorithm"]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)
+<<<<<<< HEAD
 
         exp_trial_config = copy.deepcopy(trial_config)
         exp_trial_config["experiment"] = i
@@ -142,6 +142,14 @@ def generate_benchmark_experiments_trials(
         ):
             trial["_id"] = f"{i}_{j}"
             gen_trials.append(trial)
+=======
+        for j in range(max_trial):
+            trial = copy.deepcopy(trial_config)
+            trial["_id"] = f"{i}{j}"
+            trial["experiment"] = i
+            trials = generate_trials(trial, ["completed"])
+            gen_trials.extend(trials)
+>>>>>>> Run pre-commit on all files, fix spelling mistakes
 
     return gen_exps, gen_trials
 
@@ -166,7 +174,7 @@ def create_study_experiments(
         experiments = []
         experiments_info = []
         for i in range(task_number * len(n_workers) * len(algorithms)):
-            experiment = experiment_builder.build("experiment-name-{}".format(i))
+            experiment = experiment_builder.build(f"experiment-name-{i}")
 
             executor = Joblib(n_workers=workers[i], backend="threading")
             client = ExperimentClient(experiment, executor=executor)

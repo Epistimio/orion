@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import logging
 import random
@@ -8,7 +7,7 @@ from multiprocessing import Pool
 
 import pytest
 from filelock import FileLock, SoftFileLock, Timeout
-from test_database import clean_db, dump_db, get_db, orion_db
+from test_database import get_db
 
 from orion.core.io.database import DatabaseTimeout, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
@@ -31,7 +30,7 @@ def db_type(pytestconfig, request):
 
 
 @pytest.mark.usefixtures("clean_db")
-class TestReadAndWrite(object):
+class TestReadAndWrite:
     """Calls to :meth:`orion.core.io.database.AbstractDB.read_and_write`."""
 
     def test_logging_when_getting_file_lock(self, caplog, orion_db):
@@ -56,13 +55,12 @@ def write(field, i):
         orion_db.write("concurrent", {field: i})
     except DuplicateKeyError:
         print("dup")
-        pass
 
     print(field, i)
 
 
 @pytest.mark.usefixtures("clean_db")
-class TestConcurreny(object):
+class TestConcurreny:
     """Test concurrent operations"""
 
     def test_concurrent_writes(self, orion_db):
@@ -137,7 +135,7 @@ def test_unpickable_error_find_document():
 
 
 def test_query_timeout(monkeypatch, orion_db):
-    """Verify that filelock.Timeout is catched and reraised as DatabaseTimeout"""
+    """Verify that filelock.Timeout is caught and reraised as DatabaseTimeout"""
     orion_db.timeout = 0.1
 
     def never_acquire(self, *arg, **kwargs):

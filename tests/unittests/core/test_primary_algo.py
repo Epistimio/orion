@@ -1,18 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
 from __future__ import annotations
 
 import copy
 import logging
 import typing
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar
 
 import numpy
 import pytest
 from pytest import MonkeyPatch
 
-from orion.algo.base import BaseAlgorithm, algo_factory
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials

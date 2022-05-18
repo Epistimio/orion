@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Function utilities for evc in cli
 =================================
@@ -101,7 +100,7 @@ def _add_orion_version_argument(parser, resolution_class):
         resolution_class.ARGUMENT,
         action="store_true",
         default=None,
-        help="Set orion version change as resolved if branching event occured",
+        help="Set orion version change as resolved if branching event occurred",
     )
 
 

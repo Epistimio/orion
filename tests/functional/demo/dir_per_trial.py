@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple script simulating behaviour of a program that requires inputs
 to determine and interact with a unique directory in local disk.
 """
@@ -26,7 +25,7 @@ def execute():
 
     # That's what is expected to happen
     os.makedirs(
-        os.path.join(inputs.dir, inputs.other_name, "my-exp-{}".format(inputs.name)),
+        os.path.join(inputs.dir, inputs.other_name, f"my-exp-{inputs.name}"),
         exist_ok=False,
     )  # Raise OSError if it exists
 

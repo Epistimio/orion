@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Wrappers for database frameworks
 ================================
@@ -17,7 +16,7 @@ from orion.core.utils.singleton import GenericSingletonFactory
 
 
 # pylint: disable=too-many-public-methods
-class Database(object):
+class Database:
     """Base class for database framework wrappers.
 
     Attributes
@@ -63,7 +62,6 @@ class Database(object):
     @abstractmethod
     def is_connected(self):
         """True, if practical connection has been achieved."""
-        pass
 
     @abstractmethod
     def initiate_connection(self):
@@ -75,12 +73,10 @@ class Database(object):
             If connection or authentication fails
 
         """
-        pass
 
     @abstractmethod
     def close_connection(self):
         """Disconnect from database, if `Database` `is_connected`."""
-        pass
 
     @abstractmethod
     def ensure_index(self, collection_name, keys, unique=False):
@@ -108,7 +104,6 @@ class Database(object):
         before the indexes are totally built.
 
         """
-        pass
 
     @abstractmethod
     def index_information(self, collection_name):
@@ -176,7 +171,6 @@ class Database(object):
             about indexes.
 
         """
-        pass
 
     @abstractmethod
     def read(self, collection_name, query=None, selection=None):
@@ -197,7 +191,6 @@ class Database(object):
             List of matched document[s]
 
         """
-        pass
 
     @abstractmethod
     def read_and_write(self, collection_name, query, data, selection=None):
@@ -231,7 +224,6 @@ class Database(object):
             about indexes.
 
         """
-        pass
 
     @abstractmethod
     def count(self, collection_name, query=None):
@@ -245,7 +237,6 @@ class Database(object):
            Filter entries in collection.
 
         """
-        pass
 
     @abstractmethod
     def remove(self, collection_name, query):
@@ -264,7 +255,6 @@ class Database(object):
             Number of documents removed
 
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -278,11 +268,10 @@ class Database(object):
             If unexpected, default value can be None.
 
         """
-        pass
 
 
 # pylint: disable=too-few-public-methods
-class ReadOnlyDB(object):
+class ReadOnlyDB:
     """Read-only view on a database."""
 
     __slots__ = ("_database",)
@@ -317,27 +306,19 @@ class DatabaseError(RuntimeError):
     implementation's own Exception types.
     """
 
-    pass
-
 
 class DuplicateKeyError(DatabaseError):
     """Exception type used when a write attempt is made but the new document
     have an index already contained in the database.
     """
 
-    pass
-
 
 class DatabaseTimeout(DatabaseError):
     """Exception type used when there is a timeout during database operations."""
 
-    pass
-
 
 class OutdatedDatabaseError(DatabaseError):
     """Exception type used when the database is outdated."""
-
-    pass
 
 
 database_factory = GenericSingletonFactory(Database)

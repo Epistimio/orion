@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 """
 Adapters to connect experiments within the EVC system
@@ -42,7 +41,7 @@ from orion.core.worker.trial import Trial
 log = logging.getLogger(__name__)
 
 
-class BaseAdapter(object, metaclass=ABCMeta):
+class BaseAdapter(metaclass=ABCMeta):
     """Base class describing what an adapter can do."""
 
     @classmethod
@@ -81,7 +80,6 @@ class BaseAdapter(object, metaclass=ABCMeta):
             List of :class:`orion.core.worker.trial.Trial` coming from the parent experiment
 
         """
-        pass
 
     @abstractmethod
     def backward(self, trials):
@@ -94,7 +92,6 @@ class BaseAdapter(object, metaclass=ABCMeta):
             List of :class:`orion.core.worker.trial.Trial` coming from the child experiment
 
         """
-        pass
 
     @abstractmethod
     def to_dict(self):
@@ -108,7 +105,6 @@ class BaseAdapter(object, metaclass=ABCMeta):
 
             :meth:`orion.core.evc.adapters.BaseAdapter.configuration`
         """
-        pass
 
     @property
     def configuration(self):
@@ -201,7 +197,6 @@ class CompositeAdapter(BaseAdapter):
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
             :meth:`orion.core.evc.adapters.CompositeAdapter.configuration`
         """
-        pass
 
     @property
     def configuration(self):

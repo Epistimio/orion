@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.cli.info`."""
 import itertools
 
@@ -27,8 +26,6 @@ from orion.core.worker.trial import Trial
 
 class DummyExperiment:
     """Dummy container to mock experiments"""
-
-    pass
 
 
 @pytest.fixture

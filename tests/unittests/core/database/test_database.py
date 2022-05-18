@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import os
 import pickle
@@ -50,9 +49,9 @@ def db_type(pytestconfig, request):
     all non-MongoDB will be run.
     """
     if request.param == "mongodb" and not pytestconfig.getoption("--mongodb"):
-        pytest.skip("{} tests disabled".format(request.param))
+        pytest.skip(f"{request.param} tests disabled")
     elif request.param != "mongodb" and pytestconfig.getoption("--mongodb"):
-        pytest.skip("{} tests disabled".format(request.param))
+        pytest.skip(f"{request.param} tests disabled")
     yield request.param
 
 
@@ -160,7 +159,7 @@ def skip_if_not_db_type(request, db_type):
     """Skip test if th database type does no match the database type marker"""
     db_types_only = request.node.get_closest_marker("db_types_only")
     if db_types_only and db_type not in db_types_only.args[0]:
-        pytest.skip("{} test only".format(db_types_only.args[0]))
+        pytest.skip(f"{db_types_only.args[0]} test only")
 
 
 insert_test_collection = pytest.mark.insert_collections(
@@ -212,7 +211,7 @@ def test_collection(insert_collections):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.drop_collections(["new_collection"])
-class TestEnsureIndex(object):
+class TestEnsureIndex:
     """Calls to :meth:`orion.core.io.database.AbstractDB.ensure_index`."""
 
     @pytest.mark.parametrize(
@@ -291,7 +290,7 @@ class TestEnsureIndex(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestRead(object):
+class TestRead:
     """Calls to :meth:`orion.core.io.database.AbstractDB.read`."""
 
     def test_read_entries(self, orion_db, test_collection):
@@ -380,7 +379,7 @@ class TestRead(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestWrite(object):
+class TestWrite:
     """Calls to :meth:`orion.core.io.database.AbstractDB.write`."""
 
     def test_insert_one(self, orion_db):
@@ -472,7 +471,7 @@ class TestWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestReadAndWrite(object):
+class TestReadAndWrite:
     """Calls to :meth:`orion.core.io.database.AbstractDB.read_and_write`."""
 
     def test_read_and_write_one(self, orion_db, test_collection):
@@ -517,7 +516,7 @@ class TestReadAndWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestRemove(object):
+class TestRemove:
     """Calls to :meth:`orion.core.io.database.AbstractDB.remove`."""
 
     def test_remove_many_default(self, orion_db, test_collection):
@@ -569,7 +568,7 @@ class TestRemove(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestCount(object):
+class TestCount:
     """Calls :meth:`orion.core.io.database.AbstractDB.count`."""
 
     def test_count_default(self, orion_db, test_collection):
@@ -595,7 +594,7 @@ class TestCount(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestIndexInformation(object):
+class TestIndexInformation:
     """Calls :meth:`orion.core.io.database.AbstractDB.index_information`."""
 
     def test_no_index(self, orion_db):
@@ -690,7 +689,7 @@ class TestIndexInformation(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestDropIndex(object):
+class TestDropIndex:
     """Calls :meth:`orion.core.io.database.AbstractDB.drop_index`."""
 
     def test_no_index(self, orion_db):

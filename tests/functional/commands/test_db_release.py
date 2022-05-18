@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform functional tests for db release."""
-import zlib
 
 import pytest
 

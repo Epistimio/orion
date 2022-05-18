@@ -2,7 +2,6 @@
 """Common fixtures and utils for tests."""
 
 import copy
-import datetime
 import getpass
 import os
 

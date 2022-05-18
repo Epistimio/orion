@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Task for Branin Function
 =========================
@@ -18,7 +17,7 @@ class Branin(BenchmarkTask):
     """
 
     def __init__(self, max_trials=20):
-        super(Branin, self).__init__(max_trials=max_trials)
+        super().__init__(max_trials=max_trials)
 
     def call(self, x):
         """Evaluate a 2-D branin function."""

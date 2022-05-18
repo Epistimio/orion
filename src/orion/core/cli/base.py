@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Base class and function utilities for cli
 =========================================
@@ -135,7 +134,7 @@ def get_basic_args_group(
         "--user",
         type=str,
         help="user associated to experiment's unique name; "
-        "(default: $USER - can be overriden either here or in a config)",
+        "(default: $USER - can be overridden either here or in a config)",
     )
 
     basic_args_group.add_argument(
