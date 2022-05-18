@@ -51,7 +51,7 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-    - name: Test with tox
+    - name: Test with tox (and all extra dependencies)
       run: tox -e py-all
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
@@ -62,7 +62,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-  test-algo:
+  test-extra-algos:
     needs: pretest
     runs-on: ${{ matrix.platform }}
     strategy:
@@ -70,7 +70,7 @@ jobs:
       matrix:
         platform: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
-        algo: [nevergrad]
+        algo: [nevergrad, hebo]
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
@@ -85,8 +85,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
 
-    - name: Test with tox
-      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }}
+    - name: Test extra algorithms with tox
+      run: tox -e algo -- tests/unittests/algo/extras/${{ matrix.algo }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
