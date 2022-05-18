@@ -12,7 +12,7 @@ import typing
 import warnings
 from dataclasses import dataclass
 from logging import getLogger as get_logger
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,7 @@ from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.worker.trial import Trial
 
-_HEBO_REQUIRED = None
+_HEBO_REQUIRED_ERROR = None
 try:
     import hebo
     from hebo.acquisitions.acq import MACE, Acquisition
@@ -34,15 +34,15 @@ try:
 
 except ImportError as err:
     MACE = object
-    _HEBO_REQUIRED = ImportError(
-        f"The HEBO package is not installed. Install it with `pip install orion[hebo]`"
+    _HEBO_REQUIRED_ERROR = ImportError(
+        "The HEBO package is not installed. Install it with `pip install orion[hebo]`"
     )
 
-if typing.TYPE_CHECKING and _HEBO_REQUIRED:
-    Acquisition = object
-    DesignSpace = object
-    Parameter = object
-    SobolEngine = object
+if typing.TYPE_CHECKING and _HEBO_REQUIRED_ERROR:
+    Acquisition = object  # noqa
+    DesignSpace = object  # noqa
+    Parameter = object  # noqa
+    SobolEngine = object  # noqa
 
 logger = get_logger(__name__)
 
@@ -77,7 +77,7 @@ EvolutionStrategyName = Literal[
 
 
 class HeboModelState(TypedDict):
-    """Typed dict for the sate of the HEBO class from `hebo.optimizers.hebo`."""
+    """Typed dict for the state of the HEBO class from `hebo.optimizers.hebo`."""
 
     space: DesignSpace
     es: str
@@ -87,7 +87,7 @@ class HeboModelState(TypedDict):
     rand_sample: int
     sobol: SobolEngine
     acq_cls: type[Acquisition]
-    _model_config: Optional[dict]
+    _model_config: dict | None
 
 
 class HEBO(BaseAlgorithm):
@@ -101,9 +101,9 @@ class HEBO(BaseAlgorithm):
     :param parameters: Parameters for the HEBO algorithm.
     """
 
-    requires_type: ClassVar[Optional[str]] = None
-    requires_shape: ClassVar[Optional[str]] = "flattened"
-    requires_dist: ClassVar[Optional[str]] = None
+    requires_type: ClassVar[str | None] = None
+    requires_shape: ClassVar[str | None] = "flattened"
+    requires_dist: ClassVar[str | None] = None
 
     @dataclass(frozen=True)
     class Parameters:
@@ -112,7 +112,7 @@ class HEBO(BaseAlgorithm):
         model_name: ModelName = "gpy"
         """ Name of the model to use. See `ModelName` for the available values. """
 
-        random_samples: Optional[int] = None
+        random_samples: int | None = None
         """ Number of random samples to suggest before optimization begins.
         If `None`, the number of dimensions in the space is used as the default. Otherwise, the max
         of the value and `2` is used.
@@ -126,7 +126,7 @@ class HEBO(BaseAlgorithm):
         possible values.
         """
 
-        model_config: Optional[dict] = None
+        model_config: dict | None = None
         """ Keyword argument to be passed to the constructor of the model class that is selected
         with `model_name`.
         """
@@ -137,8 +137,8 @@ class HEBO(BaseAlgorithm):
         seed: int | None = None,
         parameters: Parameters | dict | None = None,
     ):
-        if _HEBO_REQUIRED:
-            raise _HEBO_REQUIRED
+        if _HEBO_REQUIRED_ERROR:
+            raise _HEBO_REQUIRED_ERROR
 
         super().__init__(space)
         if isinstance(parameters, dict):
@@ -240,7 +240,7 @@ class HEBO(BaseAlgorithm):
         trials: list[Trial] = []
         with self._control_randomness():
             v: pd.DataFrame = self.model.suggest(n_suggestions=num)
-        point_dicts: Dict[int, Dict] = v.to_dict(orient="index")  # type: ignore
+        point_dicts: dict[int, dict] = v.to_dict(orient="index")  # type: ignore
 
         for point_index, params_dict in point_dicts.items():
             if self.is_done:
