@@ -42,10 +42,10 @@ class Configuration:
     """Configuration object
 
     Provides default values configurable at different levels. The configuration object can have
-    global default values, which may be overridden by user with yaml configuration files, environment
-    variables or by setting directly the values in the configuration object. In order, direct
-    definition overrides, environment variables, which overrides yaml configuration, which overrides
-    default values in configuration object definition.
+    global default values, which may be overridden by user with yaml configuration files,
+    environment variables or by setting directly the values in the configuration object. In order,
+    direct definition overrides, environment variables, which overrides yaml configuration, which
+    overrides default values in configuration object definition.
 
     Examples
     --------

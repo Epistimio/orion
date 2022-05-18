@@ -217,7 +217,7 @@ No action needed or possible. The issue is either fixed, addressed
 .. |on hold| replace:: ``on hold``
 .. _on hold: https://github.com/Epistimio/orion/labels/on%20hold
 .. |won't fix| replace:: ``won't fix``
-.. _won't fix: https://github.com/Epistimio/orion/labels/wont%20fix  # noqa
+.. _won't fix: https://github.com/Epistimio/orion/labels/wont%20fix
 .. |duplicate| replace:: ``duplicate``
 .. _duplicate: https://github.com/Epistimio/orion/labels/duplicate
 .. |invalid| replace:: ``invalid``

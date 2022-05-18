@@ -242,10 +242,10 @@ def build_experiment(
             raise RaceCondition(
                 "There was a race condition during branching and new version cannot be inferred "
                 "because of that. Single race conditions are normally handled seamlessly. If this "
-                "error gets raised, it means that different modifications occurred during each race "
-                "condition resolution. This is likely due to quick code change during experiment "
-                "creation. Make sure your script is not generating files within your code "
-                "repository."
+                "error gets raised, it means that different modifications occurred during each "
+                "race condition resolution. This is likely due to quick code change during "
+                "experiment creation. Make sure your script is not generating files within your "
+                "code repository."
             ) from e
 
     return ExperimentClient(experiment, executor, heartbeat)

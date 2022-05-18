@@ -11,16 +11,16 @@ from logging import getLogger as get_logger
 from pathlib import Path
 from typing import List, Type
 
-from orion.algo.base import BaseAlgorithm, algo_factory
+from orion.algo.base import algo_factory
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
+from orion.benchmark.task.base import BenchmarkTask
 from orion.benchmark.task.profet import (
     ProfetFcNetTask,
     ProfetForresterTask,
     ProfetSvmTask,
     ProfetXgBoostTask,
 )
-from orion.benchmark.task.base import BenchmarkTask
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 try:
