@@ -185,7 +185,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   pypi:
-    needs: [test, backward-compatibility, test-algo]
+    needs: [test, backward-compatibility, test-extra-algos]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -215,7 +215,7 @@ jobs:
         user: __token__
         password: ${{ secrets.pypi_password }}
   conda:
-    needs: [test, backward-compatibility, test-algo]
+    needs: [test, backward-compatibility, test-extra-algos]
     runs-on: ubuntu-latest
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
