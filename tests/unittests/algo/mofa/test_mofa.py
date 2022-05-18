@@ -58,7 +58,8 @@ class TestMOFA(BaseAlgoTests):
         TestPhase("3rd-run", n_trials * 2, "space.sample"),
     ]
 
-    def get_num(self, num):
+    @classmethod
+    def get_num(cls, num):
         return 1
 
     def test_cfg_index_invalid(self):
