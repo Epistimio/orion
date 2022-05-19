@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 from pytest import MonkeyPatch
-from test_transform_wrapper import StupidAlgo
+from tests.unittests.core.worker.algo_wrappers.test_transform import StupidAlgo
 
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
@@ -113,7 +113,7 @@ class TestInsistSuggestWrapper:
             calls += 1
             if calls < 5:
                 return []
-            return [algo_wrapper.algorithm.fixed_suggestion]
+            return [algo_wrapper.unwrapped.fixed_suggestion]
 
         monkeypatch.setattr(algo_wrapper.algorithm, "suggest", _suggest)
 
