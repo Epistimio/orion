@@ -64,7 +64,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         return self._algorithm
 
     @property
-    def unwrapped(self) -> BaseAlgorithm:
+    def unwrapped(self):
         """Returns the unwrapped algorithm (the root).
 
         Returns
@@ -132,16 +132,17 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         transformed_trials: list[Trial] = self.algorithm.suggest(num) or []
 
         for transformed_trial in transformed_trials:
-            if transformed_trial not in self.space:
+            if transformed_trial not in self.algorithm.space:
                 raise ValueError(
-                    f"Trial {transformed_trial.id} not contained in space:\n"
+                    f"Trial {transformed_trial.id} not contained in transformed space:\n"
                     f"Params: {transformed_trial.params}\n"
-                    f"Space: {self.space}"
+                    f"Space: {self.algorithm.space}"
                 )
             original = self.reverse_transform(transformed_trial)
-            if self.has_observed(original):
+
+            if self.has_suggested(original):
                 logger.debug(
-                    "Already observed a trial that matches %s in the registry.",
+                    "Already suggested or observed a trial that matches %s in the registry.",
                     original,
                 )
                 # We already have a trial that is equivalent to this one.
@@ -149,21 +150,16 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                 original = self.registry.get_existing(original)
                 logger.debug("Matching trial (with results/status): %s", original)
 
-                # Copy over the status and results from the original to the transformed trial
+                # Copy over the status and any results from the original to the transformed trial
                 # and observe it.
                 transformed_trial = _copy_status_and_results(
-                    original_trial=original, transformed_trial=transformed_trial
+                    trial_with_status=original, trial_with_params=transformed_trial
                 )
                 logger.debug(
-                    "Transformed trial (with results/status): %s", transformed_trial
+                    "Transformed trial (with status/results): %s", transformed_trial
                 )
                 self.algorithm.observe([transformed_trial])
-            elif self.has_suggested(original):
-                # we've already suggested a trial equivalent to this one. Do nothing.
-                logger.debug(
-                    "Already suggested a trial that matches %s in the registry.",
-                    original,
-                )
+
             else:
                 logger.debug(
                     "New suggestion: %s",
@@ -179,6 +175,9 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             self.registry_mapping.register(original, transformed_trial)
 
         return trials
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__qualname__}{self.algorithm}>"
 
     def observe(self, trials: list[Trial]) -> None:
         """Observe evaluated trials.
@@ -198,7 +197,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             # Also transfer the status and results of `trial` to the equivalent transformed trials.
             transformed_trials = [
                 _copy_status_and_results(
-                    original_trial=trial, transformed_trial=transformed_trial
+                    trial_with_status=trial, trial_with_params=transformed_trial
                 )
                 for transformed_trial in transformed_trials
             ]
@@ -208,7 +207,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                 # might happen when an insertion is done according to @bouthilx)
                 transformed_trial = self.transform(trial)
                 transformed_trial = _copy_status_and_results(
-                    original_trial=trial, transformed_trial=transformed_trial
+                    trial_with_status=trial, trial_with_params=transformed_trial
                 )
                 transformed_trials = [transformed_trial]
                 logger.debug(
@@ -260,6 +259,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
         Subclasses should overwrite this method and add any of their state.
         """
+        # TODO: Do we also save the algorithm wrapper's configuration here? Or only the algo's?
         dict_form = dict()
         for attrname in self._param_names:
             if attrname.startswith("_"):  # Do not log _space or others in conf
@@ -289,9 +289,13 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             yield
 
 
-def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
-    """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
-    new_transformed_trial = copy.deepcopy(original_trial)
+def _copy_status_and_results(
+    trial_with_status: Trial, trial_with_params: Trial
+) -> Trial:
+    """Copies the results, status, and other data from `source_trial` to `original_trial`.
+    Returns a new Trial.
+    """
+    new_transformed_trial = copy.deepcopy(trial_with_status)
     # pylint: disable=protected-access
-    new_transformed_trial._params = copy.deepcopy(transformed_trial._params)
+    new_transformed_trial._params = copy.deepcopy(trial_with_params._params)
     return new_transformed_trial

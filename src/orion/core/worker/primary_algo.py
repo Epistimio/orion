@@ -10,7 +10,7 @@ from orion.core.worker.algo_wrappers import (
     MultiTaskWrapper,
     SpaceTransform,
 )
-from orion.core.worker.algo_wrappers.space_transform_wrapper import (  # noqa
+from orion.core.worker.algo_wrappers.space_transform import (  # noqa
     SpaceTransform as SpaceTransformAlgoWrapper,
 )
 from orion.core.worker.knowledge_base import KnowledgeBase

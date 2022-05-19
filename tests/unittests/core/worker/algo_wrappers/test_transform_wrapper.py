@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import copy
-import logging
 import typing
 from typing import Any, ClassVar
 
 import pytest
-from pytest import MonkeyPatch
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
@@ -28,7 +26,9 @@ def palgo(
     dumbalgo: type[DumbAlgo], space: Space, fixed_suggestion_value: Any
 ) -> SpaceTransform[DumbAlgo]:
     """Set up a SpaceTransformAlgoWrapper with dumb configuration."""
-    return create_algo(algo_type=dumbalgo, space=space, value=fixed_suggestion_value)
+    return create_algo(
+        algo_type=dumbalgo, space=space, value=fixed_suggestion_value
+    ).algorithm
 
 
 class TestSpaceTransformAlgoWrapperWraps:
@@ -41,6 +41,8 @@ class TestSpaceTransformAlgoWrapperWraps:
         trial = format_trials.tuple_to_trial((["asdfa", 2], 0, 3.5), space)
         palgo._verify_trial(trial)
 
+        assert palgo.space is space
+
         with pytest.raises(ValueError, match="not contained in space:"):
             invalid_trial = format_trials.tuple_to_trial((("asdfa", 2), 10, 3.5), space)
             palgo._verify_trial(invalid_trial)
@@ -49,10 +51,11 @@ class TestSpaceTransformAlgoWrapperWraps:
         tspace = build_required_space(
             space, type_requirement="real", shape_requirement="flattened"
         )
+
         # transform point
         ttrial = tspace.transform(trial)
         # TODO: https://github.com/Epistimio/orion/issues/804
-        ttrial in tspace
+        assert ttrial in tspace
 
         # Transformed point is not in original space
         with pytest.raises(ValueError, match="not contained in space:"):
@@ -100,7 +103,7 @@ class TestSpaceTransformAlgoWrapperWraps:
         assert not ptrials
         palgo.algorithm.possible_values = [fixed_suggestion]
         del fixed_suggestion._params[-1]
-        with pytest.raises(ValueError, match="not contained in space"):
+        with pytest.raises(ValueError, match="not contained in transformed space"):
             palgo.suggest(1)
 
     def test_observe(self, palgo: SpaceTransform[DumbAlgo], fixed_suggestion: Trial):
@@ -139,63 +142,6 @@ class TestSpaceTransformAlgoWrapperWraps:
             del fixed_suggestion._params[-1]
             palgo.judge(fixed_suggestion, 8)
 
-    def test_insists_when_algo_doesnt_suggest_new_trials(
-        self,
-        algo_wrapper: SpaceTransform[StupidAlgo],
-        monkeypatch: MonkeyPatch,
-    ):
-        """Test that when the algo can't produce a new trial, the wrapper insists and asks again."""
-        calls: int = 0
-        algo_wrapper.max_suggest_attempts = 10
-
-        # Make the wrapper insist enough so that it actually
-        # gets a trial after asking enough times:
-
-        def _suggest(num: int) -> list[Trial]:
-            nonlocal calls
-            calls += 1
-            if calls < 5:
-                return []
-            return [algo_wrapper.algorithm.fixed_suggestion]
-
-        monkeypatch.setattr(algo_wrapper.algorithm, "suggest", _suggest)
-        trial = algo_wrapper.suggest(1)[0]
-        assert calls == 5
-        assert trial in algo_wrapper.space
-
-    def test_warns_when_unable_to_sample_new_trial(
-        self,
-        algo_wrapper: SpaceTransform[StupidAlgo],
-        caplog: pytest.LogCaptureFixture,
-        monkeypatch: MonkeyPatch,
-    ):
-        """Test that when the algo can't produce a new trial even after the max number of attempts,
-        a warning is logged and an empty list is returned.
-        """
-
-        calls: int = 0
-
-        def _suggest(num: int) -> list[Trial]:
-            nonlocal calls
-            calls += 1
-            if calls < 5:
-                return []
-            return [algo_wrapper.algorithm.fixed_suggestion]
-
-        monkeypatch.setattr(algo_wrapper.algorithm, "suggest", _suggest)
-
-        algo_wrapper.max_suggest_attempts = 3
-
-        with caplog.at_level(logging.WARNING):
-            out = algo_wrapper.suggest(1)
-            assert calls == 3
-            assert out == []
-            assert len(caplog.record_tuples) == 1
-            log_record = caplog.record_tuples[0]
-            assert log_record[1] == logging.WARNING and log_record[2].startswith(
-                "Unable to sample a new trial"
-            )
-
 
 class StupidAlgo(BaseAlgorithm):
     """A dumb algo that always returns the same trial."""
@@ -207,11 +153,11 @@ class StupidAlgo(BaseAlgorithm):
     def __init__(
         self,
         space: Space,
-        fixed_suggestion: Trial,
+        fixed_suggestion: Trial | None = None,
     ):
         super().__init__(space)
-        self.fixed_suggestion = fixed_suggestion
-        assert fixed_suggestion in space
+        self.fixed_suggestion = fixed_suggestion or space.sample(1)[0]
+        assert self.fixed_suggestion in space
 
     def suggest(self, num):
         # NOTE: can't register the trial if it's already here. The fixed suggestion is always "new",
@@ -227,6 +173,7 @@ class StupidAlgo(BaseAlgorithm):
 def algo_wrapper():
     """Fixture that creates the setup for the registration tests below."""
     original_space = SpaceBuilder().build({"x": "loguniform(1, 100, discrete=True)"})
+
     transformed_space = build_required_space(
         original_space=original_space,
         type_requirement=StupidAlgo.requires_type,
@@ -266,7 +213,7 @@ class TestRegistration:
         assert fixed_transformed.params == {"x": 2.302585092994046}
         transformed_space = algo_wrapper.transformed_space
 
-        algo_wrapper.algorithm.fixed_suggestion = fixed_transformed
+        algo_wrapper.unwrapped.fixed_suggestion = fixed_transformed
 
         # Get a suggestion from the wrapper.
         suggested_trials = algo_wrapper.suggest(1)
@@ -320,7 +267,7 @@ class TestRegistration:
         assert not algo_wrapper.algorithm.has_observed(equivalent_transformed)
 
         # Update the dummy algo so that it now returns the equivalent transformed trial.
-        algo_wrapper.algorithm.fixed_suggestion = equivalent_transformed
+        algo_wrapper.unwrapped.fixed_suggestion = equivalent_transformed
 
         # Get another suggestion from the wrapper. (the wrapped algo will return the equivalent)
         new_suggested_trials = algo_wrapper.suggest(1)
@@ -335,6 +282,12 @@ class TestRegistration:
         trial_in_registry = algo_wrapper.algorithm.registry.get_existing(
             equivalent_transformed
         )
+
+        # NOTE: The algo has suggested a duplicate. We make the algo observe the duplicate, with
+        # the status (and potentially also results) from the original. This is also the case for
+        # broken or pending trials.
+
+        assert trial_in_registry.params == equivalent_transformed.params
         assert trial_in_registry.status == trial_with_results.status
         assert trial_in_registry.results == trial_with_results.results
 

@@ -12,7 +12,7 @@ from typing import Iterable, TypeVar
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Categorical, Space
 from orion.core.utils.format_trials import dict_to_trial
-from orion.core.worker.algo_wrapper import AlgoWrapper
+from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
 from orion.core.worker.knowledge_base import AbstractKnowledgeBase, ExperimentInfo
 from orion.core.worker.primary_algo import _copy_status_and_results
 from orion.core.worker.trial import Trial
