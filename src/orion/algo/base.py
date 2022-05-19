@@ -20,6 +20,7 @@ import logging
 from abc import abstractmethod
 from contextlib import contextmanager
 
+from orion.algo.space import Space
 from orion.algo.registry import Registry
 from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
@@ -403,14 +404,9 @@ class BaseAlgorithm:
         return {self.__class__.__name__.lower(): dict_form}
 
     @property
-    def space(self):
+    def space(self) -> Space:
         """Domain of problem associated with this algorithm's instance."""
         return self._space
-
-    @space.setter
-    def space(self, space):
-        """Set space."""
-        self._space = space
 
     @property
     def unwrapped(self):

@@ -76,21 +76,6 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
     def reverse_transform(self, trial: Trial) -> Trial:
         return self.transformed_space.reverse(trial)
 
-    @property
-    def n_suggested(self) -> int:
-        """Number of trials suggested by the algorithm"""
-        return super().n_suggested
-
-    @property
-    def n_observed(self) -> int:
-        """Number of completed trials observed by the algorithm."""
-        return sum(self.has_observed(trial) for trial in self.registry)
-
-    @property
-    def is_done(self) -> bool:
-        """Return True if the wrapper or the wrapped algorithm is done."""
-        return super().is_done or self.algorithm.is_done
-
     def score(self, trial: Trial) -> float:
         """Allow algorithm to evaluate `point` based on a prediction about
         this parameter set's performance. Return a subjective measure of expected

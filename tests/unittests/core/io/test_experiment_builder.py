@@ -19,6 +19,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
     UnsupportedOperation,
 )
+from orion.core.worker.algo_wrappers import AlgoWrapper
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.storage.base import get_storage
@@ -800,7 +801,7 @@ class TestBuild:
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build(**new_config)
 
-        assert isinstance(exp.algorithms, SpaceTransformAlgoWrapper)
+        assert isinstance(exp.algorithms, AlgoWrapper)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 

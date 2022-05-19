@@ -231,15 +231,6 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         """Return True, if an algorithm holds that there can be no further improvement."""
         return super().is_done or self.algorithm.is_done
 
-    def score(self, trial: Trial) -> float:
-        return self.algorithm.score(self.transform(trial))
-
-    def judge(self, trial: Trial, measurements: Any) -> dict | None:
-        return self.algorithm.judge(self.transform(trial), measurements)
-
-    def should_suspend(self, trial: Trial) -> bool:
-        return self.algorithm.should_suspend(self.transform(trial))
-
     @property
     def configuration(self) -> dict:
         """Return tunable elements of this algorithm in a dictionary form
@@ -262,6 +253,35 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
         return {self.__class__.__name__.lower(): dict_form}
 
+    def score(self, trial: Trial) -> float:
+        """Allow algorithm to evaluate `point` based on a prediction about
+        this parameter set's performance. Return a subjective measure of expected
+        performance.
+
+        By default, return the same score any parameter (no preference).
+        """
+        self._verify_trial(trial)
+        return self.algorithm.score(self.algorithm.space.transform(trial))
+
+    def judge(self, trial: Trial, measurements: Any) -> dict | None:
+        """Inform an algorithm about online `measurements` of a running trial.
+
+        The algorithm can return a dictionary of data which will be provided
+        as a response to the running environment. Default is None response.
+
+        """
+        self._verify_trial(trial)
+        return self.algorithm.judge(self.algorithm.space.transform(trial), measurements)
+
+    def should_suspend(self, trial: Trial) -> bool:
+        """Allow algorithm to decide whether a particular running trial is still
+        worth to complete its evaluation, based on information provided by the
+        `judge` method.
+
+        """
+        self._verify_trial(trial)
+        return self.algorithm.should_suspend(trial)
+
     @contextmanager
     def warm_start_mode(self):
         """Context manager that is used while observing trials from similar experiments to
@@ -277,6 +297,16 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         """
         with self.algorithm.warm_start_mode():
             yield
+
+    def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
+        if space is None:
+            space = self.space
+
+        if trial not in space:
+            raise ValueError(
+                f"Trial {trial.id} not contained in space:"
+                f"\nParams: {trial.params}\nSpace: {space}"
+            )
 
 
 def _copy_status_and_results(
