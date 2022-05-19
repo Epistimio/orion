@@ -2,13 +2,15 @@
 """
 from __future__ import annotations
 
+import typing
 from abc import ABC, abstractmethod
 from logging import getLogger
 
-from orion.client import ExperimentClient
-from orion.core.worker.experiment import Experiment
-from orion.core.worker.trial import Trial
-from orion.storage.base import BaseStorageProtocol as Storage
+if typing.TYPE_CHECKING:
+    from orion.client import ExperimentClient
+    from orion.core.worker.experiment import Experiment
+    from orion.core.worker.trial import Trial
+    from orion.storage.base import BaseStorageProtocol as Storage
 
 log = getLogger(__file__)
 
