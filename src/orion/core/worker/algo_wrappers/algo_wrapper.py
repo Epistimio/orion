@@ -260,6 +260,8 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         Subclasses should overwrite this method and add any of their state.
         """
         # TODO: Do we also save the algorithm wrapper's configuration here? Or only the algo's?
+        # For now, we'll just always return the algo's config.
+        return self.algorithm.configuration
         dict_form = dict()
         for attrname in self._param_names:
             if attrname.startswith("_"):  # Do not log _space or others in conf
