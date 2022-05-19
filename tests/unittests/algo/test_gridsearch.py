@@ -175,4 +175,4 @@ class TestGridSearch(BaseAlgoTests):
         """Test that gridsearch returns the whole grid when requesting more points"""
         algo = self.create_algo()
         points = algo.suggest(10000)
-        assert len(points) == len(algo.algorithm.grid)
+        assert len(points) == len(algo.unwrapped.grid)
