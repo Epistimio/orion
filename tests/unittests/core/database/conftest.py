@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
+"""Collection of fixtures used in the database tests."""
 import os
 from datetime import datetime
 
