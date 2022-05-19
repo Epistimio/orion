@@ -13,7 +13,6 @@ on:
   workflow_dispatch:
 
 jobs:
-<<<<<<< HEAD
   pretest:
     runs-on: ubuntu-latest
     strategy:
@@ -32,6 +31,16 @@ jobs:
           pip install tox tox-gh-actions
     - name: Run pre-tests with Tox
       run: tox -e ${{ matrix.toxenv }}
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip install pre-commit
+      - run: pre-commit --version
+      - run: pre-commit install
+      - run: pre-commit run --all-files
 
   test-dashboard-build:
     needs: pretest
@@ -70,10 +79,8 @@ jobs:
     - name: Test frontend
       run: pytest tests/functional/serving/test_frontend.py
 
-=======
->>>>>>> Replace pretest with pre-commit
   test:
-    needs: pre-commit
+    needs: pretest, pre-commit
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
@@ -104,7 +111,7 @@ jobs:
         fail_ci_if_error: false
 
   test-long-algos:
-    needs: pretest
+    needs: pretest, pre-commit
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
@@ -138,7 +145,7 @@ jobs:
         fail_ci_if_error: false
 
   test_no_extras:
-    needs: pretest
+    needs: pre-commit
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -161,7 +168,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   mongodb:
-    needs: pretest
+    needs: pre-commit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -190,7 +197,7 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
   backward-compatibility:
-    needs: pretest
+    needs: pre-commit
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 2
