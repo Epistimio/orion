@@ -351,7 +351,7 @@ class TestAcquireAlgorithmLock:
             algorithm_original_config = algorithm.configuration
             exp.algorithms = algorithm
             # Setting attribute to algorithm inside the wrapper
-            algorithm.algorithm.seed = 10
+            algorithm.unwrapped.seed = 10
 
             assert algorithm.configuration != algorithm_original_config
 
@@ -562,7 +562,7 @@ def test_is_done_property_no_pending(algorithm):
         # There is only 10 completed trials and algo not done.
         assert not exp.is_done
 
-        exp.algorithms.algorithm.done = True
+        exp.algorithms.unwrapped.done = True
 
         # Algorithm is done and no pending trials
         assert exp.is_done
