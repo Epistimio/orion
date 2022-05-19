@@ -13,11 +13,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip install pre-commit
+      - run: pre-commit --version
+      - run: pre-commit install
+      - run: pre-commit run black --all-files
+      - run: pre-commit run isort --all-files
+      - run: pre-commit run doc8 --all-files
+
   pretest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toxenv: [black, isort, pylint, doc8, docs]
+        toxenv: [pylint, docs]
 
     steps:
     - uses: actions/checkout@v1
@@ -31,16 +43,6 @@ jobs:
           pip install tox tox-gh-actions
     - name: Run pre-tests with Tox
       run: tox -e ${{ matrix.toxenv }}
-
-  pre-commit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-      - run: pip install pre-commit
-      - run: pre-commit --version
-      - run: pre-commit install
-      - run: pre-commit run --all-files
 
   test-dashboard-build:
     needs: pretest
@@ -59,13 +61,6 @@ jobs:
           rm -rf ../build
           mv build ..
           cd ../../
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Install dependencies
-      run: |
-          python -m pip install --upgrade pip
           pip install -e .[test]
     - name: Get gecko driver
       run: |
