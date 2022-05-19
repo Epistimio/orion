@@ -22,8 +22,8 @@ P = ParamSpec("P")
 class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
     """Base class for a Wrapper around an algorithm.
 
-    Applies some transformation to the incoming trials before they get passed to the underlying
-    algorithm, and applies the reverse transformation to the trials suggested by the algorithm
+    Can apply some transformation to the incoming trials before they get passed to the underlying
+    algorithm, and apply the reverse transformation to the trials suggested by the algorithm
     before they are suggested by the wrapper.
     """
 
@@ -176,9 +176,6 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
         return trials
 
-    def __repr__(self) -> str:
-        return f"<{type(self).__qualname__}{self.algorithm}>"
-
     def observe(self, trials: list[Trial]) -> None:
         """Observe evaluated trials.
 
@@ -226,17 +223,8 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
             self.algorithm.observe(transformed_trials)
 
-    @property
-    def n_suggested(self):
-        """Number of trials suggested by the algorithm"""
-        # TODO: Double check that this makes sense. We only count the number of trials form the
-        # target task that we suggested.
-        return super().n_suggested
-
-    @property
-    def n_observed(self):
-        """Number of completed trials observed by the algorithm."""
-        return super().n_observed
+    def __repr__(self) -> str:
+        return f"<{type(self).__qualname__}{self.algorithm}>"
 
     @property
     def is_done(self) -> bool:
@@ -276,11 +264,11 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
     @contextmanager
     def warm_start_mode(self):
-        """Context manager that is used while using points from similar experiments to
+        """Context manager that is used while observing trials from similar experiments to
         bootstrap (warm-start) the algorithm.
 
-        The idea behind this is that we don't want the algorithm to modify its state the
-        same way it would if it were observing regular points. For example, the number
+        The idea behind this is that we might not want the algorithm to modify its state the
+        same way it would if it were observing regular trials. For example, the number
         of "used" trials shouldn't increase, etc.
 
         New Algorithms or Algo wrappers can implement this method to control how the

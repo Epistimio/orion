@@ -49,7 +49,7 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
         """The original space (before transformations).
         This is exposed to the outside, but not to the wrapped algorithm.
         """
-        return self._space
+        return self.space
 
     @property
     def transformed_space(self) -> TransformedSpace:
@@ -70,10 +70,6 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
             dist_requirement=algo_type.requires_dist,
         )
 
-    def seed_rng(self, seed: int | Sequence[int] | None) -> None:
-        """Seed the state of the algorithm's random number generator."""
-        self.algorithm.seed_rng(seed)
-
     def transform(self, trial: Trial) -> Trial:
         return self.transformed_space.transform(trial)
 
@@ -81,35 +77,9 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
         return self.transformed_space.reverse(trial)
 
     @property
-    def state_dict(self) -> dict:
-        """Return a state dict that can be used to reset the state of the algorithm."""
-        return super().state_dict
-
-    def set_state(self, state_dict: dict) -> None:
-        """Reset the state of the algorithm based on the given state_dict
-
-        :param state_dict: Dictionary representing state of an algorithm
-        """
-        super().set_state(state_dict)
-
-    def has_suggested(self, trial: Trial) -> bool:
-        """Whether the algorithm has suggested a given trial.
-
-        .. seealso:: `orion.algo.base.BaseAlgorithm.has_suggested`
-        """
-        return self.registry.has_suggested(trial)
-
-    def has_observed(self, trial: Trial) -> bool:
-        """Whether the algorithm has observed a given trial.
-
-        .. seealso:: `orion.algo.base.BaseAlgorithm.has_observed`
-        """
-        return self.registry.has_observed(trial)
-
-    @property
     def n_suggested(self) -> int:
         """Number of trials suggested by the algorithm"""
-        return len(self.registry)
+        return super().n_suggested
 
     @property
     def n_observed(self) -> int:
@@ -151,28 +121,6 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
         """
         self._verify_trial(trial)
         return self.algorithm.should_suspend(trial)
-
-    @property
-    def configuration(self) -> dict:
-        """Return tunable elements of this algorithm in a dictionary form
-        appropriate for saving.
-        """
-        # TODO: Return a dict with the wrapped algo's configuration instead?
-        # return {
-        #     type(self).__qualname__: {
-        #         "space": self.space.configuration,
-        #         "algorithm": {self.algorithm.configuration},
-        #     }
-        # }
-        return self.algorithm.configuration
-
-    @property
-    def space(self) -> Space:
-        """Domain of problem associated with this algorithm's instance.
-
-        .. note:: Redefining property here without setter, denies base class' setter.
-        """
-        return self._space
 
     @property
     def fidelity_index(self) -> str | None:
