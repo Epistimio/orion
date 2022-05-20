@@ -256,6 +256,53 @@ Configuration
                      configuration
 
 
+.. _DEHB-algorithm:
+
+DEHB
+----
+
+
+`DEHB`_, is an integration of a Differential Evolutionary algorithm with Hyperband.
+While BOHB, uses Bayesian Optimization to select the hyperparameter to try
+at the first rung of subsequent brackets, DEHB uses Differential Evolution for both
+selecting the hyperparameters to try at the first rung of subsequent brackets and to mutate
+best sets of hyperparameters when promoting trials inside a bracket.
+Trials cannot be resumed after promotion to higher fidelity level with DEHB.
+DEHB leads to different hyperparameter values and thus different trial ids, for this
+reason trials cannot be resumed after promotions as for other variants of hyperbands.
+See :ref:`hyperband-algorithm` for more information on how to use multi-fidelity algorithms.
+
+.. _DEHB: https://arxiv.org/abs/2105.09821
+
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      dehb:
+        seed: null
+        mutation_factor: 0.5
+        crossover_prob: 0.5
+        mutation_strategy: rand1
+        crossover_strategy: bin
+        boundary_fix_type: random
+        min_clip: null
+        max_clip: null
+        max_age: 10e10
+
+
+.. autoclass:: orion.algo.dehb.dehb.DEHB
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
 
 .. _PBT:
 
@@ -572,6 +619,43 @@ a library of algorithms for hyperparameter search.
    :noindex:
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      requires_dist, requires_type
+
+
+
+.. _HEBO-algorithm:
+
+HEBO
+----
+
+
+Evolutionary algorithms from the `HEBO`_ repository are made available in Orion. There are a wide
+range of configutaion options for these algorithms, including the choice of model, evolutionary
+strategy, and acquisition function.
+
+.. _HEBO: https://github.com/huawei-noah/HEBO
+
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+   experiment:
+      algorithms:
+         hebo:
+            seed: 1234
+            parameters:
+               model_name: catboost
+               random_samples: 5
+               acquisition_class: hebo.acquisitions.acq.MACE
+               evolutionary_strategy: nsga2
+               model_config: null
+
+.. autoclass:: orion.algo.hebo.hebo_algo.HEBO
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
 
 
 

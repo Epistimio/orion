@@ -15,6 +15,7 @@ Algorithm modules
    algo/gridsearch
    algo/hyperband
    algo/asha
+   algo/dehb
    algo/bohb
    algo/pbt
    algo/pb2
@@ -23,3 +24,4 @@ Algorithm modules
    algo/nevergrad
    algo/parallel_strategy
    algo/registry
+   algo/hebo

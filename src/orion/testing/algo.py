@@ -131,6 +131,10 @@ class BaseAlgoTests:
 
     _current_phase: ClassVar[TestPhase]
 
+    # Reasonable budget in number of trials where we expect the algo to match random search on the
+    # Branin task.
+    branin_task_max_trials: ClassVar[int] = 20
+
     max_trials: ClassVar[int]
 
     # The max number of trials required to sufficiently test out the last phase of the algorithm.
@@ -138,7 +142,6 @@ class BaseAlgoTests:
     _max_last_phase_trials: ClassVar[int] = 10
 
     # Fixtures available as class attributes:
-    initial_n_trials: ClassVar[pytest.fixture]  # type: ignore
     phase: ClassVar[pytest.fixture]  # type: ignore
 
     def __init_subclass__(cls) -> None:
@@ -728,7 +731,7 @@ class BaseAlgoTests:
         assert algo.is_done
 
     @last_phase_only
-    def test_is_done_max_trials(self, phase: TestPhase):
+    def test_is_done_max_trials(self):
         """Test that algorithm will stop when max trials is reached"""
         algo = self.create_algo()
         # NOTE: Once https://github.com/Epistimio/orion/pull/883 is merged, we could update this to
@@ -739,7 +742,7 @@ class BaseAlgoTests:
     @first_phase_only
     def test_optimize_branin(self):
         """Test that algorithm optimizes a simple task comparably to random search."""
-        max_trials = 20
+        max_trials = type(self).branin_task_max_trials
         task = Branin()
         space = self.create_space(task.get_search_space())
         algo = self.create_algo(space=space)
