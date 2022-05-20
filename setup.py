@@ -15,6 +15,7 @@ with open("tests/requirements.txt") as f:
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.dehb",
     "orion.algo.pbt",
     "orion.analysis",
     "orion.benchmark",
@@ -41,12 +42,17 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
-    "pb2": ["GPy"],
+    "dehb": [
+        "ConfigSpace",
+        "dehb @ git+https://github.com/automl/DEHB.git@development",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+    ],
     "bohb": [
         "hpbandster",
         "ConfigSpace",
-        "sspace @ git+https://github.com/Epistimio/sample-space",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git",
     ],
+    "pb2": ["GPy"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
         "numpy",
@@ -78,8 +84,9 @@ setup_args = dict(
         "BaseAlgorithm": [
             "random = orion.algo.random:Random",
             "gridsearch = orion.algo.gridsearch:GridSearch",
-            "asha = orion.algo.asha:ASHA",
             "hyperband = orion.algo.hyperband:Hyperband",
+            "asha = orion.algo.asha:ASHA",
+            "dehb = orion.algo.dehb.dehb:DEHB",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
