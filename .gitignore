@@ -10,7 +10,6 @@
 *.pkl
 *.lock
 !.github/workflows/orion/*.pkl
-!dashboard/src/yarn.lock
 
 # OS generated files
 .DS_Store

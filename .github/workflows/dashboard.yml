@@ -1,7 +1,7 @@
 # Workflow to run unit tests from Github Actions.
 # Inspired from: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Node.js CI
+name: Dashboard
 
 on:
   push:
