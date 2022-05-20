@@ -48,6 +48,10 @@ extras_require = {
         "sspace @ git+https://github.com/Epistimio/sample-space",
     ],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
+    "hebo": [
+        "numpy",
+        "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
+    ],
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 

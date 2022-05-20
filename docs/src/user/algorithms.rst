@@ -526,6 +526,43 @@ a library of algorithms for hyperparameter search.
 
 
 
+.. _HEBO-algorithm:
+
+HEBO
+----
+
+
+Evolutionary algorithms from the `HEBO`_ repository are made available in Orion. There are a wide
+range of configutaion options for these algorithms, including the choice of model, evolutionary
+strategy, and acquisition function.
+
+.. _HEBO: https://github.com/huawei-noah/HEBO
+
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+   experiment:
+      algorithms:
+         hebo:
+            seed: 1234
+            parameters:
+               model_name: catboost
+               random_samples: 5
+               acquisition_class: hebo.acquisitions.acq.MACE
+               evolutionary_strategy: nsga2
+               model_config: null
+
+.. autoclass:: orion.algo.hebo.hebo_algo.HEBO
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+
+
 Algorithm Plugins
 =================
 
