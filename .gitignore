@@ -9,7 +9,7 @@
 *.log
 *.pkl
 *.lock
-!dashboard/.github/workflows/orion/*.pkl
+!.github/workflows/orion/*.pkl
 !dashboard/yarn.lock
 
 # OS generated files

@@ -5,14 +5,18 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ]
   schedule:
     - cron: '44 4 * * *'
   release:
     types: [published]
   workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: dashboard
 
 jobs:
   build:
