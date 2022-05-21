@@ -281,9 +281,13 @@ test('Test select benchmark', async () => {
   // Switch to benchmarks page
   const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
   fireEvent.click(menu);
-  await sleep(2000);
-
-  expect(await screen.findByText(/No benchmark selected/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(
+      /No benchmark selected/,
+      {},
+      { interval: 1000, timeout: 10000 }
+    )
+  ).toBeInTheDocument();
   // Get benchmark search field
   const benchmarkField = await screen.findByPlaceholderText(
     'Search a benchmark ...'
@@ -362,9 +366,13 @@ test('Test (de)select assessments', async () => {
   // Switch to benchmarks page
   const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
   fireEvent.click(menu);
-  await sleep(2000);
-
-  expect(await screen.findByText(/No benchmark selected/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(
+      /No benchmark selected/,
+      {},
+      { interval: 1000, timeout: 10000 }
+    )
+  ).toBeInTheDocument();
   // Get benchmark search field
   const benchmarkField = await screen.findByPlaceholderText(
     'Search a benchmark ...'
@@ -410,9 +418,13 @@ test('Test (de)select tasks', async () => {
   // Switch to benchmarks page
   const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
   fireEvent.click(menu);
-  await sleep(2000);
-
-  expect(await screen.findByText(/No benchmark selected/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(
+      /No benchmark selected/,
+      {},
+      { interval: 1000, timeout: 10000 }
+    )
+  ).toBeInTheDocument();
   // Get benchmark search field
   const benchmarkField = await screen.findByPlaceholderText(
     'Search a benchmark ...'
@@ -458,9 +470,13 @@ test('Test (de)select algorithms', async () => {
   // Switch to benchmarks page
   const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
   fireEvent.click(menu);
-  await sleep(2000);
-
-  expect(await screen.findByText(/No benchmark selected/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(
+      /No benchmark selected/,
+      {},
+      { interval: 1000, timeout: 10000 }
+    )
+  ).toBeInTheDocument();
   // Get benchmark search field
   const benchmarkField = await screen.findByPlaceholderText(
     'Search a benchmark ...'
