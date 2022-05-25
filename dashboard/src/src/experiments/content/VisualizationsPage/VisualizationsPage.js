@@ -52,9 +52,7 @@ class PlotGrid extends React.Component {
   }
   renderParallelCoordinates() {
     if (this.state.parallel_coordinates === null)
-      return `Loading parallel coordinates plot for: ${
-        this.state.experiment
-      } ...`;
+      return `Loading parallel coordinates plot for: ${this.state.experiment} ...`;
     if (this.state.parallel_coordinates === false) return 'Nothing to display';
     return (
       <ParallelCoordinatesPlotConst
