@@ -9,6 +9,7 @@
 *.log
 *.pkl
 *.lock
+!.github/workflows/orion/*.pkl
 
 # OS generated files
 .DS_Store
