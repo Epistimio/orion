@@ -543,6 +543,56 @@ Configuration
                      requires_dist, requires_type
 
 
+.. _mofa algorithm:
+
+MOFA
+-----
+
+The MOdular FActorial Design (`MOFA`_) algorithm is based on factorial design and factorial
+analysis methods to optmimize hyperparameters. It performs multiple iterations each of which
+starts with sampling hyperparameter trial values from an orthogonal latin hypercube to cover
+the search space well while de-correlating hyperparameters. Once all trials in an iteration
+are returned, MOFA performs factorial analysis to determine which hyperparameters should be
+fixed in value and which hyperparameters require further exploration. As the hyperparameters
+become fixed, the number of trials are reduced in subsequent iterations.
+
+.. _MOFA: https://arxiv.org/abs/2011.09545
+
+.. note::
+
+   MOFA requires Python v3.8 or greater and scipy v1.8 or greater.
+
+.. note::
+
+   Default values for the ``index``, ``n_levels``, and ``strength`` parameters are set
+   to the empirically obtained optimal values described in section 5.2 of the paper.
+   The ``strength`` parameter must be set to either ``1`` or ``2``.
+
+.. note::
+
+   The number of trials N for a single MOFA iteration is set to ``N = index * n_levels^strength``.
+   The ``--exp-max-trials`` should at least be a multiple of ``N``.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            MOFA:
+               seed: null
+               index: 1
+               n_levels: 5
+               strength: 2
+               threshold: 0.1
+
+.. autoclass:: orion.algo.mofa.mofa.MOFA
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
+
+
 .. _nevergrad-algorithm:
 
 
@@ -553,7 +603,6 @@ Nevergrad
 a library of algorithms for hyperparameter search.
 
 .. _nevergrad: https://facebookresearch.github.io/nevergrad/
-
 
 .. code-block:: yaml
 

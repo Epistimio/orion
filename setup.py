@@ -15,6 +15,7 @@ with open("tests/requirements.txt") as f:
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.mofa",
     "orion.algo.dehb",
     "orion.algo.pbt",
     "orion.analysis",
@@ -90,6 +91,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "mofa = orion.algo.mofa.mofa:MOFA",
             "pb2 = orion.algo.pbt.pb2:PB2",
             "bohb = orion.algo.bohb:BOHB",
             "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
@@ -130,6 +132,7 @@ setup_args = dict(
         "psutil",
         "joblib",
         "pytest>=3.0.0",
+        "scikit-optimize",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
@@ -159,7 +162,7 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.7 3.8 3.9".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.8 3.9".split()]
 
 if __name__ == "__main__":
     setup(**setup_args)
