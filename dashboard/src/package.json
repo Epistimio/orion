@@ -19,37 +19,37 @@
   "dependencies": {
     "@carbon/grid": "10.43.1",
     "@carbon/icons-react": "10.49.0",
-    "apollo-boost": "0.4.9",
+    "axios": "^0.27.2",
     "bootstrap": "^4.6.1",
     "carbon-components": "^10.57.1",
     "carbon-components-react": "^7.57.1",
     "carbon-icons": "^7.0.7",
-    "enzyme": "3.11.0",
-    "enzyme-adapter-react-16": "1.15.6",
-    "graphql": "14.7.0",
     "plotly.js": "^2.12.1",
     "plotly.js-cartesian-dist-min": "^2.12.1",
     "react": "16.14.0",
-    "react-apollo": "2.5.8",
     "react-bootstrap": "^1.6.5",
     "react-dom": "16.14.0",
     "react-plotly.js": "^2.5.1",
     "react-router-dom": "5.3.3",
-    "react-scripts": "4.0.3",
+    "react-scripts": "5.0.1",
     "react-sizeme": "^2.6.12"
   },
   "devDependencies": {
-    "@commitlint/cli": "7.6.1",
+    "@commitlint/cli": "17.0.1",
     "@commitlint/config-conventional": "7.6.0",
     "@testing-library/dom": "^8.13.0",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^12.1.5",
     "@testing-library/user-event": "^13.5.0",
     "jest-canvas-mock": "^2.4.0",
-    "lint-staged": "8.2.1",
+    "lint-staged": "12.4.2",
     "prettier": "1.19.1",
     "sass": "1.52.1",
     "wait-for-expect": "3.0.2"
+  },
+  "resolutions": {
+    "nth-check": "^2.0.1",
+    "autoprefixer": "10.4.5"
   },
   "eslintConfig": {
     "extends": "react-app"

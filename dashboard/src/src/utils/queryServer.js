@@ -1,35 +1,27 @@
-import http from 'http';
+import axios from 'axios';
+// Use adapter to prevent "cross origin forbidden" error in tests
+// Ref (2022/02/01): https://github.com/axios/axios/issues/1418
+import adapter from 'axios/lib/adapters/http';
 
 /**
- * Make a REST call using GET method and NodeJS builtin `http` module.
- * NB: A `https` module is also available for HTTPS addresses.
+ * Make a REST call using GET method and axios module.
  * @param {string} path - address to load
  * @param {Object} parameters - GET parameters
  * @param resolve - function to call on success. Will receive JSON data.
  * @param reject - function to call on error. Will receive raw error object.
  */
-function makeRESTCall(path, parameters = {}, resolve, reject) {
-  let url = path;
-  const keys = Object.keys(parameters);
-  if (keys.length) {
-    url += '?';
-    for (let key of keys) {
-      url += `${key}=${encodeURI(parameters[key])}`;
-    }
-  }
-  http
-    .get(url, resp => {
-      let data = '';
-      resp.on('data', chunk => {
-        data += chunk;
-      });
-      resp.on('end', () => {
-        resolve(JSON.parse(data));
-      });
-    })
-    .on('error', err => {
-      reject(err);
-    });
+function makeRESTCall(path, parameters, resolve, reject) {
+  const config = {
+    method: 'get',
+    url: path,
+    responseType: 'json',
+    responseEncoding: 'utf8',
+    adapter: adapter,
+  };
+  if (Object.keys(parameters).length) config.params = parameters;
+  axios(config)
+    .then(response => resolve(response.data))
+    .catch(reject);
 }
 
 /** Wrapper class to call Orion Web API. */
