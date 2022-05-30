@@ -23,51 +23,16 @@ from orion.core.worker.algo_wrappers.algo_wrapper import (
     _copy_status_and_results,
 )
 from orion.core.worker.knowledge_base.base import ExperimentInfo, KnowledgeBase
-from orion.core.worker.knowledge_base.warm_starteable import is_warmstarteable
+from orion.core.worker.knowledge_base.warm_starteable import (
+    WarmStarteable,
+)
 from orion.core.worker.trial import Trial
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 log = getLogger(__file__)
 
 
-def create_algo(
-    algo_type: type[AlgoType],
-    space: Space,
-    knowledge_base: KnowledgeBase | None = None,
-    **algo_kwargs,
-) -> AlgoType | MultiTaskWrapper[AlgoType]:
-    """Creates an algorithm of the given type, wrapping it with a MultiTaskAlgo wrapper if it isn't
-    warm-startable and if there are experiments in the knowledge base.
-    """
-
-    if (
-        knowledge_base is None
-        or is_warmstarteable(algo_type)
-        or knowledge_base.n_stored_experiments == 0
-    ):
-        log.debug("Not using a multi-task wrapper.")
-        return algo_type(space, **algo_kwargs)
-
-    log.debug("Chosen algorithm is NOT warm-starteable, Adding a multi-task wrapper.")
-    # TODO: Should we have this dimension be larger than the current number of
-    # experiments in the KB, in case some get added in the future?
-    max_task_id = knowledge_base.n_stored_experiments + 1
-    task_label_dimension = Categorical(
-        "task_id",
-        list(range(0, max_task_id)),
-        default_value=0,
-    )
-    space_without_task_ids = copy.deepcopy(space)
-    space_with_task_ids = copy.deepcopy(space)
-    space_with_task_ids.register(task_label_dimension)
-
-    algorithm = algo_type(space=space_with_task_ids, **algo_kwargs)
-    return MultiTaskWrapper(
-        space=space_without_task_ids, algorithm=algorithm, knowledge_base=knowledge_base
-    )
-
-
-class MultiTaskWrapper(AlgoWrapper[AlgoType]):
+class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
     """Wrapper that makes the algo "multi-task" by adding a task id to the inputs."""
 
     def __init__(
@@ -97,6 +62,10 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType]):
         """
         # TODO: Should we have this dimension be larger than the current number of
         # experiments in the KB, in case some get added in the future?
+        # TODO: Should the number of tasks here only count the experiments where the spaces are
+        # compatible?
+        # TODO: Could we use a Catagorical over the experiment IDS instead of a Categorical with
+        # ints?
         max_task_id = knowledge_base.n_stored_experiments + 1
         task_label_dimension = Categorical(
             "task_id",

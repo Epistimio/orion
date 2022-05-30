@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from abc import ABC, abstractmethod
 from logging import getLogger
+from typing import Container
 
 if typing.TYPE_CHECKING:
     from orion.client import ExperimentClient
@@ -19,7 +20,7 @@ log = getLogger(__file__)
 ExperimentInfo = object
 
 
-class KnowledgeBase(ABC):
+class KnowledgeBase(ABC, Container[ExperimentInfo]):
     """Abstract Base Class for the KnowledgeBase, which currently isn't part of the
     Orion codebase.
     """
@@ -29,7 +30,7 @@ class KnowledgeBase(ABC):
         self,
         target_experiment: Experiment | ExperimentClient,
         max_trials: int | None = None,
-    ) -> dict[ExperimentInfo, list[Trial]]:
+    ) -> list[tuple[Experiment, list[Trial]]]:
         """Retrieve experiments 'similar' to `target_experiment` and their trials.
 
         When `max_trials` is given, only up to `max_trials` are returned in total for
@@ -45,10 +46,10 @@ class KnowledgeBase(ABC):
 
         Returns
         -------
-        Dict[ExperimentInfo, List[Trial]]
-            Dictionary mapping from `ExperimentInfo` objects to a list of trials from
-            that experiment.
+        list[tuple[ExperimentInfo, list[Trial]]]
+            A list of tuples of experiments and the similar trials from that experiment.
         """
+        raise NotImplementedError
 
     @property
     @abstractmethod
