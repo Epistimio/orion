@@ -553,7 +553,9 @@ class BaseAlgoTests:
         if n_initial_trials == self.max_trials:
             n_initial_trials -= 1
 
-        new_algo = self.create_algo(n_observed_trials=n_initial_trials)
+        # NOTE: Seed is part of configuration, not state. Configuration is assumed to be the same
+        #       for both algorithm instances.
+        new_algo = self.create_algo(n_observed_trials=n_initial_trials, seed=seed)
         new_state = new_algo.state_dict
         b = new_algo.suggest(1)[0]
         # NOTE: For instance, if the algo doesn't have any RNG (e.g. GridSearch), this could be

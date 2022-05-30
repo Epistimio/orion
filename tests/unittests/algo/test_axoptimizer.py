@@ -7,7 +7,7 @@ import pytest
 from orion.algo.axoptimizer import has_Ax
 from orion.benchmark.task.base import BenchmarkTask
 from orion.core.utils import backward
-from orion.testing.algo import BaseAlgoTests, TestPhase, phase
+from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
 if not has_Ax:
     pytest.skip("skipping Ax tests", allow_module_level=True)
@@ -74,6 +74,7 @@ class TestAxOptimizer(BaseAlgoTests):
         TestPhase("BO", N_INIT, "space.sample"),
     ]
 
+    @first_phase_only
     def test_configuration_fail(self):
         """Test that Ax configuration is valid"""
         with pytest.raises(AssertionError) as exc_info:
@@ -87,6 +88,7 @@ class TestAxOptimizer(BaseAlgoTests):
             )
         assert exc_info.value
 
+    @first_phase_only
     def test_is_done_cardinality(self, *args, **kwargs):
         # Set higher max_trials to explore all cardinality space
         _max_trials = self.max_trials
@@ -94,83 +96,91 @@ class TestAxOptimizer(BaseAlgoTests):
         super().test_is_done_cardinality(*args, **kwargs)
         self.max_trials = _max_trials
 
-    def test_seed_rng(self, mocker, num, attr):
-        """Test that the seeding gives reproducibile results."""
-        algo = self.create_algo()
+    @pytest.mark.parametrize("seed", [123])
+    def test_seed_rng(self, seed: int):
+        """Test that the seeding gives reproducible results."""
+        algo = self.create_algo(seed=seed)
 
-        seed = numpy.random.randint(10000)
-        algo.seed_rng(seed)
-        spy = self.spy_phase(mocker, num, algo, attr)
-        trials = algo.suggest(1)
-        trials[0].id != algo.suggest(1)[0].id
+        trial_a = algo.suggest(1)[0]
+        trial_b = algo.suggest(1)[0]
+        assert trial_a != trial_b
 
-        new_algo = self.create_algo()
-        new_algo.seed_rng(seed)
-        self.force_observe(algo.n_observed, new_algo)
+        new_algo = self.create_algo(seed=seed)
+        assert new_algo.n_observed == algo.n_observed
+        trial_c = new_algo.suggest(1)[0]
+        assert trial_c == trial_a
         numpy.testing.assert_allclose(
-            numpy.array(list(trials[0].params.values())).astype(float),
-            numpy.array(list(new_algo.suggest(1)[0].params.values())).astype(float),
+            numpy.array(list(trial_a.params.values())).astype(float),
+            numpy.array(list(trial_c.params.values())).astype(float),
             atol=TOL,
             rtol=TOL,
         )
 
-        self.assert_callbacks(spy, num + 1, new_algo)
-
-    def test_seed_rng_init(self, mocker, num, attr):
+    @first_phase_only
+    def test_seed_rng_init(self):
         """Test that the seeding gives reproducibile results."""
-        algo = self.create_algo(seed=1)
-
-        spy = self.spy_phase(mocker, num, algo, attr)
-        trials = algo.suggest(1)
-        algo.suggest(1)[0].id != trials[0].id
-
-        new_algo = self.create_algo(seed=2)
-        self.force_observe(algo.n_observed, new_algo)
-        assert new_algo.suggest(1)[0].id != trials[0].id
-
-        new_algo = self.create_algo(seed=1)
-        self.force_observe(algo.n_observed, new_algo)
-        numpy.testing.assert_allclose(
-            numpy.array(list(trials[0].params.values())).astype(float),
-            numpy.array(list(new_algo.suggest(1)[0].params.values())).astype(float),
-            atol=TOL,
-            rtol=TOL,
-        )
-
-        self.assert_callbacks(spy, num + 1, new_algo)
-
-    @phase
-    def test_state_dict(self, mocker, num, attr):
-        """Verify that resetting state makes sampling deterministic"""
-        algo = self.create_algo()
-
-        seed = numpy.random.randint(10000)
-        algo.seed_rng(seed)
-        spy = self.spy_phase(mocker, max(num, 1), algo, attr)
+        config = self.config.copy()
+        config["seed"] = 1
+        algo = self.create_algo(config=config)
         state = algo.state_dict
-        trial = algo.suggest(1)[0]
 
-        algo.set_state(state)
+        first_trial = algo.suggest(1)[0]
+        second_trial = algo.suggest(1)[0]
+        assert first_trial != second_trial
+
+        config = self.config.copy()
+        config["seed"] = 2
+        new_algo = self.create_algo(config=config)
+        new_algo_state = new_algo.state_dict
+
+        different_seed_trial = new_algo.suggest(1)[0]
+        assert different_seed_trial != first_trial
+
+        config = self.config.copy()
+        config["seed"] = 1
+        new_algo = self.create_algo(config=config)
+        same_seed_trial = new_algo.suggest(1)[0]
+        assert same_seed_trial == first_trial
+
         numpy.testing.assert_allclose(
-            numpy.array(list(trial.params.values())).astype(float),
-            numpy.array(list(algo.suggest(1)[0].params.values())).astype(float),
+            numpy.array(list(first_trial.params.values())).astype(float),
+            numpy.array(list(same_seed_trial.params.values())).astype(float),
             atol=TOL,
             rtol=TOL,
         )
 
-        new_algo = self.create_algo()
-        assert trial.id != new_algo.suggest(1)[0].id
+    @pytest.mark.parametrize("seed", [123, 456])
+    def test_state_dict(self, seed: int, phase: TestPhase):
+        """Verify that resetting state makes sampling deterministic"""
+        algo = self.create_algo(seed=seed)
+        state = algo.state_dict
+        a = algo.suggest(1)[0]
+
+        # Create a new algo, without setting a seed.
+
+        # The other algorithm is initialized at the start of the next phase.
+        n_initial_trials = phase.end_n_trials
+        # Use max_trials-1 so the algo can always sample at least one trial.
+        if n_initial_trials == self.max_trials:
+            n_initial_trials -= 1
+
+        # NOTE: Seed is part of configuration, not state. Configuration is assumed to be the same
+        #       for both algorithm instances.
+        new_algo = self.create_algo(n_observed_trials=n_initial_trials, seed=seed)
+        new_state = new_algo.state_dict
+        b = new_algo.suggest(1)[0]
+        assert a != b
 
         new_algo.set_state(state)
+        c = new_algo.suggest(1)[0]
         numpy.testing.assert_allclose(
-            numpy.array(list(trial.params.values())).astype(float),
-            numpy.array(list(new_algo.suggest(1)[0].params.values())).astype(float),
+            numpy.array(list(a.params.values())).astype(float),
+            numpy.array(list(c.params.values())).astype(float),
             atol=TOL,
             rtol=TOL,
         )
 
-        self.assert_callbacks(spy, num + 1, algo)
-
+    @first_phase_only
     def test_optimize_multi_objectives(self):
         """Test that algorithm optimizes somehow (this is on-par with random search)"""
         _max_trials = 20
@@ -214,6 +224,7 @@ class TestAxOptimizer(BaseAlgoTests):
         # currin
         assert min(objectives_currin) <= min(rand_objectives_currin)
 
+    @first_phase_only
     def test_objectives_constraints(self):
         """Test that algorithm optimizes somehow (this is on-par with random search)"""
         _max_trials = 20
