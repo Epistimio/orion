@@ -43,6 +43,10 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "ax": [
+        "ax-platform",
+        "numpy",
+    ],
     "dehb": [
         "ConfigSpace",
         "dehb @ git+https://github.com/automl/DEHB.git@development",
@@ -91,6 +95,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
             "pbt = orion.algo.pbt.pbt:PBT",
+            "ax = orion.algo.axoptimizer:AxOptimizer",
             "mofa = orion.algo.mofa.mofa:MOFA",
             "pb2 = orion.algo.pbt.pb2:PB2",
             "bohb = orion.algo.bohb:BOHB",

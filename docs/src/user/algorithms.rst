@@ -303,7 +303,6 @@ Configuration
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration
 
-
 .. _PBT:
 
 Population Based Training (PBT)
@@ -474,6 +473,46 @@ Configuration
    :noindex:
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration, sample_one_dimension, split_trials, requires_type
+
+
+.. _ax-algorithm:
+
+Ax
+--
+
+`Ax`_ is a platform for optimizing any kind of experiment, including machine
+learning experiments, A/B tests, and simulations. Ax can optimize discrete
+configurations (e.g., variants of an A/B test) using multi-armed bandit
+optimization, and continuous (e.g., integer or floating point)-valued
+configurations using Bayesian optimization.
+
+.. _ax: https://ax.dev/
+
+Configuration
+~~~~~~~~~~~~~
+
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      ax:
+        seed: 1234
+        n_initial_trials: 5,
+        parallel_strategy:
+          of_type: StatusBasedParallelStrategy
+          strategy_configs:
+             broken:
+                of_type: MaxParallelStrategy
+
+
+.. autoclass:: orion.algo.axoptimizer.AxOptimizer
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+
 
 
 

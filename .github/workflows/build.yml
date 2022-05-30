@@ -69,7 +69,7 @@ jobs:
       matrix:
         platform: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
-        algo: [nevergrad, hebo]
+        algo: [nevergrad, hebo, ax]
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
