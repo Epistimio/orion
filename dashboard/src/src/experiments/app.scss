@@ -1,0 +1,13 @@
+@import 'carbon-components/scss/globals/scss/vendor/@carbon/type/scss/font-family.scss';
+@import 'carbon-components/scss/globals/scss/vendor/@carbon/layout/scss/breakpoint.scss';
+@import 'carbon-components/scss/globals/scss/typography.scss';
+@import 'carbon-components/scss/globals/scss/vars.scss';
+
+@import '../../node_modules/bootstrap/scss/bootstrap';
+
+@import 'components/TutorialHeader/tutorial-header';
+@import 'content/LandingPage/landing-page';
+@import 'content/StatusPage/status-page';
+@import 'content/VisualizationsPage/visualizations-page';
+@import 'content/DatabasePage/database-page';
+@import 'content/ConfigurationPage/configuration-page';

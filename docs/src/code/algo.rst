@@ -15,9 +15,14 @@ Algorithm modules
    algo/gridsearch
    algo/hyperband
    algo/asha
-   algo/ax
+   algo/dehb
+   algo/bohb
    algo/pbt
+   algo/pb2
    algo/tpe
+   algo/ax
+   algo/mofa
    algo/nevergrad
    algo/parallel_strategy
    algo/registry
+   algo/hebo

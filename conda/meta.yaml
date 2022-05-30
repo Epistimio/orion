@@ -38,6 +38,7 @@ requirements:
     - scikit-learn
     - psutil
     - pytest >=3.0.0
+    - scikit-optimize
 
 test:
   import:
