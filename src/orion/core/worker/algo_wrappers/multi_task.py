@@ -1,5 +1,11 @@
-"""Wrapper that makes an algorithm multi-task and feeds it data from the knowledge base.
+"""Wrapper that makes an algorithm warm-starteable by observing trials from different tasks.
 
+The wrapper adds a `task_id` dimension to the search space, and uses the value of `task_id` to
+differentiate between the current "target" experiment (`task_id==0`) and the other experiments
+from the knowledge base (`task_id>0`).
+
+The trials from the knowledge base that can fit within the same space are reused and given a
+different value for a new "task_id" dimension.
 """
 from __future__ import annotations
 
