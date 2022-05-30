@@ -4,7 +4,7 @@ import copy
 import pytest
 
 from orion.algo.space import Space
-from orion.core.worker.knowledge_base import KnowledgeBase
+from orion.core.worker.warm_start import KnowledgeBase
 from typing import Any, Callable
 from orion.core.io.space_builder import SpaceBuilder
 from orion.client import ExperimentClient

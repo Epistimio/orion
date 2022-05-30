@@ -22,8 +22,8 @@ from orion.core.worker.algo_wrappers.algo_wrapper import (
     AlgoWrapper,
     _copy_status_and_results,
 )
-from orion.core.worker.knowledge_base.base import ExperimentInfo, KnowledgeBase
-from orion.core.worker.knowledge_base.warm_starteable import (
+from orion.core.worker.warm_start.knowledge_base import ExperimentInfo, KnowledgeBase
+from orion.core.worker.warm_start.warm_starteable import (
     WarmStarteable,
 )
 from orion.core.worker.trial import Trial
@@ -45,9 +45,8 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         )
         self.current_task_id: int = 0
 
-        # TODO: Use `self.registry` only for the current (target) task.
-        # Let `self.algorithm.registry` contain trials from all tasks, with task IDs added,
-        # including the target task.
+        # TODO: IDEA: Use `self.registry` only for the current (target) task, and let `self.algorithm.registry`
+        # contain trials from all tasks, with task IDs added, including the target task?
 
     def transform(self, trial: Trial) -> Trial:
         return self._add_task_id(trial, self.current_task_id)
@@ -63,9 +62,9 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         # TODO: Should we have this dimension be larger than the current number of
         # experiments in the KB, in case some get added in the future?
         # TODO: Should the number of tasks here only count the experiments where the spaces are
-        # compatible?
+        # compatible? (Currently only counts total number of experiments in the KB)
         # TODO: Could we use a Catagorical over the experiment IDS instead of a Categorical with
-        # ints?
+        # ints? Would that help in some way?
         max_task_id = knowledge_base.n_stored_experiments + 1
         task_label_dimension = Categorical(
             "task_id",

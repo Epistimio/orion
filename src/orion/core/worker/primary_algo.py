@@ -1,53 +1,94 @@
-# Backward compatibility adapters:
 from __future__ import annotations
 
-from typing import TypeVar, overload
+from typing import Any, Callable, TypeVar, overload
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.worker.algo_wrappers import (
     InsistSuggest,
-    MultiTaskWrapper,
     SpaceTransform,
 )
+
+# Backward compatibility imports adapters.
 from orion.core.worker.algo_wrappers.space_transform import (  # noqa
     SpaceTransform as SpaceTransformAlgoWrapper,
 )
-from orion.core.worker.knowledge_base import KnowledgeBase
+from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
+from orion.core.worker.warm_start import KnowledgeBase, MultiTaskWrapper
+from orion.core.worker.warm_start.warm_starteable import WarmStarteable
+from typing_extensions import ParamSpec, Concatenate
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
+WarmStarteableAlgo = TypeVar("WarmStarteableAlgo", bound=WarmStarteable)
+
+P = ParamSpec("P")
 
 
 @overload
 def create_algo(
-    algo_type: type[AlgoType],
+    algo_type: Callable[Concatenate[Space, P], AlgoType],
     space: Space,
     knowledge_base: KnowledgeBase,
-    **algo_kwargs,
+    *algo_args: P.args,
+    **algo_kwargs: P.kwargs,
 ) -> MultiTaskWrapper[InsistSuggest[SpaceTransform[AlgoType]]]:
     ...
 
 
 @overload
 def create_algo(
-    algo_type: type[AlgoType],
+    algo_type: Callable[Concatenate[Space, P], WarmStarteableAlgo],
+    space: Space,
+    knowledge_base: KnowledgeBase,
+    *algo_args,
+    **algo_kwargs,
+) -> InsistSuggest[SpaceTransform[WarmStarteableAlgo]]:
+    ...
+
+
+@overload
+def create_algo(
+    algo_type: Callable[Concatenate[Space, P], AlgoType],
     space: Space,
     knowledge_base: None = None,
-    **algo_kwargs,
+    *algo_args: P.args,
+    **algo_kwargs: P.kwargs,
 ) -> InsistSuggest[SpaceTransform[AlgoType]]:
     ...
 
 
 def create_algo(
-    algo_type: type[AlgoType],
+    algo_type: Callable[..., AlgoType],
     space: Space,
     knowledge_base: KnowledgeBase | None = None,
-    **algo_kwargs,
-):
-    """Create an AlgoWrapper from the given algorithm and wrappers."""
+    *algo_args: Any,
+    **algo_kwargs: Any,
+) -> InsistSuggest[SpaceTransform[AlgoType]] | MultiTaskWrapper[
+    InsistSuggest[SpaceTransform[AlgoType]]
+]:
+    """Adds different wrappers on top of an algorithm of type `algo_type` before it gets used.
 
+    These wrappers are used to:
+    - apply the transformations required for the algorithm to be applied to the given search space;
+    - check whether the algorithm is warmstarteable and wrap it in a `MultiTaskWrapper` if it isnt;
+    - Make sure that calls to returned algo's `suggest` method returns a Trial, by trying a few times.
+
+    Parameters
+    ----------
+    algo_type : Callable[..., AlgoType]
+        Type of algorithm to create and wrap.
+    space : Space
+        _description_
+    knowledge_base : KnowledgeBase | None, optional
+        _description_, by default None
+
+    Returns
+    -------
+    InsistSuggest[SpaceTransform[AlgoType]] | MultiTaskWrapper[ InsistSuggest[SpaceTransform[AlgoType]] ]
+        _description_
+    """
     spaces = [space]
-    # Create the spaces for each level, from the top down.
+    # Create the spaces for each wrapper, from the top down.
     if knowledge_base:
         space = MultiTaskWrapper.transform_space(space, knowledge_base=knowledge_base)
         spaces.append(space)
@@ -58,14 +99,11 @@ def create_algo(
     space = SpaceTransform.transform_space(space, algo_type=algo_type)
     spaces.append(space)
 
-    assert "algorithm" not in algo_kwargs, (algo_type, algo_kwargs)
-
     # Create the algo, using the innermost (most transformed) space.
-    algo = algo_type(space=spaces.pop(), **algo_kwargs)
-
-    # Create each wrapper, from the bottom up.
-    algo = SpaceTransform(space=spaces.pop(), algorithm=algo)
-    algo = InsistSuggest(space=spaces.pop(), algorithm=algo)
+    # Then, create each wrapper, from the bottom up.
+    algorithm = algo_type(space=spaces.pop(), *algo_args, **algo_kwargs)
+    algorithm = SpaceTransform(space=spaces.pop(), algorithm=algorithm)
+    algorithm = InsistSuggest(space=spaces.pop(), algorithm=algorithm)
     if knowledge_base:
-        algo = MultiTaskWrapper(space=spaces.pop(), algorithm=algo)
-    return algo
+        algorithm = MultiTaskWrapper(space=spaces.pop(), algorithm=algorithm)
+    return algorithm

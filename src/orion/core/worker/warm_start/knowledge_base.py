@@ -15,9 +15,7 @@ if typing.TYPE_CHECKING:
 
 log = getLogger(__file__)
 
-
-# FIXME: Re-introduce this dataclass that contains info about the experiments
-ExperimentInfo = object
+from .experiment_config import ExperimentInfo
 
 
 class KnowledgeBase(ABC, Container[ExperimentInfo]):
@@ -30,7 +28,7 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
         self,
         target_experiment: Experiment | ExperimentClient,
         max_trials: int | None = None,
-    ) -> list[tuple[Experiment, list[Trial]]]:
+    ) -> list[tuple[ExperimentInfo, list[Trial]]]:
         """Retrieve experiments 'similar' to `target_experiment` and their trials.
 
         When `max_trials` is given, only up to `max_trials` are returned in total for

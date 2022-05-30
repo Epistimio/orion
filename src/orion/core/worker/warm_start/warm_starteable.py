@@ -2,22 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
-import inspect
 
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
-from orion.core.worker.knowledge_base.base import ExperimentInfo
+from orion.core.worker.warm_start.knowledge_base import ExperimentInfo
 from orion.core.worker.trial import Trial
-from typing_extensions import Protocol, runtime_checkable
 
 
-@runtime_checkable
-class WarmStarteable(Protocol):
+class WarmStarteable(BaseAlgorithm, ABC):
     """Base class for Algorithms which can leverage 'related' past trials to bootstrap
     their optimization process.
-
-    This is a protocol: It can be inherited from explicitly just like an ABC, but it can also be
-    inherited from by just having a `warm_start` attribute.
     """
 
     @abstractmethod
