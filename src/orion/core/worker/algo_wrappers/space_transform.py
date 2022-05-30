@@ -76,37 +76,6 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
     def reverse_transform(self, trial: Trial) -> Trial:
         return self.transformed_space.reverse(trial)
 
-    def score(self, trial: Trial) -> float:
-        """Allow algorithm to evaluate `point` based on a prediction about
-        this parameter set's performance. Return a subjective measure of expected
-        performance.
-
-        By default, return the same score any parameter (no preference).
-        """
-        self._verify_trial(trial)
-        return self.algorithm.score(self.transformed_space.transform(trial))
-
-    def judge(self, trial: Trial, measurements: Any) -> dict | None:
-        """Inform an algorithm about online `measurements` of a running trial.
-
-        The algorithm can return a dictionary of data which will be provided
-        as a response to the running environment. Default is None response.
-
-        """
-        self._verify_trial(trial)
-        return self.algorithm.judge(
-            self.transformed_space.transform(trial), measurements
-        )
-
-    def should_suspend(self, trial: Trial) -> bool:
-        """Allow algorithm to decide whether a particular running trial is still
-        worth to complete its evaluation, based on information provided by the
-        `judge` method.
-
-        """
-        self._verify_trial(trial)
-        return self.algorithm.should_suspend(trial)
-
     @property
     def fidelity_index(self) -> str | None:
         """Compute the index of the space where fidelity is.
@@ -114,13 +83,3 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
         Returns None if there is no fidelity dimension.
         """
         return self.algorithm.fidelity_index
-
-    def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
-        if space is None:
-            space = self.space
-
-        if trial not in space:
-            raise ValueError(
-                f"Trial {trial.id} not contained in space:"
-                f"\nParams: {trial.params}\nSpace: {space}"
-            )
