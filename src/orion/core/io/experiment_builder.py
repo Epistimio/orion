@@ -74,6 +74,7 @@ hierarchy. From the more global to the more specific, there is:
 
 """
 from __future__ import annotations
+from ast import get_source_segment
 
 import copy
 import datetime
@@ -172,9 +173,9 @@ def build(name, version=None, branching=None, **config):
     log.debug("    Passed experiment config:\n%s", pprint.pformat(config))
     log.debug("    Branching config:\n%s", pprint.pformat(branching))
 
+    storage_instance = config.get('storage_instance') or get_storage()
     name, config, branching = clean_config(name, config, branching)
-
-    config = consolidate_config(name, version, config)
+    config = consolidate_config(name, version, config, storage=storage_instance)
 
     if "space" not in config:
         raise NoConfigurationError(
@@ -188,7 +189,7 @@ def build(name, version=None, branching=None, **config):
     if experiment.id is None:
         log.debug("Experiment not found in DB. Now attempting registration in DB.")
         try:
-            _register_experiment(experiment)
+            _register_experiment(experiment, storage=storage_instance)
             log.debug("Experiment successfully registered in DB.")
         except DuplicateKeyError:
             log.debug(
@@ -246,11 +247,11 @@ def clean_config(name, config, branching):
     return name, config, branching
 
 
-def consolidate_config(name, version, config):
+def consolidate_config(name, version, config, storage=None):
     """Merge together given configuration with db configuration matching
     for experiment (``name``, ``version``)
     """
-    db_config = fetch_config_from_db(name, version)
+    db_config = fetch_config_from_db(name, version, storage=storage)
 
     # Do not merge spaces, the new definition overrides it.
     if "space" in config:
@@ -382,7 +383,7 @@ def create_experiment(name, version, mode, space, **kwargs):
         Configuration of the storage backend.
 
     """
-    experiment = Experiment(name=name, version=version, mode=mode)
+    experiment = Experiment(name=name, version=version, mode=mode, storage_instance=kwargs.get('storage_instance', None))
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
     experiment.max_trials = kwargs.get(
         "max_trials", orion.core.config.experiment.max_trials
@@ -419,7 +420,7 @@ def create_experiment(name, version, mode, space, **kwargs):
     return experiment
 
 
-def fetch_config_from_db(name, version=None):
+def fetch_config_from_db(name, version=None, storage=None):
     """Fetch configuration from database
 
     Parameters
@@ -431,7 +432,8 @@ def fetch_config_from_db(name, version=None):
         largest version available, the largest version will be selected.
 
     """
-    configs = get_storage().fetch_experiments({"name": name})
+
+    configs = (storage or get_storage()).fetch_experiments({"name": name})
 
     if not configs:
         return {}
@@ -546,14 +548,15 @@ def _instantiate_strategy(config=None):
     return None
 
 
-def _register_experiment(experiment):
+def _register_experiment(experiment, storage=None):
     """Register a new experiment in the database"""
     experiment.metadata["datetime"] = datetime.datetime.utcnow()
     config = experiment.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
 
-    get_storage().create_experiment(config)
+    storage = (storage or get_storage())
+    storage.create_experiment(config)
 
     # XXX: Reminder for future DB implementations:
     # MongoDB, updates an inserted dict with _id, so should you :P
@@ -563,7 +566,7 @@ def _register_experiment(experiment):
     if experiment.refers.get("parent_id") is None:
         log.debug("update refers (name: %s)", experiment.name)
         experiment.refers["root_id"] = experiment.id
-        get_storage().update_experiment(
+        storage.update_experiment(
             experiment, refers=experiment.configuration["refers"]
         )
 

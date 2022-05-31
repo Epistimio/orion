@@ -60,6 +60,7 @@ def build_experiment(
     working_dir=None,
     debug=False,
     executor=None,
+    storage_instance=None,
 ):
     """Build an experiment to be executable
 
@@ -209,7 +210,8 @@ def build_experiment(
             "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
         )
 
-    setup_storage(storage=storage, debug=debug)
+    if not storage_instance:
+        setup_storage(storage=storage, debug=debug)
 
     try:
         experiment = experiment_builder.build(
@@ -222,6 +224,7 @@ def build_experiment(
             max_broken=max_broken,
             branching=branching,
             working_dir=working_dir,
+            storage_instance=storage_instance,
         )
     except RaceCondition:
         # Try again, but if it fails again, raise. Race conditions due to version increment should
@@ -237,6 +240,7 @@ def build_experiment(
                 max_broken=max_broken,
                 branching=branching,
                 working_dir=working_dir,
+                storage_instance=storage_instance,
             )
         except RaceCondition as e:
             raise RaceCondition(

@@ -87,11 +87,14 @@ class Legacy(BaseStorageProtocol):
 
     """
 
-    def __init__(self, database=None, setup=True):
+    def __init__(self, database=None, setup=True, database_instance=None):
         if database is not None:
             setup_database(database)
 
-        self._db = database_factory.create()
+        if database_instance is None:
+            self._db = database_factory.create()
+        else:
+            self._db = database_instance
 
         if setup:
             self._setup_db()

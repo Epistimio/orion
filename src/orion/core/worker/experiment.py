@@ -131,7 +131,7 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
-    def __init__(self, name, version=None, mode="r"):
+    def __init__(self, name, version=None, mode="r", storage_instance=None):
         self._id = None
         self.name = name
         self.version = version if version else 1
@@ -145,7 +145,9 @@ class Experiment:
         self.algorithms = None
         self.working_dir = None
 
-        self._storage = get_storage()
+        self._storage = storage_instance
+        if self._storage is None:
+            self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 

@@ -18,18 +18,17 @@ class ClientREST:
         """Basic reply handling, makes sure status is 0, else it will raise an error"""
         data["token"] = self.token
 
-        result = requests.post(self.endpoint + "/" + path, data=data)
+        result = requests.post(self.endpoint + "/" + path, json=data)
+        payload = result.json()
+        status = payload.pop("status")
 
         if result.status_code >= 200 and result.status_code < 300:
-            payload = result.json()
-            status = payload.pop("status")
 
             if status == 0:
                 return payload
 
-            raise RuntimeError(f"Remote server returned {status}")
-
-        raise RuntimeError(f"{result}")
+        error = payload.pop('error')
+        raise RuntimeError(f"Remote server returned error code {status}: {error}")
 
     def new_experiment(self, **config) -> str:
         result = self._post("experiment", **config)
@@ -49,3 +48,16 @@ class ClientREST:
 
     def heartbeat(self, trial: Trial) -> None:
         self._post("heartbeat", trial_id=trial.id)
+
+
+# WIP
+
+from orion.client.experiment import ExperimentClient
+
+class ExperimentClientREST(ExperimentClient):
+
+    def __init__(self, endpoint, token):
+        self.rest = ClientREST(endpoint, token)
+
+        # Do not call super here
+        # we want to see what is missing

@@ -7,7 +7,8 @@ from contextlib import contextmanager
 
 from orion.service.client import ClientREST
 
-TOKEN = ""
+TOKEN = "Tok1"
+TOKEN2 = "Tok2"
 ENDPOINT = "http://localhost:8080"
 
 
@@ -33,7 +34,12 @@ def server() -> None:
 def test_new_experiment():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
-        expid = client.new_experiment(abc=123)
+        expid = client.new_experiment(name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)"))
+        print(expid)
+
+        # same experiment should be no problem
+        client2 = ClientREST(ENDPOINT, TOKEN2)
+        expid = client.new_experiment(name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)"))
         print(expid)
 
 
