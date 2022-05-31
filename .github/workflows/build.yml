@@ -24,7 +24,6 @@ jobs:
       - run: pre-commit run black --all-files
       - run: pre-commit run isort --all-files
       - run: pre-commit run doc8 --all-files
-
   pretest:
     runs-on: ubuntu-latest
     strategy:
@@ -106,7 +105,11 @@ jobs:
         fail_ci_if_error: false
 
   test-long-algos:
+<<<<<<< HEAD
     needs: pretest, pre-commit
+=======
+    needs: pre-commit, pretest
+>>>>>>> Pre-commit as parallel step to pretest
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
@@ -140,7 +143,11 @@ jobs:
         fail_ci_if_error: false
 
   test_no_extras:
+<<<<<<< HEAD
     needs: pre-commit
+=======
+    needs: pre-commit, pretest
+>>>>>>> Pre-commit as parallel step to pretest
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -163,7 +170,11 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   mongodb:
+<<<<<<< HEAD
     needs: pre-commit
+=======
+    needs: pre-commit, pretest
+>>>>>>> Pre-commit as parallel step to pretest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -192,7 +203,11 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
   backward-compatibility:
+<<<<<<< HEAD
     needs: pre-commit
+=======
+    needs: pre-commit, pretest
+>>>>>>> Pre-commit as parallel step to pretest
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 2
