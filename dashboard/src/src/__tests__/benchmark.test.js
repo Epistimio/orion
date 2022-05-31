@@ -68,7 +68,7 @@ async function lookupPlot(...texts) {
     () => {
       expect(hasPlotImmediately(...texts)).toBe(true);
     },
-    { interval: 1000, timeout: 20000 }
+    { interval: 1000, timeout: 120000 }
   );
 }
 
@@ -275,6 +275,32 @@ const AAWA2_no_random = [
   AAWA2PlotsNoRandom.parallel_assessment_regret_rosenbrock,
 ];
 
+test('Test sleep', async () => {
+  let start = performance.now();
+  await sleep(1000);
+  let end = performance.now();
+  let diff = end - start;
+  console.log(diff);
+  expect(diff).toBeGreaterThanOrEqual(1000);
+  expect(diff).toBeLessThan(2000);
+
+  start = performance.now();
+  await sleep(2000);
+  end = performance.now();
+  diff = end - start;
+  console.log(diff);
+  expect(diff).toBeGreaterThanOrEqual(2000);
+  expect(diff).toBeLessThan(3000);
+
+  start = performance.now();
+  await sleep(20000);
+  end = performance.now();
+  diff = end - start;
+  console.log(diff);
+  expect(diff).toBeGreaterThanOrEqual(20000);
+  expect(diff).toBeLessThan(21000);
+});
+
 test('Test select benchmark', async () => {
   render(<App />, { wrapper: MemoryRouter });
 
@@ -285,7 +311,7 @@ test('Test select benchmark', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 10000 }
+      { interval: 1000, timeout: 120000 }
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -370,7 +396,7 @@ test('Test (de)select assessments', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 10000 }
+      { interval: 1000, timeout: 120000 }
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -396,7 +422,7 @@ test('Test (de)select assessments', async () => {
   // Deselect assessment
   userEvent.click(inputAssessmentAverageRank);
   expect(inputAssessmentAverageRank.checked).toBe(false);
-  await sleep(100);
+  await sleep(1000);
   for (let texts of AAWA2_average_rank) {
     expect(hasPlotImmediately(...texts)).toBe(false);
   }
@@ -406,7 +432,7 @@ test('Test (de)select assessments', async () => {
   // Reselect assessment.
   userEvent.click(inputAssessmentAverageRank);
   expect(inputAssessmentAverageRank.checked).toBe(true);
-  await sleep(100);
+  await sleep(1000);
   for (let texts of AAWA2_all) {
     expect(hasPlotImmediately(...texts)).toBe(true);
   }
@@ -422,7 +448,7 @@ test('Test (de)select tasks', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 10000 }
+      { interval: 1000, timeout: 120000 }
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -448,7 +474,7 @@ test('Test (de)select tasks', async () => {
   // Deselect task.
   userEvent.click(inputTaskBranin);
   expect(inputTaskBranin.checked).toBe(false);
-  await sleep(100);
+  await sleep(1000);
   for (let texts of AAWA2_branin) {
     expect(hasPlotImmediately(...texts)).toBe(false);
   }
@@ -458,7 +484,7 @@ test('Test (de)select tasks', async () => {
   // Reselect task.
   userEvent.click(inputTaskBranin);
   expect(inputTaskBranin.checked).toBe(true);
-  await sleep(100);
+  await sleep(1000);
   for (let texts of AAWA2_all) {
     expect(hasPlotImmediately(...texts)).toBe(true);
   }
@@ -474,7 +500,7 @@ test('Test (de)select algorithms', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 10000 }
+      { interval: 1000, timeout: 120000 }
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -500,7 +526,7 @@ test('Test (de)select algorithms', async () => {
   // Deselect algorithm.
   userEvent.click(inputAlgorithmRandom);
   expect(inputAlgorithmRandom.checked).toBe(false);
-  await sleep(100);
+  await sleep(1000);
   for (let texts of AAWA2_all) {
     expect(hasPlotImmediately(...texts)).toBe(false);
   }
@@ -510,7 +536,7 @@ test('Test (de)select algorithms', async () => {
   // Reselect algorithm.
   userEvent.click(inputAlgorithmRandom);
   expect(inputAlgorithmRandom.checked).toBe(true);
-  await sleep(100);
+  await sleep(1000);
   for (let texts of AAWA2_all) {
     expect(hasPlotImmediately(...texts)).toBe(true);
   }
