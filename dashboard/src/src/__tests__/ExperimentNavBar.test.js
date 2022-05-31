@@ -80,25 +80,25 @@ test('Check filter experiments with search field', async () => {
   expect(searchField).toBeInTheDocument();
   userEvent.type(searchField, 'random');
   await waitFor(() => checkExpectations([0, 0, 0, 0, 1, 0, 0]), {
-    interval: 100,
-    timeout: 2000,
+    interval: 1000,
+    timeout: 10000,
   });
   userEvent.clear(searchField);
   userEvent.type(searchField, 'rosenbrock');
   await waitFor(() => checkExpectations([0, 0, 0, 0, 1, 1, 0]), {
-    interval: 100,
-    timeout: 2000,
+    interval: 1000,
+    timeout: 10000,
   });
   userEvent.clear(searchField);
   userEvent.type(searchField, 'dim-cat');
   await waitFor(() => checkExpectations([0, 1, 0, 1, 0, 0, 0]), {
-    interval: 100,
-    timeout: 2000,
+    interval: 1000,
+    timeout: 10000,
   });
   userEvent.clear(searchField);
   userEvent.type(searchField, 'unknown experiment');
   await waitFor(() => checkExpectations([0, 0, 0, 0, 0, 0, 0]), {
-    interval: 100,
-    timeout: 2000,
+    interval: 1000,
+    timeout: 10000,
   });
 });
