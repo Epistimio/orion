@@ -74,7 +74,7 @@ jobs:
       run: pytest tests/functional/serving/test_frontend.py
 
   test:
-    needs: pretest, pre-commit
+    needs: [pre-commit, pretest]
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
@@ -106,10 +106,14 @@ jobs:
 
   test-long-algos:
 <<<<<<< HEAD
+<<<<<<< HEAD
     needs: pretest, pre-commit
 =======
     needs: pre-commit, pretest
 >>>>>>> Pre-commit as parallel step to pretest
+=======
+    needs: [pre-commit, pretest]
+>>>>>>> Fix missing brackets
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
@@ -144,10 +148,14 @@ jobs:
 
   test_no_extras:
 <<<<<<< HEAD
+<<<<<<< HEAD
     needs: pre-commit
 =======
     needs: pre-commit, pretest
 >>>>>>> Pre-commit as parallel step to pretest
+=======
+    needs: [pre-commit, pretest]
+>>>>>>> Fix missing brackets
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -171,10 +179,14 @@ jobs:
         fail_ci_if_error: false
   mongodb:
 <<<<<<< HEAD
+<<<<<<< HEAD
     needs: pre-commit
 =======
     needs: pre-commit, pretest
 >>>>>>> Pre-commit as parallel step to pretest
+=======
+    needs: [pre-commit, pretest]
+>>>>>>> Fix missing brackets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -204,10 +216,14 @@ jobs:
           fail_ci_if_error: false
   backward-compatibility:
 <<<<<<< HEAD
+<<<<<<< HEAD
     needs: pre-commit
 =======
     needs: pre-commit, pretest
 >>>>>>> Pre-commit as parallel step to pretest
+=======
+    needs: [pre-commit, pretest]
+>>>>>>> Fix missing brackets
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 2
