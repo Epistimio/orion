@@ -29,7 +29,6 @@ jobs:
     strategy:
       matrix:
         toxenv: [pylint, docs]
-        precommithook: [black, isort, doc8]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.9
