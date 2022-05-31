@@ -2,7 +2,7 @@ name: Dashboard Build PR
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [ develop ]
 
 defaults:
   run:
