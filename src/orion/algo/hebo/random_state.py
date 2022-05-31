@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, replace
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -22,17 +22,17 @@ class RandomState:
     random_state: Any
     """ RNG state for the `random` module. """
 
-    numpy_rng_state: Dict[str, Any]
+    numpy_rng_state: dict[str, Any]
     """ RNG state for the `numpy.random` module. """
 
     if TORCH_INSTALLED:
         torch_rng_state: torch.Tensor
         """ RNG state for the `torch` module. """
 
-        torch_cuda_rng_state: List[torch.Tensor]
+        torch_cuda_rng_state: list[torch.Tensor]
         """ RNG states for the `torch.cuda` module, for each cuda device available. """
 
-    base_seed: Optional[int] = None
+    base_seed: int | None = None
     """Base seed that was used to create this object (the `seed` argument to `RandomState.seed`)."""
 
     @classmethod
@@ -61,7 +61,7 @@ class RandomState:
             torch.cuda.set_rng_state_all(self.torch_cuda_rng_state)
 
     @classmethod
-    def seed(cls, base_seed: Optional[int]) -> RandomState:
+    def seed(cls, base_seed: int | None) -> RandomState:
         """Seeds all the RNGs using the given seed, and returns the resulting RandomState object."""
         random.seed(base_seed)
         numpy_seed = random.randint(0, 2**32 - 1)

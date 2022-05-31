@@ -109,7 +109,7 @@ export default class BenchmarkVisualizationsPage extends React.Component {
     window.addEventListener('resize', this.onResize);
   }
   componentDidUpdate(prevProps, prevState, snapshot) {
-    // Make sure to resize grids everytime page is updated.
+    // Make sure to resize grids every time page is updated.
     this.onResize();
   }
   componentWillUnmount() {
