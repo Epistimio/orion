@@ -7,11 +7,13 @@ from abc import ABC, abstractmethod
 from logging import getLogger
 from typing import Container
 
+
 if typing.TYPE_CHECKING:
     from orion.client import ExperimentClient
     from orion.core.worker.experiment import Experiment
     from orion.core.worker.trial import Trial
-    from orion.storage.base import BaseStorageProtocol as Storage
+    from orion.storage.base import BaseStorageProtocol
+
 
 log = getLogger(__file__)
 
@@ -55,16 +57,6 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
         """Returns the current number of experiments registered the Knowledge base."""
 
     @abstractmethod
-    def add_storage(self, storage: Storage) -> None:
-        """Adds the experiments from the given `storage`.
-
-        Parameters
-        ----------
-        storage : Storage
-            Storage object.
-        """
-
-    @abstractmethod
     def add_experiment(self, experiment: Experiment | ExperimentClient) -> None:
         """Adds trials from the given experiment to the knowledge base.
 
@@ -73,3 +65,15 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
         experiment : Union[Experiment, ExperimentClient]
             Experiment or experiment client to add to the KB.
         """
+
+    # NOTE: Not making this an abstract method, since we might need to adapt this a bit.
+    # @abstractmethod
+    def add_storage(self, storage: BaseStorageProtocol) -> None:
+        """Adds the experiments from the given `storage`.
+
+        Parameters
+        ----------
+        storage : Storage
+            Storage object.
+        """
+        raise NotImplementedError

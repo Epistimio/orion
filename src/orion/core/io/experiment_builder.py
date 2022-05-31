@@ -100,7 +100,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.knowledge_base import KnowledgeBase
+from orion.core.worker.warm_start import KnowledgeBase
 from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import get_storage, setup_storage
 
