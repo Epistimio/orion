@@ -30,7 +30,7 @@ test('Test if we switch to visualization page', async () => {
     await screen.findByText(
       /2-dim-shape-exp/,
       {},
-      { interval: 1000, timeout: 40000 }
+      { interval: 1000, timeout: 120000 }
     )
   ).toBeInTheDocument();
 
@@ -58,7 +58,7 @@ test('Test if we can select and unselect experiments', async () => {
   const experiment = await screen.findByText(
     /2-dim-shape-exp/,
     {},
-    { interval: 1000, timeout: 40000 }
+    { interval: 1000, timeout: 120000 }
   );
   expect(experiment).toBeInTheDocument();
 
@@ -79,7 +79,7 @@ test('Test if we can select and unselect experiments', async () => {
         screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
       ).toBeInTheDocument();
     },
-    { interval: 1000, timeout: 40000 }
+    { interval: 1000, timeout: 120000 }
   );
   expect(
     await screen.findByText(
@@ -114,7 +114,7 @@ test('Test if we can select and unselect experiments', async () => {
         screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
       ).toBeInTheDocument();
     },
-    { interval: 1000, timeout: 40000 }
+    { interval: 1000, timeout: 120000 }
   );
   expect(
     await screen.findByText(
@@ -135,7 +135,7 @@ test('Test if we can select and unselect experiments', async () => {
         screen.queryByText(/Regret for experiment 'tpe-rosenbrock'/)
       ).toBeInTheDocument();
     },
-    { interval: 1000, timeout: 40000 }
+    { interval: 1000, timeout: 120000 }
   );
   expect(
     await screen.findByText(
