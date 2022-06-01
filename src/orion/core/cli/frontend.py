@@ -22,7 +22,7 @@ import mimetypes
 
 class StaticResource:
     STATIC_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), 'dashboard'))
+        os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'dashboard', 'build'))
 
     PLACEHOLDER = "window.__ORION_BACKEND__"
     TEXT_TYPES = ("text/html", "application/javascript")
