@@ -57,7 +57,7 @@ def add_subparser(parser):
         "--port",
         type=int,
         default=8000,
-        help="port to run frontend"
+        help="port to run frontend (default 8000)"
     )
 
     serve_parser.add_argument(
@@ -65,7 +65,7 @@ def add_subparser(parser):
         "--backend",
         type=str,
         default='http://127.0.0.1:8000',
-        help="backend address",
+        help="backend address (default: http://127.0.0.1:8000)",
     )
 
     serve_parser.set_defaults(func=main)
