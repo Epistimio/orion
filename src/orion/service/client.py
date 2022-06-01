@@ -20,12 +20,11 @@ class ClientREST:
 
         result = requests.post(self.endpoint + "/" + path, json=data)
         payload = result.json()
+        print(payload)
         status = payload.pop("status")
 
-        if result.status_code >= 200 and result.status_code < 300:
-
-            if status == 0:
-                return payload
+        if result.status_code >= 200 and result.status_code < 300 and status == 0:
+            return payload.pop('result')
 
         error = payload.pop('error')
         raise RuntimeError(f"Remote server returned error code {status}: {error}")

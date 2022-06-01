@@ -2,26 +2,30 @@ import falcon
 
 import os
 import traceback
-
+import logging
 
 from orion.storage.legacy import Legacy
 from orion.core.io.database.mongodb import MongoDB
+from orion.service.remote import RemoteExperimentBroker, ExperimentContext
+from orion.service.auth import AuthenticationService
 
+log = logging.getLogger(__file__)
 
 class QueryRoute:
     """Base route handling, makes sure status is always set
 
 
     """
+    def __init__(self, broker, auth) -> None:
+        self.broker = broker
+        self.auth = auth
 
     def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
         """Force status to be set, and send back an error on exception"""
         try:
             resp.media = dict()
             self.on_post_request(req, resp)
-
             resp.status = falcon.HTTP_200
-            resp.media["status"] = 0
             return
 
         except Exception as err:
@@ -35,13 +39,6 @@ class QueryRoute:
         """Request specific handling to implement here"""
         raise NotImplementedError()
 
-# this could be stored in the mongodb itself
-# the users only know they token, the password is never shared outside our infra
-tok_to_user = {
-    "Tok1": ('User1', 'Pass1'),
-    "Tok2": ('User2', 'Pass2'),
-    "Tok3": ('User3', 'Pass3'),
-}
 
 
 class OrionService:
@@ -49,16 +46,25 @@ class OrionService:
 
     def __init__(self) -> None:
         self.app = falcon.App()
-        OrionService.add_routes(self.app)
+        self.broker = RemoteExperimentBroker()
+        self.auth = AuthenticationService()
+        OrionService.add_routes(self.app, self.broker, self.auth)
 
     @staticmethod
-    def add_routes(app: falcon.App) -> None:
+    def add_routes(app: falcon.App, broker, auth) -> None:
         """Add the routes to a given falcon App"""
-        app.add_route("/experiment", OrionService.NewExperiment())
-        app.add_route("/suggest", OrionService.Suggest())
-        app.add_route("/observe", OrionService.Observe())
-        app.add_route("/is_done", OrionService.IsDone())
-        app.add_route("/heartbeat", OrionService.Heartbeat())
+        app.add_route("/experiment", OrionService.NewExperiment(broker, auth))
+        app.add_route("/suggest", OrionService.Suggest(broker, auth))
+        app.add_route("/observe", OrionService.Observe(broker, auth))
+        app.add_route("/is_done", OrionService.IsDone(broker, auth))
+        app.add_route("/heartbeat", OrionService.Heartbeat(broker, auth))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        log.info('Shuting down')
+        self.broker.stop()
 
     class NewExperiment(QueryRoute):
         """Create or set the experiment"""
@@ -71,39 +77,20 @@ class OrionService:
                 resp.status = falcon.HTTP_401
                 return
 
-            credientials = tok_to_user.get(token)
+            credientials = self.auth.authenticate(token)
             if credientials is None:
                 resp.status = falcon.HTTP_401
                 return
 
-            # force the singleton to use this database with our credentials
-            # bypassing the config
-            print(f"{os.getpid()} Connecting to db")
-
-            # this bypass the Database singleton logic
-            db = MongoDB(
-                name='orion',
-                host='192.168.0.116',
-                port=8124,
-                username=credientials[0],
-                password=credientials[1]
+            ctx = ExperimentContext(
+                credientials[0],
+                credientials[1],
+                config=msg
             )
 
-            # this bypass the Storage singleton logic
-            storage = Legacy(
-                database_instance=db,
-                # Skip setup, this is a shared database
-                # we might not have the permissions to do the setup
-                # and the setup should already be done anyway
-                setup=False
-            )
-
-            print(msg)
-            from orion.client import build_experiment
-            client = build_experiment(**msg, storage_instance=storage)
-
+            result = self.broker.new_experiment(token, ctx)
             resp.status =  falcon.HTTP_200
-            resp.media = dict(experiment_id=str(client.id))
+            resp.media = result
 
     class Suggest(QueryRoute):
         """Suggest new trials for a given experiment"""
@@ -139,12 +126,14 @@ class OrionService:
                 httpd.serve_forever()
 
         except KeyboardInterrupt:
-            print("Stopping server")
+            pass
 
 
 def main(hostname: str = "", port: int = 8080) -> None:
-    service = OrionService()
-    service.run(hostname, port)
+    logging.basicConfig(level=logging.DEBUG)
+
+    with OrionService() as service:
+        service.run(hostname, port)
 
 
 if __name__ == "__main__":
