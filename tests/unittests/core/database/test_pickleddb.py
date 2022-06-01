@@ -7,7 +7,6 @@ from multiprocessing import Pool
 
 import pytest
 from filelock import FileLock, SoftFileLock, Timeout
-from test_database import get_db
 
 from orion.core.io.database import DatabaseTimeout, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
@@ -18,6 +17,8 @@ from orion.core.io.database.pickleddb import (
     find_unpickable_field,
     local_file_systems,
 )
+
+from .test_database import get_db
 
 
 @pytest.fixture(scope="module", autouse=True)

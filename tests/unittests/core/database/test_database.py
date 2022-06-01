@@ -4,12 +4,13 @@ import pickle
 from datetime import datetime
 
 import pytest
-from conftest import insert_test_collection
 
 from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+
+from .conftest import insert_test_collection
 
 _DB_TYPES = ["ephemeraldb", "mongodb", "pickleddb"]
 

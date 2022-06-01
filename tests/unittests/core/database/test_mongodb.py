@@ -6,7 +6,6 @@ from timeit import timeit
 import pymongo
 import pytest
 from pymongo import MongoClient
-from test_database import get_db, insert_test_collection
 
 from orion.core.io.database import (
     Database,
@@ -15,6 +14,9 @@ from orion.core.io.database import (
     database_factory,
 )
 from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
+
+from .conftest import insert_test_collection
+from .test_database import get_db
 
 
 @pytest.fixture(scope="module", autouse=True)
