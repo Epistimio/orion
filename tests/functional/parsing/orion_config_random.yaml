@@ -4,8 +4,3 @@ pool_size: 2
 max_trials: 400
 
 algorithms: random
-
-database:
-  type: 'mongodb'
-  name: 'orion_test'
-  host: 'mongodb://user:pass@localhost'

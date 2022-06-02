@@ -33,6 +33,23 @@ If a step fails at any point in any environment, the build will be immediately s
 failed and reported to the pull request and repository. In such case, the maintainers and
 relevant contributors will be alerted.
 
+
+.. tip::
+
+   We recommend using `pre-commit`_ to validate your changes locally before they get committed.
+
+   This greatly reduces the turnaround time when working on a pull request by avoiding builds
+   failing due to the initial filters of the CI loop (black, isort, pylint, doc8, etc). It also
+   helps you to write modern python code by avoiding older syntax.
+
+   To get started with pre-commit, simply install and enable it like so:
+
+   .. code-block:: sh
+
+      $ pip install pre-commit
+      $ pre-commit install
+
+
 The workflow described above is also executed daily to detect any break due to change in
 dependencies. When releases are made, the workflow is also executed and additionally
 publish the release to PyPi_ and Conda_.
@@ -42,3 +59,4 @@ publish the release to PyPi_ and Conda_.
 .. _tox: https://tox.readthedocs.io/en/latest/
 .. _PyPI: https://pypi.org/project/orion/
 .. _Conda: https://anaconda.org/epistimio/orion
+.. _pre-commit: https://pre-commit.com/

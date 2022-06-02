@@ -47,7 +47,7 @@ def assert_regrets_plot(plot, names, balanced=10, with_avg=False):
     for name, trace in zip(names, line_plots):
         assert trace.type == "scatter"
         assert trace.name == name
-        assert trace.mode == "lines"
+        assert trace.mode == "lines+markers"
         if balanced:
             assert len(trace.y) == balanced
             assert len(trace.x) == balanced
@@ -61,6 +61,38 @@ def assert_regrets_plot(plot, names, balanced=10, with_avg=False):
             if balanced:
                 assert len(trace.y) == balanced * 2
                 assert len(trace.x) == balanced * 2
+
+
+def asset_parallel_assessment_plot(plot, names, n_experiments):
+    assert plot.layout.title.text == "Parallel Assessment"
+    assert plot.layout.xaxis.title.text == "Number of workers"
+    assert plot.layout.yaxis.title.text == "loss"
+
+    line_plots = plot.data
+
+    assert len(line_plots) == len(names)
+
+    for name, trace in zip(names, line_plots):
+        assert trace.type == "scatter"
+        assert trace.name == name
+        assert trace.mode == "lines+markers"
+        assert len(trace.x) == n_experiments
+
+
+def assert_durations_plot(plot, names):
+    """Checks the layout of a regrets plot"""
+    assert plot.layout.title.text == "Time to result"
+    assert plot.layout.xaxis.title.text == "Experiment duration by second(s)"
+    assert plot.layout.yaxis.title.text == "loss"
+
+    line_plots = plot.data
+
+    assert len(line_plots) == len(names)
+
+    for name, trace in zip([name for name in names], line_plots):
+        assert trace.type == "scatter"
+        assert trace.name == name
+        assert trace.mode == "lines+markers"
 
 
 def assert_rankings_plot(plot, names, balanced=10, with_avg=False):

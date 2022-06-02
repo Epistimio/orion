@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
 import copy
 import datetime
@@ -568,7 +567,7 @@ class TestStrategyDeprecated:
 @pytest.mark.usefixtures(
     "with_user_tsirif", "version_XYZ", "mock_infer_versioning_metadata"
 )
-class TestExperimentVersioning(object):
+class TestExperimentVersioning:
     """Create new Experiment with auto-versioning."""
 
     def test_new_experiment_wout_version(self, space):
@@ -588,8 +587,12 @@ class TestExperimentVersioning(object):
         assert exp.version == 1
 
     def test_experiment_overwritten_evc_disabled(self, parent_version_config, caplog):
-        """Build an existing experiment with different config, overwritting previous config."""
+        """Build an existing experiment with different config, overwriting previous config."""
         parent_version_config.pop("version")
+
+        # Note: this is a bit of a hack, but we need to make sure the config is also compatible with gridsearch.
+        parent_version_config = copy.deepcopy(parent_version_config)
+        parent_version_config["space"] = {"/x": "uniform(0, 1)"}
         with OrionState(experiments=[parent_version_config]):
 
             with caplog.at_level(logging.WARNING):
@@ -600,15 +603,16 @@ class TestExperimentVersioning(object):
             assert exp.version == 1
             assert exp.configuration["algorithms"] == {"random": {"seed": None}}
 
+            new_algo = "gridsearch"
             with caplog.at_level(logging.WARNING):
 
                 exp = experiment_builder.build(
-                    name=parent_version_config["name"], algorithms="gradient_descent"
+                    name=parent_version_config["name"], algorithms=new_algo
                 )
                 assert "Running experiment in a different state" in caplog.text
 
             assert exp.version == 1
-            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+            assert list(exp.configuration["algorithms"].keys())[0] == new_algo
 
             caplog.clear()
             with caplog.at_level(logging.WARNING):
@@ -617,7 +621,7 @@ class TestExperimentVersioning(object):
                 assert "Running experiment in a different state" not in caplog.text
 
             assert exp.version == 1
-            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+            assert list(exp.configuration["algorithms"].keys())[0] == new_algo
 
     def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""
@@ -675,7 +679,7 @@ class TestExperimentVersioning(object):
 
 
 @pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
-class TestBuild(object):
+class TestBuild:
     """Test building the experiment"""
 
     @pytest.mark.usefixtures("mock_infer_versioning_metadata")
@@ -792,7 +796,7 @@ class TestBuild(object):
         assert exp.configuration == new_config
 
     def test_instantiation_after_init(self, new_config):
-        """Verify that algo, space and refers was instanciated properly"""
+        """Verify that algo, space and refers was instantiated properly"""
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build(**new_config)
 
@@ -949,7 +953,7 @@ class TestBuild(object):
             )
 
     def test_race_condition_wout_version(self, monkeypatch):
-        """Test that an experiment loosing the race condition during version increment raises
+        """Test that an experiment losing the race condition during version increment raises
         RaceCondition if version number was not specified.
         """
         name = "parent"
@@ -1039,7 +1043,7 @@ class TestBuild(object):
             assert "There was a race condition during branching." in str(exc_info.value)
 
     def test_race_condition_w_version(self, monkeypatch):
-        """Test that an experiment loosing the race condition during version increment cannot
+        """Test that an experiment losing the race condition during version increment cannot
         be resolved automatically if a version number was specified.
 
         Note that if we would raise RaceCondition, the conflict would still occur since
@@ -1155,7 +1159,7 @@ def test_load_unavailable_algo(algo_unavailable_config, capsys):
         exc.match("Could not find implementation of BaseAlgorithm")
 
 
-class TestInitExperimentReadWrite(object):
+class TestInitExperimentReadWrite:
     """Create new Experiment instance that only supports read/write."""
 
     def test_empty_experiment_rw(self):

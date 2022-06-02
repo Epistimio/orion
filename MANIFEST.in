@@ -4,6 +4,7 @@ include *.rst
 include ROADMAP.md
 include CODE_OF_CONDUCT.md
 include CONTRIBUTING.md
+include CITATION.bib
 exclude RESEARCH.md
 
 # Control and setup helpers
@@ -28,6 +29,11 @@ prune docs/src/reference
 recursive-include src *.py
 recursive-include tests *.py *.yaml *.json *.txt *.yml *.in LICENSE
 include tests/requirements.txt
+include .pre-commit-config.yaml
+include CITATION.bib
 
 # Include examples
 recursive-include examples *.md *.py *.pkl *.yaml *.ipynb */requirements.txt
+
+# Exclude dashboard source code
+prune dashboard/src

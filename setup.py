@@ -10,12 +10,13 @@ import versioneer
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
-
-tests_require = ["pytest>=3.0.0", "scikit-learn", "ptera>=1.1.0"]
-
+with open("tests/requirements.txt") as f:
+    tests_require = f.readlines()
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.mofa",
+    "orion.algo.dehb",
     "orion.algo.pbt",
     "orion.analysis",
     "orion.benchmark",
@@ -28,6 +29,43 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.testing",
 ]
 
+extras_require = {
+    "test": tests_require,
+    "docs": [
+        "matplotlib",
+        "numpydoc",
+        "sphinx",
+        "sphinx_rtd_theme",
+        "sphinxcontrib.httpdomain",
+        "sphinx-autoapi",
+        "sphinx_gallery",
+    ],
+    "dask": ["dask[complete]"],
+    "track": ["track @ git+https://github.com/Delaunay/track"],
+    "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "ax": [
+        "ax-platform",
+        "numpy",
+    ],
+    "dehb": [
+        "ConfigSpace",
+        "dehb @ git+https://github.com/automl/DEHB.git@development",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+    ],
+    "bohb": [
+        "hpbandster",
+        "ConfigSpace",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+    ],
+    "pb2": ["GPy"],
+    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
+    "hebo": [
+        "numpy",
+        "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
+    ],
+}
+extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
+
 setup_args = dict(
     name="orion",
     version=versioneer.get_version(),
@@ -37,12 +75,13 @@ setup_args = dict(
         os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
-    author=u"Epistímio",
+    author="Epistímio",
     author_email="xavier.bouthillier@umontreal.ca",
     url="https://github.com/epistimio/orion",
     packages=packages,
     package_dir={"": "src"},
     include_package_data=True,
+    python_requires=">=3.7",
     entry_points={
         "console_scripts": [
             "orion = orion.core.cli:main",
@@ -50,11 +89,17 @@ setup_args = dict(
         "BaseAlgorithm": [
             "random = orion.algo.random:Random",
             "gridsearch = orion.algo.gridsearch:GridSearch",
-            "asha = orion.algo.asha:ASHA",
             "hyperband = orion.algo.hyperband:Hyperband",
+            "asha = orion.algo.asha:ASHA",
+            "dehb = orion.algo.dehb.dehb:DEHB",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
-            "pbt = orion.algo.pbt.pbt:PBT",
+            # "pbt = orion.algo.pbt.pbt:PBT",
+            "ax = orion.algo.axoptimizer:AxOptimizer",
+            "mofa = orion.algo.mofa.mofa:MOFA",
+            "pb2 = orion.algo.pbt.pb2:PB2",
+            "bohb = orion.algo.bohb:BOHB",
+            "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
         ],
         "Database": [
             "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
@@ -73,7 +118,6 @@ setup_args = dict(
     },
     install_requires=[
         "cloudpickle",
-        "dataclasses",
         "PyYAML",
         "pymongo>=3",
         "numpy",
@@ -93,10 +137,11 @@ setup_args = dict(
         "psutil",
         "joblib",
         "pytest>=3.0.0",
+        "scikit-optimize",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
-    extras_require=dict(test=tests_require, dask=["dask[complete]"]),
+    extras_require=extras_require,
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
     zip_safe=False,
@@ -122,7 +167,7 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.6 3.7 3.8 3.9".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.8 3.9".split()]
 
 if __name__ == "__main__":
     setup(**setup_args)

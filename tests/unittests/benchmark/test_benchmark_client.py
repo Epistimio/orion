@@ -8,7 +8,7 @@ import pytest
 
 import orion.benchmark.benchmark_client as benchmark_client
 import orion.core
-from orion.benchmark.assessment import AverageResult
+from orion.benchmark.assessment import AverageResult, ParallelAssessment
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client import ExperimentClient
@@ -330,6 +330,7 @@ class TestCreateBenchmark:
 
             assert bm1.configuration == benchmark_config
             assert bm1.executor.n_workers == orion.core.config.worker.n_workers
+
             with Joblib(n_workers=2, backend="threading") as executor:
                 config["executor"] = executor
                 bm2 = get_or_create_benchmark(**config)

@@ -1,0 +1,24 @@
+.span-link {
+  cursor: pointer;
+}
+.experiments-wrapper {
+  flex-grow: 1;
+  overflow: auto;
+}
+.experiments-list {
+  table-layout: fixed;
+}
+.experiment-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 70%;
+}
+.bx--side-nav.experiment-navbar,
+.bx--side-nav.benchmark-navbar {
+  z-index: 7000;
+}
+a.bx--header__menu-item.bx--header__menu-title[aria-label='experiments (selected)'],
+a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)'] {
+  font-weight: bold;
+}

@@ -240,6 +240,91 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     )
 
 
+def parallel_assessment(experiments, with_evc_tree=True):
+    """
+    Make a plot to visualize the performance of running same experiment with different number of
+    workers.
+
+    The x-axis contain the worker number and the y-axis their respective best performance.
+
+    3 formats are supported for the experiments:
+
+        1. List of experiments. The names of the experiments will be used for the figure labels.
+        2. Dictionary of experiments. The keys of the dictionary will be used for the figure labels.
+        3. Dictionary of list of experiments. The keys of the dictionary will be used for the figure \
+        labels.
+
+    Parameters
+    ----------
+    experiments: list or dict
+        List or dictionary of experiments.
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
+    return backend.regrets(
+        experiments,
+        with_evc_tree=with_evc_tree,
+        order_by="objective",
+        build_frame_fn=backend.build_parallel_frame,
+        return_var=False,
+        title="Parallel Assessment",
+    )
+
+
+def durations(experiments, with_evc_tree=True):
+    """
+    Make a plot to visualize the performance of experiment at different time duration.
+
+    The x-axis contain relative time duration start from the first trial submitted.
+
+    3 formats are supported for the experiments:
+
+        1. List of experiments. The names of the experiments will be used for the figure labels.
+        2. Dictionary of experiments. The keys of the dictionary will be used for the figure labels.
+        3. Dictionary of list of experiments. The keys of the dictionary will be used for the figure \
+        labels.
+
+    Parameters
+    ----------
+    experiments: list or dict
+        List or dictionary of experiments.
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
+    return backend.regrets(
+        experiments,
+        with_evc_tree=with_evc_tree,
+        order_by="completed",
+        build_frame_fn=backend.build_durations_frame,
+        return_var=False,
+        title="Time to result",
+    )
+
+
 def regret(
     experiment, with_evc_tree=True, order_by="suggested", verbose_hover=True, **kwargs
 ):
@@ -337,7 +422,11 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
 
     """
     return backend.regrets(
-        experiments, with_evc_tree=with_evc_tree, order_by=order_by, **kwargs
+        experiments,
+        with_evc_tree=with_evc_tree,
+        order_by=order_by,
+        build_frame_fn=backend.build_regrets_frame,
+        return_var=True,
     )
 
 
@@ -348,6 +437,8 @@ PLOT_METHODS = {
     "regret": regret,
     "regrets": regrets,
     "rankings": rankings,
+    "parallel_assessment": parallel_assessment,
+    "durations": durations,
 }
 
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.evolution_es`."""
+from __future__ import annotations
 
 import copy
 import hashlib
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -14,9 +16,17 @@ from test_hyperband import (
     force_observe,
 )
 
-from orion.algo.evolution_es import BracketEVES, EvolutionES, compute_budgets
+from orion.algo.evolution_es import (
+    BracketEVES,
+    BudgetTuple,
+    EvolutionES,
+    RungDict,
+    compute_budgets,
+)
 from orion.algo.space import Fidelity, Real, Space
-from orion.testing.algo import BaseAlgoTests
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.trial import Trial
+from orion.testing.algo import BaseAlgoTests, TestPhase, _are_equal
 from orion.testing.trial import create_trial
 
 
@@ -25,6 +35,7 @@ def space():
     """Create a Space with a real dimension and a fidelity value."""
     space = Space()
     space.register(Real("lr", "uniform", 0, 1))
+    # NOTE: Slightly different value than HyperBand (which has (1, 9, 3))
     space.register(Fidelity("epoch", 1, 9, 1))
     return space
 
@@ -51,23 +62,23 @@ def space2():
 @pytest.fixture
 def budgets():
     """Return a configuration for a bracket."""
-    return [(30, 4), (30, 5), (30, 6)]
+    return [BudgetTuple(30, 4), BudgetTuple(30, 5), BudgetTuple(30, 6)]
 
 
 @pytest.fixture
-def evolution(space1):
+def evolution(space1: Space):
     """Return an instance of EvolutionES."""
     return EvolutionES(space1, repetitions=1, nums_population=4)
 
 
 @pytest.fixture
-def bracket(budgets, evolution, space1):
+def bracket(budgets: list[BudgetTuple], evolution: EvolutionES, space1: Space):
     """Return a `Bracket` instance configured with `b_config`."""
     return BracketEVES(evolution, budgets, 1)
 
 
 @pytest.fixture
-def evolution_customer_mutate(space1):
+def evolution_customer_mutate(space1: Space):
     """Return an instance of EvolutionES."""
     return EvolutionES(
         space1,
@@ -84,27 +95,27 @@ def rung_0():
 
 
 @pytest.fixture
-def rung_1(rung_0):
+def rung_1(rung_0: RungDict):
     """Create fake points and objectives for rung 1."""
     points = [trial.params["lr"] for _, trial in sorted(rung_0["results"].values())[:3]]
     return create_rung_from_points(points, n_trials=3, resources=3)
 
 
 @pytest.fixture
-def rung_2(rung_1):
+def rung_2(rung_1: RungDict):
     """Create fake points and objectives for rung 1."""
     points = [trial.params["lr"] for _, trial in sorted(rung_1["results"].values())[:1]]
     return create_rung_from_points(points, n_trials=1, resources=9)
 
 
 @pytest.fixture
-def rung_3(space1):
+def rung_3(space1: Space):
     """Create fake points and objectives for rung 3."""
     points = np.linspace(1, 4, 4)
     keys = list(space1.keys())
     types = [dim.type for dim in space1.values()]
 
-    results = {}
+    results: dict[str, tuple[float, Trial]] = {}
     for point in points:
         trial = create_trial(
             (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)),
@@ -117,9 +128,10 @@ def rung_3(space1):
             ignore_fidelity=True,
             ignore_experiment=True,
         )
+        assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
 
-    return dict(
+    return RungDict(
         n_trials=4,
         resources=1,
         results=results,
@@ -127,13 +139,13 @@ def rung_3(space1):
 
 
 @pytest.fixture
-def rung_4(space1):
+def rung_4(space1: Space):
     """Create duplicated fake points and objectives for rung 4."""
     points = np.linspace(1, 4, 4)
     keys = list(space1.keys())
     types = [dim.type for dim in space1.values()]
 
-    results = {}
+    results: dict[str, tuple[float, Trial]] = {}
     for point in points:
         trial = create_trial(
             (1, point // 2, point // 2),
@@ -147,9 +159,10 @@ def rung_4(space1):
             ignore_fidelity=True,
             ignore_experiment=True,
         )
+        assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
 
-    return dict(
+    return RungDict(
         n_trials=4,
         resources=1,
         results=results,
@@ -163,7 +176,9 @@ def test_compute_budgets():
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
 
 
-def test_customized_mutate_population(space1, rung_3, budgets):
+def test_customized_mutate_population(
+    space1: Space, rung_3: RungDict, budgets: list[BudgetTuple]
+):
     """Verify customized mutated candidates is generated correctly."""
     customerized_dict = {
         "function": "orion.testing.algo.customized_mutate_example",
@@ -192,8 +207,8 @@ def test_customized_mutate_population(space1, rung_3, budgets):
 
     org_data = np.stack(
         (
-            list(algo.brackets[0].eves.population.values())[0],
-            list(algo.brackets[0].eves.population.values())[1],
+            list(algo.brackets[0].owner.population.values())[0],
+            list(algo.brackets[0].owner.population.values())[1],
         ),
         axis=0,
     ).T
@@ -206,8 +221,8 @@ def test_customized_mutate_population(space1, rung_3, budgets):
 
     mutated_data = np.stack(
         (
-            list(algo.brackets[0].eves.population.values())[0],
-            list(algo.brackets[0].eves.population.values())[1],
+            list(algo.brackets[0].owner.population.values())[0],
+            list(algo.brackets[0].owner.population.values())[1],
         ),
         axis=0,
     ).T
@@ -241,11 +256,17 @@ def test_customized_mutate_population(space1, rung_3, budgets):
 class TestEvolutionES:
     """Tests for the algo Evolution."""
 
-    def test_register(self, evolution, bracket, rung_0, rung_1):
+    def test_register(
+        self,
+        evolution: EvolutionES,
+        bracket: BracketEVES,
+        rung_0: RungDict,
+        rung_1: RungDict,
+    ):
         """Check that a point is registered inside the bracket."""
         evolution.brackets = [bracket]
-        bracket.hyperband = evolution
-        bracket.eves = evolution
+        bracket.owner = evolution
+        bracket.owner = evolution
         bracket.rungs = [rung_0, rung_1]
         trial = create_trial_for_hb((1, 0.0), objective=0.0)
         trial_id = evolution.get_id(trial, ignore_fidelity=True)
@@ -261,7 +282,7 @@ class TestEvolutionES:
 class TestBracketEVES:
     """Tests for `BracketEVES` class.."""
 
-    def test_get_teams(self, bracket, rung_3):
+    def test_get_teams(self, bracket: BracketEVES, rung_3: RungDict):
         """Test that correct team is promoted."""
         bracket.rungs[0] = rung_3
         rung, population_range, red_team, blue_team = bracket._get_teams(0)
@@ -271,7 +292,7 @@ class TestBracketEVES:
         assert set(red_team).union(set(blue_team)) == {0, 1, 2, 3}
         assert set(red_team).intersection(set(blue_team)) == set()
 
-    def test_mutate_population(self, bracket, rung_3):
+    def test_mutate_population(self, bracket: BracketEVES, rung_3: RungDict):
         """Verify mutated candidates is generated correctly."""
         red_team = [0, 2]
         blue_team = [1, 3]
@@ -280,16 +301,16 @@ class TestBracketEVES:
         for trial_index in range(4):
             objective, trial = rung_trials[trial_index]
 
-            bracket.eves.performance[trial_index] = objective
+            bracket.owner.performance[trial_index] = objective
             for ith_dim in [1, 2]:
-                bracket.eves.population[ith_dim][trial_index] = trial.params[
-                    bracket.eves.space[ith_dim].name
+                bracket.owner.population[ith_dim][trial_index] = trial.params[
+                    bracket.owner.space[ith_dim].name
                 ]
 
         org_data = np.stack(
             (
-                list(bracket.eves.population.values())[0],
-                list(bracket.eves.population.values())[1],
+                list(bracket.owner.population.values())[0],
+                list(bracket.owner.population.values())[1],
             ),
             axis=0,
         ).T
@@ -302,8 +323,8 @@ class TestBracketEVES:
 
         mutated_data = np.stack(
             (
-                list(bracket.eves.population.values())[0],
-                list(bracket.eves.population.values())[1],
+                list(bracket.owner.population.values())[0],
+                list(bracket.owner.population.values())[1],
             ),
             axis=0,
         ).T
@@ -328,7 +349,9 @@ class TestBracketEVES:
         else:
             assert mutated_data[3][1] != org_data[2][1]
 
-    def test_duplicated_mutated_population(self, bracket, rung_4):
+    def test_duplicated_mutated_population(
+        self, bracket: BracketEVES, rung_4: RungDict
+    ):
         """Verify duplicated candidates can be found and processed correctly."""
         red_team = [0, 2]
         blue_team = [0, 2]  # no mutate occur at first.
@@ -342,8 +365,8 @@ class TestBracketEVES:
 
             # bracket.eves.performance[trial_index] = objective
             for ith_dim in [1, 2]:
-                bracket.eves.population[ith_dim][trial_index] = trial.params[
-                    bracket.eves.space[ith_dim].name
+                bracket.owner.population[ith_dim][trial_index] = trial.params[
+                    bracket.owner.space[ith_dim].name
                 ]
 
         trials, nums_all_equal = bracket._mutate_population(
@@ -362,7 +385,7 @@ class TestBracketEVES:
         assert nums_all_equal[2] == 1
         assert nums_all_equal[3] == 0
 
-    def test_mutate_trials(self, bracket, rung_3):
+    def test_mutate_trials(self, bracket: BracketEVES, rung_3: RungDict):
         """Test that correct trial is promoted."""
         red_team = [0, 2]
         blue_team = [0, 2]
@@ -373,8 +396,8 @@ class TestBracketEVES:
 
             # bracket.eves.performance[trial_index] = objective
             for ith_dim in [1, 2]:
-                bracket.eves.population[ith_dim][trial_index] = trial.params[
-                    bracket.eves.space[ith_dim].name
+                bracket.owner.population[ith_dim][trial_index] = trial.params[
+                    bracket.owner.space[ith_dim].name
                 ]
 
         trials, nums_all_equal = bracket._mutate_population(
@@ -383,6 +406,9 @@ class TestBracketEVES:
         assert trials[0].params == {"epoch": 2, "lr": 1.0, "weight_decay": 1.0}
         assert trials[1].params == {"epoch": 2, "lr": 1.0 / 2, "weight_decay": 1.0 / 4}
         assert (nums_all_equal == 0).all()
+
+
+BUDGETS = [20, 20, 20, 20]
 
 
 class TestGenericEvolutionES(BaseAlgoTests):
@@ -395,6 +421,16 @@ class TestGenericEvolutionES(BaseAlgoTests):
         "mutate": None,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        *[
+            TestPhase(f"rung{i}", budget, "suggest")
+            for i, budget in enumerate(np.cumsum(BUDGETS))
+        ],
+        TestPhase("rep1-rung1", sum(BUDGETS), "suggest"),
+        TestPhase("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
+    ]
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
@@ -433,7 +469,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
         assert algo.is_done
 
     @pytest.mark.parametrize("num", [100000, 1])
-    def test_is_done_max_trials(self, num):
+    def test_is_done_max_trials(self, num: int):
         space = self.create_space()
 
         MAX_TRIALS = 10
@@ -456,7 +492,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
     def test_optimize_branin(self):
         pass
 
-    def infer_repetition_and_rung(self, num):
+    def infer_repetition_and_rung(self, num: int):
         budgets = list(np.cumsum(BUDGETS))
         if num >= budgets[-1] * 2:
             return 3, -1
@@ -468,8 +504,10 @@ class TestGenericEvolutionES(BaseAlgoTests):
 
         return 1, budgets.index(num)
 
-    def assert_callbacks(self, spy, num, algo):
-
+    def assert_callbacks(self):
+        # TODO: Move this to wherever it belongs, probably in the cleanup of a fixture.
+        assert self._current_phase
+        num = self._current_phase.n_trials
         if num == 0:
             return
 
@@ -483,13 +521,28 @@ class TestGenericEvolutionES(BaseAlgoTests):
             for bracket in brackets:
                 assert len(bracket.rungs[j]["results"]) > 0, (bracket, j)
 
+    @pytest.mark.parametrize("seed", [123, 456])
+    def test_state_dict(self, seed: int):
+        """Verify that resetting state makes sampling deterministic"""
+        algo = self.create_algo(seed=seed)
 
-BUDGETS = [20, 20, 20, 20]
+        state = algo.state_dict
+        a = algo.suggest(1)[0]
 
+        # NOTE: This is not necessarily true for all algorithms. For instance, if the algo doesn't
+        # have any RNG (e.g. GridSearch), this will fail.
+        new_algo = self.create_algo()
+        new_state = new_algo.state_dict
+        b = new_algo.suggest(1)[0]
+        if _are_equal(new_state, state):
+            # If the state is the same, the trials should be the same.
+            assert a == b
+        else:
+            # If the state is different, the trials should be different.
+            assert a != b
 
-TestGenericEvolutionES.set_phases(
-    [("random", 0, "space.sample")]
-    + [(f"rung{i}", budget, "suggest") for i, budget in enumerate(np.cumsum(BUDGETS))]
-    + [("rep1-rung1", sum(BUDGETS), "suggest")]
-    + [("rep2-rung1", sum(BUDGETS) * 2, "suggest")]
-)
+        new_algo.set_state(state)
+        c = new_algo.suggest(1)[0]
+        # TODO: For EvolutionES, the params are identical, but the ids are different.
+        assert a.params == c.params
+        # assert a == c

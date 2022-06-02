@@ -1,21 +1,18 @@
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
+from __future__ import annotations
+
+from typing import ClassVar
 
 import pytest
-from base import (
-    ExploitStub,
-    ExploreStub,
-    ObjectiveStub,
-    TrialStub,
-    no_shutil_copytree,
-    sample_trials,
-    space,
-)
+from base import ExploitStub, ExploreStub, sample_trials
 
 from orion.algo.pbt.pbt import PBT, compute_fidelities
+from orion.algo.space import Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
+
+pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
 
 
 class TestComputeFidelities:
@@ -23,12 +20,16 @@ class TestComputeFidelities:
         assert compute_fidelities(10, 10, 20, 1) == list(map(float, range(10, 21)))
 
     def test_other_bases(self):
-        assert compute_fidelities(9, 2, 2 ** 10, 2) == [2 ** i for i in range(1, 11)]
+        assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
+
+
+def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
+    return create_algo(PBT, space=space, **pbt_kwargs)
 
 
 class TestPBTObserve:
-    def test_triage_unknown_trial(self, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_triage_unknown_trial(self, space: Space):
+        pbt = _create_algo(space).algorithm
         trial = pbt.space.sample(1, seed=1)[0]
         trials_to_verify = pbt._triage([trial])
 
@@ -36,8 +37,8 @@ class TestPBTObserve:
         assert len(pbt.lineages) == 0
 
     @pytest.mark.parametrize("status", ["new", "reserved", "interrupted"])
-    def test_triage_root_not_ready(self, status, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_triage_root_not_ready(self, status: str, space: Space):
+        pbt = _create_algo(space).algorithm
 
         trial = sample_trials(pbt.space, num=1, status=status)[0]
 
@@ -51,8 +52,8 @@ class TestPBTObserve:
         assert len(pbt.lineages) == 1
 
     @pytest.mark.parametrize("status", ["broken", "completed"])
-    def test_triage_root_ready(self, status, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_triage_root_ready(self, status: str, space: Space):
+        pbt = _create_algo(space).algorithm
 
         trial = sample_trials(pbt.space, num=1, status="new")[0]
 
@@ -70,8 +71,8 @@ class TestPBTObserve:
         assert len(pbt.lineages) == 1
 
     @pytest.mark.parametrize("status", ["broken", "completed"])
-    def test_triage_root_observed(self, status, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_triage_root_observed(self, status: str, space: Space):
+        pbt = _create_algo(space).algorithm
 
         trial = sample_trials(pbt.space, num=1, status="completed", objective=1)[0]
 
@@ -86,8 +87,8 @@ class TestPBTObserve:
         assert len(pbt.lineages) == 1
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_dont_queue_broken_root_for_promotions(self, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_dont_queue_broken_root_for_promotions(self, space: Space):
+        pbt = _create_algo(space).algorithm
 
         trial = sample_trials(pbt.space, num=1, status="broken")[0]
         pbt.register(trial)
@@ -97,8 +98,8 @@ class TestPBTObserve:
         assert len(pbt._queue) == 0
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_queue_broken_trials_for_promotions(self, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_queue_broken_trials_for_promotions(self, space: Space):
+        pbt = _create_algo(space).algorithm
         trial = sample_trials(pbt.space, num=1, status="completed", objective=1)[0]
         pbt.register(trial)
 
@@ -114,8 +115,8 @@ class TestPBTObserve:
         assert pbt._queue[0].id == trial.id
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_queue_broken_trials_from_jump_for_promotions(self, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_queue_broken_trials_from_jump_for_promotions(self, space: Space):
+        pbt = _create_algo(space).algorithm
 
         parent_trial = sample_trials(pbt.space, num=1, status="completed", objective=1)[
             0
@@ -142,8 +143,8 @@ class TestPBTObserve:
         assert pbt._queue[0].id == base_trial.id
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_queue_completed_trials_for_promotions(self, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_queue_completed_trials_for_promotions(self, space: Space):
+        pbt = _create_algo(space).algorithm
 
         trial = sample_trials(pbt.space, num=1, status="completed", objective=1)[0]
         pbt.register(trial)
@@ -168,8 +169,8 @@ class TestPBTObserve:
         assert pbt._queue[1].id == new_trial.id
 
     @pytest.mark.parametrize("status", ["new", "reserved", "interrupted"])
-    def test_dont_queue_pending_trials_for_promotions(self, space, status):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_dont_queue_pending_trials_for_promotions(self, space: Space, status: str):
+        pbt = _create_algo(space).algorithm
 
         trial = sample_trials(pbt.space, num=1, status=status)[0]
         pbt.register(trial)
@@ -180,17 +181,17 @@ class TestPBTObserve:
 
 
 class TestPBTSuggest:
-    def test_generate_offspring_unknown_trial(self, space):
+    def test_generate_offspring_unknown_trial(self, space: Space):
 
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+        pbt = _create_algo(space).algorithm
         trial = sample_trials(pbt.space, 1)[0]
         with pytest.raises(RuntimeError, match="Trying to fork a trial that"):
             pbt._generate_offspring(trial)
 
-    def test_generate_offspring_exploit_skip(self, space):
+    def test_generate_offspring_exploit_skip(self, space: Space):
 
-        pbt = SpaceTransformAlgoWrapper(
-            PBT, space, exploit=ExploitStub(skip=True).configuration
+        pbt = _create_algo(
+            space, exploit=ExploitStub(skip=True).configuration
         ).algorithm
         trial = sample_trials(pbt.space, 1, status="completed", objective=1)[0]
         pbt.register(trial)
@@ -199,10 +200,9 @@ class TestPBTSuggest:
         assert trial_to_branch is None
         assert new_trial is None
 
-    def test_generate_offspring_exploit_promote(self, space):
+    def test_generate_offspring_exploit_promote(self, space: Space):
 
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub().configuration,
             explore=ExploreStub(no_call=True).configuration,
@@ -219,11 +219,11 @@ class TestPBTSuggest:
 
         trial_to_branch, new_trial = pbt._generate_offspring(trial)
         assert trial_to_branch is trial
+        assert new_trial is not None
         assert new_trial.params == new_params_expected
 
-    def test_generate_offspring_exploit_branch(self, space):
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+    def test_generate_offspring_exploit_branch(self, space: Space):
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval="toset").configuration,
             explore=ExploreStub(rval="toset").configuration,
@@ -250,13 +250,13 @@ class TestPBTSuggest:
         new_params_expected["f"] = 10.9
 
         assert trial_to_branch is exploited_trial
+        assert new_trial is not None
         assert new_trial.params["f"] == new_params_expected["f"]
         assert new_trial.params == new_params_expected
 
-    def test_generate_offspring_timeout(self, space):
+    def test_generate_offspring_timeout(self, space: Space):
 
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval=None).configuration,
             explore=ExploreStub(rval="toset").configuration,
@@ -272,12 +272,11 @@ class TestPBTSuggest:
         with pytest.raises(RuntimeError):
             pbt._generate_offspring(trial)
 
-    def test_generate_offspring_retry_using_same_trial(self, space, monkeypatch):
+    def test_generate_offspring_retry_using_same_trial(self, space: Space, monkeypatch):
         """Test that when exploit returns another trial, the base one is reused and case of
         duplicate samples
         """
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval="toset", should_receive="toset").configuration,
             explore=ExploreStub(rval="toset").configuration,
@@ -303,19 +302,18 @@ class TestPBTSuggest:
 
         # Exploit will return parent_trial, but Explore will return params of child, sampling
         # a duplite, since child is already registered. ExploitStub.should_receive will
-        # test that base_trial is passed as expected to exploit when attempting more attemps
+        # test that base_trial is passed as expected to exploit when attempting more attempts
         # of exploit and explore.
         with pytest.raises(RuntimeError):
             pbt._generate_offspring(base_trial)
 
-    def test_fork_lineages_empty_queue(self, space):
-        pbt = SpaceTransformAlgoWrapper(PBT, space).algorithm
+    def test_fork_lineages_empty_queue(self, space: Space):
+        pbt = _create_algo(space).algorithm
         assert pbt._fork_lineages(10) == []
 
-    def test_fork_lineages_skip_and_requeue_trials(self, space):
+    def test_fork_lineages_skip_and_requeue_trials(self, space: Space):
         num = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(skip=True).configuration,
         ).algorithm
@@ -332,10 +330,9 @@ class TestPBTSuggest:
         assert pbt._queue == trials
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_lineages_promote_trial(self, space):
+    def test_fork_lineages_promote_trial(self, space: Space):
         num = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(skip=None).configuration,
         ).algorithm
@@ -358,11 +355,10 @@ class TestPBTSuggest:
             assert branched_trial.params == expected_params
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_lineages_branch_trials(self, space):
+    def test_fork_lineages_branch_trials(self, space: Space):
         num = 10
 
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval="toset").configuration,
             fork_timeout=0.05,
@@ -394,10 +390,9 @@ class TestPBTSuggest:
             assert branched_trial.params != should_not_be_params
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_lineages_branch_duplicates(self, space):
+    def test_fork_lineages_branch_duplicates(self, space: Space):
         num = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval="toset").configuration,
             explore=ExploreStub(rval="toset").configuration,
@@ -420,10 +415,9 @@ class TestPBTSuggest:
         assert len(pbt._queue) == num - 2
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_lineages_num_larger_than_queue(self, space):
+    def test_fork_lineages_num_larger_than_queue(self, space: Space):
         num = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval=None).configuration,
         ).algorithm
@@ -446,10 +440,9 @@ class TestPBTSuggest:
         assert [trial.id for trial in pbt._queue] == trial_ids[num_fork:]
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_lineages_num_smaller_than_queue(self, space):
+    def test_fork_lineages_num_smaller_than_queue(self, space: Space):
         num = 4
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             exploit=ExploitStub(rval=None).configuration,
         ).algorithm
@@ -470,11 +463,9 @@ class TestPBTSuggest:
 
         assert [trial.parent for trial in branched_trials] == trial_ids
 
-    def test_suggest_num_population_size_sample(self, space, mocker):
+    def test_suggest_num_population_size_sample(self, space: Space, mocker):
         population_size = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT, space, population_size=population_size
-        ).algorithm
+        pbt = _create_algo(space, population_size=population_size).algorithm
 
         pbt_sample_mock = mocker.spy(pbt, "_sample")
         pbt_fork_mock = mocker.spy(pbt, "_fork_lineages")
@@ -490,11 +481,9 @@ class TestPBTSuggest:
         pbt_sample_mock.assert_called_with(4)
         pbt_fork_mock.assert_called_with(2)
 
-    def test_suggest_num_population_size_sample_broken(self, space, mocker):
+    def test_suggest_num_population_size_sample_broken(self, space: Space, mocker):
         population_size = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT, space, population_size=population_size
-        ).algorithm
+        pbt = _create_algo(space, population_size=population_size).algorithm
 
         pbt_sample_mock = mocker.spy(pbt, "_sample")
         pbt_fork_mock = mocker.spy(pbt, "_fork_lineages")
@@ -519,10 +508,9 @@ class TestPBTSuggest:
         pbt_fork_mock.assert_called_with(7)
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_suggest_num_population_size_fork_completed(self, space, mocker):
+    def test_suggest_num_population_size_fork_completed(self, space: Space, mocker):
         population_size = 10
-        pbt = SpaceTransformAlgoWrapper(
-            PBT,
+        pbt = _create_algo(
             space,
             population_size=population_size,
             exploit=ExploitStub(rval=None).configuration,
@@ -569,6 +557,7 @@ generations = 5
 @pytest.mark.usefixtures("no_shutil_copytree")
 class TestGenericPBT(BaseAlgoTests):
     algo_name = "pbt"
+    algo_type = PBT
     max_trials = population_size * generations
     config = {
         "seed": 123456,
@@ -609,6 +598,12 @@ class TestGenericPBT(BaseAlgoTests):
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
 
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        TestPhase("generation_2", 2 * population_size, "_generate_offspring"),
+        TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
+    ]
+
     def test_no_fidelity(self):
         space = self.create_space({"x": "uniform(0, 1)", "y": "uniform(0, 1)"})
 
@@ -624,7 +619,7 @@ class TestGenericPBT(BaseAlgoTests):
         pass
 
     @pytest.mark.parametrize("num", [100000, 1])
-    def test_is_done_max_trials(self, num):
+    def test_is_done_max_trials(self, num: int):
         space = self.create_space()
 
         MAX_TRIALS = 10
@@ -649,7 +644,7 @@ class TestGenericPBT(BaseAlgoTests):
     def test_optimize_branin(self):
         pass
 
-    def assert_callbacks(self, spy, num, algo):
+    def assert_callbacks(self, spy, num: int, algo: SpaceTransformAlgoWrapper[PBT]):
         def check_population_size(gen_population_size, depth, expected):
             assert (
                 gen_population_size == expected
@@ -668,12 +663,3 @@ class TestGenericPBT(BaseAlgoTests):
             check_population_size(gen_population_size, depth, expected_population_size)
 
             remaining_num = max(remaining_num - expected_population_size, 0)
-
-
-TestGenericPBT.set_phases(
-    [
-        ("random", 5, "space.sample"),
-        ("generation_2", 2 * population_size, "_generate_offspring"),
-        ("generation_3", 3 * population_size, "_generate_offspring"),
-    ]
-)

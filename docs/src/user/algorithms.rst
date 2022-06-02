@@ -212,10 +212,106 @@ Configuration
                      executed_times, compute_bracket_idx
 
 
+.. _BOHB-algorithm:
+
+BOHB
+----
+
+`BOHB`_, is an integration of a Bayesian Optimization algorithm for the
+selection of hyperparameters to try at the first rung of Hyperband brackets.
+First batch of Trials will be sampled randomly, but subsequent ones will be
+selected using Bayesian Optimization.
+See :ref:`hyperband-algorithm` for more information on how to use multi-fidelity algorithms.
+
+.. _BOHB: https://arxiv.org/abs/1807.01774
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      bohb:
+        min_points_in_model: 20
+        top_n_percent: 15
+        num_samples: 64
+        random_fraction: 0.33
+        bandwidth_factor: 3
+        min_bandwidth": 1e-3
+        parallel_strategy:
+          of_type: StatusBasedParallelStrategy
+          strategy_configs:
+             broken:
+                of_type: MaxParallelStrategy
+
+
+.. autoclass:: orion.algo.bohb.BOHB
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+.. _DEHB-algorithm:
+
+DEHB
+----
+
+
+`DEHB`_, is an integration of a Differential Evolutionary algorithm with Hyperband.
+While BOHB, uses Bayesian Optimization to select the hyperparameter to try
+at the first rung of subsequent brackets, DEHB uses Differential Evolution for both
+selecting the hyperparameters to try at the first rung of subsequent brackets and to mutate
+best sets of hyperparameters when promoting trials inside a bracket.
+Trials cannot be resumed after promotion to higher fidelity level with DEHB.
+DEHB leads to different hyperparameter values and thus different trial ids, for this
+reason trials cannot be resumed after promotions as for other variants of hyperbands.
+See :ref:`hyperband-algorithm` for more information on how to use multi-fidelity algorithms.
+
+.. _DEHB: https://arxiv.org/abs/2105.09821
+
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      dehb:
+        seed: null
+        mutation_factor: 0.5
+        crossover_prob: 0.5
+        mutation_strategy: rand1
+        crossover_strategy: bin
+        boundary_fix_type: random
+        min_clip: null
+        max_clip: null
+        max_age: 10e10
+
+
+.. autoclass:: orion.algo.dehb.dehb.DEHB
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
 .. _PBT:
 
 Population Based Training (PBT)
 -------------------------------
+
+.. warning::
+
+   PBT is broken in current version v0.2.4. We are working on a fix to be released in v0.2.5,
+   ETA July 2022.
 
 Population based training is an evolutionary algorithm that evolve trials
 from low fidelity levels to high fidelity levels (ex: number of epochs), reusing
@@ -234,8 +330,6 @@ Configuration
 .. code-block:: yaml
 
   experiment:
-
-    strategy: StubParallelStrategy
 
     algorithms:
       pbt:
@@ -274,6 +368,63 @@ Configuration
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration, requires_type, rng, register
 
+
+.. _PB2:
+
+Population Based Bandits (PB2)
+------------------------------
+
+.. warning::
+
+   PBT is broken in current version v0.2.4. We are working on a fix to be released in v0.2.5,
+   ETA July 2022.
+
+Population Based Bandits is a variant of Population Based Training using probabilistic model to
+guide
+the search instead of relying on purely random perturbations.
+PB2 implementation uses a time-varying Gaussian process to model the optimization curves
+during training. This implementation is based on `ray-tune`_ implementation. Oríon's version
+supports discrete and categorical dimensions, and offers better resiliency to broken
+trials by using back-tracking.
+
+.. _ray-tune: https://github.com/ray-project/ray/blob/master/python/ray/tune/schedulers/pb2_utils.py
+
+See documentation below for more information on the algorithm and how to use it.
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+
+    algorithms:
+      pb2:
+        population_size: 50
+        generations: 10
+        fork_timeout: 60
+        exploit:
+          of_type: PipelineExploit
+          exploit_configs:
+            - of_type: BacktrackExploit
+              min_forking_population: 5
+              truncation_quantile: 0.9
+              candidate_pool_ratio: 0.2
+            - of_type: TruncateExploit
+              min_forking_population: 5
+              truncation_quantile: 0.8
+              candidate_pool_ratio: 0.2
+
+
+
+.. autoclass:: orion.algo.pbt.pb2.PB2
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, requires_type, rng, register
 
 
 .. _tpe-algorithm:
@@ -332,6 +483,46 @@ Configuration
    :noindex:
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration, sample_one_dimension, split_trials, requires_type
+
+
+.. _ax-algorithm:
+
+Ax
+--
+
+`Ax`_ is a platform for optimizing any kind of experiment, including machine
+learning experiments, A/B tests, and simulations. Ax can optimize discrete
+configurations (e.g., variants of an A/B test) using multi-armed bandit
+optimization, and continuous (e.g., integer or floating point)-valued
+configurations using Bayesian optimization.
+
+.. _ax: https://ax.dev/
+
+Configuration
+~~~~~~~~~~~~~
+
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      ax:
+        seed: 1234
+        n_initial_trials: 5,
+        parallel_strategy:
+          of_type: StatusBasedParallelStrategy
+          strategy_configs:
+             broken:
+                of_type: MaxParallelStrategy
+
+
+.. autoclass:: orion.algo.axoptimizer.AxOptimizer
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+
 
 
 
@@ -399,6 +590,122 @@ Configuration
    :noindex:
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      requires_dist, requires_type
+
+
+.. _mofa algorithm:
+
+MOFA
+-----
+
+The MOdular FActorial Design (`MOFA`_) algorithm is based on factorial design and factorial
+analysis methods to optmimize hyperparameters. It performs multiple iterations each of which
+starts with sampling hyperparameter trial values from an orthogonal latin hypercube to cover
+the search space well while de-correlating hyperparameters. Once all trials in an iteration
+are returned, MOFA performs factorial analysis to determine which hyperparameters should be
+fixed in value and which hyperparameters require further exploration. As the hyperparameters
+become fixed, the number of trials are reduced in subsequent iterations.
+
+.. _MOFA: https://arxiv.org/abs/2011.09545
+
+.. note::
+
+   MOFA requires Python v3.8 or greater and scipy v1.8 or greater.
+
+.. note::
+
+   Default values for the ``index``, ``n_levels``, and ``strength`` parameters are set
+   to the empirically obtained optimal values described in section 5.2 of the paper.
+   The ``strength`` parameter must be set to either ``1`` or ``2``.
+
+.. note::
+
+   The number of trials N for a single MOFA iteration is set to ``N = index * n_levels^strength``.
+   The ``--exp-max-trials`` should at least be a multiple of ``N``.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            MOFA:
+               seed: null
+               index: 1
+               n_levels: 5
+               strength: 2
+               threshold: 0.1
+
+.. autoclass:: orion.algo.mofa.mofa.MOFA
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
+
+
+.. _nevergrad-algorithm:
+
+
+Nevergrad
+---------
+
+`Nevergrad`_ is a derivative-free optimization platform providing
+a library of algorithms for hyperparameter search.
+
+.. _nevergrad: https://facebookresearch.github.io/nevergrad/
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            nevergrad:
+                seed: null
+                budget: 1000
+                num_workers: 10
+                model_name: NGOpt
+
+
+.. autoclass:: orion.algo.nevergradoptimizer.NevergradOptimizer
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
+
+
+
+.. _HEBO-algorithm:
+
+HEBO
+----
+
+
+Evolutionary algorithms from the `HEBO`_ repository are made available in Orion. There are a wide
+range of configutaion options for these algorithms, including the choice of model, evolutionary
+strategy, and acquisition function.
+
+.. _HEBO: https://github.com/huawei-noah/HEBO
+
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+   experiment:
+      algorithms:
+         hebo:
+            seed: 1234
+            parameters:
+               model_name: catboost
+               random_samples: 5
+               acquisition_class: hebo.acquisitions.acq.MACE
+               evolutionary_strategy: nsga2
+               model_config: null
+
+.. autoclass:: orion.algo.hebo.hebo_algo.HEBO
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
 
 
 Algorithm Plugins

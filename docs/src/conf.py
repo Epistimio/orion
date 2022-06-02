@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Oríon documentation build configuration file.
 
@@ -25,7 +24,6 @@ How to document -- sources:
    5. `Cross-reference <http://www.sphinx-doc.org/en/stable/domains.html#python-roles>`_
 
 """
-import glob
 import os
 import re
 import sys
@@ -59,7 +57,7 @@ extensions = (
 )
 
 # General information about the project.
-project = u"orion"
+project = "orion"
 _full_version = orion.__version__
 author = orion.__author__
 copyright = orion.__copyright__
@@ -87,7 +85,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -185,7 +183,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "orion.tex", u"Oríon Documentation", u"Epistímio", "manual"),
+    (master_doc, "orion.tex", "Oríon Documentation", "Epistímio", "manual"),
 ]
 
 
@@ -215,7 +213,7 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ["_version", "utils._appdirs"]
+autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad"]
 
 # -- Gallery configuration -----------------------------------------------
 
@@ -254,6 +252,9 @@ sphinx_gallery_conf = {
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "plotly": ("https://plotly.com/python-api-reference/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None)
 }
 
 
@@ -276,7 +277,7 @@ extlinks = {
 # Enable nitpicky mode - which ensures that all references in the docs
 # resolve.
 
-ignore_algo_attr = [
+ignore_obj_attr = [
     "configuration",
     "is_done",
     "should_suspend",
@@ -291,13 +292,30 @@ ignore_algo_attr = [
     "orion.core.utils.Factory.__call__",  # TODO: Why this one fails???
     "orion.core.utils.singleton.SingletonType.__call__",
     "orion.plotting.base.PlotAccessor.__call__",
-    "orion.benchmark.task.BaseTask.__call__",
-    "orion.benchmark.task.base.BaseTask.__call__",
+    "orion.benchmark.task.BenchmarkTask.__call__",
+    "orion.benchmark.task.base.BenchmarkTask.__call__",
     "AlreadyReleased",
+    "EvolutionStrategyName",
+    "ModelName",
 ]
 
+type_hints = [
+    "orion.core.utils.tree.T",
+    "orion.core.utils.tree.NodeType",
+    "orion.core.utils.tree.Self",
+    "Self",
+    "AlgoType",
+    "T",
+    "orion.core.worker.primary_algo.AlgoType",
+    "orion.algo.hyperband.Owner",
+    "nevergrad.parametrization.container.Instrumentation",
+    "EvolutionStrategyName",
+    "ModelName",
+]
 nitpicky = True
-nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr]
+nitpick_ignore = [("py:obj", attr) for attr in ignore_obj_attr] + [
+    ("py:class", annotation_str) for annotation_str in type_hints
+]
 
 ################################################################################
 #                             Numpy Doc Extension                              #

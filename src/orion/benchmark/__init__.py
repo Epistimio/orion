@@ -6,6 +6,7 @@ Benchmark definition
 """
 import copy
 import itertools
+from collections import defaultdict
 
 from tabulate import tabulate
 
@@ -135,12 +136,12 @@ class Benchmark:
         return benchmark_status
 
     def analysis(self):
-        """Return all the assessment figures"""
-        figures = []
+        """Return all the assessment figures with format as {assessment_name: {figure_name: figure_object}}"""
+        figures = defaultdict(dict)
         for study in self.studies:
             figure = study.analysis()
-            figures.append(figure)
-        return figures
+            figures[study.assess_name].update(figure[study.assess_name])
+        return dict(figures)
 
     def experiments(self, silent=True):
         """Return all the experiments submitted in benchmark"""
@@ -310,6 +311,7 @@ class Study:
         self.assess_name = type(self.assessment).__name__
         self.task_name = type(self.task).__name__
         self.experiments_info = []
+        self.has_assesment_executor = bool(assessment.get_executor(0))
 
     def _build_benchmark_algorithms(self, algorithms):
         benchmark_algorithms = list()
@@ -344,13 +346,16 @@ class Study:
                     + str(algo_index)
                 )
 
+                executor = (
+                    self.assessment.get_executor(task_index) or self.benchmark.executor
+                )
                 experiment = create_experiment(
                     experiment_name,
                     space=space,
                     algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                     storage=self.benchmark.storage_config,
-                    executor=self.benchmark.executor,
+                    executor=executor,
                 )
                 self.experiments_info.append((task_index, experiment))
 
@@ -360,7 +365,10 @@ class Study:
 
         for _, experiment in self.experiments_info:
             # TODO: it is a blocking call
-            experiment.workon(self.task, n_workers=n_workers, max_trials=max_trials)
+            if self.has_assesment_executor:
+                experiment.workon(self.task, max_trials=max_trials)
+            else:
+                experiment.workon(self.task, n_workers=n_workers, max_trials=max_trials)
 
     def status(self):
         """Return status of the study"""
@@ -393,7 +401,7 @@ class Study:
         return list(algorithm_tasks.values())
 
     def analysis(self):
-        """Return assessment figure"""
+        """Return assessment figures"""
         return self.assessment.analysis(self.task_name, self.experiments_info)
 
     def experiments(self):

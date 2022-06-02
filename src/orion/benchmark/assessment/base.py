@@ -25,6 +25,7 @@ class BenchmarkAssessment(ABC):
     def __init__(self, task_num, **kwargs):
         self.task_number = task_num
         self._param_names = kwargs
+
         self._param_names["task_num"] = task_num
 
     @property
@@ -32,10 +33,15 @@ class BenchmarkAssessment(ABC):
         """Return the task number to run for this assessment"""
         return self.task_number
 
+    def get_executor(self, task_index):
+        """Return an instance of `orion.executor.base.Executor` based on the index of tasks
+        that the assessment is asking to run."""
+        return None
+
     @abstractmethod
     def analysis(self, task, experiments):
         """
-        Generate a `plotly.graph_objects.Figure` to display the performance analysis
+        Generate `plotly.graph_objects.Figure` objects to display the performance analysis
         based on the assessment purpose.
 
         task: str
@@ -43,6 +49,15 @@ class BenchmarkAssessment(ABC):
         experiments: list
             A list of (task_index, experiment), where task_index is the index of task to run for
             this assessment, and experiment is an instance of `orion.core.worker.experiment`.
+
+        Returns
+        -------
+        Dict of plotly.graph_objects.Figure objects with a format as like
+        {"assessment name": {"task name": {"figure name": plotly.graph_objects.Figure}}}
+
+        Examples
+        >>> {"AverageRank": {"RosenBrock": {"rankings": plotly.graph_objects.Figure}}}
+
         """
         pass
 

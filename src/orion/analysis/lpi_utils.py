@@ -138,7 +138,7 @@ def lpi(
     results = numpy.zeros((n_runs, len(flattened_space)))
     for i in range(n_runs):
         trained_model = train_regressor(
-            model, data, random_state=rng.randint(2 ** 32 - 1), **kwargs
+            model, data, random_state=rng.randint(2**32 - 1), **kwargs
         )
         results[i] = modes[mode](best_point, flattened_space, trained_model, n_points)
 

@@ -38,7 +38,7 @@ def foo(x, sleep_time):
 keys = ["net_in", "net_out"]
 MongoStat = namedtuple("MongoStat", keys)
 
-order_values = dict(b=1 / 1000.0, k=1, m=1000, g=1000 ** 2)
+order_values = dict(b=1 / 1000.0, k=1, m=1000, g=1000**2)
 
 
 def _convert_str_size(size):
@@ -443,17 +443,17 @@ def test_io():
         net_in, net_out, n_trials = compute_stats(
             monitoring_method="ptera",
             executor="joblib",
-            max_trials=(498, 500),
-            sleep_time=30.0,
+            max_trials=(198, 200),
+            sleep_time=15.0,
         )
     net_in = numpy.array(net_in)
     net_out = numpy.array(net_out)
 
-    NOMINAL_IN_MEAN = 17.0  # KB/s
-    NOMINAL_IN_STD = 79.0  # KB/s
+    NOMINAL_IN_MEAN = 16.45  # KB/s
+    NOMINAL_IN_STD = 77.57  # KB/s
 
-    NOMINAL_OUT_MEAN = 59.0  # KB/s
-    NOMINAL_OUT_STD = 282.0  # KB/s
+    NOMINAL_OUT_MEAN = 57.56  # KB/s
+    NOMINAL_OUT_STD = 276.41  # KB/s
 
     assert net_in.mean() < NOMINAL_IN_MEAN + NOMINAL_IN_STD / numpy.sqrt(
         net_in.shape[0]
