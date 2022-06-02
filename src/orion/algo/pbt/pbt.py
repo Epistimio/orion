@@ -63,6 +63,9 @@ def compute_fidelities(
 class PBT(BaseAlgorithm):
     """Population Based Training algorithm
 
+    Warning:PBT is broken in current version v0.2.4. We are working on a fix to be released in
+    v0.2.5, ETA July 2022.
+
     Population based training is an evolutionary algorithm that evolve trials
     from low fidelity levels to high fidelity levels (ex: number of epochs).
     For a population of size `m`, it first samples `m` trials at lowest fidelity level.

@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 class PB2(PBT):
     """Population Based Bandits
 
+    Warning: PB2 is broken in current version v0.2.4. We are working on a fix to be released in
+    v0.2.5, ETA July 2022.
+
     Population Based Bandits is a variant of Population Based Training using probabilistic model
     to guide the search instead of relying on purely random perturbations.
     PB2 implementation uses a time-varying Gaussian process to model the optimization curves

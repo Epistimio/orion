@@ -21,13 +21,15 @@ from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
 
+pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
+
 
 class TestComputeFidelities:
     def test_base_1(self):
         assert compute_fidelities(10, 10, 20, 1) == list(map(float, range(10, 21)))
 
     def test_other_bases(self):
-        assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
+        assert compute_fidelities(9, 2, 2 ** 10, 2) == [2 ** i for i in range(1, 11)]
 
 
 def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
