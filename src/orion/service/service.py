@@ -49,7 +49,7 @@ class OrionService:
 
     def __init__(self) -> None:
         self.app = falcon.App()
-        self.broker = RemoteExperimentBroker()
+        self.broker = LocalExperimentBroker() # RemoteExperimentBroker()
         self.auth = AuthenticationService()
         OrionService.add_routes(self.app, self.broker, self.auth)
 

@@ -35,4 +35,4 @@ class LocalExperimentBroker(ExperimentBroker):
             experiment_ctx
         )
 
-        return success(dict(experimend_id=str(client.id)))
+        return success(dict(experiment_id=str(client.id)))
