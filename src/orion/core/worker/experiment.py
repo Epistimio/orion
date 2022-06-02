@@ -265,7 +265,7 @@ class Experiment:
         self._check_if_executable()
         log.debug("reserving trial with (score: %s)", score_handle)
 
-        self.fix_lost_trials()
+        self.fix_lost_trials(False)
 
         self.duplicate_pending_trials()
 
@@ -316,9 +316,10 @@ class Experiment:
         the current experiment will only see the new copy of the trial.
         """
         self._check_if_writable()
-        evc_pending_trials = self._select_evc_call(
-            with_evc_tree=True, function="fetch_pending_trials"
-        )
+        evc_pending_trials = []
+        # self._select_evc_call(
+        #    with_evc_tree=True, function="fetch_pending_trials"
+        #)
         exp_pending_trials = self._select_evc_call(
             with_evc_tree=False, function="fetch_pending_trials"
         )
@@ -530,7 +531,7 @@ class Experiment:
             To be used as a terminating condition in a ``Worker``.
 
         """
-        trials = self.fetch_trials(with_evc_tree=True)
+        trials = self.fetch_trials(with_evc_tree=False)
         num_completed_trials = 0
         num_pending_trials = 0
         for trial in trials:

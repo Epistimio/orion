@@ -71,6 +71,10 @@ def test_new_experiment():
 def test_suggest():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
+
+        client.new_experiment(name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)"))
+        print('----Done')
+
         trials = client.suggest()
 
         assert len(trials) > 0

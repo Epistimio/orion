@@ -6,7 +6,7 @@ import logging
 
 from orion.storage.legacy import Legacy
 from orion.core.io.database.mongodb import MongoDB
-from orion.service.broker.broker import ExperimentContext
+from orion.service.broker.broker import RequestContext, ServiceContext
 from orion.service.broker.remote import RemoteExperimentBroker
 from orion.service.broker.local import LocalExperimentBroker
 
@@ -20,14 +20,38 @@ class QueryRoute:
 
     """
     def __init__(self, broker, auth) -> None:
+        self.service = ServiceContext()
         self.broker = broker
         self.auth = auth
 
     def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
         """Force status to be set, and send back an error on exception"""
+        resp.media = dict()
+
         try:
-            resp.media = dict()
-            self.on_post_request(req, resp)
+            msg = req.get_media()
+            token = msg.pop('token', None)
+
+            if token is None:
+                resp.status = falcon.HTTP_401
+                return
+
+            credentials = self.auth.authenticate(token)
+            if credentials is None:
+                resp.status = falcon.HTTP_401
+                return
+
+            ctx = RequestContext(
+                self.service,
+                credentials[0],
+                credentials[1],
+                data=msg,
+                token=token,
+                request=req,
+                response=resp,
+            )
+
+            self.on_post_request(ctx)
             resp.status = falcon.HTTP_200
             return
 
@@ -38,10 +62,9 @@ class QueryRoute:
             resp.media["status"] = 1
             resp.media["error"] = str(err)
 
-    def on_post_request(self, req: falcon.Request, resp: falcon.Response) -> None:
+    def on_post_request(self, ctx: RequestContext) -> None:
         """Request specific handling to implement here"""
         raise NotImplementedError()
-
 
 
 class OrionService:
@@ -49,7 +72,7 @@ class OrionService:
 
     def __init__(self) -> None:
         self.app = falcon.App()
-        self.broker = LocalExperimentBroker() # RemoteExperimentBroker()
+        self.broker =  RemoteExperimentBroker() # LocalExperimentBroker() #
         self.auth = AuthenticationService()
         OrionService.add_routes(self.app, self.broker, self.auth)
 
@@ -72,51 +95,35 @@ class OrionService:
     class NewExperiment(QueryRoute):
         """Create or set the experiment"""
 
-        def on_post_request(self, req: falcon.Request, resp: falcon.Response) -> None:
-            msg = req.get_media()
-            token = msg.pop('token', None)
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.new_experiment(ctx)
 
-            if token is None:
-                resp.status = falcon.HTTP_401
-                return
-
-            credientials = self.auth.authenticate(token)
-            if credientials is None:
-                resp.status = falcon.HTTP_401
-                return
-
-            ctx = ExperimentContext(
-                credientials[0],
-                credientials[1],
-                config=msg
-            )
-
-            result = self.broker.new_experiment(token, ctx)
-            resp.status =  falcon.HTTP_200
-            resp.media = result
+            ctx.response.status =  falcon.HTTP_200
+            ctx.response.media = result
 
     class Suggest(QueryRoute):
         """Suggest new trials for a given experiment"""
 
-        def on_post_request(self, req: falcon.Request, resp: falcon.Response) -> None:
-            resp.media["trials"] = []
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.suggest(ctx);
+            ctx.response.media = result
 
     class Observe(QueryRoute):
         """Observe results for a given trial"""
 
-        def on_post_request(self, req: falcon.Request, resp: falcon.Response) -> None:
+        def on_post_request(self, ctx: RequestContext) -> None:
             pass
 
     class IsDone(QueryRoute):
         """Query the status of a given experiment"""
 
-        def on_post_request(self, req: falcon.Request, resp: falcon.Response) -> None:
+        def on_post_request(self, ctx: RequestContext) -> None:
             pass
 
     class Heartbeat(QueryRoute):
         """Notify the server than the trial is still running"""
 
-        def on_post_request(self, req: falcon.Request, resp: falcon.Response) -> None:
+        def on_post_request(self, ctx: RequestContext) -> None:
             pass
 
     def run(self, hostname: str, port: int) -> None:

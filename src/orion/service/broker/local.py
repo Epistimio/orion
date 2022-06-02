@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 
-from orion.service.broker.broker import ServiceContext, ExperimentContext, build_experiment_client, ExperimentBroker
+from orion.service.broker.broker import build_experiment, get_storage_for_user, ServiceContext, RequestContext, build_experiment_client, ExperimentBroker
 
 
 log = logging.getLogger(__file__)
@@ -24,15 +24,26 @@ class LocalExperimentBroker(ExperimentBroker):
     The everything keeps being reinstantiated.
 
     """
-    def __init__(self) -> None:
-        self.service_ctx = ServiceContext()
-
-    def new_experiment(self, token, experiment_ctx: ExperimentContext) -> Dict:
+    def new_experiment(self, request: RequestContext) -> Dict:
         log.debug("Spawning new experiment")
 
-        client = build_experiment_client(
-            self.service_ctx,
-            experiment_ctx
-        )
+        client = build_experiment_client(request)
 
-        return success(dict(experiment_id=str(client.id)))
+        return success(dict(experiment_name=str(client.name)))
+
+    def suggest(self, request: RequestContext):
+        storage = get_storage_for_user(request)
+        experiment_name = request.data.pop('experiment_name')
+
+        client = build_experiment(name=experiment_name, storage_instance=storage)
+        client.remote_mode = True
+
+        trial = client.suggest(**request.data).to_dict()
+
+        trial['experiment'] = str(trial['experiment'])
+        trial.pop('heartbeat')
+        trial.pop('submit_time')
+        trial.pop('start_time')
+        print(trial)
+
+        return success(dict(trials=[trial]))

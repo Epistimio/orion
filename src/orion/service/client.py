@@ -1,9 +1,12 @@
 import os
 from typing import Any, Dict, List
+import logging
 
 import requests
 
 from orion.core.worker.trial import Trial
+
+log = logging.getLogger(__file__)
 
 
 class ClientREST:
@@ -12,7 +15,7 @@ class ClientREST:
     def __init__(self, endpoint, token) -> None:
         self.endpoint = endpoint
         self.token = token
-        self.experiment_id = None
+        self.experiment_name = None
 
     def _post(self, path: str, **data) -> Any:
         """Basic reply handling, makes sure status is 0, else it will raise an error"""
@@ -20,7 +23,7 @@ class ClientREST:
 
         result = requests.post(self.endpoint + "/" + path, json=data)
         payload = result.json()
-        print(payload)
+        log.debug(payload)
         status = payload.pop("status")
 
         if result.status_code >= 200 and result.status_code < 300 and status == 0:
@@ -29,21 +32,26 @@ class ClientREST:
         error = payload.pop('error')
         raise RuntimeError(f"Remote server returned error code {status}: {error}")
 
-    def new_experiment(self, **config) -> str:
-        result = self._post("experiment", **config)
-        self.experiment_id = result["experiment_id"]
+    def new_experiment(self, name, **config) -> str:
+        self._post("experiment", name=name, **config)
 
-        return self.experiment_id
+        self.experiment_name = name
+        return self.experiment_name
 
-    def suggest(self, count: int = 1) -> List[Trial]:
-        result = self._post("suggest", experiment_id=self.experiment_id, count=count)
+    def suggest(self, pool_size: int = 1, experiment_name=None) -> List[Trial]:
+        experiment_name = experiment_name or self.experiment_name
+
+        if experiment_name is None:
+            raise RuntimeError("experiment_name is not set")
+
+        result = self._post("suggest", experiment_name=experiment_name, pool_size=pool_size)
         return result["trials"]
 
     def observe(self, trial: Trial, results: List[Dict]) -> None:
         self._post("observe", trial_id=trial.id, results=results)
 
     def is_done(self) -> bool:
-        return self._post("is_done", experiment_id=self.experiment_id)
+        return self._post("is_done", experiment_name=self.experiment_name)
 
     def heartbeat(self, trial: Trial) -> None:
         self._post("heartbeat", trial_id=trial.id)

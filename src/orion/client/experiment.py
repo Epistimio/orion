@@ -92,7 +92,7 @@ class ExperimentClient:
 
         self._executor = executor
         self._executor_owner = False
-
+        self.remote_mode = False
         self.plot = PlotAccessor(self)
 
     ###
@@ -860,8 +860,13 @@ class ExperimentClient:
             )
 
     def _maintain_reservation(self, trial):
-        self._pacemakers[trial.id] = TrialPacemaker(trial)
-        self._pacemakers[trial.id].start()
+        # if this client is created by the service
+        # we should create pacemakers because the client is shortlive
+        # and/or the service is actually not the one reserving the trials
+        # the client doing the actual work needs to do the pacemaker's job
+        if not self.remote_mode:
+            self._pacemakers[trial.id] = TrialPacemaker(trial)
+            self._pacemakers[trial.id].start()
 
     def _release_reservation(self, trial, raise_if_unreserved=True):
         if trial.id not in self._pacemakers:

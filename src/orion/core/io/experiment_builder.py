@@ -112,7 +112,7 @@ log = logging.getLogger(__name__)
 ##
 
 
-def build(name, version=None, branching=None, **config):
+def build(name, version=None, branching=None, username=None, **config):
     """Build an experiment object
 
     If new, ``space`` argument must be provided, else all arguments are fetched from the database
@@ -176,6 +176,9 @@ def build(name, version=None, branching=None, **config):
     storage_instance = config.get('storage_instance') or get_storage()
     name, config, branching = clean_config(name, config, branching)
     config = consolidate_config(name, version, config, storage=storage_instance)
+
+    if username is not None:
+        config['metadata']['user'] = username
 
     if "space" not in config:
         raise NoConfigurationError(

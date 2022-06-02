@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import multiprocessing as mp
-import datetime
 import logging
+
+import falcon
 
 from orion.client import build_experiment, ExperimentClient
 from orion.storage.legacy import Legacy
@@ -9,31 +10,36 @@ from orion.core.io.database.mongodb import MongoDB
 
 log = logging.getLogger(__file__)
 
+
+@dataclass
 class ServiceContext:
+    """Global configuration for the service"""
     database: str = 'orion'
     host: str = '192.168.0.116'
     port: int = 8124
 
 
 @dataclass
-class ExperimentContext:
-    username: str
+class RequestContext:
+    """Request specific information useful throughout the request handling"""
+    service: ServiceContext             # Service config
+    username: str                       # Populated on authentication
     password: str
-    config: dict
-    request_queue: mp.Queue = None
-    result_queue: mp.Queue = None
-    process: mp.Process = None
-    last_active: datetime.datetime = None
+    data: dict                          # Parameter data from the request
+    token: str                          # Original token
+    request: falcon.Request = None      # Original Request
+    response: falcon.Response = None    # Reponse to be sent back
 
 
-def get_storage_for_user(service_ctx: ServiceContext, exp_ctx: ExperimentContext):
+
+def get_storage_for_user(request: RequestContext):
     log.debug("Connecting to database")
     db = MongoDB(
-        name=service_ctx.database,
-        host=service_ctx.host,
-        port=service_ctx.port,
-        username=exp_ctx.username,
-        password=exp_ctx.password
+        name=request.service.database,
+        host=request.service.host,
+        port=request.service.port,
+        username=request.username,
+        password=request.password
     )
 
     # this bypass the Storage singleton logic
@@ -49,13 +55,15 @@ def get_storage_for_user(service_ctx: ServiceContext, exp_ctx: ExperimentContext
     return storage
 
 
-def build_experiment_client(service_ctx: ServiceContext, exp_ctx: ExperimentContext) -> ExperimentClient:
+def build_experiment_client(request: RequestContext) -> ExperimentClient:
     """Build an experiment client in a multiuser setting (i.e without relying on singletons)"""
 
-    storage = get_storage_for_user(service_ctx, exp_ctx)
+    storage = get_storage_for_user(request)
 
     log.debug("Building experiment")
-    return build_experiment(**exp_ctx.config, storage_instance=storage)
+    client = build_experiment(**request.data, storage_instance=storage, username=request.username)
+    client.remote_mode = True
+    return client
 
 
 class ExperimentBroker:
@@ -73,7 +81,8 @@ class ExperimentBroker:
     def stop(self):
         pass
 
-    def new_experiment(self, token, experiment_ctx):
+    def new_experiment(self, experiment_ctx):
         pass
 
-
+    def suggest(self, experiment_ctx):
+        pass

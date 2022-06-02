@@ -2,12 +2,21 @@ import multiprocessing as mp
 import logging
 import traceback
 from typing import Dict
+import datetime
+from dataclasses import dataclass
 
-from orion.service.broker.broker import ServiceContext, ExperimentContext, build_experiment_client, ExperimentBroker
+from orion.service.broker.broker import ServiceContext, RequestContext, build_experiment_client, ExperimentBroker
 
 
 log = logging.getLogger(__file__)
 
+@dataclass
+class ExperimentContext:
+    """Context used to fetch the process associated with a given experiment"""
+    request_queue: mp.Queue = None
+    result_queue: mp.Queue = None
+    process: mp.Process = None
+    last_active: datetime.datetime = None
 
 
 class RemoteExperimentBroker(ExperimentBroker):
@@ -21,7 +30,6 @@ class RemoteExperimentBroker(ExperimentBroker):
     def __init__(self) -> None:
         self.manager = mp.Manager()
         self.experiments: Dict[str, ExperimentContext] = dict()
-        self.service_ctx = ServiceContext()
 
     def __enter__(self):
         return self
@@ -40,33 +48,61 @@ class RemoteExperimentBroker(ExperimentBroker):
 
         self.manager.shutdown()
 
-    def new_experiment(self, token, experiment_ctx):
+    def new_experiment(self, request: RequestContext):
         log.debug("Spawning new experiment")
 
-        experiment_ctx.request_queue = self.manager.Queue()
-        experiment_ctx.result_queue = self.manager.Queue()
+        experiment = ExperimentContext()
+        experiment.request_queue = self.manager.Queue()
+        experiment.result_queue = self.manager.Queue()
 
-        experiment_ctx.process = mp.Process(
+        experiment.process = mp.Process(
             target=experiment_worker,
-            args=(self.service_ctx, experiment_ctx)
+            args=(request, experiment)
         )
-        experiment_ctx.process.start()
-        result = experiment_ctx.result_queue.get()
+        experiment.process.start()
+        result = experiment.result_queue.get()
 
         if result['status'] == 0:
-            exp_id = result['result']['experiment_id']
-            self.experiments[(token, exp_id)] = experiment_ctx
+            exp_id = result['result']['experiment_name']
+            self.experiments[(request.token, exp_id)] = experiment
 
         return result
 
-    def resume_from_experiment(experiment_id):
+    def suggest(self, request: RequestContext):
+        experiment_name = request.data.pop('experiment_name')
+        experiment = self.experiments.get((request.token, experiment_name), None)
+
+        if experiment is None:
+            # here we should try to resume from the experiment id
+            # if the experiment already exists it will work
+            # if not an error will be raised
+            result = self.new_experiment(request)
+
+            if result['status'] == 0:
+                raise RuntimeError(f"Need to create an experiment first: {result['error']}")
+
+        experiment.request_queue.put(dict(
+            function='suggest',
+            kwargs=request.data
+        ))
+
+        trial = experiment.result_queue.get()['result'].to_dict()
+
+        trial['experiment'] = str(trial['experiment'])
+        trial.pop('heartbeat')
+        trial.pop('submit_time')
+        trial.pop('start_time')
+
+        return dict(status=0, result=dict(trials=[trial]))
+
+    def resume_from_experiment(experiment_name):
         pass
 
     def resume_from_trial(trial_id):
         pass
 
-    def experiment_request(self, token, experiment_id, function, *args, **kwargs):
-        ctx = self.experiments.get((token, experiment_id))
+    def experiment_request(self, token, experiment_name, function, *args, **kwargs):
+        ctx = self.experiments.get((token, experiment_name))
         if ctx is None:
             ctx = self.resume_experiment()
 
@@ -79,19 +115,19 @@ class RemoteExperimentBroker(ExperimentBroker):
         return ctx.result_queue.get()
 
 
-def experiment_worker(service_ctx: ServiceContext, exp_ctx: ExperimentContext):
+def experiment_worker(request: RequestContext, experiment: ExperimentContext):
     running = False
     client = None
 
     def success(values):
-        exp_ctx.result_queue.put(dict(status=0, result=values))
+        experiment.result_queue.put(dict(status=0, result=values))
 
     def error(exception):
-        exp_ctx.result_queue.put(dict(status=1, error=str(exception)))
+        experiment.result_queue.put(dict(status=1, error=str(exception)))
 
     try:
-        client = build_experiment_client(service_ctx, exp_ctx)
-        success(dict(experiment_id=str(client.id)))
+        client = build_experiment_client(request)
+        success(dict(experiment_name=str(client.name)))
         running = True
 
     except Exception as err:
@@ -103,7 +139,7 @@ def experiment_worker(service_ctx: ServiceContext, exp_ctx: ExperimentContext):
 
     while running:
         # wait until we receive a request
-        rpc_request = exp_ctx.request_queue.get(True)
+        rpc_request = experiment.request_queue.get(True)
 
         function = rpc_request.pop('function')
 
@@ -112,8 +148,8 @@ def experiment_worker(service_ctx: ServiceContext, exp_ctx: ExperimentContext):
             break
 
         try:
-            args = rpc_request.pop('arg')
-            kwargs = rpc_request.pop('kwargs')
+            args = rpc_request.pop('arg', [])
+            kwargs = rpc_request.pop('kwargs', dict())
 
             result = getattr(client, function)(*args, **kwargs)
             success(result)
