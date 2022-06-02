@@ -74,7 +74,6 @@ hierarchy. From the more global to the more specific, there is:
 
 """
 from __future__ import annotations
-from ast import get_source_segment
 
 import copy
 import datetime

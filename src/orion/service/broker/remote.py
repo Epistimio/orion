@@ -78,7 +78,7 @@ class RemoteExperimentBroker(ExperimentBroker):
             # if not an error will be raised
             result = self.new_experiment(request)
 
-            if result['status'] == 0:
+            if result['status'] != 0:
                 raise RuntimeError(f"Need to create an experiment first: {result['error']}")
 
         experiment.request_queue.put(dict(
