@@ -6,7 +6,10 @@ import logging
 
 from orion.storage.legacy import Legacy
 from orion.core.io.database.mongodb import MongoDB
-from orion.service.remote import RemoteExperimentBroker, ExperimentContext
+from orion.service.broker.broker import ExperimentContext
+from orion.service.broker.remote import RemoteExperimentBroker
+from orion.service.broker.local import LocalExperimentBroker
+
 from orion.service.auth import AuthenticationService
 
 log = logging.getLogger(__file__)

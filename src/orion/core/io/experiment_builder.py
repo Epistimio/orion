@@ -202,7 +202,7 @@ def build(name, version=None, branching=None, **config):
 
     log.debug(f"Experiment {config['name']}-v{config['version']} already existed.")
 
-    conflicts = _get_conflicts(experiment, branching)
+    conflicts = _get_conflicts(experiment, branching, storage=storage_instance)
     must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
 
     if must_branch and branching.get("enable", orion.core.config.evc.enable):
@@ -215,7 +215,7 @@ def build(name, version=None, branching=None, **config):
 
     log.debug("No branching required.")
 
-    _update_experiment(experiment)
+    _update_experiment(experiment, storage=storage_instance)
     return experiment
 
 
@@ -313,7 +313,7 @@ def build_view(name, version=None):
     return load(name, version=version, mode="r")
 
 
-def load(name, version=None, mode="r"):
+def load(name, version=None, mode="r", storage=None):
     """Load experiment from database
 
     An experiment view provides all reading operations of standard experiment but prevents the
@@ -338,7 +338,7 @@ def load(name, version=None, mode="r"):
     log.debug(
         f"Loading experiment {name} (version={version}) from database in mode `{mode}`"
     )
-    db_config = fetch_config_from_db(name, version)
+    db_config = fetch_config_from_db(name, version, storage=storage)
 
     if not db_config:
         message = (
@@ -349,7 +349,7 @@ def load(name, version=None, mode="r"):
 
     db_config.setdefault("version", 1)
 
-    return create_experiment(mode=mode, **db_config)
+    return create_experiment(mode=mode, **db_config, storage_instance=storage)
 
 
 def create_experiment(name, version, mode, space, **kwargs):
@@ -571,7 +571,7 @@ def _register_experiment(experiment, storage=None):
         )
 
 
-def _update_experiment(experiment):
+def _update_experiment(experiment, storage=None):
     """Update experiment configuration in database"""
     log.debug("Updating experiment (name: %s)", experiment.name)
     config = experiment.configuration
@@ -584,7 +584,7 @@ def _update_experiment(experiment):
     # `(name, metadata.user)`
     config.pop("name")
 
-    get_storage().update_experiment(experiment, **config)
+    (storage or get_storage()).update_experiment(experiment, **config)
 
     log.debug("Experiment configuration successfully updated in DB.")
 
@@ -668,10 +668,10 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     return create_experiment(mode="x", **config)
 
 
-def _get_conflicts(experiment, branching):
+def _get_conflicts(experiment, branching, storage=None):
     """Get conflicts between current experiment and corresponding configuration in database"""
     log.debug("Looking for conflicts in new configuration.")
-    db_experiment = load(experiment.name, experiment.version, mode="r")
+    db_experiment = load(experiment.name, experiment.version, mode="r", storage=storage)
     conflicts = detect_conflicts(
         db_experiment.configuration, experiment.configuration, branching
     )
