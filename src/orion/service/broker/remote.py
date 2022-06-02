@@ -5,7 +5,7 @@ from typing import Dict
 import datetime
 from dataclasses import dataclass
 
-from orion.service.broker.broker import ServiceContext, RequestContext, build_experiment_client, ExperimentBroker
+from orion.service.broker.broker import RequestContext, build_experiment_client, ExperimentBroker
 
 
 log = logging.getLogger(__file__)
@@ -26,6 +26,9 @@ class RemoteExperimentBroker(ExperimentBroker):
 
     Because the operations execute a lot of IO we might be able to have a lot more processes running
     than we have cores, given the fork stays pretty light and does not copy too much from the parent.
+
+    This is harder to scale because each users need to be routed to the same server all the time.
+    in the worst case the process can still be recreated though (i.e if the original server dies)
     """
     def __init__(self) -> None:
         self.manager = mp.Manager()

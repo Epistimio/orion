@@ -23,6 +23,9 @@ class LocalExperimentBroker(ExperimentBroker):
 
     The everything keeps being reinstantiated.
 
+    This is easy to scale because nothing is kept between request,
+    we can just load balance the request through n servers.
+
     """
     def new_experiment(self, request: RequestContext) -> Dict:
         log.debug("Spawning new experiment")
