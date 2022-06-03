@@ -41,7 +41,7 @@ extras_require = {
         "sphinx_gallery",
     ],
     "dask": ["dask[complete]"],
-    "track": ["track @ git+https://github.com/Delaunay/track"],
+    "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
     "ax": [
         "ax-platform",
@@ -49,13 +49,13 @@ extras_require = {
     ],
     "dehb": [
         "ConfigSpace",
-        "dehb @ git+https://github.com/automl/DEHB.git@development",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+        "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
         "hpbandster",
         "ConfigSpace",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "pb2": ["GPy"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
