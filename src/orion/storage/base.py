@@ -28,7 +28,7 @@ import logging
 
 import orion.core
 from orion.core.io import resolve_config
-from orion.core.utils.singleton import GenericSingletonFactory
+from orion.core.utils import GenericFactory
 
 log = logging.getLogger(__name__)
 
@@ -517,7 +517,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
 
-storage_factory = GenericSingletonFactory(BaseStorageProtocol)
+storage_factory = GenericFactory(BaseStorageProtocol)
 
 
 def get_storage():
