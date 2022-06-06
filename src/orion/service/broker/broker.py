@@ -31,6 +31,9 @@ class RequestContext:
     response: falcon.Response = None    # Reponse to be sent back
 
 
+def trial_to_json(t):
+    pass
+
 
 def get_storage_for_user(request: RequestContext):
     log.debug("Connecting to database")
