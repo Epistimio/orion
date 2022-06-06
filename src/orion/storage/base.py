@@ -537,7 +537,7 @@ def get_storage():
     with the appropriate arguments for the chosen backend
 
     """
-    return storage_factory.create()
+    return setup_storage()
 
 
 def setup_storage(storage=None, debug=False):
@@ -576,7 +576,7 @@ def setup_storage(storage=None, debug=False):
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
-        storage_factory.create(of_type=storage_type, **storage)
+        return storage_factory.create(of_type=storage_type, **storage)
     except ValueError:
         if storage_factory.create().__class__.__name__.lower() != storage_type.lower():
             raise

@@ -49,7 +49,7 @@ def get_database():
     with the appropriate arguments for the chosen backend
 
     """
-    return database_factory.create()
+    return setup_database()
 
 
 def setup_database(config=None):
@@ -91,7 +91,7 @@ class Legacy(BaseStorageProtocol):
         if database is not None:
             setup_database(database)
 
-        self._db = database_factory.create()
+        self._db = setup_database()
 
         if setup:
             self._setup_db()
