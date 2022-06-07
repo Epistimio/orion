@@ -209,10 +209,10 @@ def build_experiment(
             "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
         )
 
-    setup_storage(storage=storage, debug=debug)
+    builder = experiment_builder.ExperimentBuilder(storage, debug)
 
     try:
-        experiment = experiment_builder.build(
+        experiment = builder.build(
             name,
             version=version,
             space=space,
@@ -227,7 +227,7 @@ def build_experiment(
         # Try again, but if it fails again, raise. Race conditions due to version increment should
         # only occur once in a short window of time unless code version is changing at a crazy pace.
         try:
-            experiment = experiment_builder.build(
+            experiment = builder.build(
                 name,
                 version=version,
                 space=space,
@@ -279,9 +279,10 @@ def get_experiment(name, version=None, mode="r", storage=None):
     `orion.core.utils.exceptions.NoConfigurationError`
         The experiment is not in the database provided by the user.
     """
-    setup_storage(storage)
     assert mode in set("rw")
-    experiment = experiment_builder.load(name, version, mode)
+
+    builder = experiment_builder.ExperimentBuilder(storage)
+    experiment = builder.load(name, version, mode)
     return ExperimentClient(experiment)
 
 
@@ -327,9 +328,9 @@ def workon(
     singletons = update_singletons()
 
     try:
-        setup_storage(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
+        builder = experiment_builder.ExperimentBuilder(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
 
-        experiment = experiment_builder.build(
+        experiment = builder.build(
             name,
             version=1,
             space=space,

@@ -540,6 +540,14 @@ def get_storage():
     return setup_storage()
 
 
+def with_storage(config):
+    old = copy.deepcopy(orion.core.config.storage)
+    orion.core.config.storage.from_dict(config)
+
+    yield
+    orion.core.config.storage = old
+
+
 def setup_storage(storage=None, debug=False):
     """Create the storage instance from a configuration.
 

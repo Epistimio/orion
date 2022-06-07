@@ -101,7 +101,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import create_algo
-from orion.storage.base import get_storage, setup_storage
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 
@@ -110,112 +110,6 @@ log = logging.getLogger(__name__)
 # Functions to build experiments
 ##
 
-
-def build(name, version=None, branching=None, **config):
-    """Build an experiment object
-
-    If new, ``space`` argument must be provided, else all arguments are fetched from the database
-    based on (name, version). If any argument given does not match the corresponding ones in the
-    database for given (name, version), than the version is incremented and the experiment will be a
-    child of the previous version.
-
-    Parameters
-    ----------
-    name: str
-        Name of the experiment to build
-    version: int, optional
-        Version to select. If None, last version will be selected. If version given is larger than
-        largest version available, the largest version will be selected.
-    space: dict, optional
-        Optimization space of the algorithm. Should have the form ``dict(name='<prior>(args)')``.
-    algorithms: str or dict, optional
-        Algorithm used for optimization.
-    strategy: str or dict, optional
-        Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
-        directly if it supports it.
-    max_trials: int, optional
-        Maximum number of trials before the experiment is considered done.
-    max_broken: int, optional
-        Number of broken trials for the experiment to be considered broken.
-    storage: dict, optional
-        Configuration of the storage backend.
-
-    branching: dict, optional
-        Arguments to control the branching.
-
-        branch_from: str, optional
-            Name of the experiment to branch from.
-        manual_resolution: bool, optional
-            Starts the prompt to resolve manually the conflicts. Defaults to False.
-        non_monitored_arguments: list of str, optional
-            Will ignore these arguments while looking for differences. Defaults to [].
-        ignore_code_changes: bool, optional
-            Will ignore code changes while looking for differences. Defaults to False.
-        algorithm_change: bool, optional
-            Whether to automatically solve the algorithm conflict (change of algo config).
-            Defaults to True.
-        orion_version_change: bool, optional
-            Whether to automatically solve the orion version conflict.
-            Defaults to True.
-        code_change_type: str, optional
-            How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
-            'break'.  Defaults to 'break'.
-        cli_change_type: str, optional
-            How to resolve cli change automatically. Must be one of 'noeffect', 'unsure' or 'break'.
-            Defaults to 'break'.
-        config_change_type: str, optional
-            How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
-            'break'.  Defaults to 'break'.
-
-    """
-    log.debug(f"Building experiment {name} with {version}")
-    log.debug("    Passed experiment config:\n%s", pprint.pformat(config))
-    log.debug("    Branching config:\n%s", pprint.pformat(branching))
-
-    name, config, branching = clean_config(name, config, branching)
-
-    config = consolidate_config(name, version, config)
-
-    if "space" not in config:
-        raise NoConfigurationError(
-            "Experiment {} does not exist in DB and space was not defined.".format(name)
-        )
-
-    if len(config["space"]) == 0:
-        raise NoConfigurationError("No prior found. Please include at least one.")
-
-    experiment = create_experiment(mode="x", **copy.deepcopy(config))
-    if experiment.id is None:
-        log.debug("Experiment not found in DB. Now attempting registration in DB.")
-        try:
-            _register_experiment(experiment)
-            log.debug("Experiment successfully registered in DB.")
-        except DuplicateKeyError:
-            log.debug(
-                "Experiment registration failed. This is likely due to a race condition. "
-                "Now rolling back and re-attempting building it."
-            )
-            experiment = build(branching=branching, **config)
-
-        return experiment
-
-    log.debug(f"Experiment {config['name']}-v{config['version']} already existed.")
-
-    conflicts = _get_conflicts(experiment, branching)
-    must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
-
-    if must_branch and branching.get("enable", orion.core.config.evc.enable):
-        return _attempt_branching(conflicts, experiment, version, branching)
-    elif must_branch:
-        log.warning(
-            "Running experiment in a different state:\n%s",
-            _get_branching_status_string(conflicts, branching),
-        )
-
-    log.debug("No branching required.")
-
-    _update_experiment(experiment)
-    return experiment
 
 
 def clean_config(name, config, branching):
@@ -246,38 +140,6 @@ def clean_config(name, config, branching):
     return name, config, branching
 
 
-def consolidate_config(name, version, config):
-    """Merge together given configuration with db configuration matching
-    for experiment (``name``, ``version``)
-    """
-    db_config = fetch_config_from_db(name, version)
-
-    # Do not merge spaces, the new definition overrides it.
-    if "space" in config:
-        db_config.pop("space", None)
-
-    log.debug("Merging user and db configs:")
-    log.debug("    config from user:\n%s", pprint.pformat(config))
-    log.debug("    config from DB:\n%s", pprint.pformat(db_config))
-
-    new_config = config
-    config = resolve_config.merge_configs(db_config, config)
-
-    config.setdefault("metadata", {})
-    resolve_config.update_metadata(config["metadata"])
-
-    merge_algorithm_config(config, new_config)
-    # TODO: Remove for v0.4
-    merge_producer_config(config, new_config)
-
-    config.setdefault("name", name)
-    config.setdefault("version", version)
-
-    log.debug("    Merged config:\n%s", pprint.pformat(config))
-
-    return config
-
-
 def merge_algorithm_config(config, new_config):
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
@@ -302,53 +164,6 @@ def merge_producer_config(config, new_config):
         )
 
         config["producer"]["strategy"] = new_config["producer"]["strategy"]
-
-
-def build_view(name, version=None):
-    """Load experiment from database
-
-    This function is deprecated and will be remove in v0.3.0. Use `load()` instead.
-    """
-    return load(name, version=version, mode="r")
-
-
-def load(name, version=None, mode="r"):
-    """Load experiment from database
-
-    An experiment view provides all reading operations of standard experiment but prevents the
-    modification of the experiment and its trials.
-
-    Parameters
-    ----------
-    name: str
-        Name of the experiment to build
-    version: int, optional
-        Version to select. If None, last version will be selected. If version given is larger than
-        largest version available, the largest version will be selected.
-    mode: str, optional
-        The access rights of the experiment on the database.
-        'r': read access only
-        'w': can read and write to database
-        Default is 'r'
-
-    """
-    assert mode in set("rw")
-
-    log.debug(
-        f"Loading experiment {name} (version={version}) from database in mode `{mode}`"
-    )
-    db_config = fetch_config_from_db(name, version)
-
-    if not db_config:
-        message = (
-            "No experiment with given name '%s' and version '%s' inside database, "
-            "no view can be created." % (name, version if version else "*")
-        )
-        raise NoConfigurationError(message)
-
-    db_config.setdefault("version", 1)
-
-    return create_experiment(mode=mode, **db_config)
 
 
 def create_experiment(name, version, mode, space, **kwargs):
@@ -417,41 +232,6 @@ def create_experiment(name, version, mode, space, **kwargs):
     )
 
     return experiment
-
-
-def fetch_config_from_db(name, version=None):
-    """Fetch configuration from database
-
-    Parameters
-    ----------
-    name: str
-        Name of the experiment to fetch
-    version: int, optional
-        Version to select. If None, last version will be selected. If version given is larger than
-        largest version available, the largest version will be selected.
-
-    """
-    configs = get_storage().fetch_experiments({"name": name})
-
-    if not configs:
-        return {}
-
-    config = _fetch_config_version(configs, version)
-
-    if len(configs) > 1 and version is None:
-        log.info(
-            "Many versions for experiment %s have been found. Using latest "
-            "version %s.",
-            name,
-            config["version"],
-        )
-
-    log.debug("Config found in DB:\n%s", pprint.pformat(config))
-
-    backward.populate_space(config, force_update=False)
-    backward.update_max_broken(config)
-
-    return config
 
 
 ##
@@ -546,73 +326,6 @@ def _instantiate_strategy(config=None):
     return None
 
 
-def _register_experiment(experiment):
-    """Register a new experiment in the database"""
-    experiment.metadata["datetime"] = datetime.datetime.utcnow()
-    config = experiment.configuration
-    # This will raise DuplicateKeyError if a concurrent experiment with
-    # identical (name, metadata.user) is written first in the database.
-
-    get_storage().create_experiment(config)
-
-    # XXX: Reminder for future DB implementations:
-    # MongoDB, updates an inserted dict with _id, so should you :P
-    experiment._id = config["_id"]  # pylint:disable=protected-access
-
-    # Update refers in db if experiment is root
-    if experiment.refers.get("parent_id") is None:
-        log.debug("update refers (name: %s)", experiment.name)
-        experiment.refers["root_id"] = experiment.id
-        get_storage().update_experiment(
-            experiment, refers=experiment.configuration["refers"]
-        )
-
-
-def _update_experiment(experiment):
-    """Update experiment configuration in database"""
-    log.debug("Updating experiment (name: %s)", experiment.name)
-    config = experiment.configuration
-
-    # TODO: Remove since this should not occur anymore without metadata.user in the indices?
-    # Writing the final config to an already existing experiment raises
-    # a DuplicatKeyError because of the embedding id `metadata.user`.
-    # To avoid this `final_config["name"]` is popped out before
-    # `db.write()`, thus seamingly breaking  the compound index
-    # `(name, metadata.user)`
-    config.pop("name")
-
-    get_storage().update_experiment(experiment, **config)
-
-    log.debug("Experiment configuration successfully updated in DB.")
-
-
-def _attempt_branching(conflicts, experiment, version, branching):
-    if len(conflicts.get()) > 1:
-        log.debug("Experiment must branch because of conflicts")
-    else:
-        assert branching.get("branch_to")
-        log.debug("Experiment branching forced with ``branch_to``")
-    branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
-    log.debug("Now attempting registration of branched experiment in DB.")
-    try:
-        _register_experiment(branched_experiment)
-        log.debug("Branched experiment successfully registered in DB.")
-    except DuplicateKeyError as e:
-        log.debug(
-            "Experiment registration failed. This is likely due to a race condition "
-            "during branching. Now rolling back and re-attempting building "
-            "the branched experiment."
-        )
-        raise RaceCondition(
-            "There was a race condition during branching. This error can "
-            "also occur if you try branching from a specific version that already "
-            "has a child experiment with the same name. Change the name of the new "
-            "experiment and use `branch-from` to specify the parent experiment."
-        ) from e
-
-    return branched_experiment
-
-
 def _get_branching_status_string(conflicts, branching_arguments):
     experiment_brancher = ExperimentBranchBuilder(
         conflicts, enabled=False, **branching_arguments
@@ -665,21 +378,6 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     return create_experiment(mode="x", **config)
 
 
-def _get_conflicts(experiment, branching):
-    """Get conflicts between current experiment and corresponding configuration in database"""
-    log.debug("Looking for conflicts in new configuration.")
-    db_experiment = load(experiment.name, experiment.version, mode="r")
-    conflicts = detect_conflicts(
-        db_experiment.configuration, experiment.configuration, branching
-    )
-
-    log.debug(f"{len(conflicts.get())} conflicts detected:\n {conflicts.get()}")
-
-    # elif must_branch and not enable_branching:
-    #     raise ValueError("Configuration is different and generate a branching event")
-
-    return conflicts
-
 
 def _fetch_config_version(configs, version=None):
     """Fetch the experiment configuration corresponding to the given version
@@ -719,50 +417,6 @@ def _fetch_config_version(configs, version=None):
 # Functions for commandline API
 ###
 
-
-def build_from_args(cmdargs):
-    """Build an experiment based on commandline arguments.
-
-    Options provided in commandline and configuration file (--config) will overwrite system's
-    default values and configuration from database if experiment already exits.
-    Commandline arguments have precedence over configuration file options.
-
-    .. seealso::
-
-        :func:`orion.core.io.experiment_builder.build` for more information on experiment creation.
-
-    """
-
-    cmd_config = get_cmd_config(cmdargs)
-
-    if "name" not in cmd_config:
-        raise NoNameError()
-
-    setup_storage(cmd_config["storage"], debug=cmd_config.get("debug"))
-
-    return build(**cmd_config)
-
-
-def get_from_args(cmdargs, mode="r"):
-    """Build an experiment view based on commandline arguments
-
-    .. seealso::
-
-        :func:`orion.core.io.experiment_builder.load` for more information on creation of read-only
-        experiments.
-
-    """
-    cmd_config = get_cmd_config(cmdargs)
-
-    if "name" not in cmd_config:
-        raise NoNameError()
-
-    setup_storage(cmd_config["storage"], debug=cmd_config.get("debug"))
-
-    name = cmd_config.get("name")
-    version = cmd_config.get("version")
-
-    return load(name, version, mode=mode)
 
 
 def get_cmd_config(cmdargs):
@@ -808,3 +462,361 @@ def get_cmd_config(cmdargs):
     backward.update_db_config(cmd_config)
 
     return cmd_config
+
+
+def build_from_args(cmdargs):
+    """Build an experiment based on commandline arguments.
+
+    Options provided in commandline and configuration file (--config) will overwrite system's
+    default values and configuration from database if experiment already exits.
+    Commandline arguments have precedence over configuration file options.
+
+    .. seealso::
+
+        :func:`orion.core.io.experiment_builder.build` for more information on experiment creation.
+
+    """
+
+    cmd_config = get_cmd_config(cmdargs)
+
+    if "name" not in cmd_config:
+        raise NoNameError()
+
+    builder = ExperimentBuilder(cmd_config["storage"], debug=cmd_config.get("debug"))
+
+    return builder.build(**cmd_config)
+
+
+def get_from_args(cmdargs, mode="r"):
+    """Build an experiment view based on commandline arguments
+
+    .. seealso::
+
+        :func:`orion.core.io.experiment_builder.load` for more information on creation of read-only
+        experiments.
+
+    """
+    cmd_config = get_cmd_config(cmdargs)
+
+    if "name" not in cmd_config:
+        raise NoNameError()
+
+    builder = ExperimentBuilder(cmd_config["storage"], debug=cmd_config.get("debug"))
+
+    name = cmd_config.get("name")
+    version = cmd_config.get("version")
+
+    return builder.load(name, version, mode=mode)
+
+
+def build(name, version=None, branching=None, **config):
+    return ExperimentBuilder(singleton=get_storage()).build(name, version, branching, **config)
+
+
+def load(name, version=None, mode="r"):
+    return ExperimentBuilder(singleton=get_storage()).load(name, version, mode)
+
+
+class ExperimentBuilder:
+    """Utility to make new experiments without relying on the storage singleton"""
+
+    def __init__(self, storage_config=None, debug=False, singleton=None) -> None:
+        if singleton is not None:
+            self.storage = singleton
+        else:
+            self.storage = setup_storage(storage_config, debug=debug)
+
+    def build(self, name, version=None, branching=None, **config):
+        """Build an experiment object
+
+        If new, ``space`` argument must be provided, else all arguments are fetched from the database
+        based on (name, version). If any argument given does not match the corresponding ones in the
+        database for given (name, version), than the version is incremented and the experiment will be a
+        child of the previous version.
+
+        Parameters
+        ----------
+        name: str
+            Name of the experiment to build
+        version: int, optional
+            Version to select. If None, last version will be selected. If version given is larger than
+            largest version available, the largest version will be selected.
+        space: dict, optional
+            Optimization space of the algorithm. Should have the form ``dict(name='<prior>(args)')``.
+        algorithms: str or dict, optional
+            Algorithm used for optimization.
+        strategy: str or dict, optional
+            Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
+            directly if it supports it.
+        max_trials: int, optional
+            Maximum number of trials before the experiment is considered done.
+        max_broken: int, optional
+            Number of broken trials for the experiment to be considered broken.
+        storage: dict, optional
+            Configuration of the storage backend.
+
+        branching: dict, optional
+            Arguments to control the branching.
+
+            branch_from: str, optional
+                Name of the experiment to branch from.
+            manual_resolution: bool, optional
+                Starts the prompt to resolve manually the conflicts. Defaults to False.
+            non_monitored_arguments: list of str, optional
+                Will ignore these arguments while looking for differences. Defaults to [].
+            ignore_code_changes: bool, optional
+                Will ignore code changes while looking for differences. Defaults to False.
+            algorithm_change: bool, optional
+                Whether to automatically solve the algorithm conflict (change of algo config).
+                Defaults to True.
+            orion_version_change: bool, optional
+                Whether to automatically solve the orion version conflict.
+                Defaults to True.
+            code_change_type: str, optional
+                How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
+                'break'.  Defaults to 'break'.
+            cli_change_type: str, optional
+                How to resolve cli change automatically. Must be one of 'noeffect', 'unsure' or 'break'.
+                Defaults to 'break'.
+            config_change_type: str, optional
+                How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
+                'break'.  Defaults to 'break'.
+
+        """
+        log.debug(f"Building experiment {name} with {version}")
+        log.debug("    Passed experiment config:\n%s", pprint.pformat(config))
+        log.debug("    Branching config:\n%s", pprint.pformat(branching))
+
+        name, config, branching = clean_config(name, config, branching)
+
+        config = self.consolidate_config(name, version, config)
+
+        if "space" not in config:
+            raise NoConfigurationError(
+                "Experiment {} does not exist in DB and space was not defined.".format(name)
+            )
+
+        if len(config["space"]) == 0:
+            raise NoConfigurationError("No prior found. Please include at least one.")
+
+        experiment = create_experiment(mode="x", **copy.deepcopy(config))
+        if experiment.id is None:
+            log.debug("Experiment not found in DB. Now attempting registration in DB.")
+            try:
+                self._register_experiment(experiment)
+                log.debug("Experiment successfully registered in DB.")
+            except DuplicateKeyError:
+                log.debug(
+                    "Experiment registration failed. This is likely due to a race condition. "
+                    "Now rolling back and re-attempting building it."
+                )
+                experiment = self.build(branching=branching, **config)
+
+            return experiment
+
+        log.debug(f"Experiment {config['name']}-v{config['version']} already existed.")
+
+        conflicts = self._get_conflicts(experiment, branching)
+        must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
+
+        if must_branch and branching.get("enable", orion.core.config.evc.enable):
+            return self._attempt_branching(conflicts, experiment, version, branching)
+        elif must_branch:
+            log.warning(
+                "Running experiment in a different state:\n%s",
+                _get_branching_status_string(conflicts, branching),
+            )
+
+        log.debug("No branching required.")
+
+        self._update_experiment(experiment)
+        return experiment
+
+    def _get_conflicts(self, experiment, branching):
+        """Get conflicts between current experiment and corresponding configuration in database"""
+        log.debug("Looking for conflicts in new configuration.")
+        db_experiment = self.load(experiment.name, experiment.version, mode="r")
+        conflicts = detect_conflicts(
+            db_experiment.configuration, experiment.configuration, branching
+        )
+
+        log.debug(f"{len(conflicts.get())} conflicts detected:\n {conflicts.get()}")
+
+        # elif must_branch and not enable_branching:
+        #     raise ValueError("Configuration is different and generate a branching event")
+
+        return conflicts
+
+    def load(self, name, version=None, mode="r"):
+        """Load experiment from database
+
+        An experiment view provides all reading operations of standard experiment but prevents the
+        modification of the experiment and its trials.
+
+        Parameters
+        ----------
+        name: str
+            Name of the experiment to build
+        version: int, optional
+            Version to select. If None, last version will be selected. If version given is larger than
+            largest version available, the largest version will be selected.
+        mode: str, optional
+            The access rights of the experiment on the database.
+            'r': read access only
+            'w': can read and write to database
+            Default is 'r'
+
+        """
+        assert mode in set("rw")
+
+        log.debug(
+            f"Loading experiment {name} (version={version}) from database in mode `{mode}`"
+        )
+        db_config = self.fetch_config_from_db(name, version)
+
+        if not db_config:
+            message = (
+                "No experiment with given name '%s' and version '%s' inside database, "
+                "no view can be created." % (name, version if version else "*")
+            )
+            raise NoConfigurationError(message)
+
+        db_config.setdefault("version", 1)
+
+        return create_experiment(mode=mode, **db_config)
+
+    def fetch_config_from_db(self, name, version=None):
+        """Fetch configuration from database
+
+        Parameters
+        ----------
+        name: str
+            Name of the experiment to fetch
+        version: int, optional
+            Version to select. If None, last version will be selected. If version given is larger than
+            largest version available, the largest version will be selected.
+
+        """
+        configs = self.storage.fetch_experiments({"name": name})
+
+        if not configs:
+            return {}
+
+        config = _fetch_config_version(configs, version)
+
+        if len(configs) > 1 and version is None:
+            log.info(
+                "Many versions for experiment %s have been found. Using latest "
+                "version %s.",
+                name,
+                config["version"],
+            )
+
+        log.debug("Config found in DB:\n%s", pprint.pformat(config))
+
+        backward.populate_space(config, force_update=False)
+        backward.update_max_broken(config)
+
+        return config
+
+    def _register_experiment(self, experiment):
+        """Register a new experiment in the database"""
+        experiment.metadata["datetime"] = datetime.datetime.utcnow()
+        config = experiment.configuration
+        # This will raise DuplicateKeyError if a concurrent experiment with
+        # identical (name, metadata.user) is written first in the database.
+
+        self.storage.create_experiment(config)
+
+        # XXX: Reminder for future DB implementations:
+        # MongoDB, updates an inserted dict with _id, so should you :P
+        experiment._id = config["_id"]  # pylint:disable=protected-access
+
+        # Update refers in db if experiment is root
+        if experiment.refers.get("parent_id") is None:
+            log.debug("update refers (name: %s)", experiment.name)
+            experiment.refers["root_id"] = experiment.id
+            self.storage.update_experiment(
+                experiment, refers=experiment.configuration["refers"]
+            )
+
+    def _update_experiment(self, experiment):
+        """Update experiment configuration in database"""
+        log.debug("Updating experiment (name: %s)", experiment.name)
+        config = experiment.configuration
+
+        # TODO: Remove since this should not occur anymore without metadata.user in the indices?
+        # Writing the final config to an already existing experiment raises
+        # a DuplicatKeyError because of the embedding id `metadata.user`.
+        # To avoid this `final_config["name"]` is popped out before
+        # `db.write()`, thus seamingly breaking  the compound index
+        # `(name, metadata.user)`
+        config.pop("name")
+
+        self.storage.update_experiment(experiment, **config)
+
+        log.debug("Experiment configuration successfully updated in DB.")
+
+    def _attempt_branching(self, conflicts, experiment, version, branching):
+        if len(conflicts.get()) > 1:
+            log.debug("Experiment must branch because of conflicts")
+        else:
+            assert branching.get("branch_to")
+            log.debug("Experiment branching forced with ``branch_to``")
+        branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
+        log.debug("Now attempting registration of branched experiment in DB.")
+        try:
+            self._register_experiment(branched_experiment)
+            log.debug("Branched experiment successfully registered in DB.")
+        except DuplicateKeyError as e:
+            log.debug(
+                "Experiment registration failed. This is likely due to a race condition "
+                "during branching. Now rolling back and re-attempting building "
+                "the branched experiment."
+            )
+            raise RaceCondition(
+                "There was a race condition during branching. This error can "
+                "also occur if you try branching from a specific version that already "
+                "has a child experiment with the same name. Change the name of the new "
+                "experiment and use `branch-from` to specify the parent experiment."
+            ) from e
+
+        return branched_experiment
+
+    def build_view(self, name, version=None):
+        """Load experiment from database
+
+        This function is deprecated and will be remove in v0.3.0. Use `load()` instead.
+        """
+        return self.load(name, version=version, mode="r")
+
+    def consolidate_config(self, name, version, config):
+        """Merge together given configuration with db configuration matching
+        for experiment (``name``, ``version``)
+        """
+        db_config = self.fetch_config_from_db(name, version)
+
+        # Do not merge spaces, the new definition overrides it.
+        if "space" in config:
+            db_config.pop("space", None)
+
+        log.debug("Merging user and db configs:")
+        log.debug("    config from user:\n%s", pprint.pformat(config))
+        log.debug("    config from DB:\n%s", pprint.pformat(db_config))
+
+        new_config = config
+        config = resolve_config.merge_configs(db_config, config)
+
+        config.setdefault("metadata", {})
+        resolve_config.update_metadata(config["metadata"])
+
+        merge_algorithm_config(config, new_config)
+        # TODO: Remove for v0.4
+        merge_producer_config(config, new_config)
+
+        config.setdefault("name", name)
+        config.setdefault("version", version)
+
+        log.debug("    Merged config:\n%s", pprint.pformat(config))
+
+        return config

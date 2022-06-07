@@ -186,10 +186,10 @@ def delete_trials(storage, root, name, status, force):
 def main(args):
     """Remove the experiment(s) or trial(s)."""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get("storage"))
+    builder = experiment_builder.ExperimentBuilder(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.load(
+    root = builder.load(
         name=args["name"], version=args.get("version", None)
     ).node
 
