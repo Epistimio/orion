@@ -55,8 +55,9 @@ class ExperimentBranchBuilder:
     """
 
     def __init__(
-        self, conflicts, enabled=True, manual_resolution=None, **branching_arguments
+        self, conflicts, enabled=True, manual_resolution=None, storage=None, **branching_arguments
     ):
+        self.storage = storage
         # TODO: handle all other arguments
         if manual_resolution is None:
             manual_resolution = orion.core.config.evc.manual_resolution
@@ -134,7 +135,7 @@ class ExperimentBranchBuilder:
         if not exp_name_conflicts:
             raise RuntimeError("No experiment name conflict to solve")
 
-        self.conflicts.try_resolve(exp_name_conflicts[0], name)
+        self.conflicts.try_resolve(exp_name_conflicts[0], name, storage=self.storage)
 
     def set_code_change_type(self, change_type):
         """Set code change type

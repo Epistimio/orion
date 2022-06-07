@@ -643,7 +643,7 @@ class NewDimensionConflict(Conflict):
 
             self.default_value = default_value
 
-        def _validate(self, default_value):
+        def _validate(self, default_value, *args, **kwargs):
             """Validate default value is NO_DEFAULT_VALUE or is in dimension's interval"""
             if (default_value is not Dimension.NO_DEFAULT_VALUE) and (
                 default_value not in self.conflict.dimension
@@ -1060,7 +1060,7 @@ class MissingDimensionConflict(Conflict):
             self.validate(default_value)
             self.default_value = default_value
 
-        def _validate(self, default_value):
+        def _validate(self, default_value, *args, **kwargs):
             """Validate default value is NO_DEFAULT_VALUE or is in dimension's interval"""
             if (default_value is not Dimension.NO_DEFAULT_VALUE) and (
                 default_value not in self.conflict.dimension
@@ -1285,7 +1285,7 @@ class CodeConflict(Conflict):
             self.validate(change_type)
             self.type = change_type
 
-        def _validate(self, change_type):
+        def _validate(self, change_type, *args, **kwargs):
             """Validate change_type is in ``orion.core.evc.adapters.CodeChange.types``"""
             adapters.CodeChange.validate(change_type)
 
@@ -1454,7 +1454,7 @@ class CommandLineConflict(Conflict):
             self.validate(change_type)
             self.type = change_type
 
-        def _validate(self, change_type):
+        def _validate(self, change_type, *args, **kwargs):
             """Validate change_type is in ``orion.core.evc.adapters.CommandLineChange.types``"""
             adapters.CommandLineChange.validate(change_type)
 
@@ -1609,7 +1609,7 @@ class ScriptConfigConflict(Conflict):
             self.validate(change_type)
             self.type = change_type
 
-        def _validate(self, change_type):
+        def _validate(self, change_type, *args, **kwargs):
             """Validate change_type is in ``orion.core.evc.adapters.ScriptConfigChange.types``"""
             adapters.ScriptConfigChange.validate(change_type)
 
@@ -1662,7 +1662,7 @@ class ExperimentNameConflict(Conflict):
         """Retrieve version of configuration"""
         return self.old_config["version"]
 
-    def try_resolve(self, new_name=None):
+    def try_resolve(self, new_name=None, storage=None):
         """Try to create a resolution ExperimentNameResolution
 
         Parameters
@@ -1680,7 +1680,7 @@ class ExperimentNameConflict(Conflict):
         if self.is_resolved:
             return None
 
-        return self.ExperimentNameResolution(self, new_name)
+        return self.ExperimentNameResolution(self, new_name, storage=None)
 
     @property
     def diff(self):
@@ -1711,7 +1711,7 @@ class ExperimentNameConflict(Conflict):
 
         ARGUMENT = "--branch-to"
 
-        def __init__(self, conflict, new_name):
+        def __init__(self, conflict, new_name, storage=None):
             """Initialize resolution and mark conflict as resolved
 
             Parameters
@@ -1736,18 +1736,20 @@ class ExperimentNameConflict(Conflict):
             self.old_name = self.conflict.old_config["name"]
             self.old_version = self.conflict.old_config.get("version", 1)
             self.new_version = self.old_version
-            self.validate()
+            self.validate(storage=storage)
             self.conflict.new_config["name"] = self.new_name
             self.conflict.new_config["version"] = self.new_version
 
-        def _validate(self):
+        def _validate(self, *args, storage=None, **kwargs):
             """Validate new_name is not in database with a direct child for current version"""
+            storage = storage or get_storage()
+
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
             if self.new_name is not None and self.new_name != self.old_name:
                 # If we are trying to actually branch from experiment
-                if not self._name_is_unique():
+                if not self._name_is_unique(storage):
                     raise ValueError(
                         "Cannot branch from {} with name {} since it already exists.".format(
                             self.old_name, self.new_name
@@ -1758,7 +1760,7 @@ class ExperimentNameConflict(Conflict):
 
             # If the new name is the same as the old name, we are trying to increment
             # the version of the experiment.
-            elif self._check_for_greater_versions():
+            elif self._check_for_greater_versions(storage):
                 raise ValueError(
                     f"Experiment name '{self.new_name}' already exist for version "
                     f"'{self.conflict.version}' and has children. Version cannot be "
@@ -1768,20 +1770,20 @@ class ExperimentNameConflict(Conflict):
                 self.new_name = self.old_name
                 self.new_version = self.conflict.old_config.get("version", 1) + 1
 
-        def _name_is_unique(self):
+        def _name_is_unique(self, storage):
             """Return True if given name is not in database for current version"""
             query = {"name": self.new_name, "version": self.conflict.version}
 
-            named_experiments = len(get_storage().fetch_experiments(query))
+            named_experiments = len(storage.fetch_experiments(query))
             return named_experiments == 0
 
-        def _check_for_greater_versions(self):
+        def _check_for_greater_versions(self, storage):
             """Check if experiment has children"""
             # If we made it this far, new_name is actually the name of the parent.
             parent = self.conflict.old_config
 
             query = {"name": parent["name"], "refers.parent_id": parent["_id"]}
-            children = len(get_storage().fetch_experiments(query))
+            children = len(storage.fetch_experiments(query))
 
             return bool(children)
 

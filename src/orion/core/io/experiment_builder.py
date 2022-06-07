@@ -101,7 +101,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import create_algo
-from orion.storage.base import setup_storage
+from orion.storage.base import setup_storage, get_storage
 
 log = logging.getLogger(__name__)
 
@@ -326,59 +326,6 @@ def _instantiate_strategy(config=None):
     return None
 
 
-def _get_branching_status_string(conflicts, branching_arguments):
-    experiment_brancher = ExperimentBranchBuilder(
-        conflicts, enabled=False, **branching_arguments
-    )
-    branching_prompt = BranchingPrompt(experiment_brancher)
-    return branching_prompt.get_status()
-
-
-def _branch_experiment(experiment, conflicts, version, branching_arguments):
-    """Create a new branch experiment with adapters for the given conflicts"""
-    experiment_brancher = ExperimentBranchBuilder(conflicts, **branching_arguments)
-
-    needs_manual_resolution = (
-        not experiment_brancher.is_resolved or experiment_brancher.manual_resolution
-    )
-
-    if not experiment_brancher.is_resolved:
-        name_conflict = conflicts.get([ExperimentNameConflict])[0]
-        if not name_conflict.is_resolved and not version:
-            log.debug(
-                "A race condition likely occured during conflicts resolutions. "
-                "Now rolling back and attempting re-building the branched experiment."
-            )
-            raise RaceCondition(
-                "There was likely a race condition during version increment."
-            )
-
-    if needs_manual_resolution:
-        log.debug("Some conflicts cannot be solved automatically.")
-
-        # TODO: This should only be possible when using cmdline API
-        branching_prompt = BranchingPrompt(experiment_brancher)
-
-        if not sys.__stdin__.isatty():
-            log.debug("No interactive prompt available to manually resolve conflicts.")
-            raise BranchingEvent(branching_prompt.get_status())
-
-        branching_prompt.cmdloop()
-
-        if branching_prompt.abort or not experiment_brancher.is_resolved:
-            sys.exit()
-
-    log.debug("Creating new branched configuration")
-    config = experiment_brancher.conflicting_config
-    config["refers"]["adapter"] = experiment_brancher.create_adapters().configuration
-    config["refers"]["parent_id"] = experiment.id
-
-    config.pop("_id")
-
-    return create_experiment(mode="x", **config)
-
-
-
 def _fetch_config_version(configs, version=None):
     """Fetch the experiment configuration corresponding to the given version
 
@@ -509,22 +456,31 @@ def get_from_args(cmdargs, mode="r"):
     return builder.load(name, version, mode=mode)
 
 
-def build(name, version=None, branching=None, **config):
-    return ExperimentBuilder(singleton=get_storage()).build(name, version, branching, **config)
+def build(name, version=None, branching=None, storage=None, **config):
+    """Shortcut to """
+    singleton = None
+    if storage is None:
+        singleton = get_storage()
+
+    return ExperimentBuilder(storage, singleton=singleton).build(name, version, branching, **config)
 
 
-def load(name, version=None, mode="r"):
-    return ExperimentBuilder(singleton=get_storage()).load(name, version, mode)
+def load(name, version=None, storage=None, mode="r"):
+    singleton = None
+    if storage is None:
+        singleton = get_storage()
+
+    return ExperimentBuilder(singleton, singleton=get_storage()).load(name, version, mode)
 
 
 class ExperimentBuilder:
     """Utility to make new experiments without relying on the storage singleton"""
 
     def __init__(self, storage_config=None, debug=False, singleton=None) -> None:
-        if singleton is not None:
-            self.storage = singleton
-        else:
+        if storage_config is not None:
             self.storage = setup_storage(storage_config, debug=debug)
+        else:
+            self.storage = singleton
 
     def build(self, name, version=None, branching=None, **config):
         """Build an experiment object
@@ -624,7 +580,7 @@ class ExperimentBuilder:
         elif must_branch:
             log.warning(
                 "Running experiment in a different state:\n%s",
-                _get_branching_status_string(conflicts, branching),
+                self._get_branching_status_string(conflicts, branching),
             )
 
         log.debug("No branching required.")
@@ -763,7 +719,8 @@ class ExperimentBuilder:
         else:
             assert branching.get("branch_to")
             log.debug("Experiment branching forced with ``branch_to``")
-        branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
+
+        branched_experiment = self._branch_experiment(experiment, conflicts, version, branching)
         log.debug("Now attempting registration of branched experiment in DB.")
         try:
             self._register_experiment(branched_experiment)
@@ -820,3 +777,54 @@ class ExperimentBuilder:
         log.debug("    Merged config:\n%s", pprint.pformat(config))
 
         return config
+
+    def _get_branching_status_string(self, conflicts, branching_arguments):
+        experiment_brancher = ExperimentBranchBuilder(
+            conflicts, enabled=False, storage=self.storage, **branching_arguments
+        )
+        branching_prompt = BranchingPrompt(experiment_brancher)
+        return branching_prompt.get_status()
+
+    def _branch_experiment(self, experiment, conflicts, version, branching_arguments):
+        """Create a new branch experiment with adapters for the given conflicts"""
+        experiment_brancher = ExperimentBranchBuilder(conflicts, storage=self.storage, **branching_arguments)
+
+        needs_manual_resolution = (
+            not experiment_brancher.is_resolved or experiment_brancher.manual_resolution
+        )
+
+        if not experiment_brancher.is_resolved:
+            name_conflict = conflicts.get([ExperimentNameConflict])[0]
+            if not name_conflict.is_resolved and not version:
+                log.debug(
+                    "A race condition likely occured during conflicts resolutions. "
+                    "Now rolling back and attempting re-building the branched experiment."
+                )
+                raise RaceCondition(
+                    "There was likely a race condition during version increment."
+                )
+
+        if needs_manual_resolution:
+            log.debug("Some conflicts cannot be solved automatically.")
+
+            # TODO: This should only be possible when using cmdline API
+            branching_prompt = BranchingPrompt(experiment_brancher)
+
+            if not sys.__stdin__.isatty():
+                log.debug("No interactive prompt available to manually resolve conflicts.")
+                raise BranchingEvent(branching_prompt.get_status())
+
+            branching_prompt.cmdloop()
+
+            if branching_prompt.abort or not experiment_brancher.is_resolved:
+                sys.exit()
+
+        log.debug("Creating new branched configuration")
+        config = experiment_brancher.conflicting_config
+        config["refers"]["adapter"] = experiment_brancher.create_adapters().configuration
+        config["refers"]["parent_id"] = experiment.id
+
+        config.pop("_id")
+
+        return create_experiment(mode="x", **config)
+
