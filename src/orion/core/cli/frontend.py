@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pylint: disable=too-few-public-methods
 """
 Web application endpoint
 ========================
@@ -15,15 +16,20 @@ log = logging.getLogger(__name__)
 DESCRIPTION = "Starts Oríon Dashboard"
 
 
-import os
-import falcon
 import mimetypes
+import os
+
+import falcon
 
 
 class StaticResource:
-    STATIC_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'dashboard', 'build'))
+    """Resource class to serve frontend files."""
 
+    STATIC_DIR = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "..", "dashboard", "build"
+        )
+    )
     PLACEHOLDER = "window.__ORION_BACKEND__"
     TEXT_TYPES = ("text/html", "application/javascript")
 
@@ -31,6 +37,7 @@ class StaticResource:
         self.backend = args.get("backend", None)
 
     def on_get(self, req, resp):
+        """Hack HTML and Javascript files to setup backend if necessary."""
         path = req.relative_uri.strip("/") or "index.html"
         file_path = os.path.join(self.STATIC_DIR, path)
         if os.path.isfile(file_path):
@@ -50,21 +57,23 @@ class StaticResource:
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    serve_parser = parser.add_parser("frontend", help=DESCRIPTION, description=DESCRIPTION)
+    serve_parser = parser.add_parser(
+        "frontend", help=DESCRIPTION, description=DESCRIPTION
+    )
 
     serve_parser.add_argument(
         "-p",
         "--port",
         type=int,
-        default=8000,
-        help="port to run frontend (default 8000)"
+        default=3000,
+        help="port to run frontend (default 3000)",
     )
 
     serve_parser.add_argument(
         "-b",
         "--backend",
         type=str,
-        default='http://127.0.0.1:8000',
+        default="http://127.0.0.1:8000",
         help="backend address (default: http://127.0.0.1:8000)",
     )
 
@@ -89,7 +98,7 @@ class GunicornApp(BaseApplication):
     def __init__(self, app, args=None):
         options = {}
         if args:
-            options['bind'] = f"localhost:{args['port']}"
+            options["bind"] = f"localhost:{args['port']}"
         self.options = options
         self.application = app
         super(GunicornApp, self).__init__()

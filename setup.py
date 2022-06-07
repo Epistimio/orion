@@ -133,6 +133,7 @@ setup_args = dict(
         "gunicorn",
         "falcon",
         "falcon-cors",
+        "selenium",
         "scikit-learn",
         "psutil",
         "joblib",

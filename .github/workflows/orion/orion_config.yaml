@@ -1,6 +1,6 @@
 storage:
   database:
-      host: '../../.github/workflows/orion/db_dashboard_full.pkl'
+      host: '.github/workflows/orion/db_dashboard_full.pkl'
       type: 'pickleddb'
 
 gunicorn:

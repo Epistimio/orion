@@ -21,10 +21,10 @@ const TutorialHeader = props => (
           onClick={onClickSideNavExpand}
           isActive={isSideNavExpanded}
         />
-        <HeaderName element={Link} to="/" prefix="Oríon" replace>
+        <HeaderName element={Link} to="/" prefix="Orion" replace>
           Dashboard
         </HeaderName>
-        <HeaderNavigation aria-label="Oríon Dashboard">
+        <HeaderNavigation aria-label="Orion Dashboard">
           <HeaderMenu
             aria-label={
               props.dashboard === 'experiments'
