@@ -70,6 +70,8 @@ class SingletonFactory(AbstractSingletonType, Factory):
 
 def update_singletons(values=None):
     """Replace singletons by given values and return previous singleton objects"""
+    return
+
     if values is None:
         values = {}
 

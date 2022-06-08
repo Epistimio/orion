@@ -281,8 +281,7 @@ def get_experiment(name, version=None, mode="r", storage=None):
     """
     assert mode in set("rw")
 
-    builder = experiment_builder.ExperimentBuilder(storage)
-    experiment = builder.load(name, version, mode)
+    experiment = experiment_builder.load(name, version, mode, storage=storage)
     return ExperimentClient(experiment)
 
 
@@ -328,15 +327,14 @@ def workon(
     singletons = update_singletons()
 
     try:
-        builder = experiment_builder.ExperimentBuilder(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
-
-        experiment = builder.build(
+        experiment = experiment_builder.build(
             name,
             version=1,
             space=space,
             algorithms=algorithms,
             max_trials=max_trials,
             max_broken=max_broken,
+            storage={"type": "legacy", "database": {"type": "EphemeralDB"}}
         )
 
         producer = Producer(experiment)

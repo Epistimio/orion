@@ -45,7 +45,7 @@ def main(args):
         query["name"] = args["name"]
         query["version"] = args.get("version", None) or 1
 
-    experiments = builder.sotrage.fetch_experiments(query)
+    experiments = builder.storage.fetch_experiments(query)
 
     if args["name"]:
         root_experiments = experiments

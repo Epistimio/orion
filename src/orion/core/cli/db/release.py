@@ -111,6 +111,6 @@ def main(args):
     # List all experiments with children
     print_tree(root, nameattr="tree_name")
 
-    storage = get_storage()
+    storage = builder.storage
 
     release_locks(storage, root, args["name"], args["force"])

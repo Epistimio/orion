@@ -465,7 +465,7 @@ def build(name, version=None, branching=None, storage=None, **config):
     return ExperimentBuilder(storage, singleton=singleton).build(name, version, branching, **config)
 
 
-def load(name, version=None, storage=None, mode="r"):
+def load(name, version=None, mode="r", storage=None):
     singleton = None
     if storage is None:
         singleton = get_storage()
@@ -476,9 +476,9 @@ def load(name, version=None, storage=None, mode="r"):
 class ExperimentBuilder:
     """Utility to make new experiments without relying on the storage singleton"""
 
-    def __init__(self, storage_config=None, debug=False, singleton=None) -> None:
-        if storage_config is not None:
-            self.storage = setup_storage(storage_config, debug=debug)
+    def __init__(self, storage=None, debug=False, singleton=None) -> None:
+        if storage is not None:
+            self.storage = setup_storage(storage, debug=debug)
         else:
             self.storage = singleton
 

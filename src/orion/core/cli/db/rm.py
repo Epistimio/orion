@@ -196,7 +196,7 @@ def main(args):
     # List all experiments with children
     print_tree(root, nameattr="tree_name")
 
-    storage = get_storage()
+    storage = builder.storage
 
     if args["status"]:
         delete_trials(storage, root, args["name"], args["status"], args["force"])

@@ -193,8 +193,6 @@ def main(args):
         print("Confirmation failed, aborting operation.")
         return 1
 
-    storage = get_storage()
-
-    process_updates(storage, root, query, update)
+    process_updates(builder.storage, root, query, update)
 
     return 0
