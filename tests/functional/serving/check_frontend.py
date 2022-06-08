@@ -20,7 +20,7 @@ def main():
     driver = webdriver.Firefox(options=options)
     driver.get("http://127.0.0.1:3000")
     # Check page title
-    assert driver.title == "Orion Dashboard"
+    assert driver.title == "Oríon Dashboard"
     # Wait to let experiments navbar load
     time.sleep(5)
     # Check we are in landing page (default)

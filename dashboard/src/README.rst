@@ -4,20 +4,20 @@ Orion Dashboard is heavily based on
 `Carbon's React Tutorial <https://www.carbondesignsystem.com/developing/react-tutorial/overview>`_.
 
 ===========================
-Orion Dashboard (Prototype)
+Oríon Dashboard (Prototype)
 ===========================
 
 Orion Dashboard for experiments
 -------------------------------
 
-This is a very preliminary prototype of a dashboard for Orion. Most of it are
+This is a very preliminary prototype of a dashboard for Oríon. Most of it are
 just place-holders and static data to show visualizations.
 
 ===============================
-Dashboard for Orion's Benchmark
+Dashboard for Oríon's Benchmark
 ===============================
 
-Orion's `benchmark <https://orion.readthedocs.io/en/stable/user/benchmark.html>`_ makes it easy
+Oríon's `benchmark <https://orion.readthedocs.io/en/stable/user/benchmark.html>`_ makes it easy
 to execute multiple hyperparameter optimization algorithms on several tasks. You can
 assess the average result over multiple runs of the algorithms or automatically benchmark
 how well they parallelize to large pools of workers. It quickly becomes difficult however to
