@@ -258,7 +258,7 @@ class Conflicts(object):
         for conflict in conflicts:
             self.conflicts.pop(self.conflicts.index(conflict))
 
-    def try_resolve(self, conflict, *args, **kwargs):
+    def try_resolve(self, conflict):
         """Wrap call to conflict.try_resolve
 
         Catch errors on `conflict.try_resolve` and print traceback if argument `silence_errors` is
@@ -643,7 +643,7 @@ class NewDimensionConflict(Conflict):
 
             self.default_value = default_value
 
-        def _validate(self, default_value, *args, **kwargs):
+        def _validate(self, default_value):
             """Validate default value is NO_DEFAULT_VALUE or is in dimension's interval"""
             if (default_value is not Dimension.NO_DEFAULT_VALUE) and (
                 default_value not in self.conflict.dimension
@@ -1060,7 +1060,7 @@ class MissingDimensionConflict(Conflict):
             self.validate(default_value)
             self.default_value = default_value
 
-        def _validate(self, default_value, *args, **kwargs):
+        def _validate(self, default_value):
             """Validate default value is NO_DEFAULT_VALUE or is in dimension's interval"""
             if (default_value is not Dimension.NO_DEFAULT_VALUE) and (
                 default_value not in self.conflict.dimension
@@ -1285,7 +1285,7 @@ class CodeConflict(Conflict):
             self.validate(change_type)
             self.type = change_type
 
-        def _validate(self, change_type, *args, **kwargs):
+        def _validate(self, change_type):
             """Validate change_type is in ``orion.core.evc.adapters.CodeChange.types``"""
             adapters.CodeChange.validate(change_type)
 
@@ -1454,7 +1454,7 @@ class CommandLineConflict(Conflict):
             self.validate(change_type)
             self.type = change_type
 
-        def _validate(self, change_type, *args, **kwargs):
+        def _validate(self, change_type):
             """Validate change_type is in ``orion.core.evc.adapters.CommandLineChange.types``"""
             adapters.CommandLineChange.validate(change_type)
 
@@ -1609,7 +1609,7 @@ class ScriptConfigConflict(Conflict):
             self.validate(change_type)
             self.type = change_type
 
-        def _validate(self, change_type, *args, **kwargs):
+        def _validate(self, change_type):
             """Validate change_type is in ``orion.core.evc.adapters.ScriptConfigChange.types``"""
             adapters.ScriptConfigChange.validate(change_type)
 
