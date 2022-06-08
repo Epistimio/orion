@@ -9,17 +9,14 @@ Starts an http endpoint to serve requests
 
 """
 import logging
-
-from gunicorn.app.base import BaseApplication
-
-log = logging.getLogger(__name__)
-DESCRIPTION = "Starts Oríon Dashboard"
-
-
 import mimetypes
 import os
 
 import falcon
+from gunicorn.app.base import BaseApplication
+
+log = logging.getLogger(__name__)
+DESCRIPTION = "Starts Oríon Dashboard"
 
 
 class StaticResource:
