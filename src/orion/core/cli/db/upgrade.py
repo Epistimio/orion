@@ -15,7 +15,6 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 
 log = logging.getLogger(__name__)

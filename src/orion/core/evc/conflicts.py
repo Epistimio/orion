@@ -258,7 +258,7 @@ class Conflicts(object):
         for conflict in conflicts:
             self.conflicts.pop(self.conflicts.index(conflict))
 
-    def try_resolve(self, conflict):
+    def try_resolve(self, conflict, *args, **kwargs):
         """Wrap call to conflict.try_resolve
 
         Catch errors on `conflict.try_resolve` and print traceback if argument `silence_errors` is
@@ -1740,7 +1740,7 @@ class ExperimentNameConflict(Conflict):
             self.conflict.new_config["name"] = self.new_name
             self.conflict.new_config["version"] = self.new_version
 
-        def _validate(self, *args, storage=None, **kwargs):
+        def _validate(self, storage=None):
             """Validate new_name is not in database with a direct child for current version"""
             storage = storage or get_storage()
 
