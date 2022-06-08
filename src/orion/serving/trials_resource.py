@@ -14,7 +14,7 @@ from orion.serving.parameters import (
     verify_status,
 )
 from orion.serving.responses import build_trial_response, build_trials_response
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 
@@ -23,7 +23,7 @@ class TrialsResource(object):
     """Serves all the requests made to trials/ REST endpoint"""
 
     def __init__(self):
-        self.storage = get_storage()
+        self.storage = setup_storage()
 
     def on_get_trials_in_experiment(
         self, req: Request, resp: Response, experiment_name: str

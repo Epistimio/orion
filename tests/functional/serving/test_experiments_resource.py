@@ -4,7 +4,7 @@ import copy
 import datetime
 
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 current_id = 0
 
@@ -182,13 +182,13 @@ class TestItem:
 def _add_experiment(**kwargs):
     """Adds experiment to the dummy orion instance"""
     base_experiment.update(copy.deepcopy(kwargs))
-    get_storage().create_experiment(base_experiment)
+    setup_storage().create_experiment(base_experiment)
 
 
 def _add_trial(**kwargs):
     """Add trials to the dummy orion instance"""
     base_trial.update(copy.deepcopy(kwargs))
-    get_storage().register_trial(Trial(**base_trial))
+    setup_storage().register_trial(Trial(**base_trial))
 
 
 def _assert_config(config):

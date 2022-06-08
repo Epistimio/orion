@@ -10,7 +10,7 @@ import orion.core.cli
 import orion.plotting.backend_plotly
 from orion.core.cli.plot import IMAGE_TYPES, VALID_TYPES
 from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.testing import AssertNewFile
 
 
@@ -160,7 +160,7 @@ def test_output_default_kind(monkeypatch, single_with_trials, kind):
 
     monkeypatch.setattr(f"orion.plotting.backend_plotly.{kind}", mock_plot)
 
-    assert len(get_storage().fetch_trials(uid=single_with_trials["_id"])) > 0
+    assert len(setup_storage().fetch_trials(uid=single_with_trials["_id"])) > 0
 
     filename = f"test_single_exp-v1_{kind}.png"
     with AssertNewFile(filename):
@@ -197,7 +197,7 @@ def test_scale(monkeypatch, single_with_trials):
 def test_no_trials(one_experiment, kind):
     """Test plotting works with empty experiments"""
 
-    assert get_storage().fetch_trials(uid=one_experiment["_id"]) == []
+    assert setup_storage().fetch_trials(uid=one_experiment["_id"]) == []
 
     filename = f"test_single_exp-v1_{kind}.png"
     with AssertNewFile(filename):

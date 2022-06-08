@@ -55,7 +55,12 @@ class ExperimentBranchBuilder:
     """
 
     def __init__(
-        self, conflicts, enabled=True, manual_resolution=None, storage=None, **branching_arguments
+        self,
+        conflicts,
+        enabled=True,
+        manual_resolution=None,
+        storage=None,
+        **branching_arguments
     ):
         self.storage = storage
         # TODO: handle all other arguments

@@ -17,7 +17,7 @@ from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.executor.joblib_backend import Joblib
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
 
@@ -36,7 +36,7 @@ class DummyAssess:
 
 def count_benchmarks():
     """Count experiments in storage"""
-    return len(get_storage().fetch_benchmark({}))
+    return len(setup_storage().fetch_benchmark({}))
 
 
 class TestCreateBenchmark:
@@ -49,17 +49,17 @@ class TestCreateBenchmark:
         host = orion.core.config.storage.database.host
 
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
-            # Reset the Storage and drop instances so that get_storage() would fail.
+            # Reset the Storage and drop instances so that setup_storage() would fail.
             cfg.cleanup()
             cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `get_or_create_benchmark()`
             with pytest.raises(SingletonNotInstantiatedError):
-                get_storage()
+                setup_storage()
 
             get_or_create_benchmark(**benchmark_config_py).close()
 
-            storage = get_storage()
+            storage = setup_storage()
 
             assert isinstance(storage, Legacy)
             assert isinstance(storage._db, PickledDB)
@@ -108,7 +108,7 @@ class TestCreateBenchmark:
 
         get_or_create_benchmark(**config).close()
 
-        storage = get_storage()
+        storage = setup_storage()
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
@@ -118,7 +118,7 @@ class TestCreateBenchmark:
         config["debug"] = True
         get_or_create_benchmark(**config).close()
 
-        storage = get_storage()
+        storage = setup_storage()
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)

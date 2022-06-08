@@ -18,14 +18,14 @@ from orion.serving.responses import (
     build_experiment_response,
     build_experiments_response,
 )
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 class ExperimentsResource(object):
     """Handle requests for the experiments/ REST endpoint"""
 
     def __init__(self):
-        self.storage = get_storage()
+        self.storage = setup_storage()
 
     def on_get(self, req: Request, resp: Response):
         """Handle the GET requests for experiments/"""

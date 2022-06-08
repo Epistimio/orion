@@ -18,7 +18,7 @@ import functools
 import logging
 
 from orion.core.utils.tree import TreeNode
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 
@@ -48,9 +48,18 @@ class ExperimentNode(TreeNode):
         "version",
         "_no_parent_lookup",
         "_no_children_lookup",
+        "storage",
     ) + TreeNode.__slots__
 
-    def __init__(self, name, version, experiment=None, parent=None, children=tuple()):
+    def __init__(
+        self,
+        name,
+        version,
+        experiment=None,
+        parent=None,
+        children=tuple(),
+        storage=None,
+    ):
         """Initialize experiment node with item, experiment, parent and children
 
         .. seealso::
@@ -62,6 +71,7 @@ class ExperimentNode(TreeNode):
 
         self._no_parent_lookup = True
         self._no_children_lookup = True
+        self.storage = storage or experiment._storage
 
     @property
     def item(self):
@@ -74,7 +84,9 @@ class ExperimentNode(TreeNode):
             # TODO: Find another way around the circular import
             import orion.core.io.experiment_builder as experiment_builder
 
-            self._item = experiment_builder.load(name=self.name, version=self.version)
+            self._item = experiment_builder.load(
+                name=self.name, version=self.version, storage=self.storage
+            )
             self._item._node = self
 
         return self._item
@@ -93,12 +105,14 @@ class ExperimentNode(TreeNode):
             self._no_parent_lookup = False
             query = {"_id": self.item.refers.get("parent_id")}
             selection = {"name": 1, "version": 1}
-            experiments = get_storage().fetch_experiments(query, selection)
+            experiments = self.storage.fetch_experiments(query, selection)
 
             if experiments:
                 parent = experiments[0]
                 exp_node = ExperimentNode(
-                    name=parent["name"], version=parent.get("version", 1)
+                    name=parent["name"],
+                    version=parent.get("version", 1),
+                    storage=self.storage,
                 )
                 self.set_parent(exp_node)
         return self._parent
@@ -118,10 +132,14 @@ class ExperimentNode(TreeNode):
             self._no_children_lookup = False
             query = {"refers.parent_id": self.item.id}
             selection = {"name": 1, "version": 1}
-            experiments = get_storage().fetch_experiments(query, selection)
+            experiments = self.storage.fetch_experiments(query, selection)
             for child in experiments:
                 self.add_children(
-                    ExperimentNode(name=child["name"], version=child.get("version", 1))
+                    ExperimentNode(
+                        name=child["name"],
+                        version=child.get("version", 1),
+                        storage=self.storage,
+                    )
                 )
 
         return self._children

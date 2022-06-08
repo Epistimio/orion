@@ -101,7 +101,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import create_algo
-from orion.storage.base import setup_storage, get_storage
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 
@@ -109,7 +109,6 @@ log = logging.getLogger(__name__)
 ##
 # Functions to build experiments
 ##
-
 
 
 def clean_config(name, config, branching):
@@ -164,74 +163,6 @@ def merge_producer_config(config, new_config):
         )
 
         config["producer"]["strategy"] = new_config["producer"]["strategy"]
-
-
-def create_experiment(name, version, mode, space, **kwargs):
-    """Instantiate the experiment and its attribute objects
-
-    All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
-
-    Parameters
-    ----------
-    name: str
-        Name of the experiment.
-    version: int
-        Version of the experiment.
-    mode: str
-        The access rights of the experiment on the database.
-        'r': read access only
-        'w': can read and write to database
-        'x': can read and write to database, algo is instantiated and can execute optimization
-    space: dict or Space object
-        Optimization space of the algorithm. If dict, should have the form
-        `dict(name='<prior>(args)')`.
-    algorithms: str or dict, optional
-        Algorithm used for optimization.
-    strategy: str or dict, optional
-        Parallel strategy to use to parallelize the algorithm.
-    max_trials: int, optional
-        Maximum number or trials before the experiment is considered done.
-    max_broken: int, optional
-        Number of broken trials for the experiment to be considered broken.
-    storage: dict, optional
-        Configuration of the storage backend.
-
-    """
-    experiment = Experiment(name=name, version=version, mode=mode)
-    experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
-    experiment.max_trials = kwargs.get(
-        "max_trials", orion.core.config.experiment.max_trials
-    )
-    experiment.max_broken = kwargs.get(
-        "max_broken", orion.core.config.experiment.max_broken
-    )
-    experiment.space = _instantiate_space(space)
-    experiment.algorithms = _instantiate_algo(
-        experiment.space,
-        experiment.max_trials,
-        kwargs.get("algorithms"),
-        ignore_unavailable=mode != "x",
-    )
-    # TODO: Remove for v0.4
-    _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
-    experiment.working_dir = kwargs.get(
-        "working_dir", orion.core.config.experiment.working_dir
-    )
-    experiment.metadata = kwargs.get(
-        "metadata", {"user": kwargs.get("user", getpass.getuser())}
-    )
-    experiment.refers = kwargs.get(
-        "refers", {"parent_id": None, "root_id": None, "adapter": []}
-    )
-    experiment.refers["adapter"] = _instantiate_adapters(
-        experiment.refers.get("adapter", [])
-    )
-
-    log.debug(
-        "Created experiment with config:\n%s", pprint.pformat(experiment.configuration)
-    )
-
-    return experiment
 
 
 ##
@@ -365,7 +296,6 @@ def _fetch_config_version(configs, version=None):
 ###
 
 
-
 def get_cmd_config(cmdargs):
     """Fetch configuration defined by commandline and local configuration file.
 
@@ -457,27 +387,27 @@ def get_from_args(cmdargs, mode="r"):
 
 
 def build(name, version=None, branching=None, storage=None, **config):
-    """Shortcut to """
-    singleton = None
-    if storage is None:
-        singleton = get_storage()
-
-    return ExperimentBuilder(storage, singleton=singleton).build(name, version, branching, **config)
+    """Shortcut to"""
+    assert storage is not None
+    return ExperimentBuilder(storage).build(name, version, branching, **config)
 
 
 def load(name, version=None, mode="r", storage=None):
-    singleton = None
-    if storage is None:
-        singleton = get_storage()
-
-    return ExperimentBuilder(singleton, singleton=get_storage()).load(name, version, mode)
+    assert storage is not None
+    return ExperimentBuilder(storage).load(name, version, mode)
 
 
 class ExperimentBuilder:
     """Utility to make new experiments without relying on the storage singleton"""
 
-    def __init__(self, storage=None, debug=False, singleton=None) -> None:
+    def __init__(self, storage=None, debug=False) -> None:
+        singleton = None
+        if not isinstance(storage, dict):
+            singleton = storage
+            storage = None
+
         if storage is not None:
+            self.storage_config = storage
             self.storage = setup_storage(storage, debug=debug)
         else:
             self.storage = singleton
@@ -549,13 +479,15 @@ class ExperimentBuilder:
 
         if "space" not in config:
             raise NoConfigurationError(
-                "Experiment {} does not exist in DB and space was not defined.".format(name)
+                "Experiment {} does not exist in DB and space was not defined.".format(
+                    name
+                )
             )
 
         if len(config["space"]) == 0:
             raise NoConfigurationError("No prior found. Please include at least one.")
 
-        experiment = create_experiment(mode="x", **copy.deepcopy(config))
+        experiment = self.create_experiment(mode="x", **copy.deepcopy(config))
         if experiment.id is None:
             log.debug("Experiment not found in DB. Now attempting registration in DB.")
             try:
@@ -639,7 +571,7 @@ class ExperimentBuilder:
 
         db_config.setdefault("version", 1)
 
-        return create_experiment(mode=mode, **db_config)
+        return self.create_experiment(mode=mode, **db_config)
 
     def fetch_config_from_db(self, name, version=None):
         """Fetch configuration from database
@@ -720,7 +652,9 @@ class ExperimentBuilder:
             assert branching.get("branch_to")
             log.debug("Experiment branching forced with ``branch_to``")
 
-        branched_experiment = self._branch_experiment(experiment, conflicts, version, branching)
+        branched_experiment = self._branch_experiment(
+            experiment, conflicts, version, branching
+        )
         log.debug("Now attempting registration of branched experiment in DB.")
         try:
             self._register_experiment(branched_experiment)
@@ -787,7 +721,9 @@ class ExperimentBuilder:
 
     def _branch_experiment(self, experiment, conflicts, version, branching_arguments):
         """Create a new branch experiment with adapters for the given conflicts"""
-        experiment_brancher = ExperimentBranchBuilder(conflicts, storage=self.storage, **branching_arguments)
+        experiment_brancher = ExperimentBranchBuilder(
+            conflicts, storage=self.storage, **branching_arguments
+        )
 
         needs_manual_resolution = (
             not experiment_brancher.is_resolved or experiment_brancher.manual_resolution
@@ -811,7 +747,9 @@ class ExperimentBuilder:
             branching_prompt = BranchingPrompt(experiment_brancher)
 
             if not sys.__stdin__.isatty():
-                log.debug("No interactive prompt available to manually resolve conflicts.")
+                log.debug(
+                    "No interactive prompt available to manually resolve conflicts."
+                )
                 raise BranchingEvent(branching_prompt.get_status())
 
             branching_prompt.cmdloop()
@@ -821,10 +759,81 @@ class ExperimentBuilder:
 
         log.debug("Creating new branched configuration")
         config = experiment_brancher.conflicting_config
-        config["refers"]["adapter"] = experiment_brancher.create_adapters().configuration
+        config["refers"][
+            "adapter"
+        ] = experiment_brancher.create_adapters().configuration
         config["refers"]["parent_id"] = experiment.id
 
         config.pop("_id")
 
-        return create_experiment(mode="x", **config)
+        return self.create_experiment(mode="x", **config)
 
+    def create_experiment(self, name, version, mode, space, **kwargs):
+        """Instantiate the experiment and its attribute objects
+
+        All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
+
+        Parameters
+        ----------
+        name: str
+            Name of the experiment.
+        version: int
+            Version of the experiment.
+        mode: str
+            The access rights of the experiment on the database.
+            'r': read access only
+            'w': can read and write to database
+            'x': can read and write to database, algo is instantiated and can execute optimization
+        space: dict or Space object
+            Optimization space of the algorithm. If dict, should have the form
+            `dict(name='<prior>(args)')`.
+        algorithms: str or dict, optional
+            Algorithm used for optimization.
+        strategy: str or dict, optional
+            Parallel strategy to use to parallelize the algorithm.
+        max_trials: int, optional
+            Maximum number or trials before the experiment is considered done.
+        max_broken: int, optional
+            Number of broken trials for the experiment to be considered broken.
+        storage: dict, optional
+            Configuration of the storage backend.
+
+        """
+        experiment = Experiment(
+            name=name, version=version, mode=mode, storage=self.storage
+        )
+        experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
+        experiment.max_trials = kwargs.get(
+            "max_trials", orion.core.config.experiment.max_trials
+        )
+        experiment.max_broken = kwargs.get(
+            "max_broken", orion.core.config.experiment.max_broken
+        )
+        experiment.space = _instantiate_space(space)
+        experiment.algorithms = _instantiate_algo(
+            experiment.space,
+            experiment.max_trials,
+            kwargs.get("algorithms"),
+            ignore_unavailable=mode != "x",
+        )
+        # TODO: Remove for v0.4
+        _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
+        experiment.working_dir = kwargs.get(
+            "working_dir", orion.core.config.experiment.working_dir
+        )
+        experiment.metadata = kwargs.get(
+            "metadata", {"user": kwargs.get("user", getpass.getuser())}
+        )
+        experiment.refers = kwargs.get(
+            "refers", {"parent_id": None, "root_id": None, "adapter": []}
+        )
+        experiment.refers["adapter"] = _instantiate_adapters(
+            experiment.refers.get("adapter", [])
+        )
+
+        log.debug(
+            "Created experiment with config:\n%s",
+            pprint.pformat(experiment.configuration),
+        )
+
+        return experiment

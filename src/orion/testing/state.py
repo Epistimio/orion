@@ -19,7 +19,7 @@ from orion.core.utils.singleton import (
     update_singletons,
 )
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, storage_factory
+from orion.storage.base import setup_storage, storage_factory
 
 
 # pylint: disable=no-self-use,protected-access
@@ -124,14 +124,14 @@ class BaseOrionState:
         self.lies = []
 
         for exp in self._experiments:
-            get_storage().create_experiment(exp)
+            setup_storage().create_experiment(exp)
 
         for trial in self._trials:
-            nt = get_storage().register_trial(Trial(**trial))
+            nt = setup_storage().register_trial(Trial(**trial))
             self.trials.append(nt.to_dict())
 
         for lie in self._lies:
-            nt = get_storage().register_lie(Trial(**lie))
+            nt = setup_storage().register_lie(Trial(**lie))
             self.lies.append(nt.to_dict())
 
     def load_experience_configuration(self):
@@ -193,14 +193,14 @@ class BaseOrionState:
     def storage(self, config=None):
         """Return test storage"""
         if config is None:
-            return get_storage()
+            return setup_storage()
 
         try:
             config["of_type"] = config.pop("type")
             db = storage_factory.create(**config)
             self.storage_config = config
         except SingletonAlreadyInstantiatedError:
-            db = get_storage()
+            db = setup_storage()
 
         except KeyError:
             print(self.storage_config)
@@ -219,14 +219,14 @@ class LegacyOrionState(BaseOrionState):
     @property
     def database(self):
         """Retrieve legacy database handle"""
-        return get_storage()._db
+        return setup_storage()._db
 
     def init(self, config):
         """Initialize environment before testing"""
         self.storage(config)
         self.initialized = True
 
-        if hasattr(get_storage(), "_db"):
+        if hasattr(setup_storage(), "_db"):
             self.database.remove("experiments", {})
             self.database.remove("trials", {})
 
@@ -245,11 +245,11 @@ class LegacyOrionState(BaseOrionState):
         if self._experiments:
             self.database.write("experiments", self._experiments)
             for experiment in self._experiments:
-                get_storage().initialize_algorithm_lock(
+                setup_storage().initialize_algorithm_lock(
                     experiment["_id"], experiment.get("algorithms")
                 )
                 # For tests that need a deterministic experiment id.
-                get_storage().initialize_algorithm_lock(
+                setup_storage().initialize_algorithm_lock(
                     experiment["name"], experiment.get("algorithms")
                 )
         if self._trials:

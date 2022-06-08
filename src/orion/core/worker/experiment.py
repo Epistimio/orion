@@ -22,7 +22,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
-from orion.storage.base import FailedUpdate, get_storage
+from orion.storage.base import FailedUpdate, setup_storage
 
 log = logging.getLogger(__name__)
 
@@ -131,7 +131,7 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
-    def __init__(self, name, version=None, mode="r"):
+    def __init__(self, name, version=None, mode="r", storage=None):
         self._id = None
         self.name = name
         self.version = version if version else 1
@@ -145,7 +145,7 @@ class Experiment:
         self.algorithms = None
         self.working_dir = None
 
-        self._storage = get_storage()
+        self._storage = storage
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 
@@ -169,7 +169,7 @@ class Experiment:
         for entry in self.__slots__:
             state[entry] = getattr(self, entry)
 
-        # TODO: This should be removed when singletons and `get_storage()` are removed.
+        # TODO: This should be removed when singletons and `setup_storage()` are removed.
         #       See https://github.com/Epistimio/orion/issues/606
         singletons = update_singletons()
         state["singletons"] = singletons
@@ -425,11 +425,16 @@ class Experiment:
         with self._storage.acquire_algorithm_lock(
             experiment=self, timeout=timeout, retry_interval=retry_interval
         ) as locked_algorithm_state:
+
             if locked_algorithm_state.configuration != self.algorithms.configuration:
                 log.warning(
                     "Saved configuration: %s", locked_algorithm_state.configuration
                 )
-                log.warning("Current configuration: %s", self.algorithms.configuration)
+                log.warning(
+                    "Current configuration: %s %s",
+                    self.algorithms.configuration,
+                    self._storage._db,
+                )
                 raise RuntimeError(
                     "Algorithm configuration changed since last experiment execution. "
                     "Algorithm cannot be resumed with a different configuration. "

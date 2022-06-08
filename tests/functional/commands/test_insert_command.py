@@ -6,7 +6,7 @@ import os
 import pytest
 
 import orion.core.cli
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def get_user_corneau():

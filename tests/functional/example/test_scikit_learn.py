@@ -6,7 +6,7 @@ import pytest
 
 import orion.core.cli
 from orion.client import create_experiment
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def test_script_integrity(capsys):
@@ -41,7 +41,7 @@ def test_orion_runs_script(monkeypatch):
     assert len(keys) == 1
     assert "/_pos_2" in keys
 
-    storage = get_storage()
+    storage = setup_storage()
     trials = storage.fetch_trials(uid=experiment.id)
     assert len(trials) == 1
 

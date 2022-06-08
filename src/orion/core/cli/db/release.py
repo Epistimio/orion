@@ -15,7 +15,6 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.core.utils.terminal import confirm_name
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -104,9 +103,7 @@ def main(args):
     builder = experiment_builder.ExperimentBuilder(config.get("storage"))
 
     # Find root experiment
-    root = builder.load(
-        name=args["name"], version=args.get("version", None)
-    ).node
+    root = builder.load(name=args["name"], version=args.get("version", None)).node
 
     # List all experiments with children
     print_tree(root, nameattr="tree_name")

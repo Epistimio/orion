@@ -14,7 +14,7 @@ import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.io.database import database_factory
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 @pytest.fixture()
@@ -64,7 +64,7 @@ def one_experiment(monkeypatch, storage):
         ["hunt", "--init-only", "-n", name, "./black_box.py", "--x~uniform(0,1)"]
     )
     ensure_deterministic_id(name, storage)
-    return get_storage().fetch_experiments({"name": name})[0]
+    return setup_storage().fetch_experiments({"name": name})[0]
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def one_experiment_changed_vcs(one_experiment):
         "diff_sha": None,
     }
 
-    get_storage().update_experiment(experiment, metadata=experiment.metadata)
+    setup_storage().update_experiment(experiment, metadata=experiment.metadata)
 
 
 @pytest.fixture
@@ -95,7 +95,7 @@ def one_experiment_no_version(monkeypatch, one_experiment):
 
         return []
 
-    monkeypatch.setattr(get_storage(), "fetch_experiments", fetch_without_version)
+    monkeypatch.setattr(setup_storage(), "fetch_experiments", fetch_without_version)
 
     return one_experiment
 

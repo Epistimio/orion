@@ -334,12 +334,13 @@ def workon(
             algorithms=algorithms,
             max_trials=max_trials,
             max_broken=max_broken,
-            storage={"type": "legacy", "database": {"type": "EphemeralDB"}}
+            storage={"type": "legacy", "database": {"type": "EphemeralDB"}},
         )
 
         producer = Producer(experiment)
 
         experiment_client = ExperimentClient(experiment, producer)
+
         with experiment_client.tmp_executor("singleexecutor", n_workers=1):
             experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 

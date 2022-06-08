@@ -520,7 +520,7 @@ class BaseStorageProtocol:
 storage_factory = GenericFactory(BaseStorageProtocol)
 
 
-def get_storage():
+def get_storage_2():
     """Return current storage
 
     This is a wrapper around the Storage Singleton object to provide
@@ -563,6 +563,10 @@ def setup_storage(storage=None, debug=False):
     """
     if storage is None:
         storage = orion.core.config.storage.to_dict()
+
+    import traceback
+
+    log.info("Setting up storage %s", "".join(traceback.format_stack()[33:]))
 
     storage = copy.deepcopy(storage)
 

@@ -15,7 +15,7 @@ import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli.hunt import workon
 from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
@@ -325,7 +325,7 @@ def test_workon():
             executor_configuration={"backend": "threading"},
         )
 
-        storage = get_storage()
+        storage = setup_storage()
 
         exp = list(storage.fetch_experiments({"name": name}))
         assert len(exp) == 1
@@ -794,7 +794,7 @@ def test_debug_mode(monkeypatch):
         + user_args
     )
 
-    storage = get_storage()
+    storage = setup_storage()
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, EphemeralDB)

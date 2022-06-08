@@ -18,7 +18,7 @@ import orion.core.io.resolve_config
 from orion.client import get_experiment
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
 
@@ -37,7 +37,7 @@ def with_storage_fork(func):
     def call(*args, **kwargs):
 
         with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
-            storage = get_storage()
+            storage = setup_storage()
             old_path = storage._db.host
             storage._db.host = tmp_file.name
             shutil.copyfile(old_path, tmp_file.name)
@@ -97,7 +97,7 @@ class ConfigurationTestSuite:
     def setup_db_config(self, tmp_path):
         """Setup database with temporary data"""
         with self.setup_env_var_config(tmp_path):
-            storage = get_storage()
+            storage = setup_storage()
             storage.create_experiment(self.database)
             yield
 
@@ -197,12 +197,12 @@ class TestStorage(ConfigurationTestSuite):
         assert orion.core.config.storage.to_dict() == self.config["storage"]
 
         with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+            setup_storage()
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
         assert storage._db.host == os.path.abspath("here.pkl")
@@ -222,12 +222,12 @@ class TestStorage(ConfigurationTestSuite):
         }
 
         with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+            setup_storage()
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
         assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
@@ -251,12 +251,12 @@ class TestStorage(ConfigurationTestSuite):
         }
 
         with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+            setup_storage()
 
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
         assert storage._db.host == os.path.abspath("local.pkl")
@@ -298,12 +298,12 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         assert orion.core.config.database.to_dict() == self.config["database"]
 
         with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+            setup_storage()
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
         assert storage._db.host == os.path.abspath("dbhere.pkl")
@@ -320,12 +320,12 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         }
 
         with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+            setup_storage()
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
         assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
@@ -346,12 +346,12 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         }
 
         with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+            setup_storage()
 
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
         assert storage._db.host == os.path.abspath("dblocal.pkl")
@@ -476,7 +476,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         command = f"hunt --init-only -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment("test")
         self._compare(
@@ -515,7 +515,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         command = f"hunt --worker-max-trials 0 -n {name}"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment(name)
         self._compare(self.database, experiment.configuration, ignore=["worker_trials"])
@@ -525,7 +525,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         command = f"hunt --worker-max-trials 0 -c {conf_file}"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment("test-name")
         self._compare(self.local["experiment"], experiment.configuration)
@@ -538,7 +538,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         )
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment("exp-name")
         assert experiment.name == "exp-name"

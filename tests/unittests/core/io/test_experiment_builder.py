@@ -21,14 +21,14 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
 def count_experiments():
     """Count experiments in storage"""
-    return len(get_storage().fetch_experiments({}))
+    return len(setup_storage().fetch_experiments({}))
 
 
 @pytest.fixture
@@ -370,7 +370,7 @@ def test_build_from_args_debug_mode(script_path):
         }
     )
 
-    storage = get_storage()
+    storage = setup_storage()
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
@@ -384,7 +384,7 @@ def test_build_from_args_debug_mode(script_path):
             "debug": True,
         }
     )
-    storage = get_storage()
+    storage = setup_storage()
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, EphemeralDB)
@@ -399,7 +399,7 @@ def test_get_from_args_debug_mode(script_path):
     with pytest.raises(NoConfigurationError):
         experiment_builder.get_from_args({"name": "whatever"})
 
-    storage = get_storage()
+    storage = setup_storage()
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
@@ -410,7 +410,7 @@ def test_get_from_args_debug_mode(script_path):
     with pytest.raises(NoConfigurationError):
         experiment_builder.get_from_args({"name": "whatever", "debug": True})
 
-    storage = get_storage()
+    storage = setup_storage()
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, EphemeralDB)
@@ -711,7 +711,7 @@ class TestBuild:
         with OrionState(experiments=[], trials=[]):
             exp = experiment_builder.build(**new_config)
             found_config = list(
-                get_storage().fetch_experiments(
+                setup_storage().fetch_experiments(
                     {"name": "supernaekei", "metadata.user": "tsirif"}
                 )
             )
@@ -747,7 +747,7 @@ class TestBuild:
         with OrionState():
             new_config["working_dir"] = "./"
             exp = experiment_builder.build(**new_config)
-            storage = get_storage()
+            storage = setup_storage()
             found_config = list(
                 storage.fetch_experiments(
                     {"name": "supernaekei", "metadata.user": "tsirif"}
@@ -762,7 +762,7 @@ class TestBuild:
         """Check if working_dir is correctly when absent from the database."""
         with OrionState(experiments=[], trials=[]):
             exp = experiment_builder.build(**new_config)
-            storage = get_storage()
+            storage = setup_storage()
             found_config = list(
                 storage.fetch_experiments(
                     {"name": "supernaekei", "metadata.user": "tsirif"}
@@ -998,7 +998,7 @@ class TestBuild:
             insert_race_condition_1.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition_1
+                setup_storage().__class__, "fetch_experiments", insert_race_condition_1
             )
 
             with pytest.raises(RaceCondition) as exc_info:
@@ -1031,7 +1031,7 @@ class TestBuild:
             insert_race_condition_2.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition_2
+                setup_storage().__class__, "fetch_experiments", insert_race_condition_2
             )
 
             with pytest.raises(RaceCondition) as exc_info:
@@ -1093,7 +1093,7 @@ class TestBuild:
             insert_race_condition_1.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition_1
+                setup_storage().__class__, "fetch_experiments", insert_race_condition_1
             )
 
             with pytest.raises(BranchingEvent) as exc_info:
@@ -1125,7 +1125,7 @@ class TestBuild:
             insert_race_condition_2.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition_2
+                setup_storage().__class__, "fetch_experiments", insert_race_condition_2
             )
 
             with pytest.raises(RaceCondition) as exc_info:

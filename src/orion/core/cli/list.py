@@ -13,7 +13,6 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
 from orion.core.utils.pptree import print_tree
 
-
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Gives a list of experiments"
 DESCRIPTION = """

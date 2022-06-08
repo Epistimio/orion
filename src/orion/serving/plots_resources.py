@@ -11,14 +11,14 @@ from falcon import Request, Response
 
 from orion.client import ExperimentClient
 from orion.serving.parameters import retrieve_experiment
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 class PlotsResource(object):
     """Serves all the requests made to plots/ REST endpoint"""
 
     def __init__(self):
-        self.storage = get_storage()
+        self.storage = setup_storage()
 
     def on_get_lpi(self, req: Request, resp: Response, experiment_name: str):
         """

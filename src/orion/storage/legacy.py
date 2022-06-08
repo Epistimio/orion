@@ -69,6 +69,10 @@ def setup_database(config=None):
     db_opts = config
     dbtype = db_opts.pop("type")
 
+    import traceback
+
+    log.info("Creating up storage %s", "".join(traceback.format_stack()[33:]))
+
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     return database_factory.create(dbtype, **db_opts)
 
@@ -88,10 +92,7 @@ class Legacy(BaseStorageProtocol):
     """
 
     def __init__(self, database=None, setup=True):
-        if database is not None:
-            setup_database(database)
-
-        self._db = setup_database()
+        self._db = setup_database(database)
 
         if setup:
             self._setup_db()

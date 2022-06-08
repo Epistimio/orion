@@ -8,8 +8,6 @@ Monitor trials and update their heartbeat
 """
 import threading
 
-from orion.storage.base import get_storage
-
 STOPPED_STATUS = {"completed", "interrupted", "suspended"}
 
 
@@ -24,12 +22,12 @@ class TrialPacemaker(threading.Thread):
 
     """
 
-    def __init__(self, trial, wait_time=60):
+    def __init__(self, trial, storage, wait_time=60):
         threading.Thread.__init__(self)
         self.stopped = threading.Event()
         self.trial = trial
         self.wait_time = wait_time
-        self.storage = get_storage()
+        self.storage = storage
 
     def stop(self):
         """Stop monitoring."""

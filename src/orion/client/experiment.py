@@ -860,7 +860,7 @@ class ExperimentClient:
             )
 
     def _maintain_reservation(self, trial):
-        self._pacemakers[trial.id] = TrialPacemaker(trial)
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self._experiment._storage)
         self._pacemakers[trial.id].start()
 
     def _release_reservation(self, trial, raise_if_unreserved=True):

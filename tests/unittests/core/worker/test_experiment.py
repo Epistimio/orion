@@ -22,7 +22,7 @@ from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
-from orion.storage.base import LockedAlgorithmState, get_storage
+from orion.storage.base import LockedAlgorithmState, setup_storage
 from orion.testing import OrionState
 
 
@@ -398,7 +398,7 @@ def test_update_completed_trial(random_dt):
 
         exp.update_completed_trial(trial, results_file=results_file)
 
-        yo = get_storage().fetch_trials(exp)[0].to_dict()
+        yo = setup_storage().fetch_trials(exp)[0].to_dict()
 
         assert len(yo["results"]) == len(trial.results)
         assert yo["results"][0] == trial.results[0].to_dict()
@@ -423,7 +423,7 @@ def test_register_trials(tmp_path, random_dt):
         for trial in trials:
             exp.register_trial(trial)
 
-        yo = list(map(lambda trial: trial.to_dict(), get_storage().fetch_trials(exp)))
+        yo = list(map(lambda trial: trial.to_dict(), setup_storage().fetch_trials(exp)))
         assert len(yo) == len(trials)
         assert yo[0]["params"] == list(map(lambda x: x.to_dict(), trials[0]._params))
         assert yo[1]["params"] == list(map(lambda x: x.to_dict(), trials[1]._params))

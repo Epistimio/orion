@@ -21,7 +21,7 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
 )
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
@@ -155,13 +155,13 @@ class TestCreateExperiment:
         host = orion.core.config.storage.database.host
 
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
-            # Reset the Storage and drop instances so that get_storage() would fail.
+            # Reset the Storage and drop instances so that setup_storage() would fail.
             cfg.cleanup()
             cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `create_experiment()`
             with pytest.raises(SingletonNotInstantiatedError):
-                get_storage()
+                setup_storage()
 
             experiment = create_experiment(name=name, space={"x": "uniform(0, 10)"})
 
@@ -301,7 +301,7 @@ class TestCreateExperiment:
             insert_race_condition.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition
+                setup_storage().__class__, "fetch_experiments", insert_race_condition
             )
 
             experiment = create_experiment(
@@ -342,7 +342,7 @@ class TestCreateExperiment:
             insert_race_condition.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition
+                setup_storage().__class__, "fetch_experiments", insert_race_condition
             )
 
             with pytest.raises(RaceCondition) as exc:
@@ -390,7 +390,7 @@ class TestCreateExperiment:
             },
         )
 
-        storage = get_storage()
+        storage = setup_storage()
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
@@ -404,7 +404,7 @@ class TestCreateExperiment:
             debug=True,
         )
 
-        storage = get_storage()
+        storage = setup_storage()
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)
@@ -473,22 +473,16 @@ class TestWorkon:
 
         assert exc.match("You shall not build!")
 
-        # Verify that tmp storage was cleared
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
-
         # Now test with a prior storage
         with OrionState(
             storage={"type": "legacy", "database": {"type": "EphemeralDB"}}
         ):
-            storage = get_storage()
+            storage = setup_storage()
 
             with pytest.raises(RuntimeError) as exc:
                 workon(foo, space={"x": "uniform(0, 10)"}, max_trials=5, name="voici")
 
             assert exc.match("You shall not build!")
-
-            assert get_storage() is storage
 
     def test_workon_twice(self):
         """Verify setting the each experiment has its own storage"""

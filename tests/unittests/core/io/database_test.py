@@ -10,7 +10,7 @@ from orion.core.utils.singleton import (
     SingletonAlreadyInstantiatedError,
     SingletonNotInstantiatedError,
 )
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 @pytest.mark.usefixtures("null_db_instances")
@@ -65,7 +65,7 @@ class TestReadOnlyDatabase(object):
 
     def test_read(self, hacked_exp):
         """Test read is coherent from view and wrapped database."""
-        database = get_storage()._db
+        database = setup_storage()._db
         readonly_database = ReadOnlyDB(database)
 
         args = {

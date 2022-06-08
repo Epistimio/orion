@@ -59,7 +59,6 @@ from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name
-from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -1742,7 +1741,7 @@ class ExperimentNameConflict(Conflict):
 
         def _validate(self, storage=None):
             """Validate new_name is not in database with a direct child for current version"""
-            storage = storage or get_storage()
+            assert storage is not None
 
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is

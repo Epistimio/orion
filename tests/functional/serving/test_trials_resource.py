@@ -7,7 +7,7 @@ import falcon
 
 from orion.core.io import experiment_builder
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 base_experiment = dict(
     name="experiment-name",
@@ -81,7 +81,7 @@ def add_trial(experiment: int, status: str = None, value=10, **kwargs):
 
     base_trial.update(copy.deepcopy(kwargs))
     base_trial["params"][0]["value"] = value
-    get_storage().register_trial(Trial(**base_trial))
+    setup_storage().register_trial(Trial(**base_trial))
 
 
 def test_root_endpoint_not_supported(client):

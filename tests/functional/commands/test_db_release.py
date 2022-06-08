@@ -6,7 +6,7 @@ import zlib
 import pytest
 
 import orion.core.cli
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -42,35 +42,35 @@ def test_confirm_name(monkeypatch, single_with_trials):
 
     monkeypatch.setattr("builtins.input", correct_name)
 
-    experiments = get_storage().fetch_experiments({})
+    experiments = setup_storage().fetch_experiments({})
     uid = experiments[0]["_id"]
-    with get_storage().acquire_algorithm_lock(uid=uid) as algo_state_lock:
+    with setup_storage().acquire_algorithm_lock(uid=uid) as algo_state_lock:
         assert algo_state_lock.state is None
         algo_state_lock.set_state({})
 
-    with get_storage().acquire_algorithm_lock(uid=uid) as algo_state_lock:
+    with setup_storage().acquire_algorithm_lock(uid=uid) as algo_state_lock:
         assert algo_state_lock.state == {}
-        assert get_storage().get_algorithm_lock_info(uid=uid).locked == 1
+        assert setup_storage().get_algorithm_lock_info(uid=uid).locked == 1
         execute("db release test_single_exp")
-        assert get_storage().get_algorithm_lock_info(uid=uid).locked == 0
-        assert get_storage().get_algorithm_lock_info(uid=uid).state == {}
+        assert setup_storage().get_algorithm_lock_info(uid=uid).locked == 0
+        assert setup_storage().get_algorithm_lock_info(uid=uid).state == {}
 
 
 def test_one_exp(single_with_trials):
     """Test that one exp is deleted properly"""
-    experiments = get_storage().fetch_experiments({})
+    experiments = setup_storage().fetch_experiments({})
     uid = experiments[0]["_id"]
-    assert get_storage().get_algorithm_lock_info(uid=uid).locked == 0
-    with get_storage().acquire_algorithm_lock(uid=uid):
-        assert get_storage().get_algorithm_lock_info(uid=uid).locked == 1
+    assert setup_storage().get_algorithm_lock_info(uid=uid).locked == 0
+    with setup_storage().acquire_algorithm_lock(uid=uid):
+        assert setup_storage().get_algorithm_lock_info(uid=uid).locked == 1
         execute("db release -f test_single_exp")
-        assert get_storage().get_algorithm_lock_info(uid=uid).locked == 0
+        assert setup_storage().get_algorithm_lock_info(uid=uid).locked == 0
 
 
 def test_release_name(three_family_branch_with_trials):
     """Test that deleting an experiment removes all children"""
-    experiments = get_storage().fetch_experiments({})
-    storage = get_storage()
+    experiments = setup_storage().fetch_experiments({})
+    storage = setup_storage()
     assert len(experiments) == 3
     assert len(storage._fetch_trials({})) > 0
     uid = None
@@ -99,8 +99,8 @@ def test_release_name(three_family_branch_with_trials):
 
 def test_release_version(three_experiments_same_name_with_trials):
     """Test releasing a specific experiment version"""
-    experiments = get_storage().fetch_experiments({})
-    storage = get_storage()
+    experiments = setup_storage().fetch_experiments({})
+    storage = setup_storage()
     assert len(experiments) == 3
     assert len(storage._fetch_trials({})) > 0
     uid = None
@@ -129,8 +129,8 @@ def test_release_version(three_experiments_same_name_with_trials):
 
 def test_release_default_leaf(three_experiments_same_name_with_trials):
     """Test that release an experiment releases the leaf by default"""
-    experiments = get_storage().fetch_experiments({})
-    storage = get_storage()
+    experiments = setup_storage().fetch_experiments({})
+    storage = setup_storage()
     assert len(experiments) == 3
     assert len(storage._fetch_trials({})) > 0
     uid = None

@@ -10,7 +10,7 @@ import yaml
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -469,8 +469,8 @@ def test_init(init_full_x):
 
 def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
     """Test that the experiment config is overwritten if --enable-evc is not passed"""
-    storage = get_storage()
-    assert len(get_storage().fetch_experiments({})) == 1
+    storage = setup_storage()
+    assert len(setup_storage().fetch_experiments({})) == 1
     experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
@@ -1038,7 +1038,7 @@ def test_new_script(init_full_x, monkeypatch):
     metadata["user_script"] = "oh_oh_idontexist.py"
     metadata["user_args"][0] = "oh_oh_idontexist.py"
     metadata["parser"]["parser"]["arguments"][0][1] = "oh_oh_idontexist.py"
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1086,7 +1086,7 @@ def test_missing_config(init_full_x_new_config, monkeypatch):
     metadata["parser"]["file_config_path"] = bad_config_file
     metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
     metadata["user_args"][3] = bad_config_file
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1132,7 +1132,7 @@ def test_missing_and_new_config(init_full_x_new_config, monkeypatch):
             )
         )
 
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1291,7 +1291,7 @@ def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatc
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 3})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 3})
     assert len(list(exp))
 
 
@@ -1315,7 +1315,7 @@ def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 3})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 3})
     assert len(list(exp))
 
 
@@ -1338,7 +1338,7 @@ def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
         "./black_box.py -x~normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 2})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 2})
     assert len(list(exp))
 
 
@@ -1362,7 +1362,7 @@ def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
         "-x~normal(0,1) -z~+normal(0,1)"
     )
 
-    storage = get_storage()
+    storage = setup_storage()
     parent = storage.fetch_experiments({"name": "experiment", "version": 1})[0]
     exp = storage.fetch_experiments({"name": "experiment_2"})[0]
     assert exp["refers"]["parent_id"] == parent["_id"]

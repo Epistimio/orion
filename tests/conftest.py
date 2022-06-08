@@ -22,7 +22,7 @@ from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import format_trials
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, setup_storage, storage_factory
+from orion.storage.base import setup_storage, storage_factory
 from orion.storage.legacy import Legacy
 
 # So that assert messages show up in tests defined outside testing suite.
@@ -382,8 +382,7 @@ def setup_pickleddb_database():
 
 @pytest.fixture(scope="function")
 def storage(setup_pickleddb_database):
-    setup_storage()
-    yield get_storage()
+    yield setup_storage()
 
 
 @pytest.fixture()

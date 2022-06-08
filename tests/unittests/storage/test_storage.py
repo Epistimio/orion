@@ -27,7 +27,6 @@ from orion.storage.base import (
     LockAcquisitionTimeout,
     LockedAlgorithmState,
     MissingArguments,
-    get_storage,
     setup_storage,
     storage_factory,
 )
@@ -216,21 +215,21 @@ def test_get_storage_uninitiated():
     """Test that get storage fails if no storage singleton exist"""
     update_singletons()
     with pytest.raises(SingletonNotInstantiatedError) as exc:
-        get_storage()
+        setup_storage()
 
     assert exc.match(
         "No singleton instance of \(type: BaseStorageProtocol\) was created"
     )
 
 
-def test_get_storage():
+def test_setup_storage():
     """Test that get storage gets the singleton"""
     update_singletons()
     setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = get_storage()
+    storage = setup_storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
-    assert get_storage() == storage
+    assert setup_storage() == storage
 
 
 @pytest.mark.usefixtures("version_XYZ")
@@ -559,15 +558,15 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = setup_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, "was not able to retrieve trial for test"
 
-                get_storage().set_trial_status(trial, status=new_status)
+                setup_storage().set_trial_status(trial, status=new_status)
                 assert (
                     trial.status == new_status
                 ), "Trial status should have been updated locally"
 
-                trial = get_storage().get_trial(trial)
+                trial = setup_storage().get_trial(trial)
                 assert (
                     trial.status == new_status
                 ), "Trial status should have been updated in the storage"
@@ -584,11 +583,11 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            trial = get_storage().get_trial(cfg.get_trial(0))
+            trial = setup_storage().get_trial(cfg.get_trial(0))
             assert trial is not None, "Was not able to retrieve trial for test"
 
             with pytest.raises(ValueError) as exc:
-                get_storage().set_trial_status(trial, status="moo")
+                setup_storage().set_trial_status(trial, status="moo")
 
             assert exc.match("Given status `moo` not one of")
 
@@ -599,7 +598,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = setup_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -608,7 +607,7 @@ class TestStorage:
 
                 with pytest.raises(FailedUpdate):
                     trial.status = new_status
-                    get_storage().set_trial_status(trial, status=new_status)
+                    setup_storage().set_trial_status(trial, status=new_status)
 
         check_status_change("completed")
         check_status_change("broken")
@@ -625,7 +624,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = setup_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -636,9 +635,9 @@ class TestStorage:
                 trial.status = "broken"
                 assert correct_status != "broken"
                 with pytest.raises(FailedUpdate):
-                    get_storage().set_trial_status(trial, status=new_status)
+                    setup_storage().set_trial_status(trial, status=new_status)
 
-                get_storage().set_trial_status(
+                setup_storage().set_trial_status(
                     trial, status=new_status, was=correct_status
                 )
 
@@ -655,7 +654,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = setup_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -663,7 +662,7 @@ class TestStorage:
                     return
 
                 with pytest.raises(FailedUpdate):
-                    get_storage().set_trial_status(
+                    setup_storage().set_trial_status(
                         trial, status=new_status, was=new_status
                     )
 
