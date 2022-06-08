@@ -12,7 +12,7 @@ from orion.benchmark.assessment.base import bench_assessment_factory
 from orion.benchmark.task.base import bench_task_factory
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.storage.base import get_storage, setup_storage
+from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
 
@@ -48,10 +48,11 @@ def get_or_create_benchmark(
     -------
     An instance of `orion.benchmark.Benchmark`
     """
-    setup_storage(storage=storage, debug=debug)
+    storage_config = storage
+    storage = setup_storage(storage=storage_config, debug=debug)
 
     # fetch benchmark from db
-    db_config = _fetch_benchmark(name)
+    db_config = _fetch_benchmark(storage, name)
 
     benchmark_id = None
     input_configure = None
@@ -60,6 +61,7 @@ def get_or_create_benchmark(
         if algorithms or targets:
             input_benchmark = Benchmark(name, algorithms, targets)
             input_configure = input_benchmark.configuration
+
         benchmark_id, algorithms, targets = _resolve_db_config(db_config)
 
     if not algorithms or not targets:
@@ -90,7 +92,7 @@ def get_or_create_benchmark(
             )
             benchmark.close()
             benchmark = get_or_create_benchmark(
-                name, algorithms, targets, storage, executor, debug
+                name, algorithms, targets, storage_config, executor, debug
             )
 
     return benchmark
@@ -148,12 +150,12 @@ def _create_study(benchmark, algorithms, assess, task):
     return study
 
 
-def _fetch_benchmark(name):
+def _fetch_benchmark(storage, name):
 
     if name:
-        configs = get_storage().fetch_benchmark({"name": name})
+        configs = storage.fetch_benchmark({"name": name})
     else:
-        configs = get_storage().fetch_benchmark({})
+        configs = storage.fetch_benchmark({})
 
     if not configs:
         return {}
@@ -161,9 +163,9 @@ def _fetch_benchmark(name):
     return configs[0]
 
 
-def _register_benchmark(benchmark):
+def _register_benchmark(storage, benchmark):
     benchmark.metadata["datetime"] = datetime.datetime.utcnow()
     config = benchmark.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
-    get_storage().create_benchmark(config)
+    storage.create_benchmark(config)
