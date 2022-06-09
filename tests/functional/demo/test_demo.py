@@ -308,7 +308,7 @@ def test_workon():
         "-x~uniform(-50, 50, precision=None)",
     ]
 
-    with OrionState():
+    with OrionState() as cfg:
         experiment = experiment_builder.build_from_args(config)
 
         workon(
@@ -323,9 +323,10 @@ def test_workon():
             ignore_code_changes=True,
             executor="joblib",
             executor_configuration={"backend": "threading"},
+            storage=cfg.storage_config,
         )
 
-        storage = setup_storage()
+        storage = cfg.storage
 
         exp = list(storage.fetch_experiments({"name": name}))
         assert len(exp) == 1

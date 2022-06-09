@@ -214,8 +214,8 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
 
 def test_fetch_config_from_db_no_hit():
     """Verify that fetch_config_from_db returns an empty dict when the experiment is not in db"""
-    with OrionState(experiments=[], trials=[]):
-        db_config = experiment_builder.fetch_config_from_db(name="supernaekei")
+    with OrionState(experiments=[], trials=[]) as cfg:
+        db_config = experiment_builder.ExperimentBuilder(storage=cfg.storage_config).fetch_config_from_db(name="supernaekei")
 
     assert db_config == {}
 
@@ -223,8 +223,8 @@ def test_fetch_config_from_db_no_hit():
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_fetch_config_from_db_hit(new_config):
     """Verify db config when experiment is in db"""
-    with OrionState(experiments=[new_config], trials=[]):
-        db_config = experiment_builder.fetch_config_from_db(name="supernaekei")
+    with OrionState(experiments=[new_config], trials=[]) as cfg:
+        db_config = experiment_builder.ExperimentBuilder(storage=cfg.storage_config).fetch_config_from_db(name="supernaekei")
 
     assert db_config["name"] == new_config["name"]
     assert db_config["refers"] == new_config["refers"]
