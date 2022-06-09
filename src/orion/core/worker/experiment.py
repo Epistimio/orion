@@ -91,8 +91,11 @@ class Experiment:
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
-    Metadata
-    --------
+    Notes
+    -----
+
+    The following list represents possible entries in the metadata dict.
+
     user : str
        System user currently owning this running process, the one who invoked **Oríon**.
     datetime : `datetime.datetime`

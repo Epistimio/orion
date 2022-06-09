@@ -364,8 +364,10 @@ class Real(Dimension):
     kwargs : dict
        See Parameters of `Dimension.__init__()` for general.
 
+    Notes
+    -----
     Real kwargs (extra)
-    -------------------
+
     low : float
        Lower bound (inclusive), optional; default ``-numpy.inf``.
     high : float:
@@ -597,8 +599,10 @@ class Integer(Real, _Discrete):
     kwargs : dict
        See Parameters of `Dimension.__init__()` for general.
 
+    Notes
+    -----
     Real kwargs (extra)
-    -------------------
+
     low : float
        Lower bound (inclusive), optional; default ``-numpy.inf``.
     high : float:
