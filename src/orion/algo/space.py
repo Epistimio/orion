@@ -357,27 +357,27 @@ class Real(Dimension):
 
     Parameters
     ----------
-    name : str
-    prior : str
+    name: str
+    prior: str
        See Parameters of `Dimension.__init__()`.
-    args : list
-    kwargs : dict
+    args: list
+    kwargs: dict
        See Parameters of `Dimension.__init__()` for general.
 
     Notes
     -----
     Real kwargs (extra)
 
-    low : float
+    low: float
        Lower bound (inclusive), optional; default ``-numpy.inf``.
-    high : float:
+    high: float:
        Upper bound (inclusive), optional; default ``numpy.inf``.
        The upper bound must be inclusive because of rounding errors
        during optimization which may cause values to round exactly
        to the upper bound.
-    precision : int
+    precision: int
         Precision, optional; default ``4``.
-    shape : tuple
+    shape: tuple
        Defines how many dimensions are packed in this `Dimension`.
        Describes the shape of the corresponding tensor.
 
@@ -592,24 +592,24 @@ class Integer(Real, _Discrete):
 
     Parameters
     ----------
-    name : str
-    prior : str
+    name: str
+    prior: str
        See Parameters of `Dimension.__init__()`.
-    args : list
-    kwargs : dict
+    args: list
+    kwargs: dict
        See Parameters of `Dimension.__init__()` for general.
 
     Notes
     -----
     Real kwargs (extra)
 
-    low : float
+    low: float
        Lower bound (inclusive), optional; default ``-numpy.inf``.
-    high : float:
+    high: float:
        Upper bound (inclusive), optional; default ``numpy.inf``.
-    precision : int
+    precision: int
         Precision, optional; default ``4``.
-    shape : tuple
+    shape: tuple
        Defines how many dimensions are packed in this `Dimension`.
        Describes the shape of the corresponding tensor.
 
