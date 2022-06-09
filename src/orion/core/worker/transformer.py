@@ -772,8 +772,8 @@ class ReshapedDimension(TransformedDimension):
 class TransformedSpace(Space):
     """Wrap the :class:`orion.algo.space.Space` to support transformation methods.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     space: `orion.algo.space.Space`
        Original problem's definition of parameter space.
 
@@ -817,8 +817,8 @@ class TransformedSpace(Space):
 class ReshapedSpace(Space):
     """Wrap the `TransformedSpace` to support reshape methods.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     space: `orion.core.worker.TransformedSpace`
        Transformed version of the orinigal problem's definition of parameter space.
 

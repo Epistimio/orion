@@ -113,7 +113,7 @@ class Database(object):
     def index_information(self, collection_name):
         """Return dict of names and sorting order of indexes
 
-        Paramaters
+        Parameters
         ----------
         collection_name : str
            A collection inside database, a table.
@@ -131,7 +131,7 @@ class Database(object):
     def drop_index(self, collection_name, name):
         """Remove index from the database
 
-        Paramaters
+        Parameters
         ----------
         collection_name : str
            A collection inside database, a table.
