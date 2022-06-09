@@ -370,6 +370,7 @@ def test_parallel_workers(algorithm):
             name=name,
             space=space_with_fidelity,
             algorithms=algorithm,
+            storage=cfg.storage_config,
         )
 
         exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)

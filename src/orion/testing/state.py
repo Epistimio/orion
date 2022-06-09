@@ -8,6 +8,7 @@ Boilerplate to simulate Oríon's runtime and data sources.
 """
 # pylint: disable=protected-access
 
+import copy
 import os
 import tempfile
 
@@ -84,6 +85,7 @@ class BaseOrionState:
         self.tempfile = None
         self.tempfile_path = None
         self.storage_config = _select(storage, _get_default_test_storage())
+        self.storage = None
 
         self._benchmarks = _select(benchmarks, [])
         self._experiments = _select(experiments, [])
@@ -124,14 +126,14 @@ class BaseOrionState:
         self.lies = []
 
         for exp in self._experiments:
-            setup_storage().create_experiment(exp)
+            self.storage.create_experiment(exp)
 
         for trial in self._trials:
-            nt = setup_storage().register_trial(Trial(**trial))
+            nt = self.storage.register_trial(Trial(**trial))
             self.trials.append(nt.to_dict())
 
         for lie in self._lies:
-            nt = setup_storage().register_lie(Trial(**lie))
+            nt = self.storage.register_lie(Trial(**lie))
             self.lies.append(nt.to_dict())
 
     def load_experience_configuration(self):
@@ -190,23 +192,24 @@ class BaseOrionState:
 
         update_singletons(self.singletons)
 
-    def storage(self, config=None):
+    def setup_storage(self, config=None):
         """Return test storage"""
         if config is None:
-            return setup_storage()
+            self.storage = setup_storage()
+            return self.storage
 
         try:
+            self.storage_config = copy.deepcopy(config)
             config["of_type"] = config.pop("type")
-            db = storage_factory.create(**config)
-            self.storage_config = config
+            self.storage = storage_factory.create(**config)
         except SingletonAlreadyInstantiatedError:
-            db = setup_storage()
+            self.storage = setup_storage()
 
         except KeyError:
             print(self.storage_config)
             raise
 
-        return db
+        return self.storage
 
 
 class LegacyOrionState(BaseOrionState):
@@ -219,14 +222,14 @@ class LegacyOrionState(BaseOrionState):
     @property
     def database(self):
         """Retrieve legacy database handle"""
-        return setup_storage()._db
+        return self.storage._db
 
     def init(self, config):
         """Initialize environment before testing"""
-        self.storage(config)
+        self.setup_storage(config)
         self.initialized = True
 
-        if hasattr(setup_storage(), "_db"):
+        if hasattr(self.storage, "_db"):
             self.database.remove("experiments", {})
             self.database.remove("trials", {})
 
@@ -245,11 +248,11 @@ class LegacyOrionState(BaseOrionState):
         if self._experiments:
             self.database.write("experiments", self._experiments)
             for experiment in self._experiments:
-                setup_storage().initialize_algorithm_lock(
+                self.storage.initialize_algorithm_lock(
                     experiment["_id"], experiment.get("algorithms")
                 )
                 # For tests that need a deterministic experiment id.
-                setup_storage().initialize_algorithm_lock(
+                self.storage.initialize_algorithm_lock(
                     experiment["name"], experiment.get("algorithms")
                 )
         if self._trials:

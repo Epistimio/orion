@@ -406,7 +406,10 @@ class ExperimentBuilder:
             singleton = storage
             storage = None
 
-        if storage is not None:
+        if singleton is None:
+            if storage is None:
+                log.debug("Setting up storage from default config")
+
             self.storage_config = storage
             self.storage = setup_storage(storage, debug=debug)
         else:
