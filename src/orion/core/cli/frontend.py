@@ -11,27 +11,58 @@ Starts an http endpoint to serve requests
 import logging
 import mimetypes
 import os
+import site
+import sys
 
 import falcon
 from gunicorn.app.base import BaseApplication
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 DESCRIPTION = "Starts Oríon Dashboard"
+
+
+def get_dashboard_build_path():
+    """Find dashboard build folder.
+
+    If package is installed, dashboard build should be in installation prefix
+    https://docs.python.org/3/distutils/setupscript.html#installing-additional-files
+    Otherwise, dashboard build should be in dashboard folder near src
+    in orion repository.
+    """
+    current_file_path = __file__
+    if current_file_path.startswith(sys.prefix):
+        dashboard_build_path = os.path.join(sys.prefix, "orion-dashboard", "build")
+    elif current_file_path.startswith(site.USER_BASE):
+        dashboard_build_path = os.path.join(site.USER_BASE, "orion-dashboard", "build")
+    else:
+        dashboard_build_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(current_file_path),
+                "..",
+                "..",
+                "..",
+                "..",
+                "dashboard",
+                "build",
+            )
+        )
+    assert os.path.isdir(dashboard_build_path)
+    assert os.path.isfile(os.path.join(dashboard_build_path, "index.html"))
+    return dashboard_build_path
 
 
 class StaticResource:
     """Resource class to serve frontend files."""
 
-    STATIC_DIR = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__), "..", "..", "..", "..", "dashboard", "build"
-        )
-    )
+    STATIC_DIR = get_dashboard_build_path()
     PLACEHOLDER = "window.__ORION_BACKEND__"
     TEXT_TYPES = ("text/html", "application/javascript")
 
     def __init__(self, args):
         self.backend = args.get("backend", None)
+        logger.info(f"Dashboard build located at: {self.STATIC_DIR}")
 
     def on_get(self, req, resp):
         """Hack HTML and Javascript files to setup backend if necessary."""
