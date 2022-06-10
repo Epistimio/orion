@@ -40,15 +40,15 @@ class Trial:
 
     Attributes
     ----------
-    experiment : str
+    experiment: str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
     id_override: str
         Trial id returned by the database. It should be unique for a given
         set of parameters
-    heartbeat : datetime.datetime
+    heartbeat: datetime.datetime
         Last time trial was identified as being alive.
-    status : str
+    status: str
        Indicates how this trial is currently being used. Can take the following
        values:
 
@@ -65,19 +65,19 @@ class Trial:
           of the worker process).
        * 'broken' : Indicates a trial that was not successfully evaluated for not
           expected reason.
-    worker : str
+    worker: str
        Corresponds to worker's unique id that handled this trial.
-    submit_time : `datetime.datetime`
+    submit_time: `datetime.datetime`
        When was this trial suggested?
-    start_time : `datetime.datetime`
+    start_time: `datetime.datetime`
        When was this trial first reserved?
-    end_time : `datetime.datetime`
+    end_time: `datetime.datetime`
        When was this trial evaluated successfully?
-    results : list of `Trial.Result`
+    results: list of `Trial.Result`
        List of evaluated metrics for this particular set of params. One and only
        one of them is necessarily an *objective* function value. The other are
        *constraints*, the value of an expression desired to be larger/equal to 0.
-    params : dict of params
+    params: dict of params
        Dict of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
 
@@ -102,12 +102,12 @@ class Trial:
 
         Attributes
         ----------
-        name : str
+        name: str
            A possible named for the quality that this is quantifying.
-        type : str
+        type: str
            An identifier with semantic importance for **Oríon**. See
            `Param.type` and `Result.type`.
-        value : str or numerical
+        value: str or numerical
            value suggested for this dimension of the parameter space.
 
         """
