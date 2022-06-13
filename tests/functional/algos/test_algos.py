@@ -302,7 +302,9 @@ def test_with_multidim(algorithm):
 def test_with_evc(algorithm):
     """Test a scenario where algos are warm-started with EVC."""
 
-    with OrionState(storage={"type": "legacy", "database": {"type": "PickledDB"}}) as cfg:
+    with OrionState(
+        storage={"type": "legacy", "database": {"type": "PickledDB"}}
+    ) as cfg:
         base_exp = create_experiment(
             name="exp",
             space=space_with_fidelity,

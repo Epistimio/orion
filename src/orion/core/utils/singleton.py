@@ -136,6 +136,7 @@ class GenericSingletonFactory(GenericFactory):
 
         if self.instance is None and of_type is None:
             raise SingletonNotInstantiatedError(self.base.__name__)
+
         elif self.instance is None:
             try:
                 self.instance = super(GenericSingletonFactory, self).create(

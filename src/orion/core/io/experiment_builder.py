@@ -388,12 +388,14 @@ def get_from_args(cmdargs, mode="r"):
 
 def build(name, version=None, branching=None, storage=None, **config):
     """Shortcut to"""
-    assert storage is not None
+    if storage is None:
+        storage = setup_storage()
     return ExperimentBuilder(storage).build(name, version, branching, **config)
 
 
 def load(name, version=None, mode="r", storage=None):
-    assert storage is not None
+    if storage is None:
+        storage = setup_storage()
     return ExperimentBuilder(storage).load(name, version, mode)
 
 

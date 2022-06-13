@@ -83,7 +83,7 @@ def get_or_create_benchmark(
     if benchmark_id is None:
         logger.debug("Benchmark not found in DB. Now attempting registration in DB.")
         try:
-            _register_benchmark(benchmark)
+            _register_benchmark(storage, benchmark)
             logger.debug("Benchmark successfully registered in DB.")
         except DuplicateKeyError:
             logger.info(

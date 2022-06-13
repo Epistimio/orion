@@ -160,10 +160,12 @@ class TestCreateExperiment:
             cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `create_experiment()`
-            with pytest.raises(SingletonNotInstantiatedError):
-                setup_storage()
+            # with pytest.raises(SingletonNotInstantiatedError):
+            #    setup_storage()
 
-            experiment = create_experiment(name=name, space={"x": "uniform(0, 10)"})
+            experiment = create_experiment(
+                name=name, space={"x": "uniform(0, 10)"}, storage=cfg.storage_config
+            )
 
             assert isinstance(experiment._experiment._storage, Legacy)
             assert isinstance(experiment._experiment._storage._db, PickledDB)
@@ -171,10 +173,10 @@ class TestCreateExperiment:
 
     def test_create_experiment_new_no_space(self):
         """Test that new experiment needs space"""
-        with OrionState():
+        with OrionState() as cfg:
             name = "oopsie_forgot_a_space"
             with pytest.raises(NoConfigurationError) as exc:
-                create_experiment(name=name)
+                create_experiment(name=name, storage=cfg.storage_config)
 
             assert "Experiment {} does not exist in DB".format(name) in str(exc.value)
 
@@ -198,8 +200,10 @@ class TestCreateExperiment:
         """Test creating a new experiment with all defaults"""
         name = "all_default"
         space = {"x": "uniform(0, 10)"}
-        with OrionState():
-            experiment = create_experiment(name="all_default", space=space)
+        with OrionState() as cfg:
+            experiment = create_experiment(
+                name="all_default", space=space, storage=cfg.storage_config
+            )
 
             assert experiment.name == name
             assert experiment.space.configuration == space
@@ -211,8 +215,8 @@ class TestCreateExperiment:
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""
-        with OrionState():
-            experiment = create_experiment(**user_config)
+        with OrionState() as cfg:
+            experiment = create_experiment(**user_config, storage=cfg.storage_config)
 
             exp_config = experiment.configuration
 
@@ -224,8 +228,8 @@ class TestCreateExperiment:
 
     def test_create_experiment_hit_no_branch(self, user_config):
         """Test creating an existing experiment by specifying all identical attributes."""
-        with OrionState(experiments=[config]):
-            experiment = create_experiment(**user_config)
+        with OrionState(experiments=[config]) as cfg:
+            experiment = create_experiment(**user_config, storage=cfg.storage_config)
 
             exp_config = experiment.configuration
 
@@ -239,8 +243,8 @@ class TestCreateExperiment:
 
     def test_create_experiment_hit_no_config(self):
         """Test creating an existing experiment by specifying the name only."""
-        with OrionState(experiments=[config]):
-            experiment = create_experiment(config["name"])
+        with OrionState(experiments=[config]) as cfg:
+            experiment = create_experiment(config["name"], storage=cfg.storage_config)
 
             assert experiment.name == config["name"]
             assert experiment.version == 1
@@ -252,11 +256,12 @@ class TestCreateExperiment:
 
     def test_create_experiment_hit_branch(self):
         """Test creating a differing experiment that cause branching."""
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             experiment = create_experiment(
                 config["name"],
                 space={"y": "uniform(0, 10)"},
                 branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             assert experiment.name == config["name"]
@@ -273,12 +278,13 @@ class TestCreateExperiment:
         RaceCondition during registration is already handled by `build()`, therefore we will only
         test for race conditions during version update.
         """
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             parent = create_experiment(config["name"])
             child = create_experiment(
                 config["name"],
                 space={"y": "uniform(0, 10)"},
                 branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             def insert_race_condition(self, query):
@@ -316,12 +322,13 @@ class TestCreateExperiment:
 
     def test_create_experiment_race_condition_broken(self, monkeypatch):
         """Test that two or more race condition leads to raise"""
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             parent = create_experiment(config["name"])
             child = create_experiment(
                 config["name"],
                 space={"y": "uniform(0, 10)"},
                 branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             def insert_race_condition(self, query):
@@ -360,9 +367,12 @@ class TestCreateExperiment:
     def test_create_experiment_hit_manual_branch(self):
         """Test creating a differing experiment that cause branching."""
         new_space = {"y": "uniform(0, 10)"}
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             create_experiment(
-                config["name"], space=new_space, branching={"enable": True}
+                config["name"],
+                space=new_space,
+                branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             with pytest.raises(BranchingEvent) as exc:
@@ -476,8 +486,8 @@ class TestWorkon:
         # Now test with a prior storage
         with OrionState(
             storage={"type": "legacy", "database": {"type": "EphemeralDB"}}
-        ):
-            storage = setup_storage()
+        ) as cfg:
+            storage = cfg.storage
 
             with pytest.raises(RuntimeError) as exc:
                 workon(foo, space={"x": "uniform(0, 10)"}, max_trials=5, name="voici")

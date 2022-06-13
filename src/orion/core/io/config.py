@@ -455,3 +455,19 @@ class Configuration:
                 config[key] = self[key].to_dict()
 
         return config
+
+    def from_dict(self, config):
+        """Set the configuration from a dictionary"""
+
+        with _disable_logger():
+            for key in self._config:
+                value = config.get(key)
+
+                if value:
+                    self[key] = value
+
+            for key in self._subconfigs:
+                value = config.get(key)
+                if value:
+                    self[key].from_dict(value)
+

@@ -162,11 +162,13 @@ def create_study_experiments(
         for worker in n_workers:
             for _ in range(len(algorithms)):
                 workers.append(worker)
-    with OrionState(experiments=gen_exps, trials=gen_trials):
+    with OrionState(experiments=gen_exps, trials=gen_trials) as cfg:
         experiments = []
         experiments_info = []
         for i in range(task_number * len(n_workers) * len(algorithms)):
-            experiment = experiment_builder.build("experiment-name-{}".format(i))
+            experiment = experiment_builder.build(
+                "experiment-name-{}".format(i), storage=cfg.storage_config
+            )
 
             executor = Joblib(n_workers=workers[i], backend="threading")
             client = ExperimentClient(experiment, executor=executor)
@@ -213,7 +215,9 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
         experiments=[exp_config],
         trials=generate_trials(trial_config, statuses, exp_config),
     ) as cfg:
-        experiment = experiment_builder.build(name=exp_config["name"])
+        experiment = experiment_builder.build(
+            name=exp_config["name"], storage=cfg.storage_config
+        )
         if cfg.trials:
             experiment._id = cfg.trials[0]["experiment"]
         client = ExperimentClient(experiment)

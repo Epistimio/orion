@@ -14,6 +14,7 @@ import tempfile
 
 import yaml
 
+import orion
 from orion.core.io import experiment_builder as experiment_builder
 from orion.core.utils.singleton import (
     SingletonAlreadyInstantiatedError,
@@ -84,6 +85,8 @@ class BaseOrionState:
 
         self.tempfile = None
         self.tempfile_path = None
+
+        self.previous_config = orion.core.config.storage.to_dict()
         self.storage_config = _select(storage, _get_default_test_storage())
         self.storage = None
 
@@ -102,7 +105,7 @@ class BaseOrionState:
 
     def init(self, config):
         """Initialize environment before testing"""
-        self.storage(config)
+        self.setup_storage(config)
         self.load_experience_configuration()
         return self
 
@@ -189,11 +192,13 @@ class BaseOrionState:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup database state"""
         self.cleanup()
-
+        orion.core.config.storage.from_dict(self.previous_config)
         update_singletons(self.singletons)
 
     def setup_storage(self, config=None):
         """Return test storage"""
+        orion.core.config.storage.from_dict(config)
+
         if config is None:
             self.storage = setup_storage()
             return self.storage

@@ -126,7 +126,9 @@ class TestCreateBenchmark:
     def test_create_benchmark(self, benchmark_config, benchmark_config_py):
         """Test creation with valid configuration"""
         with OrionState() as cfg:
-            bm1 = get_or_create_benchmark(**benchmark_config_py, storage=cfg.storage_config)
+            bm1 = get_or_create_benchmark(
+                **benchmark_config_py, storage=cfg.storage_config
+            )
             bm1.close()
 
             bm2 = get_or_create_benchmark("bm00001", storage=cfg.storage_config)
@@ -192,7 +194,11 @@ class TestCreateBenchmark:
                 ]
                 # Pass executor to close it properly
                 with Joblib(n_workers=2, backend="threading") as executor:
-                    get_or_create_benchmark(**benchmark_config_py, executor=executor, storage=cfg.storage_config)
+                    get_or_create_benchmark(
+                        **benchmark_config_py,
+                        executor=executor,
+                        storage=cfg.storage_config
+                    )
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
 
     def test_create_with_deterministic_algorithm(self, benchmark_config_py):
@@ -248,7 +254,9 @@ class TestCreateBenchmark:
 
         with OrionState(benchmarks=cfg_invalid_assess) as cfg:
             with pytest.raises(NotImplementedError) as exc:
-                get_or_create_benchmark(benchmark_config["name"], storage=cfg.storage_config).close()
+                get_or_create_benchmark(
+                    benchmark_config["name"], storage=cfg.storage_config
+                ).close()
             assert "Could not find implementation of BenchmarkAssessment" in str(
                 exc.value
             )
@@ -258,7 +266,9 @@ class TestCreateBenchmark:
 
         with OrionState(benchmarks=cfg_invalid_task) as cfg:
             with pytest.raises(NotImplementedError) as exc:
-                get_or_create_benchmark(benchmark_config["name"], storage=cfg.storage_config)
+                get_or_create_benchmark(
+                    benchmark_config["name"], storage=cfg.storage_config
+                )
             assert "Could not find implementation of BenchmarkTask" in str(exc.value)
 
     def test_create_with_not_exist_targets_parameters(self, benchmark_config):
@@ -271,7 +281,9 @@ class TestCreateBenchmark:
 
         with OrionState(benchmarks=benchmark_config) as cfg:
             with pytest.raises(TypeError) as exc:
-                get_or_create_benchmark(benchmark_config["name"], storage=cfg.storage_config)
+                get_or_create_benchmark(
+                    benchmark_config["name"], storage=cfg.storage_config
+                )
             assert "__init__() got an unexpected keyword argument 'idontexist'" in str(
                 exc.value
             )
@@ -279,7 +291,9 @@ class TestCreateBenchmark:
     def test_create_from_db_config(self, benchmark_config):
         """Test creation from existing db configubenchmark_configre"""
         with OrionState(benchmarks=copy.deepcopy(benchmark_config)) as cfg:
-            bm = get_or_create_benchmark(benchmark_config["name"], storage=cfg.storage_config)
+            bm = get_or_create_benchmark(
+                benchmark_config["name"], storage=cfg.storage_config
+            )
             bm.close()
             assert bm.configuration == benchmark_config
 
@@ -307,7 +321,9 @@ class TestCreateBenchmark:
             with caplog.at_level(
                 logging.INFO, logger="orion.benchmark.benchmark_client"
             ):
-                bm = benchmark_client.get_or_create_benchmark(**benchmark_config_py, storage=cfg.storage_config)
+                bm = benchmark_client.get_or_create_benchmark(
+                    **benchmark_config_py, storage=cfg.storage_config
+                )
                 bm.close()
 
             assert (

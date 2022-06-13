@@ -470,7 +470,7 @@ def test_init(init_full_x):
 def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
     """Test that the experiment config is overwritten if --enable-evc is not passed"""
     storage = setup_storage()
-    assert len(setup_storage().fetch_experiments({})) == 1
+    assert len(storage.fetch_experiments({})) == 1
     experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
