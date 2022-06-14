@@ -88,7 +88,7 @@ test('Test if experiment trials are loaded', async () => {
     screen.queryByText(/0915da146c84975df9bdf4c3ee9376dc/)
   ).toBeInTheDocument();
 
-  // Select another experiment and check if plots are loaded
+  // Select another experiment and check if trials are loaded
   const anotherExperiment = await screen.findByText(/tpe-rosenbrock/);
   expect(anotherExperiment).toBeInTheDocument();
   fireEvent.click(anotherExperiment);
