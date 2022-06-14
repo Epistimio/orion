@@ -465,9 +465,20 @@ class Configuration:
 
                 if value:
                     self[key] = value
+                elif hasattr(self, key):
+                    try:
+                        delattr(self, key)
+                        print("Deleted")
+                    except AttributeError:
+                        pass
 
             for key in self._subconfigs:
                 value = config.get(key)
                 if value:
                     self[key].from_dict(value)
-
+                elif hasattr(self, key):
+                    try:
+                        delattr(self, key)
+                        print("Deleted")
+                    except AttributeError:
+                        pass

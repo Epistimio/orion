@@ -1679,7 +1679,7 @@ class ExperimentNameConflict(Conflict):
         if self.is_resolved:
             return None
 
-        return self.ExperimentNameResolution(self, new_name, storage=None)
+        return self.ExperimentNameResolution(self, new_name, storage=storage)
 
     @property
     def diff(self):

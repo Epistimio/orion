@@ -566,6 +566,7 @@ def setup_storage(storage=None, debug=False):
 
     import traceback
 
+    print(storage)
     log.info("Setting up storage %s", "".join(traceback.format_stack()[33:]))
 
     storage = copy.deepcopy(storage)

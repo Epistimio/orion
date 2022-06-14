@@ -86,7 +86,7 @@ class BaseOrionState:
         self.tempfile = None
         self.tempfile_path = None
 
-        self.previous_config = orion.core.config.storage.to_dict()
+        self.previous_config = copy.deepcopy(orion.core.config.storage.to_dict())
         self.storage_config = _select(storage, _get_default_test_storage())
         self.storage = None
 
@@ -166,6 +166,7 @@ class BaseOrionState:
         """
         self.tempfile, self.tempfile_path = tempfile.mkstemp("_orion_test")
         _remove(self.tempfile_path)
+        print(self.tempfile_path)
 
         def map_dict(fun, dictionary):
             """Return a dictionary with fun applied to each values"""
