@@ -253,11 +253,17 @@ jobs:
           if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
           if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
           if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          echo Dashboard build checked
           # Check if frontend script can find dashboard build
           python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
           # Clean-up
           pip uninstall -y orion
           # Check if dashboard build is correctly removed
+          echo Check if index.html is removed
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then false; fi
+          echo Check if main.*.js is removed
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; fi
+          echo Check if orion-dashboard folder is removed
           if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then false; else true; fi
           # End
           cd -
@@ -276,6 +282,7 @@ jobs:
           if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
           if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
           if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          echo Dashboard build checked
           # Check if frontend script can find dashboard build
           python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
           # Clean-up
