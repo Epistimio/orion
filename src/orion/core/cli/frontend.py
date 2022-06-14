@@ -48,8 +48,8 @@ def get_dashboard_build_path():
                 "build",
             )
         )
-    assert os.path.isdir(dashboard_build_path)
-    assert os.path.isfile(os.path.join(dashboard_build_path, "index.html"))
+    if not os.path.isdir(dashboard_build_path):
+        raise RuntimeError("Cannot find dashboard static files to run frontend")
     return dashboard_build_path
 
 
