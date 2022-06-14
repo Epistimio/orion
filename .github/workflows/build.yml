@@ -238,6 +238,51 @@ jobs:
       run: tox -e packaging
     - name: Build
       run: tox -e build
+    - name: Test dashboard build deployment on normal install
+      run: |
+          # Get package path
+          export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+          echo Package path: ${ORION_PACKAGE}
+          # Move to another folder (to prevent any confusion at installation with repo folder)
+          cd ~
+          # Normal install
+          pip install ${ORION_PACKAGE}
+          # Get prefix
+          export ORION_PREFIX=$( python -c "import sys; print(sys.prefix);" )
+          # Check if dashboard build is installed
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          # Clean-up
+          pip uninstall -y orion
+          # Check if dashboard build is correctly removed
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then false; else true; fi
+          # End
+          cd -
+    - name: Test dashboard build deployment on user install
+      run: |
+        # Get package path
+        export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+        echo Package path: ${ORION_PACKAGE}
+        # Move to another folder (to prevent any confusion at installation with repo folder)
+        cd ~
+        # User install
+        pip install --user ${ORION_PACKAGE}
+        # Get prefix
+        export ORION_PREFIX=$( python -c "import site; print(site.USER_BASE);" )
+        # Check if dashboard build is installed
+        if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+        if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
+        if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+        # Clean-up
+        pip uninstall -y --user orion
+        # Check if dashboard build is correctly removed
+        # NB: In user install case, it seems folder orion-dashboard itself is not deleted,
+        # but it should be empty after uninstall
+        if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then false; else true; fi
+        if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; else true; fi
+        # End
+        cd -
     - name: Publish distribution 📦 to Test PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
