@@ -49,7 +49,10 @@ def get_dashboard_build_path():
             )
         )
     if not os.path.isdir(dashboard_build_path):
-        raise RuntimeError("Cannot find dashboard static files to run frontend")
+        raise RuntimeError(
+            f"Cannot find dashboard static files to run frontend. "
+            f"Expected to be located at: {dashboard_build_path}"
+        )
     return dashboard_build_path
 
 
