@@ -456,29 +456,24 @@ class Configuration:
 
         return config
 
+    def reset(self):
+        """Reset config to default"""
+        with _disable_logger():
+            for key, values in self._config.items():
+                self[key] = values.get('default')
+
+            for key, value in self._subconfigs.items():
+                value.reset()
+
+
     def from_dict(self, config):
         """Set the configuration from a dictionary"""
 
         with _disable_logger():
-            for key in self._config:
-                value = config.get(key)
-
-                if value:
-                    self[key] = value
-                elif hasattr(self, key):
-                    try:
-                        delattr(self, key)
-                        print("Deleted")
-                    except AttributeError:
-                        pass
+            for key, values in self._config.items():
+                value = config.get(key,  values.get('default'))
+                self[key] = value
 
             for key in self._subconfigs:
                 value = config.get(key)
-                if value:
-                    self[key].from_dict(value)
-                elif hasattr(self, key):
-                    try:
-                        delattr(self, key)
-                        print("Deleted")
-                    except AttributeError:
-                        pass
+                self[key].from_dict(value)
