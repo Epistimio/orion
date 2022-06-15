@@ -372,11 +372,6 @@ def setup_pickleddb_database():
     update_singletons()
     temporary_file = tempfile.NamedTemporaryFile()
 
-    # from orion.core.io.config import NOT_SET
-    orion.core.config.storage.type = "legacy"
-    orion.core.config.storage.database.type = "pickleddb"
-    orion.core.config.storage.database.host = temporary_file.name
-
     # This does not work anymore because the config is not resetable
     print(temporary_file.name)
     os.environ["ORION_DB_TYPE"] = "pickleddb"

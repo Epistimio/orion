@@ -458,9 +458,10 @@ class Configuration:
 
     def reset(self):
         """Reset config to default"""
+
         with _disable_logger():
-            for key, values in self._config.items():
-                self[key] = values.get('default')
+            for key in self._config:
+                self._config[key].pop('value', None)
 
             for key, value in self._subconfigs.items():
                 value.reset()
@@ -471,9 +472,24 @@ class Configuration:
 
         with _disable_logger():
             for key, values in self._config.items():
-                value = config.get(key,  values.get('default'))
-                self[key] = value
+                value = config.get(key)
+
+                if value:
+                    self[key] = value
+                else:
+                    self._config[key].pop('value', None)
 
             for key in self._subconfigs:
                 value = config.get(key)
                 self[key].from_dict(value)
+
+    def __repr__(self) -> str:
+        confs = []
+        for k, v in self._config.items():
+            if 'value' in v:
+                confs.append(f'{k}: {repr(v["value"])}')
+
+        for k, v in self._subconfigs.items():
+            confs.append(f'{k}: {repr(v)}')
+
+        return "{" + ', '.join(confs) + "}"
