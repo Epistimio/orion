@@ -282,7 +282,7 @@ jobs:
           echo Check if frontend script can find dashboard build
           python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
           echo Clean-up
-          pip uninstall -y --user orion
+          pip uninstall -y orion
           echo Check if dashboard build is correctly removed
           # NB: In user install case, it seems folder orion-dashboard itself is not deleted,
           # but it should be empty after uninstall
