@@ -461,11 +461,10 @@ class Configuration:
 
         with _disable_logger():
             for key in self._config:
-                self._config[key].pop('value', None)
+                self._config[key].pop("value", None)
 
             for key, value in self._subconfigs.items():
                 value.reset()
-
 
     def from_dict(self, config):
         """Set the configuration from a dictionary"""
@@ -481,7 +480,7 @@ class Configuration:
                 if value:
                     self[key] = value
                 else:
-                    self._config[key].pop('value', None)
+                    self._config[key].pop("value", None)
 
             for key in self._subconfigs:
                 value = config.get(key)
@@ -490,10 +489,10 @@ class Configuration:
     def __repr__(self) -> str:
         confs = []
         for k, v in self._config.items():
-            if 'value' in v:
+            if "value" in v:
                 confs.append(f'{k}: {repr(v["value"])}')
 
         for k, v in self._subconfigs.items():
-            confs.append(f'{k}: {repr(v)}')
+            confs.append(f"{k}: {repr(v)}")
 
-        return "{" + ', '.join(confs) + "}"
+        return "{" + ", ".join(confs) + "}"

@@ -118,9 +118,7 @@ def with_experiment_missing_conf_file(monkeypatch, one_experiment):
     conf_file = "idontexist.yaml"
     exp.metadata["user_config"] = conf_file
     exp.metadata["user_args"] += ["--config", conf_file]
-    setup_database().write(
-        "experiments", exp.configuration, query={"_id": exp.id}
-    )
+    setup_database().write("experiments", exp.configuration, query={"_id": exp.id})
 
     return exp
 

@@ -147,7 +147,9 @@ class Experiment:
 
         self._storage = storage or setup_storage()
 
-        self._node = ExperimentNode(self.name, self.version, experiment=self, storage=self._storage)
+        self._node = ExperimentNode(
+            self.name, self.version, experiment=self, storage=self._storage
+        )
 
     def _check_if_writable(self):
         if self.mode == "r":

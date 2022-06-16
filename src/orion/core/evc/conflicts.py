@@ -896,7 +896,11 @@ class MissingDimensionConflict(Conflict):
         return {}
 
     def try_resolve(
-        self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE, *args, **kwargs
+        self,
+        new_dimension_conflict=None,
+        default_value=Dimension.NO_DEFAULT_VALUE,
+        *args,
+        **kwargs,
     ):
         """Try to create a resolution RenameDimensionResolution of RemoveDimensionResolution
 

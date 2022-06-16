@@ -193,7 +193,7 @@ class BaseOrionState:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup database state"""
         self.cleanup()
-        print('Conf', orion.core.config.storage)
+        print("Conf", orion.core.config.storage)
         orion.core.config.storage.from_dict(self.previous_config)
         print("Conf", orion.core.config.storage)
         update_singletons(self.singletons)
