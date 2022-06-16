@@ -127,9 +127,6 @@ class BaseStorageProtocol:
 
     """
 
-    def __del__(self):
-        print('Done')
-
     def create_benchmark(self, config):
         """Insert a new benchmark inside the database"""
         raise NotImplementedError()
@@ -569,7 +566,6 @@ def setup_storage(storage=None, debug=False):
 
     import traceback
 
-    print(storage)
     log.info("Setting up storage %s", "".join(traceback.format_stack()[33:]))
 
     storage = copy.deepcopy(storage)

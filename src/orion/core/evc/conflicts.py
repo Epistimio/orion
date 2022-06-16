@@ -285,11 +285,21 @@ class Conflicts(object):
             resolution = conflict.try_resolve(*args, **kwargs)
         except KeyboardInterrupt:
             raise
-        except Exception:  # pylint:disable=broad-except
+        except AssertionError:
+            # something terribly wrong happened
+            raise
+        except Exception as err:  # pylint:disable=broad-except
             conflict.resolution = None
             conflict._is_resolved = None  # pylint:disable=protected-access
+
+            msg = traceback.format_exc()
+
+            # no silence error in debug mode
+            log.debug("%s", msg)
+
             if not silence_errors:
-                print(traceback.format_exc())
+                print(msg)
+
             return None
 
         if resolution:
@@ -373,7 +383,7 @@ class Conflict(object, metaclass=ABCMeta):
         return {}
 
     @abstractmethod
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution
 
         Conflict is then marked as resolved and its attribute `resolution` now points to the
@@ -570,7 +580,7 @@ class NewDimensionConflict(Conflict):
         self.dimension = dimension
         self.prior = prior
 
-    def try_resolve(self, default_value=Dimension.NO_DEFAULT_VALUE):
+    def try_resolve(self, default_value=Dimension.NO_DEFAULT_VALUE, *args, **kwargs):
         """Try to create a resolution AddDimensionResolution
 
         Parameters
@@ -713,7 +723,7 @@ class ChangedDimensionConflict(Conflict):
         self.old_prior = old_prior
         self.new_prior = new_prior
 
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution ChangeDimensionResolution"""
         if self.is_resolved:
             return None
@@ -886,7 +896,7 @@ class MissingDimensionConflict(Conflict):
         return {}
 
     def try_resolve(
-        self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE
+        self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE, *args, **kwargs
     ):
         """Try to create a resolution RenameDimensionResolution of RemoveDimensionResolution
 
@@ -1109,7 +1119,7 @@ class AlgorithmConflict(Conflict):
         if old_config["algorithms"] != new_config["algorithms"]:
             yield cls(old_config, new_config)
 
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution AlgorithmResolution"""
         if self.is_resolved:
             return None
@@ -1209,7 +1219,7 @@ class CodeConflict(Conflict):
 
         return dict(change_type=code_change_type)
 
-    def try_resolve(self, change_type=None):
+    def try_resolve(self, change_type=None, *args, **kwargs):
         """Try to create a resolution CodeResolution
 
         Parameters
@@ -1380,7 +1390,7 @@ class CommandLineConflict(Conflict):
 
         return dict(change_type=cli_change_type)
 
-    def try_resolve(self, change_type=None):
+    def try_resolve(self, change_type=None, *args, **kwargs):
         """Try to create a resolution CommandLineResolution
 
         Parameters
@@ -1538,7 +1548,7 @@ class ScriptConfigConflict(Conflict):
 
         return dict(change_type=config_change_type)
 
-    def try_resolve(self, change_type=None):
+    def try_resolve(self, change_type=None, *args, **kwargs):
         """Try to create a resolution ScriptConfigResolution
 
         Parameters
@@ -1661,7 +1671,7 @@ class ExperimentNameConflict(Conflict):
         """Retrieve version of configuration"""
         return self.old_config["version"]
 
-    def try_resolve(self, new_name=None, storage=None):
+    def try_resolve(self, new_name=None, storage=None, *args, **kwargs):
         """Try to create a resolution ExperimentNameResolution
 
         Parameters
@@ -1828,7 +1838,7 @@ class OrionVersionConflict(Conflict):
         ):
             yield cls(old_config, new_config)
 
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution OrionVersionResolution"""
         if self.is_resolved:
             return None

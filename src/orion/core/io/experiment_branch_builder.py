@@ -102,6 +102,7 @@ class ExperimentBranchBuilder:
             resolution = self.conflicts.try_resolve(
                 conflict,
                 silence_errors=silence_errors,
+                storage=self.storage,
                 **conflict.get_marked_arguments(
                     self.conflicts, **self.branching_arguments
                 )
