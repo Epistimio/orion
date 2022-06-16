@@ -184,7 +184,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   pypi:
-    needs: [test, backward-compatibility, test-long-algos]
+    needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
