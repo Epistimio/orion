@@ -72,7 +72,7 @@ def create_producer():
         experiment.algorithms.algorithm.max_trials = 20
 
         producer = Producer(experiment)
-        yield producer, cfg.storage()
+        yield producer, cfg.setup_storage()
 
 
 def test_produce():

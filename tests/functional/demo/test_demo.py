@@ -644,9 +644,11 @@ def test_worker_trials(storage, monkeypatch):
     assert n_completed() == 6
 
 
-@pytest.mark.usefixtures("storage")
 def test_resilience(monkeypatch):
     """Test if Oríon stops after enough broken trials."""
+
+    storage = setup_storage()
+
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     MAX_BROKEN = 3
@@ -666,9 +668,11 @@ def test_resilience(monkeypatch):
     assert len(exp.fetch_trials_by_status("broken")) == MAX_BROKEN
 
 
-@pytest.mark.usefixtures("storage")
 def test_demo_with_shutdown_quickly(monkeypatch):
     """Check simple pipeline with random search is reasonably fast."""
+
+    storage = setup_storage()
+
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     monkeypatch.setattr(orion.core.config.worker, "heartbeat", 120)

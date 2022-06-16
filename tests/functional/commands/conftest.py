@@ -15,6 +15,7 @@ import orion.core.utils.backward as backward
 from orion.core.io.database import database_factory
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage
+from orion.storage.legacy import setup_database
 
 
 @pytest.fixture()
@@ -117,7 +118,7 @@ def with_experiment_missing_conf_file(monkeypatch, one_experiment):
     conf_file = "idontexist.yaml"
     exp.metadata["user_config"] = conf_file
     exp.metadata["user_args"] += ["--config", conf_file]
-    database_factory.create().write(
+    setup_database().write(
         "experiments", exp.configuration, query={"_id": exp.id}
     )
 
@@ -146,7 +147,7 @@ def single_without_success(one_experiment):
         x["value"] = x_value
         trial = Trial(experiment=exp.id, params=[x], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
+        setup_database().write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -157,7 +158,7 @@ def single_with_trials(single_without_success):
     x = {"name": "/x", "type": "real", "value": 100}
     results = {"name": "obj", "type": "objective", "value": 0}
     trial = Trial(experiment=exp.id, params=[x], status="completed", results=[results])
-    database_factory.create().write("trials", trial.to_dict())
+    setup_database().write("trials", trial.to_dict())
     return exp.configuration
 
 
@@ -210,8 +211,8 @@ def family_with_trials(two_experiments):
         x["value"] = x_value + 0.5  # To avoid duplicates
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
-        database_factory.create().write("trials", trial2.to_dict())
+        setup_database().write("trials", trial.to_dict())
+        setup_database().write("trials", trial2.to_dict())
 
 
 @pytest.fixture
@@ -219,8 +220,8 @@ def unrelated_with_trials(family_with_trials, single_with_trials):
     """Create two unrelated experiments with all types of trials."""
     exp = experiment_builder.build(name="test_double_exp_child")
 
-    database_factory.create().remove("trials", {"experiment": exp.id})
-    database_factory.create().remove("experiments", {"_id": exp.id})
+    setup_database().remove("trials", {"experiment": exp.id})
+    setup_database().remove("experiments", {"_id": exp.id})
 
 
 @pytest.fixture
@@ -268,7 +269,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, z], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
+        setup_database().write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -312,7 +313,7 @@ def three_family_branch_with_trials(
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
+        setup_database().write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -432,7 +433,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
         trial = Trial(experiment=exp.id, params=[x], status=status)
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         trial3 = Trial(experiment=exp3.id, params=[x, y, z], status=status)
-        database_factory.create().write("trials", trial.to_dict())
-        database_factory.create().write("trials", trial2.to_dict())
-        database_factory.create().write("trials", trial3.to_dict())
+        setup_database().write("trials", trial.to_dict())
+        setup_database().write("trials", trial2.to_dict())
+        setup_database().write("trials", trial3.to_dict())
         x_value += 1

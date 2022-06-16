@@ -382,11 +382,6 @@ def setup_pickleddb_database():
     del os.environ["ORION_DB_ADDRESS"]
 
 
-@pytest.fixture(scope="function")
-def storage(setup_pickleddb_database):
-    yield setup_storage()
-
-
 @pytest.fixture()
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""

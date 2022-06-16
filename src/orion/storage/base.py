@@ -127,6 +127,9 @@ class BaseStorageProtocol:
 
     """
 
+    def __del__(self):
+        print('Done')
+
     def create_benchmark(self, config):
         """Insert a new benchmark inside the database"""
         raise NotImplementedError()

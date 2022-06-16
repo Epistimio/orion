@@ -22,33 +22,12 @@ class TestDatabaseFactory(object):
 
     """
 
-    def test_empty_first_call(self):
-        """Should not be able to make first call without any arguments.
-
-        Hegelian Ontology Primer
-        ------------------------
-
-        Type indeterminate <-> type abstracted from its property <-> No type
-        """
-        with pytest.raises(SingletonNotInstantiatedError):
-            database_factory.create()
-
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
             database_factory.create("notfound")
 
         assert "Database" in str(exc_info.value)
-
-    def test_instantiation_and_singleton(self):
-        """Test create just one object, that object persists between calls."""
-        database = database_factory.create(of_type="PickledDB", name="orion_test")
-
-        assert isinstance(database, PickledDB)
-        assert database is database_factory.create()
-
-        with pytest.raises(SingletonAlreadyInstantiatedError):
-            database_factory.create("fire", [], {"it_matters": "it's singleton"})
 
 
 @pytest.mark.usefixtures("null_db_instances")

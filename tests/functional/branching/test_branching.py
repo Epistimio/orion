@@ -68,6 +68,8 @@ def init_no_evc(monkeypatch):
 @pytest.fixture
 def init_full_x_full_y(init_full_x):
     """Add y dimension to original"""
+    print('init_full_x_full_y start')
+
     name = "full_x"
     branch = "full_x_full_y"
     orion.core.cli.main(

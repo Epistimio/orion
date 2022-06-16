@@ -470,6 +470,10 @@ class Configuration:
     def from_dict(self, config):
         """Set the configuration from a dictionary"""
 
+        if config is None:
+            self.reset()
+            return
+
         with _disable_logger():
             for key, values in self._config.items():
                 value = config.get(key)

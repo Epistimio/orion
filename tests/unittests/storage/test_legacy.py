@@ -74,8 +74,7 @@ db_backends = [{"type": "legacy", "database": mongodb_config}]
 def test_setup_database_default(monkeypatch):
     """Test that database is setup using default config"""
     update_singletons()
-    setup_database()
-    database = database_factory.create()
+    database = setup_database()
     assert isinstance(database, PickledDB)
 
 
@@ -91,8 +90,8 @@ def test_setup_database_bad():
 def test_setup_database_custom():
     """Test setup with local configuration"""
     update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = database_factory.create()
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
+
     assert isinstance(database, PickledDB)
     assert database.host == os.path.abspath("test.pkl")
 
@@ -100,8 +99,7 @@ def test_setup_database_custom():
 def test_setup_database_bad_override():
     """Test setup with different type than existing singleton"""
     update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = database_factory.create()
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
         setup_database({"type": "mongodb"})
@@ -112,29 +110,17 @@ def test_setup_database_bad_override():
 def test_setup_database_bad_config_override():
     """Test setup with different config than existing singleton"""
     update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = database_factory.create()
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError):
         setup_database({"type": "pickleddb", "host": "other.pkl"})
 
 
-def test_get_database_uninitiated():
-    """Test that get database fails if no database singleton exist"""
-    update_singletons()
-    with pytest.raises(SingletonNotInstantiatedError) as exc:
-        get_database()
-
-    assert exc.match("No singleton instance of \(type: Database\) was created")
-
-
 def test_get_database():
     """Test that get database gets the singleton"""
     update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = get_database()
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
-    assert get_database() == database
 
 
 class TestLegacyStorage:
@@ -147,7 +133,7 @@ class TestLegacyStorage:
         with OrionState(
             experiments=[], trials=[reserved_trial], storage=storage
         ) as cfg:
-            storage = cfg.storage()
+            storage = cfg.setup_storage()
             trial = storage.get_trial(Trial(**reserved_trial))
             results = [Trial.Result(name="loss", type="objective", value=2)]
             trial.results = results
@@ -159,7 +145,7 @@ class TestLegacyStorage:
     def test_push_trial_results_unreserved(self, storage=None):
         """Successfully push a completed trial into database."""
         with OrionState(experiments=[], trials=[base_trial], storage=storage) as cfg:
-            storage = cfg.storage()
+            storage = cfg.setup_storage()
             trial = storage.get_trial(Trial(**base_trial))
             results = [Trial.Result(name="loss", type="objective", value=2)]
             trial.results = results
