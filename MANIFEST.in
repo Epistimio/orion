@@ -28,6 +28,7 @@ prune docs/build
 prune docs/src/reference
 recursive-include src *.py
 recursive-include tests *.py *.yaml *.json *.txt *.yml *.in LICENSE
+recursive-include dashboard/build *
 include tests/requirements.txt
 include .pre-commit-config.yaml
 include CITATION.bib
