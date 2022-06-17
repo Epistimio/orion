@@ -66,8 +66,9 @@ class Random(BaseAlgorithm):
         """
         trials = []
         while len(trials) < num and not self.is_done:
+            # NOTE: space.sample() uses (and modifies) the random state here.
             seed = tuple(self.rng.randint(0, 1000000, size=3))
-            new_trial = self.format_trial(self.space.sample(1, seed=seed)[0])
+            new_trial = self.space.sample(1, seed=seed)[0]
             if not self.has_suggested(new_trial):
                 self.register(new_trial)
                 trials.append(new_trial)

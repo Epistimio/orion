@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
-import numpy
-import pytest
+from __future__ import annotations
+
+from typing import ClassVar
 
 from orion.algo.random import Random
-from orion.algo.space import Integer, Real, Space
 from orion.testing.algo import BaseAlgoTests
 
 
 class TestRandomSearch(BaseAlgoTests):
-    algo_name = "random"
-    config = {"seed": 123456}
+    """Tests for the Random algorithm."""
 
-
-TestRandomSearch.set_phases([("random", 0, "space.sample")])
+    algo_type: ClassVar[type[Random]] = Random
+    config: ClassVar[dict] = {"seed": 123456}

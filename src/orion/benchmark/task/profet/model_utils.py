@@ -132,7 +132,7 @@ class MetaModelConfig(ABC):
     n_inducing_lvm: int = 50
     """ Passed as the value for the "num_inducing" argument of `BayesianGPLVM` constructor.
 
-    (copied form `GPy.core.sparse_gp_mpi.SparseGP_MPI`):
+    (copied form ``GPy.core.sparse_gp_mpi.SparseGP_MPI``):
     Number of inducing points (optional, default 10. Ignored if Z is not None)
     """
 

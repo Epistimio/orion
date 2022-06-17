@@ -21,16 +21,54 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-    - name: Test with tox
+    - name: Run pre-tests with Tox
       run: tox -e ${{ matrix.toxenv }}
+
+  test-dashboard-build:
+    needs: pretest
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+    - name: Compile Dashboard
+      run: |
+          cd dashboard/src
+          yarn
+          yarn build
+          rm -rf ../build
+          mv build ..
+          cd ../../
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install -e .[test]
+    - name: Get gecko driver
+      run: |
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.31.0/geckodriver-v0.31.0-linux64.tar.gz
+          tar -xvf geckodriver-v0.31.0-linux64.tar.gz
+          export PATH=$PATH:$(pwd)
+    - name: Launch backend
+      run: orion serve -c .github/workflows/orion/orion_config.yaml &
+    - name: Launch frontend
+      run: orion frontend &
+    - name: Test frontend
+      run: pytest tests/functional/serving/test_frontend.py
+
   test:
     needs: pretest
     runs-on: ${{ matrix.platform }}
@@ -51,7 +89,7 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-    - name: Test with tox
+    - name: Test with tox (and all extra dependencies)
       run: tox -e py-all
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
@@ -61,15 +99,50 @@ jobs:
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
+
+  test-long-algos:
+    needs: pretest
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9]
+        algo: [nevergrad, hebo, ax]
+    env:
+      PLATFORM: ${{ matrix.platform }}
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install tox tox-gh-actions
+
+    - name: Test long algorithms with tox
+      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }}
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: PLATFORM,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
   test_no_extras:
     needs: pretest
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
@@ -89,10 +162,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Set up Python 3.7
+      - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
       - name: Setup MongoDB
         uses: supercharge/mongodb-github-action@1.3.0
         with:
@@ -124,10 +197,10 @@ jobs:
       ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Setup MongoDB
       uses: supercharge/mongodb-github-action@1.3.0
       with:
@@ -149,14 +222,14 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   pypi:
-    needs: [test, backward-compatibility]
+    needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras, test-dashboard-build]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
@@ -165,6 +238,58 @@ jobs:
       run: tox -e packaging
     - name: Build
       run: tox -e build
+    - name: Test dashboard build deployment on normal install
+      run: |
+          # Get package path
+          export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+          echo Package path: ${ORION_PACKAGE}
+          # Move to another folder (to prevent any confusion at installation with repo folder)
+          cd ~
+          echo Normal install
+          pip install ${ORION_PACKAGE}
+          # Get prefix
+          export ORION_PREFIX=$( python -c "import sys; print(sys.prefix);" )
+          echo Check if dashboard build is installed
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          echo Check if frontend script can find dashboard build
+          python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+          echo Clean-up
+          pip uninstall -y orion
+          echo Check if dashboard build is correctly removed
+          # NB: It seems orion-dashboard build is not deleted,
+          # but it should be empty after uninstall
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; fi
+          echo End
+          cd -
+    - name: Test dashboard build deployment on user install
+      run: |
+          # Get package path
+          export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+          echo Package path: ${ORION_PACKAGE}
+          # Move to another folder (to prevent any confusion at installation with repo folder)
+          cd ~
+          echo User install
+          pip install --user ${ORION_PACKAGE}
+          # Get prefix
+          export ORION_PREFIX=$( python -c "import site; print(site.USER_BASE);" )
+          echo Check if dashboard build is installed
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          echo Check if frontend script can find dashboard build
+          python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+          echo Clean-up
+          pip uninstall -y orion
+          echo Check if dashboard build is correctly removed
+          # NB: In user install case, it seems folder orion-dashboard itself is not deleted,
+          # but it should be empty after uninstall
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; fi
+          echo End
+          cd -
     - name: Publish distribution 📦 to Test PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
@@ -179,16 +304,16 @@ jobs:
         user: __token__
         password: ${{ secrets.pypi_password }}
   conda:
-    needs: [test, backward-compatibility]
+    needs: [test, backward-compatibility, test-long-algos, test-dashboard-build]
     runs-on: ubuntu-latest
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Build conda
       run: ./conda/ci_build.sh
     - name: Publish distribution 📦 to Conda

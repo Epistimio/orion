@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.asha`."""
+from __future__ import annotations
+
 import hashlib
-import itertools
 import logging
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -14,8 +15,10 @@ from test_hyperband import (
 )
 
 from orion.algo.asha import ASHA, ASHABracket, compute_budgets
+from orion.algo.hyperband import RungDict
 from orion.algo.space import Fidelity, Integer, Real, Space
-from orion.testing.algo import BaseAlgoTests
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import create_trial
 
 
@@ -46,13 +49,13 @@ def b_config(space):
 
 
 @pytest.fixture
-def asha(b_config, space):
+def asha(space: Space):
     """Return an instance of ASHA."""
     return ASHA(space)
 
 
 @pytest.fixture
-def bracket(b_config, asha):
+def bracket(b_config: dict, asha: ASHA):
     """Return a `ASHABracket` instance configured with `b_config`."""
     return ASHABracket(asha, b_config["budgets"], 1)
 
@@ -64,14 +67,14 @@ def rung_0():
 
 
 @pytest.fixture
-def rung_1(rung_0):
+def rung_1(rung_0: RungDict):
     """Create fake points and objectives for rung 1."""
     points = [trial.params["lr"] for _, trial in sorted(rung_0["results"].values())[:3]]
     return create_rung_from_points(points, n_trials=3, resources=3)
 
 
 @pytest.fixture
-def rung_2(rung_1):
+def rung_2(rung_1: RungDict):
     """Create fake points and objectives for rung 1."""
     points = [trial.params["lr"] for _, trial in sorted(rung_1["results"].values())[:1]]
     return create_rung_from_points(points, n_trials=1, resources=9)
@@ -89,7 +92,7 @@ def big_rung_0():
 
 
 @pytest.fixture
-def big_rung_1(big_rung_0):
+def big_rung_1(big_rung_0: RungDict):
     """Create fake points and objectives for big rung 1."""
     n_rung_0 = len(big_rung_0["results"])
     n_rung_1 = 3 * 2
@@ -146,16 +149,16 @@ def test_compute_compressed_budgets():
 class TestASHABracket:
     """Tests for the `ASHABracket` class."""
 
-    def test_rungs_creation(self, bracket):
+    def test_rungs_creation(self, bracket: ASHABracket):
         """Test the creation of rungs for bracket 0."""
         assert len(bracket.rungs) == 3
         assert bracket.rungs[0]["resources"] == 1
         assert bracket.rungs[1]["resources"] == 3
         assert bracket.rungs[2]["resources"] == 9
 
-    def test_register(self, asha, bracket):
+    def test_register(self, asha, bracket: ASHABracket):
         """Check that a point is correctly registered inside a bracket."""
-        bracket.asha = asha
+        assert bracket.owner is asha
         trial = create_trial_for_hb((1, 0.0), 0.0)
         trial_id = asha.get_id(trial, ignore_fidelity=True)
 
@@ -163,32 +166,38 @@ class TestASHABracket:
 
         assert len(bracket.rungs[0])
         assert trial_id in bracket.rungs[0]["results"]
+        assert trial.objective is not None
         assert bracket.rungs[0]["results"][trial_id][0] == trial.objective.value
         assert bracket.rungs[0]["results"][trial_id][1].to_dict() == trial.to_dict()
 
-    def test_bad_register(self, asha, bracket):
+    def test_bad_register(self, asha: ASHA, bracket: ASHABracket):
         """Check that a non-valid point is not registered."""
-        bracket.asha = asha
+        assert bracket.owner is asha
 
         with pytest.raises(IndexError) as ex:
             bracket.register(create_trial_for_hb((55, 0.0), 0.0))
 
         assert "Bad fidelity level 55" in str(ex.value)
 
-    def test_candidate_promotion(self, asha, bracket, rung_0):
+    def test_candidate_promotion(
+        self, asha: ASHA, bracket: ASHABracket, rung_0: RungDict
+    ):
         """Test that correct point is promoted."""
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = rung_0
 
         point = bracket.get_candidates(0)[0]
 
         assert point.params == create_trial_for_hb((1, 0.0), 0.0).params
 
-    def test_promotion_with_rung_1_hit(self, asha, bracket, rung_0):
+    def test_promotion_with_rung_1_hit(
+        self, asha: ASHA, bracket: ASHABracket, rung_0: RungDict
+    ):
         """Test that get_candidate gives us the next best thing if point is already in rung 1."""
         trial = create_trial_for_hb((1, 0.0), None)
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = rung_0
+        assert trial.objective is not None
         bracket.rungs[1]["results"][asha.get_id(trial, ignore_fidelity=True)] = (
             trial.objective.value,
             trial,
@@ -198,18 +207,20 @@ class TestASHABracket:
 
         assert trial.params == create_trial_for_hb((1, 1.0), 0.0).params
 
-    def test_no_promotion_when_rung_full(self, asha, bracket, rung_0, rung_1):
+    def test_no_promotion_when_rung_full(
+        self, asha: ASHA, bracket: ASHABracket, rung_0: RungDict, rung_1: RungDict
+    ):
         """Test that get_candidate returns `None` if rung 1 is full."""
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = rung_0
         bracket.rungs[1] = rung_1
 
         assert bracket.get_candidates(0) == []
 
-    def test_no_promotion_if_not_enough_points(self, asha, bracket):
+    def test_no_promotion_if_not_enough_points(self, asha: ASHA, bracket: ASHABracket):
         """Test the get_candidate return None if there is not enough points ready."""
-        bracket.asha = asha
-        bracket.rungs[0] = dict(
+        assert bracket.owner is asha
+        bracket.rungs[0] = RungDict(
             n_trials=1,
             resources=1,
             results={
@@ -219,9 +230,11 @@ class TestASHABracket:
 
         assert bracket.get_candidates(0) == []
 
-    def test_no_promotion_if_not_completed(self, asha, bracket, rung_0):
+    def test_no_promotion_if_not_completed(
+        self, asha: ASHA, bracket: ASHABracket, rung_0: RungDict
+    ):
         """Test the get_candidate return None if trials are not completed."""
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = rung_0
         rung = bracket.rungs[0]["results"]
 
@@ -232,18 +245,20 @@ class TestASHABracket:
 
         assert bracket.get_candidates(0) == []
 
-    def test_is_done(self, bracket, rung_0):
+    def test_is_done(self, bracket: ASHABracket, rung_0: RungDict):
         """Test that the `is_done` property works."""
         assert not bracket.is_done
 
         # Actual value of the point is not important here
-        bracket.rungs[2] = dict(n_trials=1, resources=9, results={"1": (1, 0.0)})
+        bracket.rungs[2] = RungDict(n_trials=1, resources=9, results={"1": (1, 0.0)})
 
         assert bracket.is_done
 
-    def test_update_rungs_return_candidate(self, asha, bracket, rung_1):
+    def test_update_rungs_return_candidate(
+        self, asha: ASHA, bracket: ASHABracket, rung_1: RungDict
+    ):
         """Check if a valid modified candidate is returned by update_rungs."""
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[1] = rung_1
         trial = create_trial_for_hb((3, 0.0), 0.0)
 
@@ -255,10 +270,14 @@ class TestASHABracket:
         assert candidate.params["epoch"] == 9
 
     def test_update_rungs_return_candidates(
-        self, asha, bracket, big_rung_0, big_rung_1
+        self,
+        asha: ASHA,
+        bracket: ASHABracket,
+        big_rung_0: RungDict,
+        big_rung_1: RungDict,
     ):
         """Check if many valid modified candidate is returned by update_rungs."""
-        bracket.asha = asha
+        assert bracket.owner is asha
 
         bracket.rungs[0] = big_rung_0
         bracket.rungs[1] = big_rung_1
@@ -287,15 +306,19 @@ class TestASHABracket:
             == 1
         )
 
-    def test_update_rungs_return_no_candidate(self, asha, bracket, rung_1):
+    def test_update_rungs_return_no_candidate(
+        self, asha: ASHA, bracket: ASHABracket, rung_1: RungDict
+    ):
         """Check if no candidate is returned by update_rungs."""
-        bracket.asha = asha
+        assert bracket.owner is asha
 
         candidate = bracket.promote(1)
 
         assert candidate == []
 
-    def test_repr(self, bracket, rung_0, rung_1, rung_2):
+    def test_repr(
+        self, bracket: ASHABracket, rung_0: RungDict, rung_1: RungDict, rung_2: RungDict
+    ):
         """Test the string representation of ASHABracket"""
         bracket.rungs[0] = rung_0
         bracket.rungs[1] = rung_1
@@ -307,10 +330,12 @@ class TestASHABracket:
 class TestASHA:
     """Tests for the algo ASHA."""
 
-    def test_register(self, asha, bracket, rung_0, rung_1):
+    def test_register(
+        self, asha: ASHA, bracket: ASHABracket, rung_0: RungDict, rung_1: RungDict
+    ):
         """Check that a point is registered inside the bracket."""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs = [rung_0, rung_1]
         trial = create_trial_for_hb((1, 0.0), 0.0)
         trial_id = asha.get_id(trial, ignore_fidelity=True)
@@ -322,7 +347,7 @@ class TestASHA:
         assert bracket.rungs[0]["results"][trial_id][0] == 0.0
         assert bracket.rungs[0]["results"][trial_id][1].params == trial.params
 
-    def test_register_bracket_multi_fidelity(self, space, b_config):
+    def test_register_bracket_multi_fidelity(self, space: Space, b_config: dict):
         """Check that a point is registered inside the same bracket for diff fidelity."""
         asha = ASHA(space, num_brackets=3)
 
@@ -352,7 +377,7 @@ class TestASHA:
         assert bracket.rungs[1]["results"][trial_id][0] == 0.0
         assert bracket.rungs[1]["results"][trial_id][1].params == trial.params
 
-    def test_register_next_bracket(self, space, b_config):
+    def test_register_next_bracket(self, space: Space, b_config: dict):
         """Check that a point is registered inside the good bracket when higher fidelity."""
         asha = ASHA(space, num_brackets=3)
 
@@ -382,7 +407,7 @@ class TestASHA:
         assert trial_id in asha.brackets[2].rungs[0]["results"]
         compare_registered_trial(asha.brackets[2].rungs[0]["results"][trial_id], trial)
 
-    def test_register_invalid_fidelity(self, space, b_config):
+    def test_register_invalid_fidelity(self, space: Space, b_config: dict):
         """Check that a point cannot registered if fidelity is invalid."""
         asha = ASHA(space, num_brackets=3)
 
@@ -395,7 +420,7 @@ class TestASHA:
         assert not asha.has_suggested(trial)
         assert not asha.has_observed(trial)
 
-    def test_register_not_sampled(self, space, b_config, caplog):
+    def test_register_not_sampled(self, space: Space, b_config: dict, caplog):
         """Check that a point cannot registered if not sampled."""
         asha = ASHA(space, num_brackets=3)
 
@@ -409,7 +434,7 @@ class TestASHA:
         assert len(caplog.records) == 1
         assert "Ignoring trial" in caplog.records[0].msg
 
-    def test_register_corrupted_db(self, caplog, space, b_config):
+    def test_register_corrupted_db(self, caplog, space: Space, b_config: dict):
         """Check that a point cannot registered if passed in order diff than fidelity."""
         asha = ASHA(space, num_brackets=3)
 
@@ -427,10 +452,18 @@ class TestASHA:
         force_observe(asha, trial)
         assert "Trial registered to wrong bracket" in caplog.text
 
-    def test_suggest_new(self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2):
+    def test_suggest_new(
+        self,
+        monkeypatch,
+        asha: ASHA,
+        bracket: ASHABracket,
+        rung_0: RungDict,
+        rung_1: RungDict,
+        rung_2: RungDict,
+    ):
         """Test that a new point is sampled."""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
 
         def sample(num=1, seed=None):
             return [create_trial_for_hb(("fidelity", 0.5))]
@@ -442,11 +475,17 @@ class TestASHA:
         assert trials[0].params == {"epoch": 1, "lr": 0.5}
 
     def test_suggest_duplicates(
-        self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2
+        self,
+        monkeypatch,
+        asha: ASHA,
+        bracket: ASHABracket,
+        rung_0: RungDict,
+        rung_1: RungDict,
+        rung_2: RungDict,
     ):
         """Test that sampling collisions are handled."""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
 
         fidelity = 1
         duplicate_trial = create_trial_for_hb((fidelity, 0.0))
@@ -472,11 +511,17 @@ class TestASHA:
         assert asha.suggest(1)[0].params == new_trial.params
 
     def test_suggest_inf_duplicates(
-        self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2
+        self,
+        monkeypatch,
+        asha: ASHA,
+        bracket: ASHABracket,
+        rung_0: RungDict,
+        rung_1: RungDict,
+        rung_2: RungDict,
     ):
         """Test that sampling inf collisions returns None."""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
 
         fidelity = 1
         zhe_trial = create_trial_for_hb((fidelity, 0.0))
@@ -520,20 +565,26 @@ class TestASHA:
 
         assert asha.suggest(1) == []
 
-    def test_suggest_promote(self, asha, bracket, rung_0):
+    def test_suggest_promote(self, asha: ASHA, bracket: ASHABracket, rung_0: RungDict):
         """Test that correct point is promoted and returned."""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = rung_0
 
         trials = asha.suggest(1)
 
         assert trials[0].params == {"epoch": 3, "lr": 0.0}
 
-    def test_suggest_promote_many(self, asha, bracket, big_rung_0, big_rung_1):
+    def test_suggest_promote_many(
+        self,
+        asha: ASHA,
+        bracket: ASHABracket,
+        big_rung_0: RungDict,
+        big_rung_1: RungDict,
+    ):
         """Test that correct points are promoted and returned."""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = big_rung_0
         bracket.rungs[1] = big_rung_1
 
@@ -550,11 +601,15 @@ class TestASHA:
         )
 
     def test_suggest_promote_many_plus_random(
-        self, asha, bracket, big_rung_0, big_rung_1
+        self,
+        asha: ASHA,
+        bracket: ASHABracket,
+        big_rung_0: RungDict,
+        big_rung_1: RungDict,
     ):
         """Test that correct points are promoted and returned, plus random points"""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        assert bracket.owner is asha
         bracket.rungs[0] = big_rung_0
         bracket.rungs[1] = big_rung_1
 
@@ -575,11 +630,15 @@ class TestASHA:
         )
 
     def test_suggest_promote_identic_objectives(
-        self, asha, bracket, big_rung_0, big_rung_1
+        self,
+        asha: ASHA,
+        bracket: ASHABracket,
+        big_rung_0: RungDict,
+        big_rung_1: RungDict,
     ):
         """Test that identic objectives are handled properly"""
         asha.brackets = [bracket]
-        bracket.asha = asha
+        bracket.owner = asha
 
         n_trials = 9
         resources = 1
@@ -592,9 +651,12 @@ class TestASHA:
                 ignore_fidelity=True,
                 ignore_experiment=True,
             )
+            assert trial.objective is not None
             results[trial_hash] = (trial.objective.value, trial)
 
-        bracket.rungs[0] = dict(n_trials=n_trials, resources=resources, results=results)
+        bracket.rungs[0] = RungDict(
+            n_trials=n_trials, resources=resources, results=results
+        )
 
         candidates = asha.suggest(2)
 
@@ -603,6 +665,13 @@ class TestASHA:
             sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 3)
             == 2
         )
+
+
+BUDGETS = [
+    16 + 8,  # rung 0
+    (16 + 8 + 8 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
+    (16 + 8 + 4 + 8 + 4 + 2),  # rung 2
+]
 
 
 class TestGenericASHA(BaseAlgoTests):
@@ -615,16 +684,13 @@ class TestGenericASHA(BaseAlgoTests):
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
 
-    def test_suggest_n(self, mocker, num, attr):
-        algo = self.create_algo()
-        spy = self.spy_phase(mocker, num, algo, attr)
-        trials = algo.suggest(5)
-
-        if num == BUDGETS[-1]:
-            # Rung 2 has 2 trials for bracket 1, 1 trial for bracket 2
-            assert len(trials) == 2 + 1
-        else:
-            assert len(trials) == 5
+    phases: ClassVar[list[TestPhase]] = [
+        TestPhase("random", 0, "space.sample"),
+        *[TestPhase(f"rung{i}", budget, "suggest") for i, budget in enumerate(BUDGETS)],
+        TestPhase("rep1-rung1", BUDGETS[-1] + 16, "suggest"),
+        TestPhase("rep2-rung1", BUDGETS[-1] * 2 + 16, "suggest"),
+    ]
+    _current_phase: TestPhase
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
@@ -688,7 +754,7 @@ class TestGenericASHA(BaseAlgoTests):
     def test_optimize_branin(self):
         pass
 
-    def infer_repetition_and_rung(self, num):
+    def infer_repetition_and_rung(self, num: int):
         budgets = BUDGETS
         if num > budgets[-1] * 2:
             return 3, 0
@@ -700,7 +766,7 @@ class TestGenericASHA(BaseAlgoTests):
 
         return 1, budgets.index(num)
 
-    def assert_callbacks(self, spy, num, algo):
+    def assert_callbacks(self, spy, num: int, algo: SpaceTransformAlgoWrapper[ASHA]):
 
         if num == 0:
             return
@@ -708,23 +774,9 @@ class TestGenericASHA(BaseAlgoTests):
         repetition_id, rung_id = self.infer_repetition_and_rung(num - 1)
 
         brackets = algo.algorithm.brackets
-
+        assert brackets is not None
         assert len(brackets) == repetition_id * 2
 
         for j in range(0, rung_id + 1):
             for bracket in brackets:
                 assert len(bracket.rungs[j]["results"]) > 0, (bracket, j)
-
-
-BUDGETS = [
-    16 + 8,  # rung 0
-    (16 + 8 + 8 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
-    (16 + 8 + 4 + 8 + 4 + 2),  #  rung 2
-]
-
-TestGenericASHA.set_phases(
-    [("random", 0, "space.sample")]
-    + [(f"rung{i}", budget, "suggest") for i, budget in enumerate(BUDGETS)]
-    + [("rep1-rung1", BUDGETS[-1] + 16, "suggest")]
-    + [("rep2-rung1", BUDGETS[-1] * 2 + 16, "suggest")]
-)

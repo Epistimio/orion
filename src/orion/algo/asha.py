@@ -3,16 +3,27 @@
 Asynchronous Successive Halving Algorithm
 =========================================
 """
+from __future__ import annotations
+
 import copy
 import hashlib
 import logging
 from collections import defaultdict
+from typing import Any, Sequence
 
 import numpy
+import numpy as np
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.hyperband import Hyperband, HyperbandBracket, display_budgets
-from orion.algo.space import Fidelity
+from orion.algo.hyperband import (
+    BudgetTuple,
+    Hyperband,
+    HyperbandBracket,
+    RungDict,
+    display_budgets,
+)
+from orion.algo.space import Fidelity, Space
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +46,11 @@ Cannot build budgets below max_resources;
 
 
 def compute_budgets(
-    min_resources, max_resources, reduction_factor, num_rungs, num_brackets
+    min_resources: float,
+    max_resources: float,
+    reduction_factor: int,
+    num_rungs: int,
+    num_brackets: int,
 ):
     """Compute the budgets used for ASHA"""
 
@@ -65,22 +80,20 @@ def compute_budgets(
     if budgets[-1] > max_resources:
         raise ValueError(BUDGET_ERROR.format(min_resources, max_resources, num_rungs))
 
-    budgets = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
-
-    ressources = budgets
-    budgets = []
-    budgets_tab = defaultdict(list)
+    ressources = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
+    budgets_lists: list[list[BudgetTuple]] = []
+    budgets_tab: dict[int, list[BudgetTuple]] = defaultdict(list)
     for bracket_ressources in ressources:
-        bracket_budgets = []
+        bracket_budgets: list[BudgetTuple] = []
         for i, min_ressources in enumerate(bracket_ressources[::-1]):
-            budget = (reduction_factor ** i, min_ressources)
+            budget = BudgetTuple(reduction_factor**i, min_ressources)
             bracket_budgets.append(budget)
             budgets_tab[len(bracket_ressources) - i - 1].append(budget)
-        budgets.append(bracket_budgets[::-1])
+        budgets_lists.append(bracket_budgets[::-1])
 
     display_budgets(budgets_tab, max_resources, reduction_factor)
 
-    return list(budgets)
+    return list(budgets_lists)
 
 
 class ASHA(Hyperband):
@@ -120,13 +133,13 @@ class ASHA(Hyperband):
 
     def __init__(
         self,
-        space,
-        seed=None,
-        num_rungs=None,
-        num_brackets=1,
-        repetitions=numpy.inf,
+        space: Space,
+        seed: int | Sequence[int] | None = None,
+        num_rungs: int | None = None,
+        num_brackets: int = 1,
+        repetitions: int | float = numpy.inf,
     ):
-        super(ASHA, self).__init__(space, seed=seed, repetitions=repetitions)
+        super().__init__(space, seed=seed, repetitions=repetitions)
 
         self.num_rungs = num_rungs
         self.num_brackets = num_brackets
@@ -157,13 +170,15 @@ class ASHA(Hyperband):
 
         self.seed_rng(seed)
 
-    def compute_bracket_idx(self, num):
-        def assign_resources(n, remainings, totals):
+    def compute_bracket_idx(self, num: int) -> np.ndarray:
+        def assign_resources(
+            n: int, remainings: np.ndarray, totals: np.ndarray
+        ) -> np.ndarray:
             if n == 0 or remainings.sum() == 0:
                 return remainings
 
             ratios = remainings / totals
-            fractions = numpy.nan_to_num(ratios / ratios.sum(), 0)
+            fractions = numpy.nan_to_num(ratios / ratios.sum(), nan=0)
             index = numpy.argmax(fractions)
             remainings[index] -= 1
             n -= 1
@@ -172,9 +187,12 @@ class ASHA(Hyperband):
 
             return remainings
 
-        remainings = numpy.array([bracket.remainings for bracket in self.brackets])
-        totals = numpy.array(
-            [bracket.rungs[0]["n_trials"] for bracket in self.brackets]
+        assert self.brackets is not None
+        remainings = numpy.asarray(
+            [bracket.remainings for bracket in self.brackets], dtype=np.int64
+        )
+        totals = numpy.asarray(
+            [bracket.rungs[0]["n_trials"] for bracket in self.brackets], dtype=np.int64
         )
         remainings_after = copy.deepcopy(remainings)
         assign_resources(num, remainings_after, totals)
@@ -182,10 +200,11 @@ class ASHA(Hyperband):
 
         return allocations
 
-    def sample(self, num):
+    def sample(self, num: int) -> list[Trial]:
         samples = []
         bracket_nums = self.compute_bracket_idx(num)
         for idx, bracket_num in enumerate(bracket_nums):
+            assert self.brackets is not None
             bracket = self.brackets[idx]
             bracket_samples = self.sample_from_bracket(bracket, bracket_num)
             self.register_samples(bracket, bracket_samples)
@@ -193,14 +212,16 @@ class ASHA(Hyperband):
 
         return samples
 
-    def suggest(self, num):
-        return super(ASHA, self).suggest(num)
+    def suggest(self, num: int) -> list[Trial]:
+        return super().suggest(num)
 
-    def create_bracket(self, i, budgets, iteration):
+    def create_bracket(
+        self, i: Any, budgets: list[BudgetTuple], iteration: int
+    ) -> ASHABracket:
         return ASHABracket(self, budgets, iteration)
 
 
-class ASHABracket(HyperbandBracket):
+class ASHABracket(HyperbandBracket[ASHA]):
     """Bracket of rungs for the algorithm ASHA.
 
     Parameters
@@ -214,12 +235,15 @@ class ASHABracket(HyperbandBracket):
 
     """
 
-    def sample(self, num):
-        """Sample a new trial with lowest fidelity"""
-        should_have_n_trials = self.rungs[0]["n_trials"]
-        return self.hyperband.sample_for_bracket(num, self)
+    def __init__(
+        self,
+        owner: ASHA,
+        budgets: list[BudgetTuple],
+        repetition_id: int,
+    ):
+        super().__init__(owner=owner, budgets=budgets, repetition_id=repetition_id)
 
-    def get_candidates(self, rung_id):
+    def get_candidates(self, rung_id: int) -> list[Trial]:
         """Get a candidate for promotion
 
         Raises
@@ -227,41 +251,41 @@ class ASHABracket(HyperbandBracket):
         TypeError
             If get_candidates is called before the entire rung is completed.
         """
-        rung = self.rungs[rung_id]["results"]
+        rung_results = self.rungs[rung_id]["results"]
         next_rung = self.rungs[rung_id + 1]["results"]
 
         rung = list(
             sorted(
                 (
                     (objective, trial)
-                    for objective, trial in rung.values()
+                    for objective, trial in rung_results.values()
                     if objective is not None
                 ),
                 key=lambda item: item[0],
             )
         )
-        k = len(rung) // self.hyperband.reduction_factor
+        k = len(rung) // self.owner.reduction_factor
         k = min(k, len(rung))
 
-        candidates = []
+        candidates: list[Trial] = []
         for i in range(k):
             trial = rung[i][1]
-            _id = self.hyperband.get_id(trial, ignore_fidelity=True)
+            _id = self.owner.get_id(trial, ignore_fidelity=True)
             if _id not in next_rung:
                 candidates.append(trial)
 
         return candidates
 
     @property
-    def is_filled(self):
+    def is_filled(self) -> bool:
         """ASHA's first rung can always sample new trials"""
         return False
 
-    def is_ready(self, rung_id=None):
+    def is_ready(self, rung_id: int | None = None) -> bool:
         """ASHA's always ready for promotions"""
         return True
 
-    def promote(self, num):
+    def promote(self, num: int) -> list[Trial]:
         """Promote the first candidate that is found and return it
 
         The rungs are iterated over in reversed order, so that high rungs
@@ -283,26 +307,19 @@ class ASHABracket(HyperbandBracket):
             for candidate in self.get_candidates(rung_id):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
-                    "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
-                    "rung {new_rung} with fidelity {new_fidelity}".format(
-                        trial=candidate,
-                        past_rung=rung_id,
-                        past_fidelity=candidate.params[self.hyperband.fidelity_index],
-                        new_rung=rung_id + 1,
-                        new_fidelity=self.rungs[rung_id + 1]["resources"],
-                    )
+                    f"Promoting {candidate} from rung {rung_id} with fidelity "
+                    f"{candidate.params[self.owner.fidelity_index]} to "
+                    f"rung {rung_id + 1} with fidelity {self.rungs[rung_id + 1]['resources']}"
                 )
 
                 candidate = candidate.branch(
                     status="new",
                     params={
-                        self.hyperband.fidelity_index: self.rungs[rung_id + 1][
-                            "resources"
-                        ]
+                        self.owner.fidelity_index: self.rungs[rung_id + 1]["resources"]
                     },
                 )
 
-                if not self.hyperband.has_suggested(candidate):
+                if not self.owner.has_suggested(candidate):
                     candidates.append(candidate)
 
                 if len(candidates) >= num:
