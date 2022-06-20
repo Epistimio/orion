@@ -257,6 +257,14 @@ class TestBackwardCompatibility:
         experiments = storage.fetch_experiments({})
         assert "version" in experiments[0]
 
+        trials = storage.fetch_trials(uid=experiments[0]["_id"])
+        for trial in trials:
+            assert trial.id_override is not None
+            trial_2 = storage.get_trial(
+                uid=trial.id, experiment_uid=experiments[0]["_id"]
+            )
+            assert trial == trial_2
+
     def test_db_test(self):
         """Verify db test command"""
         out = execute("orion db test")
