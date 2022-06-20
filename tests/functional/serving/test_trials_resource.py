@@ -141,15 +141,18 @@ class TestTrialCollection:
         add_experiment(name="a", version=1, _id=1)
         add_experiment(name="a", version=2, _id=2)
 
-        add_trial(experiment=1, id_override="00")
-        add_trial(experiment=2, id_override="01")
-        add_trial(experiment=1, id_override="02")
-        add_trial(experiment=2, id_override="03")
+        add_trial(experiment=1, id_override="00", value=10)
+        add_trial(experiment=2, id_override="01", value=10)
+        add_trial(experiment=1, id_override="02", value=11)
+        add_trial(experiment=2, id_override="03", value=12)
 
         response = client.simulate_get("/trials/a")
 
         assert response.status == "200 OK"
-        assert response.json == [{"id": "01"}, {"id": "03"}]
+        assert response.json == [
+            {"id": "49aeacec1eeaf290fd5fa84bf8f3874f"},
+            {"id": "36b6bb34f0a01764e1793fe2d4de9078"},
+        ]
 
     def test_trials_for_specific_version(self, client):
         """Tests specific version of experiment"""
@@ -165,7 +168,7 @@ class TestTrialCollection:
         response = client.simulate_get("/trials/a?version=2")
 
         assert response.status == "200 OK"
-        assert response.json == [{"id": "01"}]
+        assert response.json == [{"id": "49aeacec1eeaf290fd5fa84bf8f3874f"}]
 
         # Version doesn't exist
         response = client.simulate_get("/trials/a?version=4")
@@ -191,13 +194,17 @@ class TestTrialCollection:
         response = client.simulate_get("/trials/a?ancestors=true")
 
         assert response.status == "200 OK"
-        assert response.json == [{"id": "00"}, {"id": "01"}, {"id": "02"}]
+        assert response.json == [
+            {"id": "79a873a1146cbdcc385f53e7c14f41aa"},
+            {"id": "66611301f6608e9f5815b6bab606351c"},
+            {"id": "8e3684c8031804022ff915bb2121e49d"},
+        ]
 
         # Happy case explicitly false (call latest version test)
         response = client.simulate_get("/trials/a?ancestors=false")
 
         assert response.status == "200 OK"
-        assert response.json == [{"id": "02"}]
+        assert response.json == [{"id": "8e3684c8031804022ff915bb2121e49d"}]
 
         # Not a boolean parameter
         response = client.simulate_get("/trials/a?ancestors=42")
@@ -220,19 +227,19 @@ class TestTrialCollection:
         assert response.json == []
 
         # There exist no trial of the given status while other status are present
-        add_trial(experiment=1, id_override="00", status="broken")
+        add_trial(experiment=1, id_override="00", status="broken", value=0)
 
         response = client.simulate_get("/trials/a?status=completed")
         assert response.status == "200 OK"
         assert response.json == []
 
         # There exist at least one trial of the given status
-        add_trial(experiment=1, id_override="01", status="completed")
+        add_trial(experiment=1, id_override="01", status="completed", value=1)
 
         response = client.simulate_get("/trials/a?status=completed")
 
         assert response.status == "200 OK"
-        assert response.json == [{"id": "01"}]
+        assert response.json == [{"id": "79a873a1146cbdcc385f53e7c14f41aa"}]
 
         # Status doesn't exist
         response = client.simulate_get("/trials/a?status=invalid")
@@ -268,7 +275,10 @@ class TestTrialCollection:
         )
 
         assert response.status == "200 OK"
-        assert response.json == [{"id": "00"}, {"id": "02"}]
+        assert response.json == [
+            {"id": "79a873a1146cbdcc385f53e7c14f41aa"},
+            {"id": "8e3684c8031804022ff915bb2121e49d"},
+        ]
 
 
 class TestTrialItem:
@@ -299,18 +309,18 @@ class TestTrialItem:
     def test_get_trial(self, client):
         """Tests that an existing trial is returned according to the API specification"""
         add_experiment(name="a", version=1, _id=1)
-        add_trial(experiment=1, id_override="00", status="completed")
-        add_trial(experiment=1, id_override="01", status="completed")
+        add_trial(experiment=1, id_override="00", status="completed", value=0)
+        add_trial(experiment=1, id_override="01", status="completed", value=1)
 
-        response = client.simulate_get("/trials/a/01")
+        response = client.simulate_get("/trials/a/79a873a1146cbdcc385f53e7c14f41aa")
 
         assert response.status == "200 OK"
         assert response.json == {
-            "id": "01",
+            "id": "79a873a1146cbdcc385f53e7c14f41aa",
             "submitTime": "0001-01-01 00:00:00",
             "startTime": "0001-01-01 00:00:10",
             "endTime": "0001-01-02 00:00:00",
-            "parameters": {"x": 10.0},
+            "parameters": {"x": 1},
             "objective": 0.05,
             "statistics": {"a": 10, "b": 5},
         }

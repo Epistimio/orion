@@ -838,7 +838,7 @@ def test_run_entire_full_x_full_y(init_entire):
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
 
-    orion.core.cli.main(
+    code = orion.core.cli.main(
         (
             "-vv hunt --max-trials 30 --pool-size 1 -n full_x_full_y "
             "./black_box_with_y.py "
@@ -846,7 +846,11 @@ def test_run_entire_full_x_full_y(init_entire):
             "-y~uniform(-10,10,default_value=1)"
         ).split(" ")
     )
+    assert code == 0
 
+    # Current experiments now contains all trials because
+    # trials from parent exps have been duplicated in current exp to reserve them
+    # (See experiment.duplicate_pending_trials)
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 30
     assert len(experiment.fetch_trials(with_evc_tree=False)) == 30
 
