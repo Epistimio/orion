@@ -129,6 +129,17 @@ def upgrade_documents(storage):
         storage.update_experiment(uid=experiment, **experiment)
         storage.initialize_algorithm_lock(uid, experiment["algorithms"])
 
+        for trial in storage.fetch_trials(uid=uid):
+            # trial_config = trial.to_dict()
+            assert trial.id_override is not None
+            # This will overwrite the trial with correct dict structure
+            # (ex: have _id set to id_override and id set to trial.hash_name == trial.id.
+            # storage.update_trial(trial, uid=trial.id_override)
+            # pylint: disable=protected-access
+            storage._db.write(
+                "trials", data=trial.to_dict(), query={"_id": trial.id_override}
+            )
+
 
 def add_version(experiment):
     """Add version 1 if not present"""

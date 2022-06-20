@@ -338,7 +338,7 @@ class Experiment:
             # Danger danger, race conditions!
             try:
                 self._storage.register_trial(trial)
-            except DuplicateKeyError as e:
+            except DuplicateKeyError:
                 log.debug("Race condition while trying to duplicate trial %s", trial.id)
 
     # pylint:disable=unused-argument
