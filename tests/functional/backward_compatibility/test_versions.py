@@ -27,7 +27,7 @@ with open(os.path.join(DIRNAME, "versions.txt"), "r") as f:
 def function(x):
     """Evaluate partial information of a quadratic."""
     z = x - 34.56789
-    return [dict(name="example_objective", type="objective", value=4 * z**2 + 23.4)]
+    return [dict(name="example_objective", type="objective", value=4 * z ** 2 + 23.4)]
 
 
 def get_branch_argument(version):
