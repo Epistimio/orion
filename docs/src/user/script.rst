@@ -114,6 +114,8 @@ Templates                  Description
 
 ``trial.id``               Unique ID of the trial
 
+``trial.legacy_id``        Deprecated. Unique ID of the trial prior to v0.2.5.
+
 ``trial.working_dir``      Working dir of the trial
 
 ``trial.hash_params``      md5sum hash for the parameters (w/o fidelity)
@@ -148,6 +150,10 @@ We list them below.
 .. envvar:: ORION_TRIAL_ID
 
    Current trial id that is currently being executed in this process.
+
+.. envvar:: ORION_TRIAL_LECAGY_ID
+
+   Deprecated. Unique ID of the trial prior to v0.2.5.
 
 .. envvar:: ORION_WORKING_DIR
 
