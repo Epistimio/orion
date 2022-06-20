@@ -219,6 +219,9 @@ class Trial:
         self.id_override = kwargs.pop("_id", None)
         kwargs.pop("id", None)
 
+        # NOTE: For backward compatibility with <v0.2.5
+        kwargs.pop("id_override", None)
+
         for attrname, value in kwargs.items():
             if attrname == "parents":
                 log.info("Trial.parents attribute is deprecated. Value is ignored.")
