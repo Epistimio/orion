@@ -1,7 +1,7 @@
 # Workflow to run unit tests from Github Actions.
 # Inspired from: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Dashboard
+name: dashboard-src
 
 on:
   push:
@@ -19,7 +19,7 @@ defaults:
     working-directory: dashboard/src
 
 jobs:
-  ci:
+  test-dashboard-src:
 
     runs-on: ubuntu-latest
 
