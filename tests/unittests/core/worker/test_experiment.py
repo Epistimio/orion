@@ -363,12 +363,12 @@ class TestAcquireAlgorithmLock:
 
     def test_acquire_algorithm_lock_timeout(self, new_config, algorithm, mocker):
         with OrionState(experiments=[new_config]) as cfg:
-            exp = Experiment("supernaekei", mode="x")
+            exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
             exp._id = 0
             exp.algorithms = algorithm
 
             storage_acquisition_mock = mocker.spy(
-                cfg.setup_storage, "acquire_algorithm_lock"
+                cfg.storage, "acquire_algorithm_lock"
             )
 
             with exp.acquire_algorithm_lock(timeout=0.2, retry_interval=0.1):
@@ -781,7 +781,7 @@ class TestReadOnly:
     @pytest.mark.parametrize("method", read_write_only_methods + execute_only_methods)
     def test_read_write_methods(self, space, algorithm, method, monkeypatch):
         with OrionState(trials=trials) as cfg:
-            disable_algo_lock(monkeypatch, cfg.setup_storage())
+            disable_algo_lock(monkeypatch, cfg.storage)
             read_only_exp = create_experiment("r", space, algorithm)
             execution_exp = create_experiment("x", space, algorithm)
             compare_unsupported(method, read_only_exp, execution_exp)
@@ -800,7 +800,7 @@ class TestReadWriteOnly:
     @pytest.mark.parametrize("method", execute_only_methods)
     def test_execution_methods(self, space, algorithm, method, monkeypatch):
         with OrionState(trials=trials) as cfg:
-            disable_algo_lock(monkeypatch, cfg.setup_storage())
+            disable_algo_lock(monkeypatch, cfg.storage)
             read_only_exp = create_experiment("w", space, algorithm)
             execution_exp = create_experiment("x", space, algorithm)
             compare_unsupported(method, read_only_exp, execution_exp)

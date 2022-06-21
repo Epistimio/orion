@@ -14,7 +14,7 @@ from orion.testing import OrionState
 def test_interrupt(monkeypatch, capsys):
     """Test interruption from within user script."""
     with OrionState() as cfg:
-        storage = cfg.setup_storage()
+        storage = cfg.storage
 
         monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 

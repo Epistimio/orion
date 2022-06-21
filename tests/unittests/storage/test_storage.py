@@ -156,8 +156,8 @@ def test_setup_storage_custom():
 def test_setup_storage_custom_type_missing():
     """Test setup with local configuration with type missing"""
     update_singletons()
-    setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = setup_storage()
+    storage = setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
+
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == os.path.abspath("test.pkl")
@@ -167,8 +167,8 @@ def test_setup_storage_custom_type_missing():
 def test_setup_storage_custom_legacy_emtpy():
     """Test setup with local configuration with legacy but no config"""
     update_singletons()
-    setup_storage({"type": "legacy"})
-    storage = setup_storage()
+    storage = setup_storage({"type": "legacy"})
+
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == orion.core.config.storage.database.host
@@ -177,10 +177,9 @@ def test_setup_storage_custom_legacy_emtpy():
 def test_setup_storage_bad_override():
     """Test setup with different type than existing singleton"""
     update_singletons()
-    setup_storage(
+    storage = setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
-    storage = setup_storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
@@ -193,8 +192,7 @@ def test_setup_storage_bad_override():
 def test_setup_storage_bad_config_override():
     """Test setup with different config than existing singleton"""
     update_singletons()
-    setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = setup_storage()
+    storage = setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError):
@@ -209,28 +207,6 @@ def test_setup_storage_stateless():
     setup_storage(passed_config)
     assert config == passed_config
 
-
-def test_get_storage_uninitiated():
-    """Test that get storage fails if no storage singleton exist"""
-    update_singletons()
-    with pytest.raises(SingletonNotInstantiatedError) as exc:
-        setup_storage()
-
-    assert exc.match(
-        "No singleton instance of \(type: BaseStorageProtocol\) was created"
-    )
-
-
-def test_setup_storage():
-    """Test that get storage gets the singleton"""
-    update_singletons()
-    setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = setup_storage()
-    assert isinstance(storage, Legacy)
-    assert isinstance(storage._db, PickledDB)
-    assert setup_storage() == storage
-
-
 @pytest.mark.usefixtures("version_XYZ")
 @pytest.mark.parametrize("storage", storage_backends)
 class TestStorage:
@@ -239,7 +215,7 @@ class TestStorage:
     def test_create_experiment(self, storage):
         """Test create experiment"""
         with OrionState(experiments=[], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             storage.create_experiment(base_experiment)
 
@@ -256,7 +232,7 @@ class TestStorage:
     def test_fetch_experiments(self, storage, name="0", user="a"):
         """Test fetch experiments"""
         with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiments = storage.fetch_experiments({})
             assert len(experiments) == len(cfg.experiments)
@@ -280,7 +256,7 @@ class TestStorage:
     def test_update_experiment(self, monkeypatch, storage, name="0", user="a"):
         """Test fetch experiments"""
         with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             class _Dummy:
                 pass
@@ -320,7 +296,7 @@ class TestStorage:
             pytest.xfail("Track does not support deletion yet.")
 
         with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             n_experiments = len(storage.fetch_experiments({}))
             storage.delete_experiment(uid=cfg.experiments[0]["_id"])
@@ -331,7 +307,7 @@ class TestStorage:
     def test_register_trial(self, storage):
         """Test register trial"""
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             trial1 = storage.register_trial(Trial(**base_trial))
             trial2 = storage.get_trial(trial1)
 
@@ -344,7 +320,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=[base_trial], storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             with pytest.raises(DuplicateKeyError):
                 storage.register_trial(Trial(**base_trial))
@@ -356,7 +332,7 @@ class TestStorage:
             trials=generate_trials(status=["completed", "reserved", "reserved"]),
             storage=storage,
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             class _Dummy:
                 pass
@@ -376,7 +352,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=[base_trial], storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             trial = Trial(**cfg.trials[0])
 
@@ -389,7 +365,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=[base_trial], storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
 
             trial = storage.reserve_trial(experiment)
@@ -405,7 +381,7 @@ class TestStorage:
             storage=storage,
         ) as cfg:
 
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
 
             trial = storage.reserve_trial(experiment)
@@ -416,7 +392,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
 
             trials1 = storage.fetch_trials(experiment=experiment)
@@ -438,7 +414,7 @@ class TestStorage:
             trials=generate_trials(status=["completed", "reserved", "reserved"]),
             storage=storage,
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
 
             trials_all = storage.fetch_trials(experiment=experiment)
@@ -465,7 +441,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=trials, storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             # Make sure we have sufficient trials to test deletion
             trials = storage.fetch_trials(uid="default_name")
@@ -490,7 +466,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=trials, storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name")
 
             # Make sure we have sufficient trials to test deletion
@@ -516,7 +492,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             trial_dict = cfg.trials[0]
 
@@ -543,7 +519,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=trials, storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiment = cfg.get_experiment("default_name", version=None)
             trials = storage.fetch_lost_trials(experiment)
@@ -676,7 +652,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiment = cfg.get_experiment("default_name", version=None)
             trials = storage.fetch_pending_trials(experiment)
@@ -695,7 +671,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiment = cfg.get_experiment("default_name", version=None)
             trials = storage.fetch_noncompleted_trials(experiment)
@@ -720,7 +696,7 @@ class TestStorage:
                 if trial["status"] == "completed":
                     count += 1
 
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
             trials = storage.fetch_trials_by_status(experiment, "completed")
 
@@ -738,7 +714,7 @@ class TestStorage:
                 if trial["status"] == "completed":
                     count += 1
 
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiment = cfg.get_experiment("default_name", version=None)
             trials = storage.count_completed_trials(experiment)
@@ -754,7 +730,7 @@ class TestStorage:
                 if trial["status"] == "broken":
                     count += 1
 
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiment = cfg.get_experiment("default_name", version=None)
 
@@ -768,7 +744,7 @@ class TestStorage:
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
             storage_name = storage
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             exp = cfg.get_experiment("default_name")
             trial1 = storage.fetch_trials_by_status(exp, status="reserved")[0]
@@ -800,7 +776,7 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             serialized = pickle.dumps(storage)
             deserialized = pickle.loads(serialized)
             assert storage.fetch_experiments({}) == deserialized.fetch_experiments({})
@@ -810,7 +786,7 @@ class TestStorage:
             pytest.xfail("Track does not support algorithm lock yet.")
 
         with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiments = storage.fetch_experiments({})
 
@@ -824,7 +800,7 @@ class TestStorage:
             pytest.xfail("Track does not support algorithm lock yet.")
 
         with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
 
             experiments = storage.fetch_experiments({})
 
@@ -836,7 +812,7 @@ class TestStorage:
             pytest.xfail("Track does not support algorithm lock yet.")
 
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
 
             with storage.acquire_algorithm_lock(
@@ -850,7 +826,7 @@ class TestStorage:
 
     def test_acquire_algorithm_lock_timeout(self, storage, mocker):
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
 
             with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
@@ -869,7 +845,7 @@ class TestStorage:
 
     def test_acquire_algorithm_lock_handle_fail(self, storage):
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
             with storage.acquire_algorithm_lock(experiment) as locked_algo_state:
                 assert locked_algo_state.state is None
@@ -886,7 +862,7 @@ class TestStorage:
 
     def test_acquire_algorithm_lock_not_initialised(self, storage):
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             experiment = cfg.get_experiment("default_name", version=None)
             experiment._id = "bad id"
             with pytest.raises(LockAcquisitionTimeout):

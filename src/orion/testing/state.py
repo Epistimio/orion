@@ -200,6 +200,7 @@ class BaseOrionState:
 
     def setup_storage(self, config=None):
         """Return test storage"""
+        self.previous_config = orion.core.config.storage.to_dict()
         orion.core.config.storage.from_dict(config)
 
         if config is None:

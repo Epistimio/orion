@@ -133,7 +133,7 @@ class TestLegacyStorage:
         with OrionState(
             experiments=[], trials=[reserved_trial], storage=storage
         ) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             trial = storage.get_trial(Trial(**reserved_trial))
             results = [Trial.Result(name="loss", type="objective", value=2)]
             trial.results = results
@@ -145,7 +145,7 @@ class TestLegacyStorage:
     def test_push_trial_results_unreserved(self, storage=None):
         """Successfully push a completed trial into database."""
         with OrionState(experiments=[], trials=[base_trial], storage=storage) as cfg:
-            storage = cfg.setup_storage()
+            storage = cfg.storage
             trial = storage.get_trial(Trial(**base_trial))
             results = [Trial.Result(name="loss", type="objective", value=2)]
             trial.results = results
