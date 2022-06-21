@@ -39,7 +39,11 @@ jobs:
         with:
           python-version: 3.8
       - run: python -m pip install git+https://github.com/notoraptor/orion.git@feature/benchmark_webapi#egg=orion[profet]
-      - run: orion serve -c ../../.github/workflows/orion/orion_config.yaml &
+      - run: |
+            # Launch backend in repository root
+            cd ../../
+            orion serve -c .github/workflows/orion/orion_config.yaml &
+            cd dashboard/src/
       # install
       - run: yarn
       # check files formatting using Carbon's `ci-check` script
