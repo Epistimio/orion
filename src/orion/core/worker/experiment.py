@@ -236,7 +236,7 @@ class Experiment:
 
     def get_trial(self, trial=None, uid=None):
         """Fetch a single Trial, see :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
-        return self._storage.get_trial(trial, uid)
+        return self._storage.get_trial(trial, uid, experiment_uid=self.id)
 
     def retrieve_result(self, trial, *args, **kwargs):
         """See :meth:`orion.storage.base.BaseStorageProtocol.retrieve_result`"""
@@ -324,19 +324,14 @@ class Experiment:
             with_evc_tree=False, function="fetch_pending_trials"
         )
 
-        exp_trials_ids = set(
-            trial.compute_trial_hash(trial, ignore_experiment=True)
-            for trial in exp_pending_trials
-        )
+        exp_trials_ids = set(trial.id for trial in exp_pending_trials)
 
         for trial in evc_pending_trials:
-            if (
-                trial.compute_trial_hash(trial, ignore_experiment=True)
-                in exp_trials_ids
-            ):
+            if trial.id in exp_trials_ids:
                 continue
 
             trial.experiment = self.id
+            trial.id_override = None
             # Danger danger, race conditions!
             try:
                 self._storage.register_trial(trial)

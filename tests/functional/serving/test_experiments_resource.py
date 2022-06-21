@@ -207,7 +207,7 @@ def _assert_config(config):
 
 def _assert_best_trial(best_trial):
     """Verifies properties of the best trial"""
-    assert best_trial["id"] == "ae8"
+    assert best_trial["id"] == "7bbfdb8c684aa5f4be324a09d7da94af"
     assert best_trial["submitTime"] == "0001-01-01 00:00:00"
     assert best_trial["startTime"] == "0001-01-01 00:00:10"
     assert best_trial["endTime"] == "0001-01-02 00:00:00"
