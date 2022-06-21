@@ -1,0 +1,48 @@
+# Workflow to run unit tests from Github Actions.
+# Inspired from: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Dashboard
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  schedule:
+    - cron: '44 4 * * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: dashboard/src
+
+jobs:
+  ci:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Launch an orion server
+      - name: Launch Orion server
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - run: python -m pip install git+https://github.com/notoraptor/orion.git@feature/benchmark_webapi#egg=orion[profet]
+      - run: orion serve -c ../../.github/workflows/orion/orion_config.yaml &
+      # install
+      - run: yarn
+      # check files formatting using Carbon's `ci-check` script
+      - run: yarn ci-check
+      # Run all available tests
+      - run: yarn test --all --verbose
