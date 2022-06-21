@@ -22,3 +22,10 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='experiments (selected
 a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)'] {
   font-weight: bold;
 }
+.bx--grid.object-to-grid {
+  padding-right: 1rem;
+  padding-left: 1rem;
+}
+.bx--grid.object-to-grid .bx--col.object-to-grid-key {
+  padding-right: 0.5rem;
+}
