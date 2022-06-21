@@ -206,6 +206,7 @@ def test_setup_storage_stateless():
     setup_storage(passed_config)
     assert config == passed_config
 
+
 @pytest.mark.usefixtures("version_XYZ")
 @pytest.mark.parametrize("storage", storage_backends)
 class TestStorage:
