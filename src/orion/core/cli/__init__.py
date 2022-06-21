@@ -25,7 +25,7 @@ def load_modules_parser(orion_parser):
         get_parser(orion_parser.get_subparsers())
 
 
-def main(argv=None):
+def main(argv=None, storage=None):
     """Entry point for `orion.core` functionality."""
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
