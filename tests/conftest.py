@@ -366,9 +366,8 @@ def mock_infer_versioning_metadata(monkeypatch):
     monkeypatch.setattr(resolve_config, "infer_versioning_metadata", fixed_dictionary)
 
 
-@pytest.fixture(scope="function")
-def setup_pickleddb_database():
-    """Configure the database"""
+
+def setup_pickleddb_database_enter():
     update_singletons()
     temporary_file = tempfile.NamedTemporaryFile()
 
@@ -376,10 +375,22 @@ def setup_pickleddb_database():
     print(temporary_file.name)
     os.environ["ORION_DB_TYPE"] = "pickleddb"
     os.environ["ORION_DB_ADDRESS"] = temporary_file.name
-    yield
+    return temporary_file
+
+
+def setup_pickleddb_database_exit(temporary_file):
     temporary_file.close()
     del os.environ["ORION_DB_TYPE"]
     del os.environ["ORION_DB_ADDRESS"]
+
+
+@pytest.fixture(scope="function")
+def setup_pickleddb_database():
+    """Configure the database"""
+    temporary_file = setup_pickleddb_database_enter()
+    yield
+    setup_pickleddb_database_exit(temporary_file)
+
 
 
 @pytest.fixture()
@@ -393,3 +404,13 @@ def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
     with mocked_datetime(monkeypatch) as datetime:
         yield datetime.utcnow()
+
+
+@pytest.fixture(scope="function")
+def storage(setup_pickleddb_database):
+    temporary_file = setup_pickleddb_database_enter()
+    storage = setup_storage()
+
+    yield storage
+
+    setup_pickleddb_database_exit(temporary_file)

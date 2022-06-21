@@ -18,6 +18,7 @@ import orion.core.worker.consumer as consumer
 from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import BranchingEvent, MissingResultFile
 from orion.core.utils.format_trials import tuple_to_trial
+from orion.storage.base import setup_storage
 
 Consumer = consumer.Consumer
 
@@ -44,7 +45,7 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     def mock_popen(self, *args, **kwargs):
         os.kill(os.getpid(), signal.SIGTERM)
 
-    exp = experiment_builder.build(**config)
+    exp = experiment_builder.build(**config, storage=storage)
 
     monkeypatch.setattr(subprocess.Popen, "wait", mock_popen)
 
