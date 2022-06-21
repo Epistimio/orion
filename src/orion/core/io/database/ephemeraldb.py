@@ -236,6 +236,7 @@ class EphemeralCollection(object):
     def _get_new_id(self):
         """Return max id + 1"""
         if self._documents:
+            print(sorted(d["_id"] for d in self._documents))
             return max(d["_id"] for d in self._documents) + 1
 
         return 1
