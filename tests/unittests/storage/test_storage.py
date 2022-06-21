@@ -144,10 +144,9 @@ def test_setup_storage_bad():
 def test_setup_storage_custom():
     """Test setup with local configuration"""
     update_singletons()
-    setup_storage(
+    storage = setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
-    storage = setup_storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == os.path.abspath("test.pkl")

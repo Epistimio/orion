@@ -774,16 +774,16 @@ class TestReadOnly:
     @pytest.mark.parametrize("method", read_only_methods)
     def test_read_only_methods(self, space, algorithm, method):
         with OrionState(trials=trials) as cfg:
-            read_only_exp = create_experiment("r", space, algorithm)
-            execution_exp = create_experiment("x", space, algorithm)
+            read_only_exp = create_experiment("r", space, algorithm, storage=cfg.storage)
+            execution_exp = create_experiment("x", space, algorithm, storage=cfg.storage)
             compare_supported(method, read_only_exp, execution_exp)
 
     @pytest.mark.parametrize("method", read_write_only_methods + execute_only_methods)
     def test_read_write_methods(self, space, algorithm, method, monkeypatch):
         with OrionState(trials=trials) as cfg:
             disable_algo_lock(monkeypatch, cfg.storage)
-            read_only_exp = create_experiment("r", space, algorithm)
-            execution_exp = create_experiment("x", space, algorithm)
+            read_only_exp = create_experiment("r", space, algorithm, storage=cfg.storage)
+            execution_exp = create_experiment("x", space, algorithm, storage=cfg.storage)
             compare_unsupported(method, read_only_exp, execution_exp)
 
 
@@ -793,14 +793,14 @@ class TestReadWriteOnly:
     @pytest.mark.parametrize("method", read_only_methods)
     def test_read_only_methods(self, space, algorithm, method):
         with OrionState(trials=trials) as cfg:
-            read_only_exp = create_experiment("w", space, algorithm)
-            execution_exp = create_experiment("x", space, algorithm)
+            read_only_exp = create_experiment("w", space, algorithm, storage=cfg.storage)
+            execution_exp = create_experiment("x", space, algorithm, storage=cfg.storage)
             compare_supported(method, read_only_exp, execution_exp)
 
     @pytest.mark.parametrize("method", execute_only_methods)
     def test_execution_methods(self, space, algorithm, method, monkeypatch):
         with OrionState(trials=trials) as cfg:
             disable_algo_lock(monkeypatch, cfg.storage)
-            read_only_exp = create_experiment("w", space, algorithm)
-            execution_exp = create_experiment("x", space, algorithm)
+            read_only_exp = create_experiment("w", space, algorithm, storage=cfg.storage)
+            execution_exp = create_experiment("x", space, algorithm, storage=cfg.storage)
             compare_unsupported(method, read_only_exp, execution_exp)

@@ -101,10 +101,10 @@ def test_setup_database_bad_override():
     update_singletons()
     database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
+
     # with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
     #     setup_database({"type": "mongodb"})
-
-    assert exc.match("A singleton instance of \(type: Database\)")
+    # assert exc.match("A singleton instance of \(type: Database\)")
 
 
 def test_setup_database_bad_config_override():

@@ -103,7 +103,7 @@ def copy_data(data, host=TMP_DB_HOST):
     storage = setup_tmp_storage(host)
     for exp_id, experiment in data["experiments"].items():
         del experiment["_id"]
-        storage.create_experiment(experiment)
+        storage.create_experiment(experiment, storage=storage)
         assert exp_id != experiment["_id"]
         trials = []
         for trial in data["trials"][exp_id]:
