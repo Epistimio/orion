@@ -380,19 +380,10 @@ class Experiment:
         """
         self._check_if_writable()
         stamp = datetime.datetime.utcnow()
-        # TODO: This is fugly. How can we handly this more gracefully?
-        #       Move have a problem of trial.working_dir path that depends
-        #       on experiment id, but it is not known inside the algorithm
-        #       so the algorithm cannot copy the data at the right path.
-        if trial.exp_working_dir and os.path.exists(trial.working_dir):
-            previous_working_dir = trial.working_dir
-            trial.experiment = self._id
-            os.rename(previous_working_dir, trial.working_dir)
-        else:
-            trial.experiment = self._id
-            trial.exp_working_dir = self.working_dir
+        trial.experiment = self._id
         trial.status = status
         trial.submit_time = stamp
+        trial.exp_working_dir = self.working_dir
 
         self._storage.register_trial(trial)
 

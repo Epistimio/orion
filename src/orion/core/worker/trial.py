@@ -340,7 +340,7 @@ class Trial:
         ignore_lie=False,
         ignore_parent=False,
     ):
-        if not self.exp_working_dir:
+        if self.exp_working_dir is None:
             raise RuntimeError(
                 "Cannot infer trial's working_dir because trial.exp_working_dir is not set."
             )

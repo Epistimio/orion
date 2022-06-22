@@ -668,6 +668,7 @@ class ExperimentClient:
         max_broken=None,
         trial_arg=None,
         on_error=None,
+        prepare_trial=None,
         idle_timeout=None,
         **kwargs,
     ):
@@ -718,6 +719,10 @@ class ExperimentClient:
             If the callblack returns False, the error will be ignored, otherwise it is counted
             for the threshold `max_broken`. In case of critical errors, you may also directly
             raise an error and force break out of ``workon``.
+        prepare_trial: callable, optional
+            Callback that is executed before the trial is submitted to workers for execution.
+            If `None`, it will default to `orion.client.runner.prepare_trial_working_dir` which
+            will create working directory of trials if necessary.
         idle_timeout: int, optional
             Maximum time (seconds) allowed for idle workers. LazyWorkers will be raised if
             timeout is reached. Such timeout are generally caused when reaching the
@@ -798,6 +803,7 @@ class ExperimentClient:
                 max_broken=max_broken,
                 trial_arg=trial_arg,
                 on_error=on_error,
+                prepare_trial=prepare_trial,
                 n_workers=n_workers,
                 **kwargs,
             )

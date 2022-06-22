@@ -119,8 +119,6 @@ class Consumer(object):
 
         """
         log.debug("Consumer context: %s", trial.working_dir)
-        os.makedirs(trial.working_dir, exist_ok=True)
-
         results_file = self._consume(trial, trial.working_dir)
 
         log.debug("Parsing results from file and fill corresponding Trial object.")

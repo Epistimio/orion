@@ -8,6 +8,8 @@ Runner
 Executes the optimization process
 """
 import logging
+import os
+import shutil
 import signal
 import time
 from contextlib import contextmanager
@@ -113,6 +115,10 @@ def _optimize(trial, fct, trial_arg, **kwargs):
     return fct(**unflatten(kwargs))
 
 
+def delayed_expception(expection):
+    raise expection
+
+
 @dataclass
 class _Stat:
     sample: int = 0
@@ -139,6 +145,24 @@ class _Stat:
         return "\n".join(lines)
 
 
+def prepare_trial_working_dir(experiment_client, trial):
+    backward.ensure_trial_working_dir(experiment_client, trial)
+
+    # TODO: Test that this works when resuming a trial.
+    if os.path.exists(trial.working_dir):
+        return
+
+    if trial.parent:
+        parent_trial = experiment_client.get_trial(uid=trial.parent)
+        if parent_trial is None:
+            raise ValueError(
+                f"Parent id {trial.parent} not available in storage. (From trial {trial.id})"
+            )
+        shutil.copytree(parent_trial.working_dir, trial.working_dir)
+    else:
+        os.makedirs(trial.working_dir)
+
+
 class Runner:
     """Run the optimization process given the current executor"""
 
@@ -151,7 +175,8 @@ class Runner:
         max_trials_per_worker,
         max_broken,
         trial_arg,
-        on_error,
+        on_error=None,
+        prepare_trial=None,
         interrupt_signal_code=None,
         gather_timeout=0.01,
         n_workers=None,
@@ -164,6 +189,10 @@ class Runner:
         self.max_broken = max_broken
         self.trial_arg = trial_arg
         self.on_error = on_error
+        if prepare_trial is None:
+            self.prepare_trial = prepare_trial_working_dir
+        else:
+            self.prepare_trial = prepare_trial
         self.kwargs = kwargs
 
         self.gather_timeout = gather_timeout
@@ -312,11 +341,18 @@ class Runner:
         """Schedule new trials to be computed"""
         new_futures = []
         for trial in new_trials:
-            backward.ensure_trial_working_dir(self.client, trial)
+            try:
+                self.prepare_trial(self.client, trial)
+                prepared = True
+            except Exception as e:
+                future = self.client.executor.submit(delayed_expception, e)
+                prepared = False
 
-            future = self.client.executor.submit(
-                _optimize, trial, self.fct, self.trial_arg, **self.kwargs
-            )
+            if prepared:
+                future = self.client.executor.submit(
+                    _optimize, trial, self.fct, self.trial_arg, **self.kwargs
+                )
+
             self.pending_trials[future] = trial
             new_futures.append(future)
 
