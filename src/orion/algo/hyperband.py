@@ -228,6 +228,10 @@ class Hyperband(BaseAlgorithm):
             trial = trial.branch(
                 params={self.fidelity_index: bracket.rungs[0]["resources"]}
             )
+            # trial.branch used for convenience only to override fidelity value.
+            # Parent should be set to None since this parent trial does not exist in
+            # the registry.
+            trial.parent = None
 
             full_id = self.get_id(trial, ignore_fidelity=False, ignore_parent=False)
             id_wo_fidelity = self.get_id(
@@ -720,6 +724,12 @@ class HyperbandBracket(Generic[Owner]):
                         self.owner.fidelity_index: self.rungs[rung_id + 1]["resources"]
                     },
                 )
+                # NOTE: We could use branching with data folder copy like it is done in
+                #       PBT to support checkpointing. This would require adapting the
+                #       documentation however, and perhaps make sure trial.hash_params
+                #       does not take into account trial.parent otherwise it will change
+                #       the id although we ignore the fidelity dimension.
+                candidate.parent = None
                 if not self.owner.has_suggested(candidate):
                     trials.append(candidate)
 
