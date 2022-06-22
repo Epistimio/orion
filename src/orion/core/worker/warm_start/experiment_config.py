@@ -1,13 +1,8 @@
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
 from datetime import datetime
 from logging import getLogger as get_logger
+from typing import Any, Dict, List, Optional, Union
+
 from .serializable import SerializableMixin
 
 logger = get_logger(__name__)
@@ -79,8 +74,8 @@ class ExperimentInfo(Config):
     refers: Union[dict, List["ExperimentInfo"]]
     #    A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
     #    trials we want to add in the history of completed trials we want to re-use.
-    #    For convenience and database effiency purpose, all experiments of a common tree shares
-    #    ``refers[root_id]``, with the root experiment refering to itself.
+    #    For convenience and database efficiency purpose, all experiments of a common tree shares
+    #    ``refers[root_id]``, with the root experiment referring to itself.
 
     version: int
     """ Current version of this experiment. """

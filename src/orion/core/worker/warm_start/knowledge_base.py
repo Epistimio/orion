@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from logging import getLogger
 from typing import Container
 
-
 if typing.TYPE_CHECKING:
     from orion.client import ExperimentClient
     from orion.core.worker.experiment import Experiment

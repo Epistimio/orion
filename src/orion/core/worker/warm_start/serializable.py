@@ -1,15 +1,9 @@
 import inspect
-from dataclasses import asdict, fields, is_dataclass
-from typing import (
-    Any,
-    Dict,
-    ItemsView,
-    Iterator,
-    KeysView,
-    Mapping,
-)
 from collections.abc import ItemsView
+from dataclasses import asdict, fields, is_dataclass
 from logging import getLogger as get_logger
+from typing import Any, Dict, Iterator, KeysView, Mapping
+
 from orion.core.utils.flatten import flatten, unflatten
 
 logger = get_logger(__name__)
