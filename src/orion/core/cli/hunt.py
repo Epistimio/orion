@@ -143,7 +143,6 @@ def workon(
     if max_idle_time is not None and reservation_timeout is None:
         reservation_timeout = max_idle_time
 
-    producer = Producer(experiment)
     consumer = Consumer(
         experiment,
         user_script_config,
@@ -151,7 +150,7 @@ def workon(
         ignore_code_changes,
     )
 
-    client = ExperimentClient(experiment, producer, heartbeat=heartbeat)
+    client = ExperimentClient(experiment, heartbeat=heartbeat)
 
     if executor is None:
         executor = orion.core.config.worker.executor
