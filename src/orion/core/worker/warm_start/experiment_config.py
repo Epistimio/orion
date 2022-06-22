@@ -1,3 +1,4 @@
+""" Immutable dataclass containing the experiment configuration. """
 from dataclasses import dataclass, field
 from datetime import datetime
 from logging import getLogger as get_logger
@@ -15,17 +16,23 @@ class Config(SerializableMixin):
 
 @dataclass(frozen=True)
 class DatabaseConfig(Config):
+    """Database configuration."""
+
     type: str
 
 
 @dataclass(frozen=True)
 class StorageConfig(Config):
+    """Storage configuration."""
+
     type: str
     database: DatabaseConfig
 
 
 @dataclass(frozen=True)
 class Refers(Config):
+    """Config for the 'refers' property"""
+
     parent_id: Optional[str]
     root_id: int
     adapter: List[Any]
@@ -33,6 +40,8 @@ class Refers(Config):
 
 @dataclass(frozen=True)
 class MetaData(Config):
+    """Config for the 'metadata' property of the experiment."""
+
     user: str
     """ System user currently owning this running process, the one who invoked **Oríon**. """
 
@@ -66,7 +75,7 @@ class ExperimentInfo(Config):
     name: str
     """ Unique identifier for this experiment per ``user``. """
 
-    id: Optional[int]
+    id: Optional[int]  # pylint: disable=invalid-name
     """ id of the experiment in the database if experiment is configured. Value is ``None`` if the
     experiment is not configured.
     """

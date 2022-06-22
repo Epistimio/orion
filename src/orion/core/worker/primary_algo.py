@@ -1,3 +1,4 @@
+""" Utility function for creating and wrapping the HPO algorithm. """
 from __future__ import annotations
 
 from typing import Any, Callable, TypeVar, overload
@@ -6,10 +7,8 @@ from typing_extensions import Concatenate, ParamSpec
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
-from orion.core.worker.algo_wrappers import InsistSuggest, SpaceTransform
-
-# Backward compatibility imports adapters.
-from orion.core.worker.algo_wrappers.space_transform import SpaceTransform  # noqa
+from orion.core.worker.algo_wrappers import InsistSuggest
+from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
 from orion.core.worker.warm_start import KnowledgeBase, MultiTaskWrapper
 from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 

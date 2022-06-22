@@ -1,3 +1,4 @@
+""" ABC for a warm-starteable algorithm. """
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

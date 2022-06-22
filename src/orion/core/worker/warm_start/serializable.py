@@ -1,8 +1,11 @@
+""" Helper class for serializing/deserializing a dataclass. """
+from __future__ import annotations
+
 import inspect
-from collections.abc import ItemsView
+from collections.abc import ItemsView, KeysView
 from dataclasses import asdict, fields, is_dataclass
 from logging import getLogger as get_logger
-from typing import Any, Dict, Iterator, KeysView, Mapping
+from typing import Any, Iterator, Mapping
 
 from orion.core.utils.flatten import flatten, unflatten
 
@@ -30,13 +33,14 @@ class SerializableMixin(Mapping[str, Any]):
         return len(fields(self))
 
     def keys(self) -> KeysView[str]:
+        """Returns a view of the keys/attributes in this object."""
         return KeysView({f.name: getattr(self, f.name) for f in fields(self)})
 
     def items(self) -> ItemsView[str, Any]:
         """Returns an iterator over the items/attributes in this object."""
         return ItemsView({f.name: getattr(self, f.name) for f in fields(self)})
 
-    def asdict(self) -> Dict[str, Any]:
+    def asdict(self) -> dict[str, Any]:
         """Returns a dict version of this dataclass."""
         return asdict(self)
 
@@ -114,7 +118,7 @@ class SerializableMixin(Mapping[str, Any]):
             ):
                 # The field is itself a dataclass type, so we recursively call from_dict
                 # passing in the corresponding value.
-                field_config_dict: Dict[str, Any] = config_dict.pop(field.name)
+                field_config_dict: dict[str, Any] = config_dict.pop(field.name)
                 field_value = field_type.from_dict(field_config_dict)
             else:
                 field_value = config_dict.pop(field.name)

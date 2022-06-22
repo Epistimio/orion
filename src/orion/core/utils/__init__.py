@@ -92,7 +92,7 @@ def _set_typenames(cls):
 
 from typing import Generic, TypeVar
 
-T = TypeVar("T")
+T = TypeVar("T")  # pylint: disable=invalid-name
 
 
 class GenericFactory(Generic[T]):

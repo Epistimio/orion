@@ -13,7 +13,7 @@ import typing
 from orion.core.io.database import DuplicateKeyError
 
 if typing.TYPE_CHECKING:
-    from orion.core.worker.knowledge_base import AbstractKnowledgeBase
+    from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 
 log = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class Producer:
 
     """
 
-    def __init__(self, experiment, knowledge_base: AbstractKnowledgeBase | None = None):
+    def __init__(self, experiment, knowledge_base: KnowledgeBase | None = None):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -36,7 +36,7 @@ class Producer:
         """
         log.debug("Creating Producer object.")
         self.experiment = experiment
-        self.knowledge_base: AbstractKnowledgeBase | None = knowledge_base
+        self.knowledge_base: KnowledgeBase | None = knowledge_base
         # Indicates whether the algo has been warm-started with the knowledge base.
         self.warm_started = False
 
