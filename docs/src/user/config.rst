@@ -103,7 +103,7 @@ Full Example of Global Configuration
     worker:
         n_workers: 1
         pool_size: 0
-        executor: joblib
+        executor: PoolExecutor
         executor_configuration: {}
         heartbeat: 120
         interrupt_signal_code: 130
@@ -360,7 +360,7 @@ Worker
     worker:
         n_workers: 1
         pool_size: 0
-        executor: joblib
+        executor: PoolExecutor
         executor_configuration: {}
         heartbeat: 120
         interrupt_signal_code: 130
@@ -405,7 +405,7 @@ executor
 ~~~~~~~~
 
 :Type: str
-:Default: joblib
+:Default: PoolExecutor
 :Env var: ORION_EXECUTOR
 :Description:
     The executor backend used to parallelize orion workers.
