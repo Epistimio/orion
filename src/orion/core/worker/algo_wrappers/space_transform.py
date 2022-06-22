@@ -12,7 +12,7 @@ from typing import TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
-from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
+from orion.core.worker.algo_wrappers.transform_wrapper import TransformWrapper
 from orion.core.worker.transformer import TransformedSpace, build_required_space
 from orion.core.worker.trial import Trial
 
@@ -21,8 +21,7 @@ AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 logger = get_logger(__name__)
 
 
-# pylint: disable=too-many-public-methods
-class SpaceTransform(AlgoWrapper[AlgoType]):
+class SpaceTransform(TransformWrapper[AlgoType]):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -53,10 +52,15 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
         """The transformed space (after transformations).
         This is only exposed to the wrapped algo, not to classes outside of this.
         """
-        return self.algorithm.space
+        transformed_space = self.algorithm.space
+        assert isinstance(transformed_space, TransformedSpace)
+        return transformed_space
 
+    # pylint: disable=arguments-differ
     @classmethod
-    def transform_space(cls, space: Space, algo_type: type[BaseAlgorithm]) -> Space:
+    def transform_space(
+        cls, space: Space, algo_type: type[BaseAlgorithm]
+    ) -> TransformedSpace:
         """Transform the space, so that the algorithm that is passed to the constructor already
         has the right space.
         """
@@ -68,15 +72,16 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
         )
 
     def transform(self, trial: Trial) -> Trial:
+        self._verify_trial(trial)
         return self.transformed_space.transform(trial)
 
     def reverse_transform(self, trial: Trial) -> Trial:
         return self.transformed_space.reverse(trial)
 
-    @property
-    def fidelity_index(self) -> str | None:
-        """Compute the index of the space where fidelity is.
-
-        Returns None if there is no fidelity dimension.
-        """
-        return self.algorithm.fidelity_index
+    def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
+        space = space or self.space
+        if trial not in space:
+            raise ValueError(
+                f"Trial {trial.id} not contained in space:"
+                f"\nParams: {trial.params}\nSpace: {space}"
+            )

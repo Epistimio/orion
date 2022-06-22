@@ -1,3 +1,5 @@
+""" Defines a wrapper that makes `suggest` more likely to return a trial (by asking a few times).
+"""
 from __future__ import annotations
 
 from logging import getLogger as get_logger

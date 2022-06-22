@@ -13,24 +13,23 @@ import copy
 from collections import defaultdict
 from contextlib import contextmanager
 from logging import getLogger
-from typing import Iterable, TypeVar
+from typing import Iterable
 
-from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Categorical, Space
 from orion.core.utils.format_trials import dict_to_trial
-from orion.core.worker.algo_wrappers.algo_wrapper import (
-    AlgoWrapper,
+from orion.core.worker.algo_wrappers.algo_wrapper import AlgoType
+from orion.core.worker.algo_wrappers.transform_wrapper import (
+    TransformWrapper,
     _copy_status_and_results,
 )
 from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start.knowledge_base import ExperimentInfo, KnowledgeBase
 from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
-log = getLogger(__file__)
+logger = getLogger(__file__)
 
 
-class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
+class MultiTaskWrapper(TransformWrapper[AlgoType], WarmStarteable):
     """Wrapper that makes the algo "multi-task" by adding a task id to the inputs."""
 
     def __init__(
@@ -38,13 +37,8 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         space: Space,
         algorithm: AlgoType,
     ):
-        log.debug(
-            f"Creating a MultiTaskAlgo wrapper: space {space}, algo config: {algorithm.configuration}"
-        )
+        super().__init__(space=space, algorithm=algorithm)
         self.current_task_id: int = 0
-
-        # TODO: IDEA: Use `self.registry` only for the current (target) task, and let `self.algorithm.registry`
-        # contain trials from all tasks, with task IDs added, including the target task?
 
     def transform(self, trial: Trial) -> Trial:
         return self._add_task_id(trial, self.current_task_id)
@@ -52,6 +46,7 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
     def reverse_transform(self, trial: Trial) -> Trial:
         return self._remove_task_id(trial)
 
+    # pylint: disable=arguments-differ
     @classmethod
     def transform_space(cls, space: Space, knowledge_base: KnowledgeBase) -> Space:
         """Transform the space, so that the algorithm that is passed to the constructor is already
@@ -61,7 +56,7 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         # experiments in the KB, in case some get added in the future?
         # TODO: Should the number of tasks here only count the experiments where the spaces are
         # compatible? (Currently only counts total number of experiments in the KB)
-        # TODO: Could we use a Catagorical over the experiment IDS instead of a Categorical with
+        # TODO: Could we use a Categorical over the experiment IDS instead of a Categorical with
         # ints? Would that help in some way?
         max_task_id = knowledge_base.n_stored_experiments + 1
         task_label_dimension = Categorical(
@@ -76,7 +71,8 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         return new_space
 
     def _is_compatible(self, trial_from_other_experiment: Trial) -> bool:
-        """Used to check if a trial is compatible with the current experiment and can be reused for warm-starting.
+        """Used to check if a trial is compatible with the current experiment and can be reused.
+
         The trial will have a different task ID than the current task.
 
         NOTE: this assumes that the trial from the other experiment comes from the knowledge base,
@@ -101,7 +97,7 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
             the list of Trials associated with that experiment.
         """
         # Perform warm-starting using only the supported trials.
-        log.info(
+        logger.info(
             "Will warm-start using contextual information, since the algo isn't warm-starteable."
         )
 
@@ -120,14 +116,14 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
                     task_ids_to_experiments[task_id] = experiment_info
 
             n_compatible_trials = len(compatible_trials[task_id])
-            log.info(
+            logger.info(
                 f"Experiment {experiment_info} has {len(trials)} trials in "
                 f"total, out of which {n_compatible_trials} were found to be "
                 f"compatible with the target experiment."
             )
 
         if not compatible_trials:
-            log.info("No compatible trials detected.")
+            logger.info("No compatible trials detected.")
             return
 
         # Only keep trials that are new.
@@ -137,7 +133,7 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         }
 
         if not new_compatible_trials:
-            log.info("No new new warm-starting trials detected.")
+            logger.info("No new new warm-starting trials detected.")
             return
 
         new_trials_with_task_ids = {
@@ -147,7 +143,9 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
 
         with self.algorithm.warm_start_mode():
             total_new_points = sum(map(len, new_trials_with_task_ids.values()))
-            log.info(f"About to observe {total_new_points} new warm-starting points!")
+            logger.info(
+                f"About to observe {total_new_points} new warm-starting points!"
+            )
             self.algorithm.observe(new_trials_with_task_ids)
 
     @property
@@ -170,11 +168,11 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         super().set_state(state_dict)
 
     @property
-    def trials_from_target_task(self) -> Iterable[Trial]:
+    def _trials_from_target_task(self) -> Iterable[Trial]:
         return (trial for trial in self.algorithm.registry if get_task_id(trial) == 0)
 
     @property
-    def trials_from_other_tasks(self) -> Iterable[Trial]:
+    def _trials_from_other_tasks(self) -> Iterable[Trial]:
         return (trial for trial in self.algorithm.registry if get_task_id(trial) != 0)
 
     @property
@@ -189,13 +187,13 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
             get_task_id(trial) == 0 for trial in self.unwrapped.registry
         )
         trials_from_other_tasks = total_trials - trials_from_target_task
-        log.debug(
+        logger.debug(
             f"Trials from target task: {trials_from_target_task}, "
             f"trials from other tasks: {trials_from_other_tasks} "
         )
-        log.debug(f"self.n_observed: {self.n_observed}")
-        log.debug(f"self.n_suggested: {self.n_suggested}")
-        log.debug(f"wrapped algo.is_done: {self.algorithm.is_done}")
+        logger.debug(f"self.n_observed: {self.n_observed}")
+        logger.debug(f"self.n_suggested: {self.n_suggested}")
+        logger.debug(f"wrapped algo.is_done: {self.algorithm.is_done}")
 
         # FIXME: Do the same logic as in the BaseAlgorithm.is_done, but only consider trials
         # from the target task.
@@ -235,4 +233,5 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
 
 
 def get_task_id(trial: Trial) -> int:
-    return trial.params.get("task_id", 0)
+    """Retrieves the task id of the given trial."""
+    return trial.params["task_id"]
