@@ -746,8 +746,8 @@ def compare_unsupported(attr_name, restricted_exp, execution_exp):
             restricted_attr(**kwargs.get(attr_name, {}))
 
 
-def create_experiment(mode, space, algorithm):
-    experiment = Experiment("supernaekei", mode=mode)
+def create_experiment(mode, space, algorithm, storage):
+    experiment = Experiment("supernaekei", mode=mode, storage=storage)
     experiment.space = space
     experiment.algorithms = algorithm
     experiment.max_broken = 5

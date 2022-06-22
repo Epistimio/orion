@@ -79,9 +79,9 @@ def conflicts(
 
 
 @pytest.fixture
-def branch_builder(conflicts):
+def branch_builder(storage, conflicts):
     """Generate the experiment branch builder"""
-    return ExperimentBranchBuilder(conflicts, manual_resolution=True)
+    return ExperimentBranchBuilder(conflicts, manual_resolution=True, storage=storage)
 
 
 @pytest.fixture

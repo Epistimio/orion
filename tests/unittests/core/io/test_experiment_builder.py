@@ -848,7 +848,7 @@ class TestBuild:
         properly. The experiment which looses the race condition cannot be
         initialized and needs to be rebuilt.
         """
-        with OrionState(experiments=[new_config], trials=[]):
+        with OrionState(experiments=[new_config], trials=[]) as cfg:
             experiment_count_before = count_experiments()
 
             def insert_race_condition(*args, **kwargs):
@@ -863,11 +863,13 @@ class TestBuild:
 
             insert_race_condition.count = 0
 
+
+            builder = experiment_builder.ExperimentBuilder(cfg.storage)
             monkeypatch.setattr(
-                experiment_builder, "fetch_config_from_db", insert_race_condition
+                builder, "fetch_config_from_db", insert_race_condition
             )
 
-            experiment_builder.build(**new_config)
+            builder.build(**new_config)
 
             assert experiment_count_before == count_experiments()
 

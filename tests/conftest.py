@@ -382,7 +382,8 @@ def random_dt(monkeypatch):
 @pytest.fixture(scope="function")
 def setup_pickleddb_database():
     """Configure the database"""
-    yield OrionState()
+    with OrionState() as cfg:
+        yield cfg
 
 
 @pytest.fixture(scope="function")
