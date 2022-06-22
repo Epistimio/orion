@@ -20,7 +20,6 @@ from orion.storage.base import (
     FailedUpdate,
     LockAcquisitionTimeout,
     LockedAlgorithmState,
-    MissingArguments,
     get_trial_uid_and_exp,
     get_uid,
 )

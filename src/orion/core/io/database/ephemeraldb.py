@@ -234,7 +234,7 @@ class EphemeralCollection:
         """Return max id + 1"""
         if self._documents:
             # NOTE: Custom ids than are not integers should simply not be accounted for
-            #       when infering what next id should be.
+            #       when inferring what next id should be.
             ids = [d["_id"] for d in self._documents if isinstance(d["_id"], int)]
             if not ids:
                 return 0

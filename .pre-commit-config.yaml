@@ -8,7 +8,7 @@ repos:
     rev: v2.1.0
     hooks:
       - id: codespell
-        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**", "--ignore-words-list=hist,wont"]
+        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/build/**", "--ignore-words-list=hist,wont"]
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:

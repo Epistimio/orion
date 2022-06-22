@@ -285,7 +285,7 @@ class TestWrite:
         value = get_db(orion_db)["experiments"].find({"exp_name": "supernaekei"})[0]
         assert value == item
 
-        # Now check that custom id will work properly with DB infered next id.
+        # Now check that custom id will work properly with DB inferred next id.
         # (item2 does not have a _id specified, thus the DB must infer the id to use)
         item2 = dict(item)
         del item2["_id"]

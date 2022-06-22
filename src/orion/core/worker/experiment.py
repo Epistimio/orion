@@ -323,7 +323,7 @@ class Experiment:
             with_evc_tree=False, function="fetch_pending_trials"
         )
 
-        exp_trials_ids = set(trial.id for trial in exp_pending_trials)
+        exp_trials_ids = {trial.id for trial in exp_pending_trials}
 
         for trial in evc_pending_trials:
             if trial.id in exp_trials_ids:
