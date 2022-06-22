@@ -23,12 +23,12 @@ jobs:
       - run: pre-commit install
       - run: pre-commit run black --all-files
       - run: pre-commit run isort --all-files
-      - run: pre-commit run doc8 --all-files
+      # - run: pre-commit run doc8 --all-files
   pretest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toxenv: [pylint, docs]
+        toxenv: [pylint, doc8, docs]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.9
