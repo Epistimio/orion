@@ -2,21 +2,16 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar, overload
 
+from typing_extensions import Concatenate, ParamSpec
+
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
-from orion.core.worker.algo_wrappers import (
-    InsistSuggest,
-    SpaceTransform,
-)
+from orion.core.worker.algo_wrappers import InsistSuggest, SpaceTransform
 
 # Backward compatibility imports adapters.
-from orion.core.worker.algo_wrappers.space_transform import (  # noqa
-    SpaceTransform as SpaceTransformAlgoWrapper,
-)
-from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
+from orion.core.worker.algo_wrappers.space_transform import SpaceTransform  # noqa
 from orion.core.worker.warm_start import KnowledgeBase, MultiTaskWrapper
 from orion.core.worker.warm_start.warm_starteable import WarmStarteable
-from typing_extensions import ParamSpec, Concatenate
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 WarmStarteableAlgo = TypeVar("WarmStarteableAlgo", bound=WarmStarteable)
@@ -70,22 +65,23 @@ def create_algo(
 
     These wrappers are used to:
     - apply the transformations required for the algorithm to be applied to the given search space;
-    - check whether the algorithm is warmstarteable and wrap it in a `MultiTaskWrapper` if it isnt;
-    - Make sure that calls to returned algo's `suggest` method returns a Trial, by trying a few times.
+    - check whether the algorithm is warmstarteable and wrap it in a `MultiTaskWrapper` if it
+      isn't;
+    - Make sure that calls to returned algo's `suggest` method returns a Trial, by trying a few
+      times.
 
     Parameters
     ----------
-    algo_type : Callable[..., AlgoType]
+    algo_type
         Type of algorithm to create and wrap.
-    space : Space
-        _description_
-    knowledge_base : KnowledgeBase | None, optional
-        _description_, by default None
+    space
+        The (original, un-transformed) search space.
+    knowledge_base
+        The Knowledge base to use for warm-starting of the algorithm, by default None.
 
     Returns
     -------
-    InsistSuggest[SpaceTransform[AlgoType]] | MultiTaskWrapper[ InsistSuggest[SpaceTransform[AlgoType]] ]
-        _description_
+        An AlgoWrapper around the algorithm of type `algo_type`.
     """
     spaces = [space]
     # Create the spaces for each wrapper, from the top down.

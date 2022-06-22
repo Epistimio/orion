@@ -22,11 +22,9 @@ from orion.core.worker.algo_wrappers.algo_wrapper import (
     AlgoWrapper,
     _copy_status_and_results,
 )
-from orion.core.worker.warm_start.knowledge_base import ExperimentInfo, KnowledgeBase
-from orion.core.worker.warm_start.warm_starteable import (
-    WarmStarteable,
-)
 from orion.core.worker.trial import Trial
+from orion.core.worker.warm_start.knowledge_base import ExperimentInfo, KnowledgeBase
+from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 log = getLogger(__file__)
@@ -82,7 +80,7 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         The trial will have a different task ID than the current task.
 
         NOTE: this assumes that the trial from the other experiment comes from the knowledge base,
-        and that is therefore doesn't already have a task ID.
+        and that it therefore doesn't already have a task ID.
         """
         # TODO: Do we need to do something smarter here?
         return trial_from_other_experiment in self.space
@@ -221,17 +219,12 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
         self.current_task_id = previous_task_id
 
     def _add_task_id(self, trial: Trial, task_id: int) -> Trial:
-        # NOTE: Need to do a bit of gymnastics here because the points are expected
-        # to be tuples. In order to add the task id at the right index, we convert
-        # them like so:
-        # Trial -> dict (.params) -> dict (add task_id) -> Trial.
         params = trial.params.copy()
         params["task_id"] = task_id
-
-        # TODO: Should we copy over the status and everything else?
         trial_with_task_id = dict_to_trial(params, self.algorithm.space)
-
-        trial_with_task_id = _copy_status_and_results(trial, trial_with_task_id)
+        trial_with_task_id = _copy_status_and_results(
+            trial_with_status=trial, trial_with_params=trial_with_task_id
+        )
         return trial_with_task_id
 
     def _remove_task_id(self, trial: Trial) -> Trial:
