@@ -8,7 +8,7 @@ Performs checks and organizes required transformations of points.
 from __future__ import annotations
 
 from logging import getLogger as get_logger
-from typing import Any, Sequence, TypeVar
+from typing import TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
@@ -32,13 +32,10 @@ class SpaceTransform(AlgoWrapper[AlgoType]):
 
     Parameters
     ----------
-    algorithm: instance of `BaseAlgorithm`
-        Algorithm to be wrapped.
     space : `orion.algo.space.Space`
        The original definition of a problem's parameters space.
-    algorithm_config : dict
-       Configuration for the algorithm.
-
+    algorithm: instance of `BaseAlgorithm`
+        Algorithm to be wrapped.
     """
 
     def __init__(self, space: Space, algorithm: AlgoType):

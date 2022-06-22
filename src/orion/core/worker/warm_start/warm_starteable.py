@@ -5,8 +5,8 @@ from functools import singledispatch
 
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
-from orion.core.worker.warm_start.knowledge_base import ExperimentInfo
 from orion.core.worker.trial import Trial
+from orion.core.worker.warm_start.knowledge_base import ExperimentInfo
 
 
 class WarmStarteable(BaseAlgorithm, ABC):
@@ -37,17 +37,17 @@ class WarmStarteable(BaseAlgorithm, ABC):
 
 @singledispatch
 def is_warmstarteable(algo: BaseAlgorithm | type[BaseAlgorithm]) -> bool:
-    """Returns whether the given algo, algo type, or algo config, supports warm-starting.
+    """Returns whether the given algo type or instance supports warm-starting.
 
     Parameters
     ----------
-    algo : Union[BaseAlgorithm, Type[BaseAlgorithm], Dict[str, Any]]
-        Algorithm instance, type of algorithm, or algorithm configuration dictionary.
+    algo : Union[BaseAlgorithm, Type[BaseAlgorithm]]
+        Algorithm type or instance.
 
     Returns
     -------
     bool
-        Whether the input is or describes a warm-starteable algorithm.
+        Whether the input is a warm-starteable algorithm.
     """
     raise NotImplementedError(
         f"Don't know how to tell if {algo} is a warm-starteable algorithm."
@@ -66,8 +66,8 @@ def _(algo: type[BaseAlgorithm]) -> bool:
 
 @is_warmstarteable.register(AlgoWrapper)
 def _(algo: AlgoWrapper) -> bool:
-    # NOTE: Not directing directly to algo.unwrapped, because the MultiTask wrapper makes the algo
-    # WarmStarteable. Move down the chain of wrappers instead.
+    # NOTE: Not going directly to algo.unwrapped, because the MultiTask wrapper makes the algo
+    # WarmStarteable. Check down the chain of wrappers instead.
     return is_warmstarteable(algo) or is_warmstarteable(algo.algorithm)
 
 
