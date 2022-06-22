@@ -8,7 +8,6 @@ Performs checks and organizes required transformations of points.
 from __future__ import annotations
 
 import copy
-import os
 from logging import getLogger as get_logger
 from typing import Any, Generic, Optional, Sequence, TypeVar
 
@@ -153,6 +152,19 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                         f"Space: {self.transformed_space}"
                     )
                 original = self.transformed_space.reverse(transformed_trial)
+                if transformed_trial.parent is not None:
+
+                    original_parent = get_original_parent(
+                        self.algorithm.registry,
+                        self.transformed_space,
+                        transformed_trial.parent,
+                    )
+                    if original_parent.id not in self.registry:
+                        raise KeyError(
+                            f"Parent with id {trial_parent_id} is not registered."
+                        )
+
+                    original.parent = original_parent.id
                 if original in self.registry:
                     logger.debug(
                         "Already have a trial that matches %s in the registry.",
@@ -176,14 +188,6 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                     # We haven't seen this trial before. Register it.
                     self.registry.register(original)
                     trials.append(original)
-                    # If the suggested trial has an exp_working_dir it means it was forked.
-                    if transformed_trial.exp_working_dir and os.path.exists(
-                        transformed_trial.working_dir
-                    ):
-                        print("to rename", transformed_trial.working_dir)
-                        print("to", original.working_dir)
-                        print(original.params_repr())
-                        os.rename(transformed_trial.working_dir, original.working_dir)
 
                 # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it
                 # itself in its `suggest`.
@@ -357,12 +361,33 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             )
 
 
+def get_original_parent(registry, transformed_space, trial_parent_id):
+    """Get the parent trial in original space based on parent id in transformed_space.
+
+    If the parent trial also has a parent, then this function is called recursively
+    to set the proper parent id in original space rather than transformed space.
+    """
+    try:
+        parent = registry[trial_parent_id]
+    except KeyError as e:
+        raise KeyError(f"Parent with id {trial_parent_id} is not registered.") from e
+
+    original_parent = transformed_space.reverse(parent)
+    if original_parent.parent is None:
+        return original_parent
+
+    original_grand_parent = get_original_parent(
+        registry, transformed_space, original_parent.parent
+    )
+    original_parent.parent = original_grand_parent.id
+    return original_parent
+
+
 def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
     """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
     new_transformed_trial = copy.deepcopy(original_trial)
     # pylint: disable=protected-access
     new_transformed_trial._params = copy.deepcopy(transformed_trial._params)
     new_transformed_trial.experiment = None
-    if original_trial.exp_working_dir and os.path.exists(original_trial.working_dir):
-        os.symlink(original_trial.working_dir, new_transformed_trial.working_dir)
+    new_transformed_trial.parent = transformed_trial.parent
     return new_transformed_trial

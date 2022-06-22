@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import os
 import random
+import shutil
 
 import numpy
 import pytest
@@ -50,6 +52,7 @@ algorithm_configs = {
             "max_retries": 100,
         }
     },
+    "pbt": {"pbt": {"seed": 1, "generations": 5, "population_size": 10}},
 }
 
 no_fidelity_algorithms = ["random", "tpe", "gridsearch"]
@@ -60,6 +63,11 @@ no_fidelity_algorithm_configs = {
 fidelity_only_algorithms = ["asha", "hyperband", "evolutiones"]
 fidelity_only_algorithm_configs = {
     key: algorithm_configs[key] for key in fidelity_only_algorithms
+}
+
+branching_algorithms = ["pbt"]
+branching_algorithm_configs = {
+    key: algorithm_configs[key] for key in branching_algorithms
 }
 
 
@@ -120,6 +128,13 @@ space = rosenbrock.get_search_space()
 space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
 
 multidim_rosenbrock = MultiDimRosenbrock(max_trials=30, with_fidelity=False)
+
+
+def branching_rosenbrock(x, noise=None, trial=None):
+    with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
+        f.write(trial.params_repr() + "\n")
+
+    return rosenbrock(x, noise)
 
 
 @pytest.mark.parametrize(
@@ -396,3 +411,41 @@ def test_parallel_workers(algorithm):
         param = best_trial._params[1]
         assert param.name == "x"
         assert param.type == "real"
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    branching_algorithm_configs.values(),
+    ids=list(branching_algorithm_configs.keys()),
+)
+def test_branching_algos(algorithm, tmp_path):
+    shutil.rmtree(tmp_path)
+    os.makedirs(tmp_path)
+
+    with OrionState() as cfg:  # Using PickledDB
+
+        exp = create_experiment(
+            name="exp",
+            space=space_with_fidelity,
+            algorithms=algorithm,
+            working_dir=tmp_path,
+        )
+
+        exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
+
+        def build_params_hist(trial):
+            params = [trial.params_repr()]
+            while trial.parent:
+                trial = exp.algorithms.registry[trial.parent]
+                params.append(trial.params_repr())
+            return params[::-1]
+
+        for trial in exp.fetch_trials():
+            params = build_params_hist(trial)
+            # TODO: This assumes algo.fidelities which may be specific to PBT...
+            assert (
+                len(params)
+                == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
+            )
+            with open(os.path.join(trial.working_dir, "hist.txt"), "r") as f:
+                assert "\n".join(params) == f.read().strip("\n")
