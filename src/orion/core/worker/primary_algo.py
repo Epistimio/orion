@@ -161,7 +161,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                     )
                     if original_parent.id not in self.registry:
                         raise KeyError(
-                            f"Parent with id {trial_parent_id} is not registered."
+                            f"Parent with id {original_parent.id} is not registered."
                         )
 
                     original.parent = original_parent.id

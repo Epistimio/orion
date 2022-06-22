@@ -115,7 +115,8 @@ def _optimize(trial, fct, trial_arg, **kwargs):
     return fct(**unflatten(kwargs))
 
 
-def delayed_expception(expection):
+def delayed_exception(expection):
+    """Raise exception when called..."""
     raise expection
 
 
@@ -146,6 +147,25 @@ class _Stat:
 
 
 def prepare_trial_working_dir(experiment_client, trial):
+    """Prepare working directory of a trial.
+
+    This will create a working directory based on ``trial.working_dir`` if not already existing. If
+    the trial has a parent, the ``working_dir`` of the parent will be copied to the ``working_dir``
+    of the current trial.
+
+    Parameters
+    ----------
+    experiment_client: orion.client.experiment.ExperimentClient
+        The experiment client being executed.
+    trial: orion.core.worker.trial.Trial
+        The trial that will be executed.
+
+    Raises
+    ------
+    ``ValueError``
+        If the parent is not found in the storage of ``experiment_client``.
+
+    """
     backward.ensure_trial_working_dir(experiment_client, trial)
 
     # TODO: Test that this works when resuming a trial.
@@ -342,8 +362,9 @@ class Runner:
             try:
                 self.prepare_trial(self.client, trial)
                 prepared = True
+            # pylint:disable=broad-except
             except Exception as e:
-                future = self.client.executor.submit(delayed_expception, e)
+                future = self.client.executor.submit(delayed_exception, e)
                 prepared = False
 
             if prepared:
