@@ -20,8 +20,8 @@ import logging
 from abc import abstractmethod
 from contextlib import contextmanager
 
-from orion.algo.space import Space
 from orion.algo.registry import Registry
+from orion.algo.space import Space
 from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
 
@@ -129,6 +129,7 @@ class BaseAlgorithm:
             self.seed_rng(self.seed)
 
         self.registry = Registry()
+        self.max_trials: int | None = None
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -313,10 +314,7 @@ class BaseAlgorithm:
         """Returns True if the algorithm has a `max_trials` attribute, and has completed more trials
         than its value.
         """
-        if not hasattr(self, "max_trials"):
-            return False
-        max_trials = getattr(self, "max_trials")
-        if max_trials is None:
+        if self.max_trials is None:
             return False
 
         fidelity_index = self.fidelity_index
@@ -333,7 +331,7 @@ class BaseAlgorithm:
                 and trial.params[fidelity_index] >= max_fidelity_value
             )
 
-        return sum(map(_is_completed, self.registry)) >= max_trials
+        return sum(map(_is_completed, self.registry)) >= self.max_trials
 
     def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `trial` based on a prediction about
