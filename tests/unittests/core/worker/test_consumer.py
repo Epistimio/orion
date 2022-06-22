@@ -81,9 +81,9 @@ def test_trial_working_dir_is_created(config):
     shutil.rmtree(trial.working_dir)
 
 
-def setup_code_change_mock(config, monkeypatch, ignore_code_changes):
+def setup_code_change_mock(storage, config, monkeypatch, ignore_code_changes):
     """Mock create experiment and trials, and infer_versioning_metadata"""
-    exp = experiment_builder.build(**config)
+    exp = experiment_builder.build(**config, storage=storage)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
@@ -110,7 +110,7 @@ def test_code_changed_evc_disabled(config, monkeypatch, caplog):
 
     storage = setup_storage()
 
-    con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=True)
+    con, trial = setup_code_change_mock(storage, config, monkeypatch, ignore_code_changes=True)
 
     with caplog.at_level(logging.WARNING):
         con(trial)
@@ -124,7 +124,7 @@ def test_code_changed_evc_enabled(config, monkeypatch):
 
     storage = setup_storage()
 
-    con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=False)
+    con, trial = setup_code_change_mock(storage, config, monkeypatch, ignore_code_changes=False)
 
     with pytest.raises(BranchingEvent) as exc:
         con(trial)
@@ -142,7 +142,7 @@ def test_retrieve_result_nofile(config):
         mode="w", prefix="results_", suffix=".log", dir=".", delete=True
     )
 
-    exp = experiment_builder.build(**config)
+    exp = experiment_builder.build(storage=storage, **config)
 
     con = Consumer(exp)
 

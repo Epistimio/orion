@@ -210,7 +210,7 @@ class TestReserveTrial(object):
         """Return None once all the trials have been allocated"""
         stati = ["new", "reserved", "interrupted", "completed", "broken"]
         with OrionState(trials=generate_trials(stati)) as cfg:
-            exp = Experiment("supernaekei", mode="x")
+            exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
             exp._id = cfg.trials[0]["experiment"]
             assert exp.reserve_trial() is not None
             assert exp.reserve_trial() is not None
