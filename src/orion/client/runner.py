@@ -233,9 +233,7 @@ class Runner:
     @property
     def has_remaining(self):
         """Returns true if the worker can still pick up work"""
-        return (
-            self.max_trials_per_worker - (self.trials - self.worker_broken_trials) > 0
-        )
+        return self.max_trials_per_worker - self.trials > 0
 
     @property
     def is_idle(self):
