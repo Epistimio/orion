@@ -52,7 +52,63 @@ algorithm_configs = {
             "max_retries": 100,
         }
     },
-    "pbt": {"pbt": {"seed": 1, "generations": 5, "population_size": 10}},
+    "pbt": {
+        "pbt": {
+            "seed": 1,
+            "generations": 5,
+            "population_size": 10,
+            "exploit": {
+                "exploit_configs": [
+                    {
+                        "candidate_pool_ratio": 0.2,
+                        "min_forking_population": 5,
+                        "of_type": "BacktrackExploit",
+                        "truncation_quantile": 0.9,
+                    },
+                    {
+                        "candidate_pool_ratio": 0.2,
+                        "min_forking_population": 5,
+                        "of_type": "TruncateExploit",
+                        "truncation_quantile": 0.8,
+                    },
+                ],
+                "of_type": "PipelineExploit",
+            },
+            "explore": {
+                "explore_configs": [
+                    {"of_type": "ResampleExplore", "probability": 0.2},
+                    {"factor": 1.2, "of_type": "PerturbExplore", "volatility": 0.0001},
+                ],
+                "of_type": "PipelineExplore",
+            },
+            "fork_timeout": 60,
+        }
+    },
+    "pb2": {
+        "pb2": {
+            "seed": 1,
+            "generations": 3,
+            "population_size": 20,
+            "exploit": {
+                "exploit_configs": [
+                    {
+                        "candidate_pool_ratio": 0.4,
+                        "min_forking_population": 2,
+                        "of_type": "BacktrackExploit",
+                        "truncation_quantile": 0.9,
+                    },
+                    {
+                        "candidate_pool_ratio": 0.4,
+                        "min_forking_population": 2,
+                        "of_type": "TruncateExploit",
+                        "truncation_quantile": 0.8,
+                    },
+                ],
+                "of_type": "PipelineExploit",
+            },
+            "fork_timeout": 60,
+        }
+    },
 }
 
 no_fidelity_algorithms = ["random", "tpe", "gridsearch"]
@@ -60,12 +116,12 @@ no_fidelity_algorithm_configs = {
     key: algorithm_configs[key] for key in no_fidelity_algorithms
 }
 
-fidelity_only_algorithms = ["asha", "hyperband", "evolutiones"]
+fidelity_only_algorithms = ["asha", "hyperband", "evolutiones", "pbt", "pb2"]
 fidelity_only_algorithm_configs = {
     key: algorithm_configs[key] for key in fidelity_only_algorithms
 }
 
-branching_algorithms = ["pbt"]
+branching_algorithms = ["pbt", "pb2"]
 branching_algorithm_configs = {
     key: algorithm_configs[key] for key in branching_algorithms
 }
@@ -267,7 +323,7 @@ def test_with_fidelity(algorithm: dict):
     fidelity = best_trial._params[0]
     assert fidelity.name == "noise"
     assert fidelity.type == "fidelity"
-    assert fidelity.value in [1, 2, 5, 10]
+    assert fidelity.value in exp.space["noise"]
     param = best_trial._params[1]
     assert param.name == "x"
     assert param.type == "real"
@@ -304,7 +360,7 @@ def test_with_multidim(algorithm):
     fidelity = best_trial._params[0]
     assert fidelity.name == "noise"
     assert fidelity.type == "fidelity"
-    assert fidelity.value in [1, 2, 5, 10]
+    assert fidelity.value in exp.space["noise"]
     param = best_trial._params[1]
     assert param.name == "x"
     assert param.type == "real"
