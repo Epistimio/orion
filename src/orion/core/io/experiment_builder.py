@@ -518,19 +518,9 @@ def _instantiate_algo(
     """
     config = config or orion.core.config.experiment.algorithms
     try:
-        # FIXME: This doesn't quite work atm. The algo should usually also now include the config
-        # of the wrappers.
-        wrapped_algo_config = config
-
         backported_config = backward.port_algo_config(config)
-        algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(
-            backported_config.pop("of_type")
-        )
-        # TODO: For nested algo configs, we need to also make sure that they aren't dicts
-        from orion.core.worker.algo_wrappers import AlgoWrapper
-
-        assert not issubclass(algo_constructor, AlgoWrapper), algo_constructor
-        # NOTE: the config doesn't have the `of_type` key anymore, it only has the algo's kwargs
+        algo_name = backported_config.pop("of_type")
+        algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(algo_name)
         wrapped_algo = create_algo(
             space=space,
             algo_type=algo_constructor,
