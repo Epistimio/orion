@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import copy
+from typing import Callable
+
 import pytest
 
 from orion.algo.space import Space
-from orion.core.worker.warm_start import KnowledgeBase
-from typing import Any, Callable
-from orion.core.io.space_builder import SpaceBuilder
 from orion.client import ExperimentClient
+from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
+from orion.core.worker.warm_start import KnowledgeBase
 from orion.core.worker.warm_start.experiment_config import ExperimentInfo
-from orion.storage.base import BaseStorageProtocol
-from orion.testing.state import OrionState
 
 # Function to create a space.
 space: Callable[[dict], Space] = SpaceBuilder().build
@@ -60,7 +59,15 @@ class DummyKnowledgeBase(KnowledgeBase):
             ExperimentInfo.from_dict(experiment.configuration)
         )
 
+    @property
+    def n_stored_experiments(self) -> int:
+        return len(self.previous_experiments)
+
+    def __contains__(self, obj: object) -> bool:
+        return obj in self.previous_experiments
+
 
 @pytest.fixture()
 def knowledge_base():
+    previous_experiments = []
     return DummyKnowledgeBase(previous_experiments)

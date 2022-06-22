@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import copy
+from typing import Callable
+
 import pytest
 
 from orion.algo.space import Space
-from orion.core.worker.warm_start import KnowledgeBase
-from typing import Any, Callable
 from orion.core.io.space_builder import SpaceBuilder
-from orion.client import ExperimentClient
-from orion.core.worker.experiment import Experiment
-from orion.core.worker.trial import Trial
-from orion.testing.state import OrionState
 
 # Function to create a space.
 space: Callable[[dict], Space] = SpaceBuilder().build

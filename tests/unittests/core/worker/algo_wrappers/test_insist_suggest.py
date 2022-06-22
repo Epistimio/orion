@@ -5,13 +5,13 @@ from typing import Any
 
 import pytest
 from pytest import MonkeyPatch
+from test_transform import StupidAlgo
 
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.algo_wrappers import InsistSuggest, SpaceTransform
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
-from test_transform import StupidAlgo
 
 if typing.TYPE_CHECKING:
     from tests.conftest import DumbAlgo
