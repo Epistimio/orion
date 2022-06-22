@@ -194,7 +194,7 @@ class MultiTaskWrapper(AlgoWrapper[AlgoType], WarmStarteable):
             f"trials from other tasks: {trials_from_other_tasks} "
         )
         log.debug(f"self.n_observed: {self.n_observed}")
-        log.debug(f"self.n_observed: {self.n_suggested}")
+        log.debug(f"self.n_suggested: {self.n_suggested}")
         log.debug(f"wrapped algo.is_done: {self.algorithm.is_done}")
 
         # FIXME: Do the same logic as in the BaseAlgorithm.is_done, but only consider trials
