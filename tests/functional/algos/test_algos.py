@@ -13,7 +13,6 @@ import pytest
 from orion.client import create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
-from orion.testing.state import OrionState
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
@@ -370,103 +369,101 @@ def test_with_multidim(algorithm):
 @pytest.mark.parametrize(
     "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
 )
-def test_with_evc(algorithm):
+def test_with_evc(algorithm, storage):
     """Test a scenario where algos are warm-started with EVC."""
 
-    with OrionState(storage={"type": "legacy", "database": {"type": "PickledDB"}}):
-        base_exp = create_experiment(
-            name="exp",
-            space=space_with_fidelity,
-            algorithms=algorithm_configs["random"],
-            max_trials=10,
-        )
-        base_exp.workon(rosenbrock, max_trials=10)
+    base_exp = create_experiment(
+        name="exp",
+        space=space_with_fidelity,
+        algorithms=algorithm_configs["random"],
+        max_trials=10,
+    )
+    base_exp.workon(rosenbrock, max_trials=10)
 
-        exp = create_experiment(
-            name="exp",
-            space=space_with_fidelity,
-            algorithms=algorithm,
-            max_trials=30,
-            branching={"branch_from": "exp", "enable": True},
-        )
+    exp = create_experiment(
+        name="exp",
+        space=space_with_fidelity,
+        algorithms=algorithm,
+        max_trials=30,
+        branching={"branch_from": "exp", "enable": True},
+    )
 
-        assert exp.version == 2
+    assert exp.version == 2
 
-        exp.workon(rosenbrock, max_trials=30)
+    exp.workon(rosenbrock, max_trials=30)
 
-        assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithms"] == algorithm
 
-        trials = exp.fetch_trials(with_evc_tree=False)
+    trials = exp.fetch_trials(with_evc_tree=False)
 
-        # Some algo may not be able to suggest exactly 30 trials (ex: hyperband)
-        assert len(trials) >= 20
+    # Some algo may not be able to suggest exactly 30 trials (ex: hyperband)
+    assert len(trials) >= 20
 
-        trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-        assert len(trials_with_evc) >= 30
-        assert len(trials_with_evc) - len(trials) == 10
+    trials_with_evc = exp.fetch_trials(with_evc_tree=True)
+    assert len(trials_with_evc) >= 30
+    assert len(trials_with_evc) - len(trials) == 10
 
-        completed_trials = [
-            trial for trial in trials_with_evc if trial.status == "completed"
-        ]
-        assert len(completed_trials) == 30
+    completed_trials = [
+        trial for trial in trials_with_evc if trial.status == "completed"
+    ]
+    assert len(completed_trials) == 30
 
-        results = [trial.objective.value for trial in completed_trials]
-        assert all(trial.objective is not None for trial in completed_trials)
-        best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
+    results = [trial.objective.value for trial in completed_trials]
+    assert all(trial.objective is not None for trial in completed_trials)
+    best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
 
-        assert best_trial.objective.name == "objective"
-        assert abs(best_trial.objective.value - 23.4) < 1e-5
-        assert len(best_trial.params) == 2
-        fidelity = best_trial._params[0]
-        assert fidelity.name == "noise"
-        assert fidelity.type == "fidelity"
-        assert fidelity.value == 10
-        param = best_trial._params[1]
-        assert param.name == "x"
-        assert param.type == "real"
+    assert best_trial.objective.name == "objective"
+    assert abs(best_trial.objective.value - 23.4) < 1e-5
+    assert len(best_trial.params) == 2
+    fidelity = best_trial._params[0]
+    assert fidelity.name == "noise"
+    assert fidelity.type == "fidelity"
+    assert fidelity.value == 10
+    param = best_trial._params[1]
+    assert param.name == "x"
+    assert param.type == "real"
 
 
 @pytest.mark.parametrize(
     "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
 )
-def test_parallel_workers(algorithm):
+def test_parallel_workers(algorithm, storage):
     """Test parallel execution with joblib"""
     MAX_TRIALS = 30
     ASHA_UGLY_FIX = 10
-    with OrionState() as cfg:  # Using PickledDB
 
-        name = f"{list(algorithm.keys())[0]}_exp"
+    name = f"{list(algorithm.keys())[0]}_exp"
 
-        exp = create_experiment(
-            name=name,
-            space=space_with_fidelity,
-            algorithms=algorithm,
-        )
+    exp = create_experiment(
+        name=name,
+        space=space_with_fidelity,
+        algorithms=algorithm,
+    )
 
-        exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)
+    exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)
 
-        assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithms"] == algorithm
 
-        trials = exp.fetch_trials()
-        assert len(trials) >= MAX_TRIALS
+    trials = exp.fetch_trials()
+    assert len(trials) >= MAX_TRIALS
 
-        completed_trials = [trial for trial in trials if trial.status == "completed"]
-        assert MAX_TRIALS <= len(completed_trials) <= MAX_TRIALS + 2
+    completed_trials = [trial for trial in trials if trial.status == "completed"]
+    assert MAX_TRIALS <= len(completed_trials) <= MAX_TRIALS + 2
 
-        results = [trial.objective.value for trial in completed_trials]
-        assert all(trial.objective is not None for trial in completed_trials)
-        best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
+    results = [trial.objective.value for trial in completed_trials]
+    assert all(trial.objective is not None for trial in completed_trials)
+    best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
 
-        assert best_trial.objective.name == "objective"
-        assert abs(best_trial.objective.value - 23.4) < 1e-5 + ASHA_UGLY_FIX
-        assert len(best_trial.params) == 2
-        fidelity = best_trial._params[0]
-        assert fidelity.name == "noise"
-        assert fidelity.type == "fidelity"
-        assert fidelity.value + ASHA_UGLY_FIX >= 1
-        param = best_trial._params[1]
-        assert param.name == "x"
-        assert param.type == "real"
+    assert best_trial.objective.name == "objective"
+    assert abs(best_trial.objective.value - 23.4) < 1e-5 + ASHA_UGLY_FIX
+    assert len(best_trial.params) == 2
+    fidelity = best_trial._params[0]
+    assert fidelity.name == "noise"
+    assert fidelity.type == "fidelity"
+    assert fidelity.value + ASHA_UGLY_FIX >= 1
+    param = best_trial._params[1]
+    assert param.name == "x"
+    assert param.type == "real"
 
 
 @pytest.mark.parametrize(
@@ -474,34 +471,32 @@ def test_parallel_workers(algorithm):
     branching_algorithm_configs.values(),
     ids=list(branching_algorithm_configs.keys()),
 )
-def test_branching_algos(algorithm, tmp_path):
+def test_branching_algos(algorithm, storage, tmp_path):
     shutil.rmtree(tmp_path)
     os.makedirs(tmp_path)
 
-    with OrionState() as cfg:  # Using PickledDB
+    exp = create_experiment(
+        name="exp",
+        space=space_with_fidelity,
+        algorithms=algorithm,
+        working_dir=tmp_path,
+    )
 
-        exp = create_experiment(
-            name="exp",
-            space=space_with_fidelity,
-            algorithms=algorithm,
-            working_dir=tmp_path,
+    exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
+
+    def build_params_hist(trial):
+        params = [trial.params_repr()]
+        while trial.parent:
+            trial = exp.algorithms.registry[trial.parent]
+            params.append(trial.params_repr())
+        return params[::-1]
+
+    for trial in exp.fetch_trials():
+        params = build_params_hist(trial)
+        # TODO: This assumes algo.fidelities which may be specific to PBT...
+        assert (
+            len(params)
+            == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
         )
-
-        exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
-
-        def build_params_hist(trial):
-            params = [trial.params_repr()]
-            while trial.parent:
-                trial = exp.algorithms.registry[trial.parent]
-                params.append(trial.params_repr())
-            return params[::-1]
-
-        for trial in exp.fetch_trials():
-            params = build_params_hist(trial)
-            # TODO: This assumes algo.fidelities which may be specific to PBT...
-            assert (
-                len(params)
-                == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
-            )
-            with open(os.path.join(trial.working_dir, "hist.txt"), "r") as f:
-                assert "\n".join(params) == f.read().strip("\n")
+        with open(os.path.join(trial.working_dir, "hist.txt"), "r") as f:
+            assert "\n".join(params) == f.read().strip("\n")
