@@ -474,7 +474,7 @@ def test_parallel_workers(algorithm):
     branching_algorithm_configs.values(),
     ids=list(branching_algorithm_configs.keys()),
 )
-def test_branching_algos(algorithm, tmp_path):
+def test_branching_algos(algorithm: dict[str, Any], tmp_path: Path):
     shutil.rmtree(tmp_path)
     os.makedirs(tmp_path)
 
