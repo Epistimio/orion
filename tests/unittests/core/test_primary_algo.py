@@ -381,7 +381,7 @@ class TestRegistration:
         assert algo_wrapper.has_suggested(equivalent_original)
         assert algo_wrapper.algorithm.has_suggested(equivalent_transformed)
 
-    def test_suggest_non_existing_parents(self):
+    def test_suggest_nonexistent_parents(self):
         original_space = SpaceBuilder().build(
             {"x": "loguniform(1, 100, discrete=True)"}
         )
