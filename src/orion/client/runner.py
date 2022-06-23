@@ -7,11 +7,15 @@ Runner
 
 Executes the optimization process
 """
+from __future__ import annotations
+
 import logging
 import os
 import shutil
 import signal
 import time
+import typing
+from typing import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -30,6 +34,10 @@ from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
 from orion.storage.base import LockAcquisitionTimeout
+
+if typing.TYPE_CHECKING:
+    from orion.client.experiment import ExperimentClient
+    from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -188,18 +196,20 @@ class Runner:
 
     def __init__(
         self,
-        client,
-        fct,
-        pool_size,
-        idle_timeout,
-        max_trials_per_worker,
-        max_broken,
-        trial_arg,
-        on_error=None,
-        prepare_trial=None,
-        interrupt_signal_code=None,
-        gather_timeout=0.01,
-        n_workers=None,
+        client: ExperimentClient,
+        fct: Callable,
+        pool_size: int,
+        idle_timeout: int,
+        max_trials_per_worker: int,
+        max_broken: int,
+        trial_arg: str,
+        on_error: Callable[[ExperimentClient, Exception, int], bool] | None = None,
+        prepare_trial: Callable[
+            [ExperimentClient, Trial], None
+        ] = prepare_trial_working_dir,
+        interrupt_signal_code: int | None = None,
+        gather_timeout: float = 0.01,
+        n_workers: int | None = None,
         **kwargs,
     ):
         self.client = client
@@ -209,10 +219,7 @@ class Runner:
         self.max_broken = max_broken
         self.trial_arg = trial_arg
         self.on_error = on_error
-        if prepare_trial is None:
-            self.prepare_trial = prepare_trial_working_dir
-        else:
-            self.prepare_trial = prepare_trial
+        self.prepare_trial = prepare_trial
         self.kwargs = kwargs
 
         self.gather_timeout = gather_timeout
