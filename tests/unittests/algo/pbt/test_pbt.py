@@ -29,7 +29,7 @@ class TestComputeFidelities:
     def test_other_bases(self):
         assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
 
-    def test_fidelity_upgrades(self, space):
+    def test_fidelity_upgrades(self, space: Space):
         pbt = _create_algo(space).algorithm
         fidelities = compute_fidelities(9, 2, 2**10, 2)
         pbt.fidelity_upgrades.keys() == fidelities[:-1]
