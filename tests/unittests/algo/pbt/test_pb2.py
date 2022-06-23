@@ -9,8 +9,6 @@ import pytest
 from orion.algo.pbt.pb2_utils import HAS_PB2
 from orion.testing.algo import BaseAlgoTests, TestPhase
 
-pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
-
 
 if not HAS_PB2:
     pytest.skip("PB2 deps not installed", allow_module_level=True)

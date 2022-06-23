@@ -14,8 +14,6 @@ from base import (
 
 from orion.algo.pbt.pbt import LineageNode, Lineages
 
-pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
-
 
 class TestLineageNode:
     def test_register(self):
