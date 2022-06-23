@@ -709,7 +709,7 @@ def test_custom_prepare_trial():
     assert test_callback.called == count
 
 
-def test_prepare_trial_working_dir(tmp_path):
+def test_prepare_trial_working_dir(tmp_path: Path):
     """Test that folders are created or copied properly"""
     exp_working_dir = tmp_path / "exp_wdir"
     assert not os.path.exists(exp_working_dir)
