@@ -361,7 +361,9 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             )
 
 
-def get_original_parent(registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str) -> Trial:
+def get_original_parent(
+    registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str
+) -> Trial:
     """Get the parent trial in original space based on parent id in transformed_space.
 
     If the parent trial also has a parent, then this function is called recursively
