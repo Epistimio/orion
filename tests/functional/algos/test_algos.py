@@ -186,7 +186,7 @@ space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
 multidim_rosenbrock = MultiDimRosenbrock(max_trials=30, with_fidelity=False)
 
 
-def branching_rosenbrock(x, noise=None, trial=None):
+def branching_rosenbrock(x: float, noise: float | None=None, trial: Trial | None=None) -> list[dict]:
     with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
         f.write(trial.params_repr() + "\n")
 
