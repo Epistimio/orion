@@ -463,20 +463,20 @@ class TestToPandas:
             exp.space = space
             df = exp.to_pandas()
             assert df.shape == (3, 8)
-            assert list(df["id"]) == [trial["_id"] for trial in cfg.trials]
+            assert list(df["id"]) == [trial["id"] for trial in cfg.trials]
             assert all(df["experiment_id"] == exp._id)
-            assert list(df["status"]) == ["completed", "reserved", "new"]
+            assert list(df["status"]) == ["reserved", "new", "completed"]
             assert list(df["suggested"]) == [
                 trial["submit_time"] for trial in cfg.trials
             ]
             assert df["reserved"][0] == cfg.trials[0]["start_time"]
-            assert df["reserved"][1] == cfg.trials[1]["start_time"]
-            assert df["reserved"][2] is pandas.NaT
-            assert df["completed"][0] == cfg.trials[0]["end_time"]
+            assert df["reserved"][1] is pandas.NaT
+            assert df["reserved"][2] == cfg.trials[2]["start_time"]
+            assert df["completed"][0] is pandas.NaT
             assert df["completed"][1] is pandas.NaT
-            assert df["completed"][2] is pandas.NaT
-            assert list(df["objective"]) == [2, 1, 0]
-            assert list(df["/index"]) == [2, 1, 0]
+            assert df["completed"][2] == cfg.trials[2]["end_time"]
+            assert list(df["objective"]) == [1, 0, 2]
+            assert list(df["/index"]) == [1, 0, 2]
 
 
 def test_fetch_all_trials():
@@ -617,10 +617,10 @@ def test_experiment_stats():
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
         stats = exp.stats
         assert stats.trials_completed == NUM_COMPLETED
-        assert stats.best_trials_id == cfg.trials[3]["_id"]
+        assert stats.best_trials_id == cfg.trials[2]["id"]
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
-        assert stats.finish_time == cfg.trials[0]["end_time"]
+        assert stats.finish_time == cfg.trials[3]["end_time"]
         assert stats.duration == stats.finish_time - stats.start_time
 
 
@@ -752,6 +752,7 @@ def create_experiment(mode, space, algorithm, storage):
     experiment.algorithms = algorithm
     experiment.max_broken = 5
     experiment.max_trials = 5
+    experiment._id = 1
     return experiment
 
 

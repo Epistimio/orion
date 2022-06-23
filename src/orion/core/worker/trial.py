@@ -11,6 +11,7 @@ import copy
 import hashlib
 import logging
 import os
+import warnings
 
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
@@ -40,15 +41,15 @@ class Trial:
 
     Attributes
     ----------
-    experiment : str
+    experiment: str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
     id_override: str
         Trial id returned by the database. It should be unique for a given
         set of parameters
-    heartbeat : datetime.datetime
+    heartbeat: datetime.datetime
         Last time trial was identified as being alive.
-    status : str
+    status: str
        Indicates how this trial is currently being used. Can take the following
        values:
 
@@ -65,19 +66,19 @@ class Trial:
           of the worker process).
        * 'broken' : Indicates a trial that was not successfully evaluated for not
           expected reason.
-    worker : str
+    worker: str
        Corresponds to worker's unique id that handled this trial.
-    submit_time : `datetime.datetime`
+    submit_time: `datetime.datetime`
        When was this trial suggested?
-    start_time : `datetime.datetime`
+    start_time: `datetime.datetime`
        When was this trial first reserved?
-    end_time : `datetime.datetime`
+    end_time: `datetime.datetime`
        When was this trial evaluated successfully?
-    results : list of `Trial.Result`
+    results: list of `Trial.Result`
        List of evaluated metrics for this particular set of params. One and only
        one of them is necessarily an *objective* function value. The other are
        *constraints*, the value of an expression desired to be larger/equal to 0.
-    params : dict of params
+    params: dict of params
        Dict of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
 
@@ -102,12 +103,12 @@ class Trial:
 
         Attributes
         ----------
-        name : str
+        name: str
            A possible named for the quality that this is quantifying.
-        type : str
+        type: str
            An identifier with semantic importance for **Oríon**. See
            `Param.type` and `Result.type`.
-        value : str or numerical
+        value: str or numerical
            value suggested for this dimension of the parameter space.
 
         """
@@ -216,6 +217,10 @@ class Trial:
 
         # Store the id as an override to support different backends
         self.id_override = kwargs.pop("_id", None)
+        kwargs.pop("id", None)
+
+        # NOTE: For backward compatibility with <v0.2.5
+        kwargs.pop("id_override", None)
 
         for attrname, value in kwargs.items():
             if attrname == "parents":
@@ -286,7 +291,10 @@ class Trial:
         trial_dictionary["results"] = list(map(lambda x: x.to_dict(), self.results))
         trial_dictionary["params"] = list(map(lambda x: x.to_dict(), self._params))
 
-        trial_dictionary["_id"] = trial_dictionary.pop("id")
+        trial_dictionary["id"] = self.id
+        id_override = trial_dictionary.pop("id_override", None)
+        if id_override:
+            trial_dictionary["_id"] = id_override
 
         return trial_dictionary
 
@@ -327,7 +335,7 @@ class Trial:
     def get_working_dir(
         self,
         ignore_fidelity=False,
-        ignore_experiment=False,
+        ignore_experiment=None,
         ignore_lie=False,
         ignore_parent=False,
     ):
@@ -371,10 +379,18 @@ class Trial:
 
     @property
     def id(self):
-        """Return hash_name which is also the database key ``_id``."""
-        if self.id_override is None:
-            return self.__hash__()
-        return self.id_override
+        """Return hash_name which is also the database key ``id``."""
+        return self.__hash__()
+
+    @property
+    def legacy_id(self):
+        """Backward compatible id
+
+        Deprecated and will be removed in v0.4.0.
+
+        This is equivalent to `Trial.id` prior to v0.2.5.
+        """
+        return self.compute_trial_hash(self, ignore_experiment=False)
 
     @property
     def objective(self):
@@ -488,7 +504,7 @@ class Trial:
     def compute_trial_hash(
         trial,
         ignore_fidelity=False,
-        ignore_experiment=False,
+        ignore_experiment=None,
         ignore_lie=False,
         ignore_parent=False,
     ):
@@ -500,6 +516,15 @@ class Trial:
             )
 
         params = Trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
+
+        if ignore_experiment is not None:
+            warnings.warn(
+                "Argument ignore_experiment is deprecated and will be removed in v0.3.0. "
+                "Trial.id does not include experiment id since release v0.2.5.",
+                DeprecationWarning,
+            )
+        else:
+            ignore_experiment = True
 
         experiment_repr = ""
         if not ignore_experiment:

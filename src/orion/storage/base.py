@@ -67,6 +67,48 @@ def get_uid(item=None, uid=None, force_uid=True):
     return uid
 
 
+def get_trial_uid_and_exp(trial=None, uid=None, experiment_uid=None):
+    """Return trial and experiment uid either from `trial` or directly uids.
+
+    Parameters
+    ----------
+    trial: Trial, optional
+       Object with .id attribute
+
+    uid: str, optional
+        str id representation of the trial
+
+    experiment_uid: str, optional
+        str id representation of the experiment
+
+    Raises
+    ------
+    UndefinedCall
+        if both trial and (uid or experiment_uid) are not set
+
+    AssertionError
+        if both trial and (uid or experiment_uid) are provided and they do not match
+
+    Returns
+    -------
+    (trial uid, experiment uid)
+    """
+
+    if trial is None and experiment_uid is None:
+        raise MissingArguments(
+            "Either `trial` or (`uid` and `experiment_uid`) should be set"
+        )
+
+    if trial is not None and experiment_uid:
+        assert trial.experiment == experiment_uid
+    elif trial is not None:
+        experiment_uid = trial.experiment
+
+    trial_uid = get_uid(trial, uid)
+
+    return trial_uid, experiment_uid
+
+
 class FailedUpdate(Exception):
     """Exception raised when we are unable to update a trial' status"""
 
@@ -299,7 +341,9 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+    def update_trial(
+        self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
+    ):
         """Update fields of a given trial
 
         Parameters
@@ -309,6 +353,9 @@ class BaseStorageProtocol:
 
         uid: str, optional
             id of the trial to update in the database
+
+        experiment_uid: str, optional
+            experiment id of the trial to update in the database
 
         where: Optional[dict]
             constraint trials must respect. Note: useful to handle race conditions.
@@ -327,7 +374,7 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def get_trial(self, trial=None, uid=None):
+    def get_trial(self, trial=None, uid=None, experiment_uid=None):
         """Fetch a single trial
 
         Parameters
@@ -338,9 +385,12 @@ class BaseStorageProtocol:
         uid: str, optional
             trial id used to retrieve the trial object
 
+        experiment_uid: str, optional
+            experiment id used to retrieve the trial object
+
         Returns
         -------
-        return none if the trial is not found,
+        return None if the trial is not found,
 
         Raises
         ------

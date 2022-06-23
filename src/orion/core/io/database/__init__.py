@@ -22,17 +22,17 @@ class Database(object):
 
     Attributes
     ----------
-    host : str
+    host: str
        It can be either:
           1. Known hostname or IP address in which database server resides.
           2. URI: A database framework specific connection string.
-    name : str
+    name: str
        Name of database containing experiments.
-    port : int
+    port: int
        Port that database server listens to for requests.
-    username : str
+    username: str
         Name of user with write/read permissions to database with name `name`.
-    password : str
+    password: str
         Secret phrase of user, `username`.
 
     """
@@ -113,9 +113,9 @@ class Database(object):
     def index_information(self, collection_name):
         """Return dict of names and sorting order of indexes
 
-        Paramaters
+        Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
 
         Returns
@@ -131,9 +131,9 @@ class Database(object):
     def drop_index(self, collection_name, name):
         """Remove index from the database
 
-        Paramaters
+        Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
         name: str
             Index name in the format {name}_{order}
@@ -147,11 +147,11 @@ class Database(object):
 
         Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
-        data : dict or list of dicts
+        data: dict or list of dicts
            New data that will **be inserted** or that will **update** entries.
-        query : dict, optional
+        query: dict, optional
            Assumes an update operation: filter entries in collection to be updated.
 
         Returns
@@ -183,11 +183,11 @@ class Database(object):
 
         Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
-        query : dict, optional
+        query: dict, optional
            Filter entries in collection.
-        selection : dict, optional
+        selection: dict, optional
            Elements of matched entries to return, the projection.
 
         Returns
@@ -208,13 +208,13 @@ class Database(object):
 
         Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
-        query : dict
+        query: dict
            Filter entries in collection.
-        data : dict or list of dicts
+        data: dict or list of dicts
            New data that will **update** the entry.
-        selection : dict, optional
+        selection: dict, optional
            Elements of matched entries to return, the projection.
 
         Returns
@@ -238,9 +238,9 @@ class Database(object):
 
         Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
-        query : dict
+        query: dict
            Filter entries in collection.
 
         """
@@ -252,9 +252,9 @@ class Database(object):
 
         Parameters
         ----------
-        collection_name : str
+        collection_name: str
            A collection inside database, a table.
-        query : dict
+        query: dict
            Filter entries in collection.
 
         Returns

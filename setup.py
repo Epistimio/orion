@@ -66,6 +66,13 @@ extras_require = {
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
+dashboard_files = []
+for root, sub_directories, files in os.walk("dashboard/build"):
+    for file in files:
+        # Install dashboard build in a folder `orion-dashboard`
+        install_root = os.path.join("orion-dashboard", *root.split(os.sep)[1:])
+        dashboard_files.append((install_root, [os.path.join(root, file)]))
+
 setup_args = dict(
     name="orion",
     version=versioneer.get_version(),
@@ -80,6 +87,7 @@ setup_args = dict(
     url="https://github.com/epistimio/orion",
     packages=packages,
     package_dir={"": "src"},
+    data_files=dashboard_files,
     include_package_data=True,
     python_requires=">=3.7",
     entry_points={
@@ -94,7 +102,7 @@ setup_args = dict(
             "dehb = orion.algo.dehb.dehb:DEHB",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
-            "pbt = orion.algo.pbt.pbt:PBT",
+            # "pbt = orion.algo.pbt.pbt:PBT",
             "ax = orion.algo.axoptimizer:AxOptimizer",
             "mofa = orion.algo.mofa.mofa:MOFA",
             "pb2 = orion.algo.pbt.pb2:PB2",

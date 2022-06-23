@@ -126,7 +126,7 @@ VALID_QUERY_ATTRS = ["status", "id"]
 VALID_UPDATE_ATTRS = ["status"]
 
 
-def build_query(query):
+def build_query(experiment, query):
     """Convert query string to dict format
 
     String format must be <attr name>=<value>
@@ -141,10 +141,12 @@ def build_query(query):
             f"Invalid query attribute `{attribute}`. Must be one of {VALID_QUERY_ATTRS}"
         )
 
-    if attribute == "id":
-        attribute = "_id"
+    query = {attribute: value}
 
-    return {attribute: value}
+    if attribute == "id":
+        query["experiment"] = experiment.id
+
+    return query
 
 
 def build_update(update):
@@ -171,7 +173,7 @@ def main(args):
     root = builder.load(name=args["name"], version=args.get("version", None)).node
 
     try:
-        query = build_query(args["query"])
+        query = build_query(root.item, args["query"])
         update = build_update(args["update"])
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)

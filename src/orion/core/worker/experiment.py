@@ -32,18 +32,18 @@ class ExperimentStats:
     """
     Parameters
     ----------
-    trials_completed : int
+    trials_completed: int
        Number of completed trials
-    best_trials_id : int
+    best_trials_id: int
        Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
        which achieved the best known objective result.
-    best_evaluation : float
+    best_evaluation: float
        Evaluation score of the best trial
-    start_time : `datetime.datetime`
+    start_time: `datetime.datetime`
        When Experiment was first dispatched and started running.
-    finish_time : `datetime.datetime`
+    finish_time: `datetime.datetime`
        When Experiment reached terminating condition and stopped running.
-    duration : `datetime.timedelta`
+    duration: `datetime.timedelta`
        Elapsed time.
     """
 
@@ -61,21 +61,21 @@ class Experiment:
 
     Attributes
     ----------
-    name : str
+    name: str
        Unique identifier for this experiment per ``user``.
     id: object
        id of the experiment in the database if experiment is configured. Value is ``None``
        if the experiment is not configured.
-    refers : dict or list of `Experiment` objects, after initialization is done.
+    refers: dict or list of `Experiment` objects, after initialization is done.
        A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
        trials we want to add in the history of completed trials we want to re-use.
        For convenience and database effiency purpose, all experiments of a common tree shares
        ``refers[root_id]``, with the root experiment refering to itself.
     version: int
         Current version of this experiment.
-    metadata : dict
+    metadata: dict
        Contains managerial information about this `Experiment`.
-    max_trials : int
+    max_trials: int
        How many trials must be evaluated, before considering this `Experiment` done.
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
@@ -87,29 +87,32 @@ class Experiment:
        it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
-    algorithms : `BaseAlgorithm` object or a wrapper.
+    algorithms: `BaseAlgorithm` object or a wrapper.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
-    Metadata
-    --------
-    user : str
+    Notes
+    -----
+
+    The following list represents possible entries in the metadata dict.
+
+    user: str
        System user currently owning this running process, the one who invoked **Oríon**.
-    datetime : `datetime.datetime`
+    datetime: `datetime.datetime`
        When was this particular configuration submitted to the database.
-    orion_version : str
+    orion_version: str
        Version of **Oríon** which suggested this experiment. `user`'s current
        **Oríon** version.
-    user_script : str
+    user_script: str
        Full absolute path to `user`'s executable.
-    user_args : list of str
+    user_args: list of str
        Contains separate arguments to be passed when invoking `user_script`,
        possibly templated for **Oríon**.
-    user_vcs : str, optional
+    user_vcs: str, optional
        User's version control system for this executable's code repository.
-    user_version : str, optional
+    user_version: str, optional
        Current user's repository version.
-    user_commit_hash : str, optional
+    user_commit_hash: str, optional
        Current `Experiment`'s commit hash for **Oríon**'s invocation.
 
     """
@@ -235,7 +238,7 @@ class Experiment:
 
     def get_trial(self, trial=None, uid=None):
         """Fetch a single Trial, see :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
-        return self._storage.get_trial(trial, uid)
+        return self._storage.get_trial(trial, uid, experiment_uid=self.id)
 
     def retrieve_result(self, trial, *args, **kwargs):
         """See :meth:`orion.storage.base.BaseStorageProtocol.retrieve_result`"""
@@ -323,19 +326,14 @@ class Experiment:
             with_evc_tree=False, function="fetch_pending_trials"
         )
 
-        exp_trials_ids = set(
-            trial.compute_trial_hash(trial, ignore_experiment=True)
-            for trial in exp_pending_trials
-        )
+        exp_trials_ids = set(trial.id for trial in exp_pending_trials)
 
         for trial in evc_pending_trials:
-            if (
-                trial.compute_trial_hash(trial, ignore_experiment=True)
-                in exp_trials_ids
-            ):
+            if trial.id in exp_trials_ids:
                 continue
 
             trial.experiment = self.id
+            trial.id_override = None
             # Danger danger, race conditions!
             try:
                 self._storage.register_trial(trial)

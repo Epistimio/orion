@@ -359,7 +359,7 @@ class TestReserve:
     def test_reserve(self):
         """Test reservation of registered trials"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
             client.reserve(trial)
             assert trial.status == "reserved"
@@ -382,7 +382,7 @@ class TestReserve:
     def test_reserve_reserved_locally(self, caplog):
         """Verify that a trial cannot be reserved twice locally (warning, no exception)"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
             client.reserve(trial)
             with caplog.at_level(logging.WARNING):
@@ -399,13 +399,13 @@ class TestReserve:
     def test_reserve_reserved_remotely(self):
         """Verify that a trial cannot be reserved if already reserved by another process"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = Trial(**cfg.trials[1])
+            trial = Trial(**cfg.trials[2])
             assert trial.status == "interrupted"
             client.reserve(trial)
             remote_pacemaker = client._pacemakers.pop(trial.id)
             assert experiment.get_trial(trial).status == "reserved"
 
-            trial = Trial(**cfg.trials[1])
+            trial = Trial(**cfg.trials[2])
             assert trial.status == "interrupted"
             with pytest.raises(RuntimeError) as exc:
                 client.reserve(trial)
@@ -422,7 +422,7 @@ class TestReserve:
         error
         """
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[0]["_id"])
+            trial = client.get_trial(uid=cfg.trials[0]["id"])
             experiment.set_trial_status(trial, "reserved")
             trial.status = "new"  # Let's pretend it is still available
 
@@ -440,7 +440,7 @@ class TestRelease:
     def test_release(self):
         """Test releasing (to interrupted)"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             client.release(trial)
@@ -452,7 +452,7 @@ class TestRelease:
     def test_release_status(self):
         """Test releasing with a specific status"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             client.release(trial, "broken")
@@ -464,7 +464,7 @@ class TestRelease:
     def test_release_invalid_status(self):
         """Test releasing with a specific status"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             with pytest.raises(ValueError) as exc:
                 client.release(trial, "mouf mouf")
@@ -495,7 +495,7 @@ class TestRelease:
         error
         """
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             # Woops! Trial got failed over from another process.
@@ -514,7 +514,7 @@ class TestRelease:
     def test_release_unreserved(self):
         """Verify that unreserved trials cannot be released"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
@@ -527,7 +527,7 @@ class TestRelease:
     def test_release_already_released_but_incorrectly(self):
         """Verify that incorrectly released trials have its pacemaker stopped properly"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             assert trial.status == "reserved"
@@ -900,7 +900,7 @@ class TestObserve:
     def test_observe_race_condition(self):
         """Verify that race condition during `observe()` is detected and raised"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             experiment.set_trial_status(trial, "interrupted")
             trial.status = "reserved"  # Let's pretend it is still reserved

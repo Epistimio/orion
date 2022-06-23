@@ -147,7 +147,7 @@ class BaseOrionState:
         for i, t_dict in enumerate(self._lies):
             self._lies[i] = Trial(**t_dict).to_dict()
 
-        self._trials.sort(key=lambda obj: int(obj["_id"], 16), reverse=True)
+        self._trials.sort(key=lambda obj: int(obj["id"], 16), reverse=True)
 
         for i, experiment in enumerate(self._experiments):
             if "user_script" in experiment["metadata"]:

@@ -439,6 +439,29 @@ class TestWrite(object):
         assert value[1]["same_field"] == "diff"
         assert value[2]["same_field"] == "same"
 
+    def test_insert_with_id_then_without_id(self, orion_db):
+        """Insert ``_id`` and test inserts without ids."""
+
+        # First check that custom id can be specified.
+        item = {"exp_name": "supernaekei", "user": "tsirif", "_id": "my-custom-id"}
+        count_before = orion_db.count("experiments")
+        # call interface
+        assert orion_db.write("experiments", item) == 1
+        assert orion_db.count("experiments") == count_before + 1
+        value = get_db(orion_db)["experiments"].find({"exp_name": "supernaekei"})[0]
+        assert value == item
+
+        # Now check that custom id will work properly with DB infered next id.
+        # (item2 does not have a _id specified, thus the DB must infer the id to use)
+        item2 = dict(item)
+        del item2["_id"]
+        assert orion_db.write("experiments", item2) == 1
+        assert orion_db.count("experiments") == count_before + 2
+        values = get_db(orion_db)["experiments"].find({"exp_name": "supernaekei"})
+        assert values[0] == item
+        item2["_id"] = values[1]["_id"]
+        assert values[1] == item2
+
     def test_no_upsert(self, orion_db):
         """Query with a non-existent ``_id`` should no upsert something."""
         assert (
