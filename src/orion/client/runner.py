@@ -15,9 +15,9 @@ import shutil
 import signal
 import time
 import typing
-from typing import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Callable
 
 import orion.core
 from orion.core.utils import backward

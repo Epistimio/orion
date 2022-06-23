@@ -12,8 +12,8 @@ import traceback
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
+from typing import Callable, Literal
 from wsgiref.simple_server import sys_version
-from typing import Literal, Callable
 
 import pytest
 

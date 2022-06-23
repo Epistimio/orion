@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import ClassVar
 
 import pytest
+from base import ExploitStub, ExploreStub, no_shutil_copytree, sample_trials, space
 from pytest_mock import MockerFixture
 
 from orion.algo.pbt.pbt import PBT, compute_fidelities
@@ -13,8 +14,6 @@ from orion.algo.space import Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
-
-from base import ExploitStub, ExploreStub, sample_trials, space, no_shutil_copytree
 
 
 def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
