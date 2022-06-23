@@ -309,7 +309,9 @@ def test_workon():
     ]
 
     with OrionState() as cfg:
-        experiment = experiment_builder.build_from_args(config)
+        experiment = experiment_builder.ExperimentBuilder(cfg.storage).build_from_args(
+            config
+        )
 
         workon(
             experiment,
@@ -323,7 +325,6 @@ def test_workon():
             ignore_code_changes=True,
             executor="joblib",
             executor_configuration={"backend": "threading"},
-            storage=cfg.storage_config,
         )
 
         storage = cfg.storage

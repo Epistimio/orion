@@ -18,7 +18,7 @@ def test_no_experiments(setup_pickleddb_database, monkeypatch, capsys):
     assert captured == "No experiment found\n"
 
 
-def test_no_version_backward_compatible(one_experiment_no_version, capsys):
+def test_no_version_backward_compatible(one_experiment_no_version, capsys, storge):
     """Test status with no experiments."""
     orion.core.cli.main(["status"])
 
