@@ -90,7 +90,7 @@ algorithm_configs = {
         "pb2": {
             "seed": 1,
             "generations": 3,
-            "population_size": 20,
+            "population_size": 10,
             "exploit": {
                 "exploit_configs": [
                     {
@@ -479,8 +479,6 @@ def test_parallel_workers(algorithm, storage):
 def test_branching_algos(
     algorithm: dict[str, dict], storage: BaseStorageProtocol, tmp_path: Path
 ):
-    shutil.rmtree(tmp_path)
-    os.makedirs(tmp_path)
 
     exp = create_experiment(
         name="exp",
