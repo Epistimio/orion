@@ -6,13 +6,16 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
+from __future__ import annotations
+
 import inspect
 import logging
 from contextlib import contextmanager
+from typing import Callable
 
 import orion.core
 import orion.core.utils.format_trials as format_trials
-from orion.client.runner import Runner
+from orion.client.runner import Runner, prepare_trial_working_dir
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
@@ -659,19 +662,21 @@ class ExperimentClient:
     # pylint:disable=too-many-arguments
     def workon(
         self,
-        fct,
-        n_workers=None,
-        pool_size=0,
-        reservation_timeout=None,
-        max_trials=None,
-        max_trials_per_worker=None,
-        max_broken=None,
-        trial_arg=None,
-        on_error=None,
-        prepare_trial=None,
-        idle_timeout=None,
+        fct: Callable,
+        n_workers: int | None = None,
+        pool_size: int = 0,
+        reservation_timeout: int | None = None,
+        max_trials: int | None = None,
+        max_trials_per_worker: int | None = None,
+        max_broken: int | None = None,
+        trial_arg: str | None = None,
+        on_error: Callable[[ExperimentClient, Exception, int], bool] | None = None,
+        prepare_trial: Callable[
+            [ExperimentClient, Trial], None
+        ] = prepare_trial_working_dir,
+        idle_timeout: int | None = None,
         **kwargs,
-    ):
+    ) -> int:
         """Optimize a given function
 
         Experiment must be in executable ('x') mode.
@@ -721,8 +726,8 @@ class ExperimentClient:
             raise an error and force break out of ``workon``.
         prepare_trial: callable, optional
             Callback that is executed before the trial is submitted to workers for execution.
-            If `None`, it will default to `orion.client.runner.prepare_trial_working_dir` which
-            will create working directory of trials if necessary.
+            Default is `orion.client.runner.prepare_trial_working_dir` which will create working
+            directory of trials if necessary.
         idle_timeout: int, optional
             Maximum time (seconds) allowed for idle workers. LazyWorkers will be raised if
             timeout is reached. Such timeout are generally caused when reaching the
