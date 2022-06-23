@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import os
 import shutil
+from pathlib import Path
 from typing import ClassVar
 
 import pytest
-from base import ExploitStub, ExploreStub, sample_trials
+from pytest_mock import MockerFixture
 
 from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.algo.space import Space
@@ -14,7 +15,7 @@ from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_alg
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
 
-pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
+from base import ExploitStub, ExploreStub, sample_trials, space, no_shutil_copytree
 
 
 def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
@@ -472,7 +473,9 @@ class TestPBTSuggest:
 
         assert [trial.parent for trial in branched_trials] == trial_ids
 
-    def test_suggest_num_population_size_sample(self, space: Space, mocker):
+    def test_suggest_num_population_size_sample(
+        self, space: Space, mocker: MockerFixture
+    ):
         population_size = 10
         pbt = _create_algo(space, population_size=population_size).algorithm
 
@@ -490,7 +493,9 @@ class TestPBTSuggest:
         pbt_sample_mock.assert_called_with(4)
         pbt_fork_mock.assert_called_with(2)
 
-    def test_suggest_num_population_size_sample_broken(self, space: Space, mocker):
+    def test_suggest_num_population_size_sample_broken(
+        self, space: Space, mocker: MockerFixture
+    ):
         population_size = 10
         pbt = _create_algo(space, population_size=population_size).algorithm
 
@@ -517,7 +522,9 @@ class TestPBTSuggest:
         pbt_fork_mock.assert_called_with(7)
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_suggest_num_population_size_fork_completed(self, space: Space, mocker):
+    def test_suggest_num_population_size_fork_completed(
+        self, space: Space, mocker: MockerFixture
+    ):
         population_size = 10
         pbt = _create_algo(
             space,
@@ -557,58 +564,6 @@ class TestPBTSuggest:
         assert len(pbt.suggest(num)) == num
         pbt_sample_mock.assert_called_with(2)
         pbt_fork_mock.assert_called_with(2)
-
-    def test_suggest_copy_working_dir(self, space, mocker, tmp_path):
-        shutil.rmtree(tmp_path)
-        os.makedirs(tmp_path)
-
-        generations = 5
-        population_size = 10
-        pbt = create_algo(
-            PBT,
-            space,
-            population_size=population_size,
-            generations=generations,
-        )
-
-        i = generations * population_size
-        all_trials = []
-        while not pbt.is_done:
-            trials = pbt.suggest(1)
-            assert len(trials) == 1
-            trial = trials[0]
-            if not trial.exp_working_dir:
-                trial.experiment = 1
-                trial.exp_working_dir = tmp_path
-                assert trial.params["f"] == 1
-                os.makedirs(trial.working_dir)
-            else:
-                # NOTE: This weird handling is taking care of in experiment.register...
-                previous_working_dir = trial.working_dir
-                trial.experiment = 1
-                os.rename(previous_working_dir, trial.working_dir)
-            with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
-                f.write(trial.params_repr() + "\n")
-            trial.status = "completed"
-            trial._results.append(
-                Trial.Result(name="objective", type="objective", value=i)
-            )
-            i -= 1
-            pbt.observe([trial])
-            all_trials.append(trial)
-
-        def build_params_hist(trial):
-            params = [trial.params_repr()]
-            while trial.parent:
-                trial = pbt.algorithm.registry[trial.parent]
-                params.append(trial.params_repr())
-            return params[::-1]
-
-        for trial in all_trials:
-            params = build_params_hist(trial)
-            assert len(params) == pbt.algorithm.fidelities.index(trial.params["f"]) + 1
-            with open(os.path.join(trial.working_dir, "hist.txt"), "r") as f:
-                assert "\n".join(params) == f.read().strip("\n")
 
 
 population_size = 10
