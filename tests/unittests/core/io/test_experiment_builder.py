@@ -863,11 +863,8 @@ class TestBuild:
 
             insert_race_condition.count = 0
 
-
             builder = experiment_builder.ExperimentBuilder(cfg.storage)
-            monkeypatch.setattr(
-                builder, "fetch_config_from_db", insert_race_condition
-            )
+            monkeypatch.setattr(builder, "fetch_config_from_db", insert_race_condition)
 
             builder.build(**new_config)
 

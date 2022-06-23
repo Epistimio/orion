@@ -65,13 +65,13 @@ def one_experiment(monkeypatch, storage):
         ["hunt", "--init-only", "-n", name, "./black_box.py", "--x~uniform(0,1)"]
     )
     ensure_deterministic_id(name, storage)
-    return setup_storage().fetch_experiments({"name": name})[0]
+    return storage.fetch_experiments({"name": name})[0]
 
 
 @pytest.fixture
-def one_experiment_changed_vcs(one_experiment):
+def one_experiment_changed_vcs(storage, one_experiment):
     """Create an experiment without trials."""
-    experiment = experiment_builder.build(name=one_experiment["name"])
+    experiment = experiment_builder.build(name=one_experiment["name"], storage=storage)
 
     experiment.metadata["VCS"] = {
         "type": "git",
@@ -81,7 +81,7 @@ def one_experiment_changed_vcs(one_experiment):
         "diff_sha": None,
     }
 
-    setup_storage().update_experiment(experiment, metadata=experiment.metadata)
+    storage.update_experiment(experiment, metadata=experiment.metadata)
 
 
 @pytest.fixture
@@ -102,23 +102,28 @@ def one_experiment_no_version(monkeypatch, one_experiment):
 
 
 @pytest.fixture
-def with_experiment_using_python_api(monkeypatch, one_experiment):
+def with_experiment_using_python_api(storage, monkeypatch, one_experiment):
     """Create an experiment without trials."""
     experiment = experiment_builder.build(
-        name="from-python-api", space={"x": "uniform(0, 10)"}
+        name="from-python-api", space={"x": "uniform(0, 10)"}, storage=storage
     )
 
     return experiment
 
 
 @pytest.fixture
-def with_experiment_missing_conf_file(monkeypatch, one_experiment):
+def with_experiment_missing_conf_file(
+    monkeypatch, one_experiment, storage, setup_pickleddb_database
+):
     """Create an experiment without trials."""
-    exp = experiment_builder.build(name="test_single_exp", version=1)
+    cfg = setup_pickleddb_database
+
+    exp = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
     conf_file = "idontexist.yaml"
     exp.metadata["user_config"] = conf_file
     exp.metadata["user_args"] += ["--config", conf_file]
-    setup_database().write("experiments", exp.configuration, query={"_id": exp.id})
+
+    cfg.database.write("experiments", exp.configuration, query={"_id": exp.id})
 
     return exp
 
@@ -132,12 +137,13 @@ def broken_refers(one_experiment, storage):
 
 
 @pytest.fixture
-def single_without_success(one_experiment):
+def single_without_success(one_experiment, setup_pickleddb_database):
     """Create an experiment without a successful trial."""
+    cfg = setup_pickleddb_database
     statuses = list(Trial.allowed_stati)
     statuses.remove("completed")
 
-    exp = experiment_builder.build(name="test_single_exp")
+    exp = experiment_builder.build(name="test_single_exp", storage=cfg.storage)
     x = {"name": "/x", "type": "real"}
 
     x_value = 0
@@ -145,18 +151,20 @@ def single_without_success(one_experiment):
         x["value"] = x_value
         trial = Trial(experiment=exp.id, params=[x], status=status)
         x_value += 1
-        setup_database().write("trials", trial.to_dict())
+        cfg.database.write("trials", trial.to_dict())
 
 
 @pytest.fixture
-def single_with_trials(single_without_success):
+def single_with_trials(single_without_success, setup_pickleddb_database):
     """Create an experiment with all types of trials."""
-    exp = experiment_builder.build(name="test_single_exp")
+    cfg = setup_pickleddb_database
+
+    exp = experiment_builder.build(name="test_single_exp", storage=cfg.storage)
 
     x = {"name": "/x", "type": "real", "value": 100}
     results = {"name": "obj", "type": "objective", "value": 0}
     trial = Trial(experiment=exp.id, params=[x], status="completed", results=[results])
-    setup_database().write("trials", trial.to_dict())
+    cfg.database.write("trials", trial.to_dict())
     return exp.configuration
 
 
@@ -194,10 +202,12 @@ def two_experiments(monkeypatch, storage):
 
 
 @pytest.fixture
-def family_with_trials(two_experiments):
+def family_with_trials(two_experiments, setup_pickleddb_database):
     """Create two related experiments with all types of trials."""
-    exp = experiment_builder.build(name="test_double_exp")
-    exp2 = experiment_builder.build(name="test_double_exp_child")
+    cfg = setup_pickleddb_database
+
+    exp = experiment_builder.build(name="test_double_exp", storage=cfg.storage)
+    exp2 = experiment_builder.build(name="test_double_exp_child", storage=cfg.storage)
     x = {"name": "/x", "type": "real"}
     y = {"name": "/y", "type": "real"}
 
@@ -209,17 +219,21 @@ def family_with_trials(two_experiments):
         x["value"] = x_value + 0.5  # To avoid duplicates
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         x_value += 1
-        setup_database().write("trials", trial.to_dict())
-        setup_database().write("trials", trial2.to_dict())
+        cfg.database.write("trials", trial.to_dict())
+        cfg.database.write("trials", trial2.to_dict())
 
 
 @pytest.fixture
-def unrelated_with_trials(family_with_trials, single_with_trials):
+def unrelated_with_trials(
+    family_with_trials, single_with_trials, setup_pickleddb_database
+):
     """Create two unrelated experiments with all types of trials."""
-    exp = experiment_builder.build(name="test_double_exp_child")
+    cfg = setup_pickleddb_database
 
-    setup_database().remove("trials", {"experiment": exp.id})
-    setup_database().remove("experiments", {"_id": exp.id})
+    exp = experiment_builder.build(name="test_double_exp_child", storage=cfg.storage)
+
+    cfg.database.remove("trials", {"experiment": exp.id})
+    cfg.database.remove("experiments", {"_id": exp.id})
 
 
 @pytest.fixture
@@ -255,9 +269,12 @@ def three_experiments_family(two_experiments, storage):
 
 
 @pytest.fixture
-def three_family_with_trials(three_experiments_family, family_with_trials):
+def three_family_with_trials(
+    three_experiments_family, family_with_trials, setup_pickleddb_database
+):
     """Create three experiments, all related, two direct children, with all types of trials."""
-    exp = experiment_builder.build(name="test_double_exp_child2")
+    cfg = setup_pickleddb_database
+    exp = experiment_builder.build(name="test_double_exp_child2", storage=cfg.storage)
     x = {"name": "/x", "type": "real"}
     z = {"name": "/z", "type": "real"}
 
@@ -267,7 +284,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, z], status=status)
         x_value += 1
-        setup_database().write("trials", trial.to_dict())
+        cfg.database.write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -293,13 +310,17 @@ def three_experiments_family_branch(two_experiments, storage):
 
 @pytest.fixture
 def three_family_branch_with_trials(
-    three_experiments_family_branch, family_with_trials
+    three_experiments_family_branch, family_with_trials, setup_pickleddb_database
 ):
     """Create three experiments, all related, one child and one grandchild,
     with all types of trials.
 
     """
-    exp = experiment_builder.build(name="test_double_exp_grand_child")
+    cfg = setup_pickleddb_database
+
+    exp = experiment_builder.build(
+        name="test_double_exp_grand_child", storage=cfg.storage
+    )
     x = {"name": "/x", "type": "real"}
     y = {"name": "/y", "type": "real"}
     z = {"name": "/z", "type": "real"}
@@ -311,7 +332,7 @@ def three_family_branch_with_trials(
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
         x_value += 1
-        setup_database().write("trials", trial.to_dict())
+        cfg.database.write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -399,8 +420,13 @@ def three_experiments_same_name(two_experiments_same_name, storage):
 
 
 @pytest.fixture
-def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
+def three_experiments_same_name_with_trials(
+    two_experiments_same_name, setup_pickleddb_database
+):
     """Create three experiments with the same name but different versions."""
+    cfg = setup_pickleddb_database
+    storage = cfg.storage
+
     orion.core.cli.main(
         [
             "hunt",
@@ -416,9 +442,9 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
     )
     ensure_deterministic_id("test_single_exp", storage, version=3)
 
-    exp = experiment_builder.build(name="test_single_exp", version=1)
-    exp2 = experiment_builder.build(name="test_single_exp", version=2)
-    exp3 = experiment_builder.build(name="test_single_exp", version=3)
+    exp = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
+    exp2 = experiment_builder.build(name="test_single_exp", version=2, storage=storage)
+    exp3 = experiment_builder.build(name="test_single_exp", version=3, storage=storage)
 
     x = {"name": "/x", "type": "real"}
     y = {"name": "/y", "type": "real"}
@@ -431,7 +457,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
         trial = Trial(experiment=exp.id, params=[x], status=status)
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         trial3 = Trial(experiment=exp3.id, params=[x, y, z], status=status)
-        setup_database().write("trials", trial.to_dict())
-        setup_database().write("trials", trial2.to_dict())
-        setup_database().write("trials", trial3.to_dict())
+        cfg.database.write("trials", trial.to_dict())
+        cfg.database.write("trials", trial2.to_dict())
+        cfg.database.write("trials", trial3.to_dict())
         x_value += 1

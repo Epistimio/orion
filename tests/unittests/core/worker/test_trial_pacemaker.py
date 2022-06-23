@@ -22,9 +22,9 @@ def config(exp_config):
 
 
 @pytest.fixture
-def exp(config):
+def exp(storage, config):
     """Return an Experiment."""
-    return experiment_builder.build(**config)
+    return experiment_builder.build(**config, storage=storage)
 
 
 @pytest.fixture
