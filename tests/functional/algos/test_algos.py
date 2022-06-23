@@ -6,6 +6,7 @@ import copy
 import os
 import random
 import shutil
+from pathlib import Path
 
 import numpy
 import pytest
@@ -13,6 +14,8 @@ import pytest
 from orion.client import create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.trial import Trial
+from orion.storage.base import BaseStorageProtocol
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
@@ -185,7 +188,9 @@ space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
 multidim_rosenbrock = MultiDimRosenbrock(max_trials=30, with_fidelity=False)
 
 
-def branching_rosenbrock(x, noise=None, trial=None):
+def branching_rosenbrock(
+    x: float, trial: Trial, noise: float | None = None
+) -> list[dict]:
     with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
         f.write(trial.params_repr() + "\n")
 
@@ -471,7 +476,9 @@ def test_parallel_workers(algorithm, storage):
     branching_algorithm_configs.values(),
     ids=list(branching_algorithm_configs.keys()),
 )
-def test_branching_algos(algorithm, storage, tmp_path):
+def test_branching_algos(
+    algorithm: dict[str, dict], storage: BaseStorageProtocol, tmp_path: Path
+):
     shutil.rmtree(tmp_path)
     os.makedirs(tmp_path)
 

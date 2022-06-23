@@ -152,7 +152,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                         f"Space: {self.transformed_space}"
                     )
                 original = self.transformed_space.reverse(transformed_trial)
-                if transformed_trial.parent is not None:
+                if transformed_trial.parent:
 
                     original_parent = get_original_parent(
                         self.algorithm.registry,
@@ -361,7 +361,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             )
 
 
-def get_original_parent(registry, transformed_space, trial_parent_id):
+def get_original_parent(registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str) -> Trial:
     """Get the parent trial in original space based on parent id in transformed_space.
 
     If the parent trial also has a parent, then this function is called recursively
