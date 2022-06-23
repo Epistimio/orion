@@ -12,7 +12,7 @@ import traceback
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
-from typing import Callable, Literal
+from typing import Callable
 from wsgiref.simple_server import sys_version
 
 import pytest
@@ -126,7 +126,7 @@ def new_runner(
     n_workers: int = 2,
     client: FakeClient | None = None,
     executor: BaseExecutor | None = None,
-    backend: Literal["joblib", "singleexecutor", "dask", "poolexecutor"] = "joblib",
+    backend: str = "joblib",
     prepare_trial: Callable[
         [ExperimentClient, Trial], None
     ] = prepare_trial_working_dir,
