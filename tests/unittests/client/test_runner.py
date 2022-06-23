@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
+from __future__ import annotations
+
 import copy
 import os
 import signal
@@ -11,10 +13,12 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
 from wsgiref.simple_server import sys_version
+from typing import Literal, Callable
 
 import pytest
 
-from orion.client.runner import LazyWorkers, Runner
+from orion.client.experiment import ExperimentClient
+from orion.client.runner import LazyWorkers, Runner, prepare_trial_working_dir
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -23,7 +27,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
-from orion.executor.base import executor_factory
+from orion.executor.base import BaseExecutor, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.storage.base import LockAcquisitionTimeout
 
@@ -118,12 +122,14 @@ def function(lhs, sleep):
 
 
 def new_runner(
-    idle_timeout,
-    n_workers=2,
-    client=None,
-    executor=None,
-    backend="joblib",
-    prepare_trial=None,
+    idle_timeout: int,
+    n_workers: int = 2,
+    client: FakeClient | None = None,
+    executor: BaseExecutor | None = None,
+    backend: Literal["joblib", "singleexecutor", "dask", "poolexecutor"] = "joblib",
+    prepare_trial: Callable[
+        [ExperimentClient, Trial], None
+    ] = prepare_trial_working_dir,
 ):
     """Create a new runner with a mock client."""
     if client is None:
