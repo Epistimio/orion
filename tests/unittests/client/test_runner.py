@@ -94,7 +94,7 @@ class FakeClient:
             self.executor = None
             self.executor_owner = False
 
-    def get_trial(self, uid):
+    def get_trial(self, uid: str) -> Trial:
         trial = [trial for trial in self.trials if trial.id == uid]
         if trial:
             return trial[0]
