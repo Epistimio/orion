@@ -687,7 +687,7 @@ def test_runner_inside_dask():
 def test_custom_prepare_trial():
     """Test that a different callback can be passed for prepare_trial"""
 
-    def test_callback(experiment_client, trial):
+    def test_callback(experiment_client: ExperimentClient, trial: Trial) -> None:
         test_callback.called += 1
         return
 
