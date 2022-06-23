@@ -152,7 +152,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                         f"Space: {self.transformed_space}"
                     )
                 original = self.transformed_space.reverse(transformed_trial)
-                if transformed_trial.parent is not None:
+                if transformed_trial.parent:
 
                     original_parent = get_original_parent(
                         self.algorithm.registry,
