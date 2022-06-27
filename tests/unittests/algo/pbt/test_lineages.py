@@ -27,7 +27,7 @@ class TestLineageNode:
         assert lineage.item == item
         assert lineage.item is not item
 
-    def test_fork(self, mocker):
+    def test_fork(self):
         path = "/some_path"
         trial = TrialStub(path)
         lineage = LineageNode(trial)
@@ -35,37 +35,11 @@ class TestLineageNode:
         new_path = "/another_path"
         new_trial = TrialStub(new_path)
 
-        mocker.patch("shutil.copytree")
         new_lineage = lineage.fork(new_trial)
-        shutil.copytree.assert_called_once_with(path, new_path)
 
         assert new_lineage.item.working_dir == new_trial.working_dir
         assert new_lineage.parent is lineage
         assert lineage.children[0] is new_lineage
-
-    @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_identical_new_trial(self):
-        lineage = LineageNode(TrialStub(id="my-id", working_dir="same_folder"))
-        with pytest.raises(
-            RuntimeError, match="The new trial new-id has the same working directory"
-        ):
-            lineage.fork(TrialStub(id="new-id", working_dir="same_folder"))
-
-        assert lineage.children == []
-
-    def test_fork_to_existing_path(self, tmp_path):
-        trial = TrialStub(id="stub", working_dir=os.path.join(tmp_path, "stub"))
-        os.makedirs(trial.working_dir)
-        lineage = LineageNode(trial)
-        new_trial = TrialStub(id="fork", working_dir=os.path.join(tmp_path, "fork"))
-        os.makedirs(new_trial.working_dir)
-
-        with pytest.raises(
-            FileExistsError, match="Folder already exists for trial fork."
-        ):
-            lineage.fork(new_trial)
-
-        assert lineage.children == []
 
     def test_set_jump(self):
         parent_lineage = LineageNode(1)
