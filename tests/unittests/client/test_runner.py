@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
 from typing import Callable
+from typing_extensions import Literal
 from wsgiref.simple_server import sys_version
 
 import pytest
@@ -126,7 +127,7 @@ def new_runner(
     n_workers: int = 2,
     client: FakeClient | None = None,
     executor: BaseExecutor | None = None,
-    backend: str = "joblib",
+    backend: Literal["joblib", "singleexecutor", "dask", "poolexecutor"] = "joblib",
     prepare_trial: Callable[
         [ExperimentClient, Trial], None
     ] = prepare_trial_working_dir,
