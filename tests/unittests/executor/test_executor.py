@@ -1,6 +1,6 @@
 import sys
 import time
-from multiprocessing import TimeoutError, Process
+from multiprocessing import Process, TimeoutError
 
 import pytest
 
