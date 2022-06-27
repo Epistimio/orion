@@ -13,10 +13,10 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from threading import Thread
 from typing import Callable
-from typing_extensions import Literal
 from wsgiref.simple_server import sys_version
 
 import pytest
+from typing_extensions import Literal
 
 from orion.client.experiment import ExperimentClient
 from orion.client.runner import LazyWorkers, Runner, prepare_trial_working_dir
