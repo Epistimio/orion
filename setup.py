@@ -48,13 +48,13 @@ extras_require = {
         "numpy",
     ],
     "dehb": [
-        "ConfigSpace",
+        "ConfigSpace==0.5.0",
         "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
         "hpbandster",
-        "ConfigSpace",
+        "ConfigSpace==0.5.0",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "pb2": ["GPy"],
