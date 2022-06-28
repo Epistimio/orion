@@ -40,7 +40,7 @@ jobs:
           python-version: 3.8
       - run: python -m pip install git+https://github.com/notoraptor/orion.git@feature/benchmark_webapi_rebased#egg=orion[profet]
       - run: |
-            # Launch backend in repository root
+            # Launch Orion backend in repository root
             cd ../../
             orion serve -c .github/workflows/orion/orion_config.yaml &
             cd dashboard/src/
