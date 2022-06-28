@@ -49,7 +49,7 @@ extras_require = {
     ],
     "dehb": [
         "ConfigSpace",
-        "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
+        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
