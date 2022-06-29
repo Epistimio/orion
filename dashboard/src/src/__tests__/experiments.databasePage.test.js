@@ -27,7 +27,7 @@ test('Test if experiment trials are loaded', async () => {
   const experiment = await screen.findByText(
     /2-dim-shape-exp/,
     {},
-    { interval: 1000, timeout: 120000 }
+    global.CONFIG_WAIT_FOR_LONG
   );
   expect(experiment).toBeInTheDocument();
 
@@ -49,7 +49,7 @@ test('Test if experiment trials are loaded', async () => {
     await screen.findByText(
       /Experiment Trials for "2-dim-shape-exp"/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   expect(
@@ -70,7 +70,7 @@ test('Test if experiment trials are loaded', async () => {
     screen.queryByText(
       /Experiment Trials for "2-dim-shape-exp"/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeNull();
   expect(screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)).toBeNull();
@@ -81,7 +81,7 @@ test('Test if experiment trials are loaded', async () => {
     await screen.findByText(
       /Experiment Trials for "2-dim-shape-exp"/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   expect(
@@ -96,7 +96,7 @@ test('Test if experiment trials are loaded', async () => {
     await screen.findByText(
       /Experiment Trials for "tpe-rosenbrock"/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   expect(
