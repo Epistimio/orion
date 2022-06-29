@@ -1,6 +1,5 @@
 import React from 'react';
 import App from '../App';
-import { HashRouter as Router } from 'react-router-dom';
 import {
   render,
   waitFor,
@@ -64,12 +63,9 @@ function hasPlotImmediately(...texts) {
  * @param texts - texts to search
  */
 async function lookupPlot(...texts) {
-  await waitFor(
-    () => {
-      expect(hasPlotImmediately(...texts)).toBe(true);
-    },
-    { interval: 1000, timeout: 120000 }
-  );
+  await waitFor(() => {
+    expect(hasPlotImmediately(...texts)).toBe(true);
+  }, global.CONFIG_WAIT_FOR_LONG);
 }
 
 /**
@@ -315,7 +311,7 @@ test('Test select benchmark', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -400,7 +396,7 @@ test('Test (de)select assessments', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -452,7 +448,7 @@ test('Test (de)select tasks', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -504,7 +500,7 @@ test('Test (de)select algorithms', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
