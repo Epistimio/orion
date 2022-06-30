@@ -153,8 +153,10 @@ class TestCompose(object):
         assert numpy.all(t.transform(2) == numpy.array((1.0, 0.0, 0.0)))
         assert numpy.all(t.transform("asfa") == numpy.array((0.0, 1.0, 0.0)))
         assert numpy.all(t.transform("ipsi") == numpy.array((0.0, 0.0, 1.0)))
+
         with pytest.raises(KeyError):
             t.transform("aafdasfa")
+
         assert numpy.all(
             t.transform([["ipsi", "asfa"], [2, "ipsi"]])
             == numpy.array(
@@ -1039,7 +1041,6 @@ class TestTransformedSpace(object):
     def test_sample(self, space, tspace, seed):
         """Check method `sample`."""
         points = tspace.sample(n_samples=2, seed=seed)
-        # pytest.set_trace()
         assert len(points) == 2
         assert points[0] in tspace
         assert points[1] in tspace

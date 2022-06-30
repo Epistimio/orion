@@ -488,7 +488,7 @@ class OneHotEncode(Transformer):
         grid = numpy.meshgrid(
             *[numpy.arange(dim) for dim in point_.shape], indexing="ij"
         )
-        hot[grid + [point_]] = 1
+        hot[tuple(grid + [point_])] = 1
         return hot
 
     # pylint:disable=unused-argument
