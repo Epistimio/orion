@@ -54,6 +54,10 @@ def collection(document, db_type):
 # TESTS SET
 
 
+def test_repr(orion_db):
+    assert str(orion_db) == f"EphemeralDB()"
+
+
 @pytest.mark.usefixtures("clean_db")
 class TestIndex(object):
     """Test index for :meth:`orion.core.io.database.ephemeraldb.EphemeralCollection`."""

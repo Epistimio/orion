@@ -121,6 +121,15 @@ class MongoDB(Database):
             authSource=name,
         )
 
+    def __repr__(self):
+        return "{name}({args})".format(
+            name=self.__class__.__name__,
+            args=", ".join(
+                f"{name}={getattr(self, name)}"
+                for name in ["host", "name", "port", "username", "password", "options"]
+            ),
+        )
+
     def __getstate__(self):
         state = dict()
         for key in ["host", "name", "port", "username", "password", "options"]:
@@ -151,7 +160,7 @@ class MongoDB(Database):
             port=self.port,
             username=self.username,
             password=self.password,
-            **self.options
+            **self.options,
         )
         self._db = self._conn[self.name]
         self._db.command("ismaster")  # .. seealso:: :meth:`is_connected`

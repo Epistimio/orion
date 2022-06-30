@@ -332,3 +332,10 @@ class TestExceptionWrapper(object):
 
         with pytest.raises(pymongo.errors.OperationFailure):
             orion_db.read_and_write("test_collection", query, config_to_add)
+
+
+def test_repr(orion_db):
+    assert str(orion_db) == (
+        f"MongoDB(host=localhost, name=orion_test, port=27017, username=user, "
+        f"password=pass, options={orion_db.options})"
+    )

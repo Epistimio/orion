@@ -59,6 +59,9 @@ class Database(object):
         self._conn = None
         self.initiate_connection()
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(host={self.host})"
+
     @abstractproperty
     def is_connected(self):
         """True, if practical connection has been achieved."""
