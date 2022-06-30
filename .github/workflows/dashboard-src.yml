@@ -56,6 +56,8 @@ jobs:
       - run: yarn test --all --verbose
       - name: Close backend
         run: |
+            file orion-log
+            file dashboard/src/orion-log
             echo "Backend process: ${{ env.orion_backend_pid }}"
             kill ${{ env.orion_backend_pid }}
       # Upload orion log
@@ -63,4 +65,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: orion-log-artifact
-          path: orion-log/
+          path: dashboard/src/orion-log/
