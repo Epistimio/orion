@@ -79,6 +79,40 @@ def test_trial_working_dir_is_created(config):
     shutil.rmtree(trial.working_dir)
 
 
+@pytest.mark.usefixtures("storage")
+@pytest.mark.parametrize(
+    "config_path_name",
+    ["yaml_sample_path", "json_sample_path", "unknown_type_template_path"],
+)
+def test_trial_config_file_is_created_with_correct_ext(
+    config, config_path_name, request
+):
+    """Check that trial config file is created with correct extension."""
+    config_path = request.getfixturevalue(config_path_name)
+    config["metadata"]["user_args"].insert(1, f"--config={config_path}")
+    backward.populate_space(config)
+    exp = experiment_builder.build(**config)
+
+    trial = exp.space.sample()[0]
+
+    exp.register_trial(trial, status="reserved")
+
+    assert not os.path.exists(trial.working_dir)
+
+    con = Consumer(exp)
+    config_file, results_file = con._prepare_config(trial, trial.working_dir)
+
+    assert os.path.exists(trial.working_dir)
+    assert os.path.exists(config_file.name)
+
+    _, original_ext = os.path.splitext(config_path)
+    _, tmp_ext = os.path.splitext(config_file.name)
+
+    assert original_ext == tmp_ext
+
+    shutil.rmtree(trial.working_dir)
+
+
 def setup_code_change_mock(config, monkeypatch, ignore_code_changes):
     """Mock create experiment and trials, and infer_versioning_metadata"""
     exp = experiment_builder.build(**config)
