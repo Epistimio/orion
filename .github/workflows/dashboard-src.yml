@@ -1,4 +1,4 @@
-# Workflow to run unit tests from Github Actions........
+# Workflow to run unit tests from Github Actions.
 # Inspired from: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
 name: dashboard-src
@@ -42,11 +42,7 @@ jobs:
       - run: |
             # Start Orion backend in repository root folder.
             cd ../../
-            mkdir -p dashboard/src/orion-log
-            echo test > dashboard/src/orion-log/test.log
-            orion serve -c .github/workflows/orion/orion_config.yaml > dashboard/src/orion-log/out.log 2> dashboard/src/orion-log/out.err &
-            ORION_BACKEND_PID=$!
-            echo "orion_backend_pid=${ORION_BACKEND_PID}" >> $GITHUB_ENV
+            orion serve -c .github/workflows/orion/orion_config.yaml 2> orion-backend.log &
             cd dashboard/src/
       # install
       - run: yarn
@@ -54,15 +50,9 @@ jobs:
       - run: yarn ci-check
       # Run tests
       - run: yarn test --all --verbose
-      - name: Close backend
-        run: |
-            file orion-log
-            file dashboard/src/orion-log
-            echo "Backend process: ${{ env.orion_backend_pid }}"
-            kill ${{ env.orion_backend_pid }}
-      # Upload orion log
-      - name: Get Orion log
+      # Upload orion backend log
+      - name: Get Orion backend log
         uses: actions/upload-artifact@v3
         with:
-          name: orion-log-artifact
-          path: dashboard/src/orion-log/
+          name: orion-backend-log-artifact
+          path: orion-backend.log
