@@ -43,7 +43,9 @@ jobs:
             # Start Orion backend in repository root folder.
             cd ../../
             mkdir -p dashboard/src/orion-log
+            echo test > dashboard/src/orion-log/test.log
             orion serve -c .github/workflows/orion/orion_config.yaml > dashboard/src/orion-log/out.log 2> dashboard/src/orion-log/out.err &
+            export ORION_BACKEND_PID=$!
             cd dashboard/src/
       # install
       - run: yarn
@@ -51,6 +53,10 @@ jobs:
       - run: yarn ci-check
       # Run tests
       - run: yarn test --all --verbose
+      - name Close backend
+        run: |
+            echo Backend process $ORION_BACKEND_PID
+            kill $ORION_BACKEND_PID
       # Upload orion log
       - name: Get Orion log
         uses: actions/upload-artifact@v3
