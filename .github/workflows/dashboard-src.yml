@@ -54,5 +54,5 @@ jobs:
       - name: Get Orion backend log
         uses: actions/upload-artifact@v3
         with:
-          name: orion-backend-log-artifact
+          name: orion-backend-log-artifact-${{ matrix.node-version }}
           path: orion-backend.log
