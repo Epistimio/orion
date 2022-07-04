@@ -54,7 +54,7 @@ def collection(document, db_type):
 # TESTS SET
 
 
-def test_repr(orion_db):
+def test_repr(orion_db: EphemeralDB):
     assert str(orion_db) == f"EphemeralDB()"
 
 

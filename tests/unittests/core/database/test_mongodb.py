@@ -334,7 +334,7 @@ class TestExceptionWrapper(object):
             orion_db.read_and_write("test_collection", query, config_to_add)
 
 
-def test_repr(orion_db):
+def test_repr(orion_db: MongoDB):
     assert str(orion_db) == (
         f"MongoDB(host=localhost, name=orion_test, port=27017, username=user, "
         f"password=pass, options={orion_db.options})"

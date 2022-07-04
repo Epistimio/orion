@@ -121,9 +121,9 @@ class MongoDB(Database):
             authSource=name,
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "{name}({args})".format(
-            name=self.__class__.__name__,
+            name=type(self).__qualname__,
             args=", ".join(
                 f"{name}={getattr(self, name)}"
                 for name in ["host", "name", "port", "username", "password", "options"]
