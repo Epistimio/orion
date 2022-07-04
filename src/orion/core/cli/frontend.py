@@ -132,7 +132,7 @@ class GunicornApp(BaseApplication):
             options["bind"] = f"localhost:{args['port']}"
         self.options = options
         self.application = app
-        super(GunicornApp, self).__init__()
+        super().__init__()
 
     def init(self, parser, opts, args):
         """Pre-run initialization"""

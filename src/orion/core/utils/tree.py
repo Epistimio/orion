@@ -47,8 +47,8 @@ class PreOrderTraversal(Iterable[NodeType]):
         """Get the next node in pre-order traversal"""
         try:
             node = self.stack.pop()
-        except IndexError:
-            raise StopIteration
+        except IndexError as exc:
+            raise StopIteration from exc
 
         self.stack += node.children[::-1]
 
@@ -95,8 +95,8 @@ class DepthFirstTraversal(Iterable[NodeType]):
 
         try:
             node = self.stack.pop()
-        except IndexError:
-            raise StopIteration
+        except IndexError as exc:
+            raise StopIteration from exc
 
         self.seen.add(node)
 
@@ -243,7 +243,7 @@ class TreeNode(Generic[T], Iterable[T]):
             return
 
         if node is not None and not isinstance(node, TreeNode):
-            raise TypeError("Cannot set parent to %s" % str(node))
+            raise TypeError(f"Cannot set parent to {str(node)}")
 
         if self.parent is not None:
             self.drop_parent()
@@ -454,7 +454,7 @@ class TreeNode(Generic[T], Iterable[T]):
             rval, children_nodes = function(self, rval_children_nodes)
             return TreeNode(rval, parent=None, children=children_nodes)
         else:
-            raise ValueError("Invalid nodes: %s" % str(node))
+            raise ValueError(f"Invalid nodes: {str(node)}")
 
     def __iter__(self: Self) -> PreOrderTraversal[Self]:
         """Iterate on the tree with pre-order traversal"""
@@ -466,12 +466,7 @@ class TreeNode(Generic[T], Iterable[T]):
 
         children = [child.item for child in self.children]
 
-        return "%s(%s, parent=%s, children=%s)" % (
-            self.__class__.__name__,
-            str(self.item),
-            str(parent_item),
-            str(children),
-        )
+        return f"{self.__class__.__name__}({self.item}, parent={parent_item}, children={children})"
 
 
 def flattened(trials_tree: TreeNode[T]) -> list[T]:

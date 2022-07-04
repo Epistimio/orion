@@ -56,7 +56,7 @@ class ExperimentNode(TreeNode):
         .. seealso::
             :class:`orion.core.utils.tree.TreeNode` for information about the attributes
         """
-        super(ExperimentNode, self).__init__(experiment, parent, children)
+        super().__init__(experiment, parent, children)
         self.name = name
         self.version = version
 
@@ -72,7 +72,7 @@ class ExperimentNode(TreeNode):
         """
         if self._item is None:
             # TODO: Find another way around the circular import
-            import orion.core.io.experiment_builder as experiment_builder
+            from orion.core.io import experiment_builder
 
             self._item = experiment_builder.load(name=self.name, version=self.version)
             self._item._node = self
@@ -135,7 +135,7 @@ class ExperimentNode(TreeNode):
     def tree_name(self):
         """Return a formatted name of the Node for a tree pretty-print."""
         if self.item is not None:
-            return self.name + "-v{}".format(self.item.version)
+            return f"{self.name}-v{self.item.version}"
 
         return self.name
 

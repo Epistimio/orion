@@ -11,7 +11,7 @@ import argparse
 import logging
 import sys
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.core.utils.terminal import confirm_name
 from orion.storage.base import get_storage

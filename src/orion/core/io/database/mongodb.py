@@ -61,7 +61,7 @@ def mongodb_exception_wrapper(method):
             raise
         except pymongo.errors.ConnectionFailure as e:
             raise DatabaseError(
-                "Connection Failure: database not found on " "specified uri"
+                "Connection Failure: database not found on specified uri"
             ) from e
         except pymongo.errors.OperationFailure as e:
             if any(m in str(e) for m in AUTH_FAILED_MESSAGES):
@@ -111,7 +111,7 @@ class MongoDB(Database):
         else:
             port = pymongo.MongoClient.PORT
 
-        super(MongoDB, self).__init__(
+        super().__init__(
             host,
             name,
             port,
@@ -131,7 +131,7 @@ class MongoDB(Database):
         )
 
     def __getstate__(self):
-        state = dict()
+        state = {}
         for key in ["host", "name", "port", "username", "password", "options"]:
             state[key] = getattr(self, key)
 
@@ -240,7 +240,7 @@ class MongoDB(Database):
         elif sort_order is self.DESCENDING:
             return pymongo.DESCENDING
         else:
-            raise RuntimeError("Invalid database sort order %s" % str(sort_order))
+            raise RuntimeError(f"Invalid database sort order {str(sort_order)}")
 
     @mongodb_exception_wrapper
     def write(self, collection_name, data, query=None):

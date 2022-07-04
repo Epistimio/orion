@@ -100,7 +100,7 @@ class PickledDB(Database):
     def __init__(self, host="", timeout=60, *args, **kwargs):
         if host == "":
             host = DEFAULT_HOST
-        super(PickledDB, self).__init__(host)
+        super().__init__(host)
 
         self.host = os.path.abspath(host)
 
