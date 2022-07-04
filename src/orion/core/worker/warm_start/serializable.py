@@ -5,11 +5,12 @@ import inspect
 from collections.abc import ItemsView, KeysView
 from dataclasses import asdict, fields, is_dataclass
 from logging import getLogger as get_logger
-from typing import Any, Iterator, Mapping
+from typing import Any, Iterator, Mapping, TypeVar, get_type_hints
 
 from orion.core.utils.flatten import flatten, unflatten
 
 logger = get_logger(__name__)
+T = TypeVar("T")
 
 
 class SerializableMixin(Mapping[str, Any]):
@@ -85,62 +86,56 @@ class SerializableMixin(Mapping[str, Any]):
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]):
-        """Create an instance of this class from the given dictionary."""
-        config_dict = config_dict.copy()
+        """Create an instance of `cls` from the given dictionary."""
+        return from_dict(cls, config_dict)
 
-        constructor_arguments = {}
-        for field in fields(cls):
-            if field.name not in config_dict:
-                # The field isn't in the dict, so let the dataclass constructor use the default or
-                # call the default factory.
-                continue
 
-            field_type = field.type
-            if isinstance(field_type, str):
-                # Try to resolve the forward reference to a dataclass that is a subclass of
-                # SerializableMixin.
-                # Find all the classes that have a name that matches the given field type.
-                from typing import get_type_hints
+def from_dict(cls: type[T], config_dict: dict[str, Any]) -> T:
+    """Create an instance of `cls` from the given dictionary.
 
-                try:
-                    type_hints = get_type_hints(cls)
-                    field_type = type_hints[field.name]
-                except (ValueError, NameError) as err:
-                    logger.debug(
-                        f"Unable to resolve the type hint string {field_type} for field "
-                        f"{field.name}: {err}\n Values will remain dictionaries."
-                    )
+    Has limited support for nested fields: dataclass fields are also created from dicts, but
+    containers / tuples of dataclasses are not.
+    """
+    config_dict = config_dict.copy()
 
-            if (
-                is_dataclass(field_type)
-                and inspect.isclass(field_type)
-                and issubclass(field_type, SerializableMixin)
-            ):
-                # The field is itself a dataclass type, so we recursively call from_dict
-                # passing in the corresponding value.
-                field_config_dict: dict[str, Any] = config_dict.pop(field.name)
-                field_value = field_type.from_dict(field_config_dict)
-            else:
-                field_value = config_dict.pop(field.name)
+    constructor_arguments = {}
+    for field in fields(cls):
+        if field.name not in config_dict:
+            # The field isn't in the dict, so let the dataclass constructor use the default or
+            # call the default factory.
+            continue
 
-            # TODO: Could also perhaps extend to tuples of dataclasses.
-            if (
-                isinstance(field_value, (list, tuple))
-                and field_value
-                and isinstance(field_value[0], dict)
-            ):
-                raise NotImplementedError(
-                    "Only currently support fields that are containers of primitives No dicts or "
-                    "nested collections of configs."
+        field_type = field.type
+        if isinstance(field_type, str):
+            # Try to resolve the forward reference to a dataclass that is a subclass of
+            # SerializableMixin.
+            # Find all the classes that have a name that matches the given field type.
+
+            try:
+                type_hints = get_type_hints(cls)
+                field_type = type_hints[field.name]
+            except (ValueError, NameError) as err:
+                logger.debug(
+                    f"Unable to resolve the type hint string {field_type} for field "
+                    f"{field.name}: {err}\n Values will remain dictionaries."
                 )
 
-            constructor_arguments[field.name] = field_value
+        # NOTE: Could also perhaps extend to dicts / lists / tuples of dataclasses if needed.
+        if inspect.isclass(field_type) and is_dataclass(field_type):
+            # The field is itself a dataclass type, so we recursively call from_dict
+            # passing in the corresponding value.
+            field_config_dict: dict[str, Any] = config_dict.pop(field.name)
+            field_value = from_dict(field_type, field_config_dict)
+        else:
+            field_value = config_dict.pop(field.name)
 
-        # Add the leftover values to the dict of constructor arguments, which will produce a
-        # clear error if there are extras (e.g. "Type <...> got an unexpected keyword argument
-        # 'foo'").
-        if config_dict:
-            for key, value in config_dict.items():
-                assert key not in constructor_arguments
-                constructor_arguments[key] = value
-        return cls(**constructor_arguments)  # type: ignore
+        constructor_arguments[field.name] = field_value
+
+    # Add the leftover values to the dict of constructor arguments, which will produce a
+    # clear error if there are extras (e.g. "Type <...> got an unexpected keyword argument
+    # 'foo'").
+    if config_dict:
+        for key, value in config_dict.items():
+            assert key not in constructor_arguments
+            constructor_arguments[key] = value
+    return cls(**constructor_arguments)
