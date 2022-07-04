@@ -121,7 +121,7 @@ class JSONConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath, "r", encoding="utf8") as f:
+        with open(filepath, encoding="utf8") as f:
             return self.json.load(f)
 
     def generate(self, filepath, data):
@@ -197,7 +197,7 @@ class GenericConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath, "r", encoding="utf8") as f:
+        with open(filepath, encoding="utf8") as f:
             self.template = f.read()
 
         # Search for Oríon semantic pattern

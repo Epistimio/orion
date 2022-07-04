@@ -93,7 +93,7 @@ class Configuration:
             If some option in the yaml file does not exist in the config
 
         """
-        with open(path, "r", encoding="utf8") as f:
+        with open(path, encoding="utf8") as f:
             cfg = yaml.safe_load(f)
             if cfg is None:
                 return
