@@ -329,9 +329,9 @@ def format_metadata(experiment):
 
 REFERS_TEMPLATE = """\
 {title}
-root: {root}
-parent: {parent}
-adapter: {adapter}
+root:{root}
+parent:{parent}
+adapter:{adapter}
 """
 
 
@@ -350,8 +350,8 @@ def format_refers(experiment):
 
     refers_string = REFERS_TEMPLATE.format(
         title=format_title("Parent experiment"),
-        root=root,
-        parent=parent,
+        root=(" " + root) if root else "",
+        parent=(" " + parent) if parent else "",
         adapter=adapter,
     )
 

@@ -529,18 +529,17 @@ def test_format_refers_child():
     #     parent='user',
     #     datetime='now',
     #     orion_version='1.0.1')
-    assert (
-        format_refers(child)
-        == """\
-Parent experiment
-=================
-root: root-name
-parent: parent-name
-adapter:
-  adummy: dict
-  foran: adapter
-"""
-    )  # noqa: W291
+    assert format_refers(child) == textwrap.dedent(
+        """\
+        Parent experiment
+        =================
+        root: root-name
+        parent: parent-name
+        adapter:
+          adummy: dict
+          foran: adapter
+        """
+    )
 
 
 def test_get_trial_params_empty():
@@ -573,24 +572,23 @@ def test_format_stats(dummy_trial):
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
-    assert (
-        format_stats(experiment)
-        == """\
-Stats
-=====
-completed: False
-trials completed: 10
-best trial:
-  id: dummy
-  evaluation: 0.1
-  params:
-    a: 0.0
-    b: 1
-    c: Some
-start time: yesterday
-finish time: now
-duration: way too long
-"""
+    assert format_stats(experiment) == textwrap.dedent(
+        """\
+        Stats
+        =====
+        completed: False
+        trials completed: 10
+        best trial:
+          id: dummy
+          evaluation: 0.1
+          params:
+            a: 0.0
+            b: 1
+            c: Some
+        start time: yesterday
+        finish time: now
+        duration: way too long
+        """
     )
 
 
@@ -700,11 +698,11 @@ def test_format_info(algorithm_dict, dummy_trial):
         datetime: now
         orion version: 1.0.1
         VCS:
-        HEAD_sha: sha
-        active_branch: branch
-        diff_sha: smt
-        is_dirty: True
-        type: git
+          HEAD_sha: sha
+          active_branch: branch
+          diff_sha: smt
+          is_dirty: True
+          type: git
 
 
         Parent experiment
@@ -712,8 +710,8 @@ def test_format_info(algorithm_dict, dummy_trial):
         root: root-name
         parent: parent-name
         adapter:
-        adummy: dict
-        foran: adapter
+          adummy: dict
+          foran: adapter
 
 
         Stats
@@ -721,9 +719,9 @@ def test_format_info(algorithm_dict, dummy_trial):
         completed: False
         trials completed: 10
         best trial:
-        id: dummy
-        evaluation: 0.1
-        params:
+          id: dummy
+          evaluation: 0.1
+          params:
             a: 0.0
             b: 1
             c: Some
@@ -732,4 +730,4 @@ def test_format_info(algorithm_dict, dummy_trial):
         duration: way too long
 
         """
-    )  # noqa: W291
+    )
