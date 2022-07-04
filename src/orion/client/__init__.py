@@ -5,9 +5,12 @@ Python API
 Provides functions for communicating with `orion.core`.
 
 """
+from __future__ import annotations
+
 import logging
 
 import orion.core.io.experiment_builder as experiment_builder
+from orion.algo.base import BaseAlgorithm
 from orion.client.cli import (
     interrupt_trial,
     report_bad_trial,
@@ -48,7 +51,7 @@ def build_experiment(
     name,
     version=None,
     space=None,
-    algorithms=None,
+    algorithms: type[BaseAlgorithm] | dict | None = None,
     strategy=None,
     max_trials=None,
     max_broken=None,

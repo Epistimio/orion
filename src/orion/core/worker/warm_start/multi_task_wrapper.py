@@ -110,7 +110,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             task_id = i + 1
             for trial in trials:
                 # Drop the point if it doesn't fit inside the current space.
-                # TODO: Do we want to 'translate' the point in this case?
+                # TODO: Add an optional 'translation' logic in the Knowledge Base implementation.
                 if self._is_compatible(trial):
                     compatible_trials[task_id].append(trial)
                     task_ids_to_experiments[task_id] = experiment_info

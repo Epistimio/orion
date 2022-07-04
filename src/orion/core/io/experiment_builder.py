@@ -78,6 +78,7 @@ from __future__ import annotations
 import copy
 import datetime
 import getpass
+import inspect
 import logging
 import pprint
 import sys
@@ -401,8 +402,8 @@ def create_experiment(name, version, mode, space, **kwargs):
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(
         experiment.space,
-        experiment.max_trials,
-        kwargs.get("algorithms"),
+        max_trials=experiment.max_trials,
+        config=kwargs.get("algorithms"),
         ignore_unavailable=mode != "x",
         knowledge_base=knowledge_base,
     )
@@ -500,7 +501,7 @@ def _instantiate_space(config):
 def _instantiate_algo(
     space: Space,
     max_trials: int | None,
-    config: dict | None = None,
+    config: type[BaseAlgorithm] | str | dict | None = None,
     ignore_unavailable: bool = False,
     knowledge_base: KnowledgeBase | None = None,
 ):
@@ -508,7 +509,7 @@ def _instantiate_algo(
 
     Parameters
     ----------
-    config: dict, optional
+    config:
         Configuration of the algorithm. If None or empty, system's defaults are used
         (orion.core.config.experiment.algorithms).
     ignore_unavailable: bool, optional
@@ -517,18 +518,28 @@ def _instantiate_algo(
 
     """
     config = config or orion.core.config.experiment.algorithms
-    try:
+    if isinstance(config, str):
+        algo_type = algo_factory.get_class(config)
+        algo_config = {}
+    elif inspect.isclass(config) and issubclass(config, BaseAlgorithm):
+        algo_type: type[BaseAlgorithm] = config
+        algo_config = {}
+    elif isinstance(config, dict):
         backported_config = backward.port_algo_config(config)
         algo_name = backported_config.pop("of_type")
-        algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(algo_name)
+        algo_type = algo_factory.get_class(algo_name)
+        algo_config = {}
+    else:
+        raise ValueError(f"Invalid algorithm configuration: {config}")
+
+    try:
         wrapped_algo = create_algo(
             space=space,
-            algo_type=algo_constructor,
+            algo_type=algo_type,
             knowledge_base=knowledge_base,
-            **backported_config,
+            **algo_config,
         )
         if max_trials is not None:
-            # todo: Create a `max_trials` property or annotation on BaseAlgorithm at some point.
             wrapped_algo.unwrapped.max_trials = max_trials
 
     except NotImplementedError as e:
