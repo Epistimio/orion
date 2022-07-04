@@ -90,7 +90,7 @@ algorithm_configs = {
         "pb2": {
             "seed": 1,
             "generations": 3,
-            "population_size": 10,
+            "population_size": 20,
             "exploit": {
                 "exploit_configs": [
                     {
