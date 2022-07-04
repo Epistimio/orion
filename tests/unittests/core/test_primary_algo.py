@@ -8,6 +8,7 @@ import logging
 import typing
 from typing import Any, ClassVar, TypeVar
 
+import numpy
 import pytest
 from pytest import MonkeyPatch
 
@@ -298,7 +299,7 @@ class TestRegistration:
             {"x": 10}, space=algo_wrapper.space
         )
         fixed_transformed = algo_wrapper.transformed_space.transform(fixed_original)
-        assert fixed_transformed.params == {"x": 2.302585092994046}
+        assert fixed_transformed.params == {"x": numpy.log(10)}
         transformed_space = algo_wrapper.transformed_space
 
         algo_wrapper.algorithm.fixed_suggestion = fixed_transformed

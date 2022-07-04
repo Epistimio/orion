@@ -12,7 +12,7 @@ import logging
 
 from gunicorn.app.base import BaseApplication
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import experiment_builder
 from orion.serving.webapi import WebApi
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class GunicornApp(BaseApplication):
     def __init__(self, app, options=None):
         self.options = options or {}
         self.application = app
-        super(GunicornApp, self).__init__()
+        super().__init__()
 
     def init(self, parser, opts, args):
         """Pre-run initialization"""

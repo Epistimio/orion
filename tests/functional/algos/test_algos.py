@@ -489,7 +489,7 @@ def test_branching_algos(
 
     exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
 
-    def build_params_hist(trial):
+    def build_params_hist(trial: Trial) -> list[str]:
         params = [trial.params_repr()]
         while trial.parent:
             trial = exp.algorithms.registry[trial.parent]

@@ -155,8 +155,7 @@ class OrionCmdlineParser:
         duplicated_priors = set(self.cmd_priors.keys()) & set(self.file_priors.keys())
         if duplicated_priors:
             raise ValueError(
-                "Conflict: definition of same prior in commandline and config: "
-                "{}".format(duplicated_priors)
+                f"Conflict: definition of same prior in commandline and config: {duplicated_priors}"
             )
 
     def infer_user_script(self, user_args):

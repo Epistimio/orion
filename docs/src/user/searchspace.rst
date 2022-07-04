@@ -192,6 +192,15 @@ represented with ``my_script_config.txt`` in the following example.
 
    orion hunt --config my_orion_config.yaml ./my_script --config my_script_config.txt
 
+During the execution of the optimization, Oríon will generate a new file for the configuration
+in which the priors `orion~<prior>(<args>)` will be replaced by the actual value of the current
+trial. The path of this configuration file will be passed to your script instead of the original
+path. For instance, this would lead to the script from previous example to be called like this:
+
+.. code-block:: console
+
+   ./my_script --config /path/to/exp/working/dir/trial_random_name.conf
+
 Here is an example of a configuration file with yaml
 
 .. code-block:: yaml

@@ -58,7 +58,7 @@ def average(trials, group_by="order", key="best", return_var=False):
         return trials
 
     group = trials.groupby(group_by)
-    means = list()
+    means = []
     keys = [v.strip() for v in key.split(",")]
     for k in keys:
         mean = group[k].mean().reset_index().rename(columns={k: f"{k}_mean"})

@@ -38,11 +38,6 @@ This should not be confused with the argument ``--config`` of ``orion hunt``,
 which is the configuration of Oríon. We are here referring the configuration of the user script,
 represented with ``my_script_config.txt`` in the previous example.
 
-.. note::
-
-   The value of ``user_script_config`` is only configurable from the global configuration yaml file
-   at the moment. It cannot be set in the local configuration file passed to
-   ``orion hunt --config``.
 
 ``working_dir``
 ---------------

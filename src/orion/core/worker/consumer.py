@@ -30,7 +30,7 @@ class ExecutionError(Exception):
     """Error raised when Orion is unable to execute the user's script without errors."""
 
     def __init__(self, return_code=0):
-        super(ExecutionError, self).__init__()
+        super().__init__()
         self.return_code = return_code
 
 
@@ -130,8 +130,8 @@ class Consumer(object):
         """Retrive the results from the file"""
         try:
             results = JSONConverter().parse(results_file.name)
-        except json.decoder.JSONDecodeError:
-            raise MissingResultFile()
+        except json.decoder.JSONDecodeError as exc:
+            raise MissingResultFile() from exc
 
         return results
 
@@ -196,11 +196,14 @@ class Consumer(object):
         return env
 
     def _consume(self, trial, workdirname):
+        # pylint: disable = consider-using-with
         config_file = tempfile.NamedTemporaryFile(
             mode="w", prefix="trial_", suffix=".conf", dir=workdirname, delete=False
         )
         config_file.close()
         log.debug("New temp config file: %s", config_file.name)
+
+        # pylint: disable = consider-using-with
         results_file = tempfile.NamedTemporaryFile(
             mode="w", prefix="results_", suffix=".log", dir=workdirname, delete=False
         )
@@ -244,16 +247,16 @@ class Consumer(object):
                 "https://orion.readthedocs.io/en/stable/user/config.html#experiment-version-control"
             )
 
-    # pylint: disable = no-self-use
     def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
         command = cmd_args
 
         try:
+            # pylint: disable = consider-using-with
             process = subprocess.Popen(command, env=environ)
-        except PermissionError:
+        except PermissionError as exc:
             log.debug("Script is not executable")
-            raise InexecutableUserScript(" ".join(cmd_args))
+            raise InexecutableUserScript(" ".join(cmd_args)) from exc
 
         return_code = process.wait()
         log.debug(f"Script finished with return code {return_code}")
