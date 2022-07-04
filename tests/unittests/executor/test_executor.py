@@ -1,6 +1,6 @@
 import sys
 import time
-from multiprocessing import TimeoutError
+from multiprocessing import Process, TimeoutError
 
 import pytest
 
@@ -200,6 +200,13 @@ def nested_jobs(executor):
     return sum(all_results)
 
 
+def job_with_subprocess():
+    p = Process(target=time.sleep, args=(1,))
+    p.start()
+    p.join()
+    return 1
+
+
 @pytest.mark.parametrize("backend", [SingleExecutor])
 def test_executor_is_serializable(backend):
     with backend(5) as executor:
@@ -282,3 +289,14 @@ def test_executors_del_does_not_raise(backend):
         del executor.client
 
     del executor
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_executor_support_subprocess(backend):
+    """A subprocess can be spawn inside the process"""
+
+    with backend(5) as executor:
+        futures = [executor.submit(job_with_subprocess) for _ in range(10)]
+        all_results = executor.wait(futures)
+
+    assert sum(all_results) == 10
