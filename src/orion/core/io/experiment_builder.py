@@ -83,7 +83,7 @@ import pprint
 import sys
 
 import orion.core
-import orion.core.utils.backward as backward
+import orion.core.utils.backward as backward  # pylint:disable=consider-using-from-import
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
@@ -178,7 +178,7 @@ def build(name, version=None, branching=None, **config):
 
     if "space" not in config:
         raise NoConfigurationError(
-            "Experiment {} does not exist in DB and space was not defined.".format(name)
+            f"Experiment {name} does not exist in DB and space was not defined."
         )
 
     if len(config["space"]) == 0:
@@ -340,11 +340,11 @@ def load(name, version=None, mode="r"):
     db_config = fetch_config_from_db(name, version)
 
     if not db_config:
-        message = (
-            "No experiment with given name '%s' and version '%s' inside database, "
-            "no view can be created." % (name, version if version else "*")
+        raise NoConfigurationError(
+            f"No experiment with given name '{name}' "
+            f"and version '{version if version else '*'}' inside database, "
+            "no view can be created."
         )
-        raise NoConfigurationError(message)
 
     db_config.setdefault("version", 1)
 
@@ -702,7 +702,7 @@ def _fetch_config_version(configs, version=None):
 
     if version > max_version:
         log.warning(
-            "Version %s was specified but most recent version is only %s. " "Using %s.",
+            "Version %s was specified but most recent version is only %s. Using %s.",
             version,
             max_version,
             max_version,
