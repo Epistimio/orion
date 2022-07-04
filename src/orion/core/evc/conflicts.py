@@ -716,7 +716,7 @@ class ChangedDimensionConflict(Conflict):
         return colored_diff(self.old_prior, self.new_prior)
 
     def __repr__(self):
-        """Reprensentation of the conflict for user interface"""
+        """Representation of the conflict for user interface"""
         dim_name = standard_param_name(self.dimension.name)
         return f"{dim_name}~{self.old_prior} != {dim_name}~{self.new_prior}"
 

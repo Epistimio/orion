@@ -288,7 +288,7 @@ class DimensionAddition(BaseAdapter):
         elif not isinstance(param, Trial.Param):
             raise TypeError(
                 f"Invalid param argument type ('{type(param)}'). "
-                "Param argument must be a Param object or a dictionnary "
+                "Param argument must be a Param object or a dictionary "
                 "as defined by Trial.Param.to_dict()."
             )
 
