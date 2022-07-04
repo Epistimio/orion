@@ -177,7 +177,7 @@ class Factory(ABCMeta):
                 return inherited_class(*args, **kwargs)
 
         raise NotImplementedError(
-            f"Could not find implementation of {cls.base.__name__}, type = '{of_type}'\n"
+            f"Could not find implementation of {cls.__base__.__name__}, type = '{of_type}'\n"
             "Currently, there is an implementation for types:\n"
             f"{sorted(cls.types.keys())}"
         )
