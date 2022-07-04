@@ -70,7 +70,10 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
         self.algorithm.set_state(copy.deepcopy(state_dict["algorithm"]))
 
     def __repr__(self) -> str:
-        return f"{type(self).__qualname__}<{repr(self.algorithm)}>"
+        algo_repr = repr(self.algorithm)
+        if not (algo_repr.startswith("<") and algo_repr.endswith(">")):
+            algo_repr = f"<{algo_repr}>"
+        return f"{type(self).__qualname__}{algo_repr}"
 
     @property
     def is_done(self) -> bool:
