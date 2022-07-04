@@ -536,7 +536,7 @@ class TestLinearize(object):
     def test_transform(self):
         """Check if it transforms properly."""
         t = Linearize()
-        assert t.transform(numpy.e) == 1
+        assert t.transform(numpy.e) == numpy.log(numpy.e)
         t.transform(0)
 
     def test_reverse(self):
