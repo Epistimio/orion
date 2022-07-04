@@ -48,7 +48,7 @@ extras_require = {
         "numpy",
     ],
     "dehb": [
-        "ConfigSpace==0.5.0",
+        "ConfigSpace",
         "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
