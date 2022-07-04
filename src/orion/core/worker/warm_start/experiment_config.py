@@ -1,9 +1,11 @@
 """ Immutable dataclass containing the experiment configuration. """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from logging import getLogger as get_logger
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
+# NOTE: Not using postponed type annotations, because the types could be inspected at runtime when
+# de-serializing these objects, and evaluating newer type annotations could raise runtime errors.
 from .serializable import SerializableMixin
 
 logger = get_logger(__name__)
@@ -75,16 +77,17 @@ class ExperimentInfo(Config):
     name: str
     """ Unique identifier for this experiment per ``user``. """
 
-    id: Optional[int]  # pylint: disable=invalid-name
-    """ id of the experiment in the database if experiment is configured. Value is ``None`` if the
+    _id: Optional[int]  # pylint: disable=invalid-name
+    """ id of the experiment in the database if experiment is configured, or ``None`` if the
     experiment is not configured.
     """
 
-    refers: Union[dict, List["ExperimentInfo"]]
-    #    A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
-    #    trials we want to add in the history of completed trials we want to re-use.
-    #    For convenience and database efficiency purpose, all experiments of a common tree shares
-    #    ``refers[root_id]``, with the root experiment referring to itself.
+    refers: dict[int, "ExperimentInfo"]
+    """ A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
+    trials we want to add in the history of completed trials we want to re-use.
+    For convenience and database efficiency purpose, all experiments of a common tree shares
+    ``refers[root_id]``, with the root experiment referring to itself.
+    """
 
     version: int
     """ Current version of this experiment. """
@@ -117,15 +120,15 @@ class ExperimentInfo(Config):
     working_dir: str
     """ Working directory. """
 
-    _id: int
-    """ ID of the experiment. """
+    # _id: int
 
     # IDEA: Store a reference to the Storage object associated with the experiment in
     # case we want to support multi-storage in the future.
-    _storage: Optional[StorageConfig] = field(default=None, hash=False, repr=False)
+    # _storage: Optional[StorageConfig] = field(default=None, hash=False, repr=False)
 
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
+    @property
+    def id(self) -> Optional[int]:
+        """id of the experiment in the database if experiment is configured, or `None` if the
+        experiment is not configured.
+        """
+        return self._id

@@ -41,7 +41,7 @@ class SerializableMixin(Mapping[str, Any]):
         """Returns an iterator over the items/attributes in this object."""
         return ItemsView({f.name: getattr(self, f.name) for f in fields(self)})
 
-    def asdict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Returns a dict version of this dataclass."""
         return asdict(self)
 
