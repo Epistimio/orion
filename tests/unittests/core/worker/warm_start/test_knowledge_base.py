@@ -17,8 +17,8 @@ from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 space: Callable[[dict], Space] = SpaceBuilder().build
 
 
-def _add_result(trial: Trial, objective: float) -> Trial:
-    """Add a random result to the trial."""
+def add_result(trial: Trial, objective: float) -> Trial:
+    """Add `objective` as the result of `trial`. Returns a new Trial object."""
     new_trial = copy.deepcopy(trial)
     new_trial.status = "completed"
     new_trial.results.append(
@@ -48,7 +48,7 @@ class DummyKnowledgeBase(KnowledgeBase):
             exp_space = space(experiment_info.space)
             previous_trials = exp_space.sample(10)
             previous_trials_with_results = [
-                _add_result(trial, i * 100 + j)
+                add_result(trial, i * 100 + j)
                 for j, trial in enumerate(previous_trials)
             ]
             related_things.append((experiment_info, previous_trials_with_results))
