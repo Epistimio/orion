@@ -85,7 +85,7 @@ def one_experiment_changed_vcs(storage, one_experiment):
 
 
 @pytest.fixture
-def one_experiment_no_version(monkeypatch, one_experiment):
+def one_experiment_no_version(monkeypatch, one_experiment, storage):
     """Create an experiment without trials."""
     one_experiment["name"] = one_experiment["name"] + "-no-version"
     one_experiment.pop("version")
@@ -96,7 +96,7 @@ def one_experiment_no_version(monkeypatch, one_experiment):
 
         return []
 
-    monkeypatch.setattr(setup_storage(), "fetch_experiments", fetch_without_version)
+    monkeypatch.setattr(storage, "fetch_experiments", fetch_without_version)
 
     return one_experiment
 

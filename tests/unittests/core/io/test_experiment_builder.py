@@ -364,17 +364,15 @@ def test_build_from_args_force_user(new_config):
 
 
 @pytest.mark.usefixtures("setup_pickleddb_database")
-def test_build_from_args_debug_mode(script_path):
+def test_build_from_args_debug_mode(script_path, storage):
     """Try building experiment in debug mode"""
-    update_singletons()
+
     experiment_builder.build_from_args(
         {
             "name": "whatever",
             "user_args": [script_path, "--mini-batch~uniform(32, 256)"],
         }
     )
-
-    storage = setup_storage()
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
