@@ -90,13 +90,13 @@ def one_experiment_no_version(monkeypatch, one_experiment, storage):
     one_experiment["name"] = one_experiment["name"] + "-no-version"
     one_experiment.pop("version")
 
-    def fetch_without_version(query, selection=None):
+    def fetch_without_version(self, query, selection=None):
         if query.get("name") == one_experiment["name"] or query == {}:
             return [copy.deepcopy(one_experiment)]
 
         return []
 
-    monkeypatch.setattr(storage, "fetch_experiments", fetch_without_version)
+    monkeypatch.setattr(type(storage), "fetch_experiments", fetch_without_version)
 
     return one_experiment
 

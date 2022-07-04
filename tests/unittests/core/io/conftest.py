@@ -34,7 +34,7 @@ class _GenerateConfig:
 
         return open(self.generated_config.name, 'r')
 
-    def __exit__(self):
+    def __exit__(self, *args, **kwargs):
         self.database_file.close()
         self.generated_config.close()
 
