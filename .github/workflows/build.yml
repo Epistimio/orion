@@ -21,9 +21,7 @@ jobs:
       - run: pip install pre-commit
       - run: pre-commit --version
       - run: pre-commit install
-      - run: pre-commit run black --all-files
-      - run: pre-commit run isort --all-files
-      # - run: pre-commit run doc8 --all-files
+      - run: pre-commit run --all-files
   pretest:
     runs-on: ubuntu-latest
     strategy:
