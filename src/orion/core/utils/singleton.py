@@ -17,9 +17,7 @@ class SingletonAlreadyInstantiatedError(ValueError):
     def __init__(self, name):
         """Pass the same constant message to ValueError underneath."""
         super().__init__(
-            "A singleton instance of (type: {}) has already been instantiated.".format(
-                name
-            )
+            f"A singleton instance of (type: {name}) has already been instantiated."
         )
 
 
@@ -30,7 +28,7 @@ class SingletonNotInstantiatedError(TypeError):
 
     def __init__(self, name):
         """Pass the same constant message to TypeError underneath."""
-        super().__init__("No singleton instance of (type: {}) was created".format(name))
+        super().__init__(f"No singleton instance of (type: {name}) was created")
 
 
 class SingletonType(type):
@@ -98,7 +96,7 @@ class GenericSingletonFactory(GenericFactory):
     """
 
     def __init__(self, base):
-        super(GenericSingletonFactory, self).__init__(base=base)
+        super().__init__(base=base)
         self.instance = None
 
     def create(self, of_type=None, *args, **kwargs):
@@ -136,9 +134,7 @@ class GenericSingletonFactory(GenericFactory):
             raise SingletonNotInstantiatedError(self.base.__name__)
         elif self.instance is None:
             try:
-                self.instance = super(GenericSingletonFactory, self).create(
-                    of_type, *args, **kwargs
-                )
+                self.instance = super().create(of_type, *args, **kwargs)
             except TypeError as exception:
                 raise SingletonNotInstantiatedError(self.base.__name__) from exception
 

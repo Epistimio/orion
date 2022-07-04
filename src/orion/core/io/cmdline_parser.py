@@ -47,7 +47,7 @@ class CmdlineParser(object):
     def __init__(self):
         """See `CmdlineParser` description"""
         # TODO Handle parsing twice.
-        self.keys = dict()
+        self.keys = {}
         self.arguments = OrderedDict()
         self._already_parsed = False
         self.template = []
@@ -241,7 +241,7 @@ class CmdlineParser(object):
 
                 if key in keys:
                     raise ValueError(
-                        "Conflict: two arguments have the same name: {}".format(key)
+                        f"Conflict: two arguments have the same name: {key}"
                     )
 
                 arguments[key] = []
@@ -258,7 +258,7 @@ class CmdlineParser(object):
             # No argument name means we have not reached them yet, so we're still in the
             # Positional arguments part
             elif key is None:
-                _pos_key = "_pos_{}".format(len(arguments))
+                _pos_key = f"_pos_{len(arguments)}"
                 keys[_pos_key] = _pos_key
                 arguments[_pos_key] = item
 

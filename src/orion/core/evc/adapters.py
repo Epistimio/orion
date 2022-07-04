@@ -164,8 +164,7 @@ class CompositeAdapter(BaseAdapter):
                 if not isinstance(adapter, BaseAdapter)
             ][0]
             raise TypeError(
-                "Provided adapters must be adapter objects, not '%s'"
-                % str(wrong_object_type)
+                f"Provided adapters must be adapter objects, not '{wrong_object_type}'"
             )
 
         self.adapters = adapters
@@ -256,7 +255,7 @@ def apply_if_valid(name, trial, callback=None, raise_if_not=True):
     if raise_if_not:
         raise RuntimeError(
             "Provided trial does not have a compatible configuration. "
-            "A dimension named '%s' should be present.\n %s" % (name, trial)
+            f"A dimension named '{name}' should be present.\n {trial}"
         )
 
     return False
@@ -293,9 +292,9 @@ class DimensionAddition(BaseAdapter):
             param = Trial.Param(**param)
         elif not isinstance(param, Trial.Param):
             raise TypeError(
-                "Invalid param argument type ('%s'). "
+                f"Invalid param argument type ('{type(param)}'). "
                 "Param argument must be a Param object or a dictionnary "
-                "as defined by Trial.Param.to_dict()." % str(type(param))
+                "as defined by Trial.Param.to_dict()."
             )
 
         self.param = param
@@ -316,8 +315,7 @@ class DimensionAddition(BaseAdapter):
             if apply_if_valid(self.param.name, trial, raise_if_not=False):
                 raise RuntimeError(
                     "Provided trial does not have a compatible configuration. "
-                    "A dimension named '%s' was already present.\n %s"
-                    % (self.param.name, trial)
+                    f"A dimension named '{self.param.name}' was already present.\n {trial}"
                 )
 
             adapted_trial = copy.deepcopy(trial)
@@ -556,8 +554,7 @@ class DimensionRenaming(BaseAdapter):
                 type(name) for name in [old_name, new_name] if not isinstance(name, str)
             ][0]
             raise TypeError(
-                "Invalid name type '%s'. Names must be strings."
-                % str(wrong_object_type)
+                f"Invalid name type '{wrong_object_type}'. Names must be strings."
             )
         self.old_name = old_name
         self.new_name = new_name
@@ -686,8 +683,7 @@ class CodeChange(BaseAdapter):
         """Validate change type and raise ValueError if invalid"""
         if change_type not in cls.types:
             raise ValueError(
-                "Invalid code change type '%s'. Should be one of %s"
-                % (change_type, str(cls.types))
+                f"Invalid code change type '{change_type}'. Should be one of {cls.types}"
             )
 
     def forward(self, trials):
@@ -769,8 +765,7 @@ class CommandLineChange(BaseAdapter):
         """Validate change type and raise ValueError if invalid"""
         if change_type not in cls.types:
             raise ValueError(
-                "Invalid cli change type '%s'. Should be one of %s"
-                % (change_type, str(cls.types))
+                f"Invalid cli change type '{change_type}'. Should be one of {cls.types}"
             )
 
     def forward(self, trials):
@@ -852,8 +847,7 @@ class ScriptConfigChange(BaseAdapter):
         """Validate change type and raise ValueError if invalid"""
         if change_type not in cls.types:
             raise ValueError(
-                "Invalid script's config change type '%s'. Should be one of %s"
-                % (change_type, str(cls.types))
+                f"Invalid script's config change type '{change_type}'. Should be one of {cls.types}"
             )
 
     def forward(self, trials):
