@@ -6,23 +6,20 @@ from contextlib import contextmanager
 from logging import getLogger as get_logger
 from typing import Generic, Sequence, TypeVar
 
-from typing_extensions import ParamSpec
-
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
-P = ParamSpec("P")
+AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
 
 
 # pylint: disable=too-many-public-methods
-class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
+class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     """Base class for a Wrapper around an algorithm."""
 
-    def __init__(self, space: Space, algorithm: AlgoType):
+    def __init__(self, space: Space, algorithm: AlgoT):
         super().__init__(space)
         self._algorithm = algorithm
 
@@ -38,7 +35,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         return space
 
     @property
-    def algorithm(self) -> AlgoType:
+    def algorithm(self) -> AlgoT:
         """Returns the wrapped algorithm."""
         return self._algorithm
 
@@ -101,7 +98,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         same way it would if it were observing regular trials. For example, the number
         of "used" trials shouldn't increase, etc.
 
-        New Algorithms or Algo wrappers can implement this method to control how the
+        New algorithms or algo wrappers can implement this method to control how the
         state of the algo is affected by observing trials from other tasks than the
         current (target) task.
         """

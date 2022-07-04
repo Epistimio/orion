@@ -8,20 +8,20 @@ from typing import Any
 
 from orion.algo.registry import RegistryMapping
 from orion.algo.space import Space
-from orion.core.worker.algo_wrappers.algo_wrapper import AlgoType, AlgoWrapper
+from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT, AlgoWrapper
 from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
 
-class TransformWrapper(AlgoWrapper[AlgoType], ABC):
+class TransformWrapper(AlgoWrapper[AlgoT], ABC):
     """Wrapper around an algorithm that applies some transformation to the trials it suggests.
 
     The inverse transformation is applied to the observed trials before they get passed down to the
     wrapped algorithm's `observe` method.
     """
 
-    def __init__(self, space: Space, algorithm: AlgoType):
+    def __init__(self, space: Space, algorithm: AlgoT):
         super().__init__(space, algorithm)
         self.registry_mapping = RegistryMapping(
             original_registry=self.registry,

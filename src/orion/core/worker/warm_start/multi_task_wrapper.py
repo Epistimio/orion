@@ -17,7 +17,7 @@ from typing import Iterable
 
 from orion.algo.space import Categorical, Space
 from orion.core.utils.format_trials import dict_to_trial
-from orion.core.worker.algo_wrappers.algo_wrapper import AlgoType
+from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT
 from orion.core.worker.algo_wrappers.transform_wrapper import (
     TransformWrapper,
     _copy_status_and_results,
@@ -29,13 +29,13 @@ from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 logger = getLogger(__file__)
 
 
-class MultiTaskWrapper(TransformWrapper[AlgoType], WarmStarteable):
+class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
     """Wrapper that makes the algo "multi-task" by adding a task id to the inputs."""
 
     def __init__(
         self,
         space: Space,
-        algorithm: AlgoType,
+        algorithm: AlgoT,
     ):
         super().__init__(space=space, algorithm=algorithm)
         self.current_task_id: int = 0
