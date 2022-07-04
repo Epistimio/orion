@@ -94,7 +94,7 @@ class Configuration:
             If some option in the yaml file does not exist in the config
 
         """
-        with open(path) as f:
+        with open(path, "r", encoding="utf8") as f:
             cfg = yaml.safe_load(f)
             if cfg is None:
                 return
@@ -115,12 +115,12 @@ class Configuration:
                 )
                 root[deprecated.get("alternative") + "._yaml"] = value
 
-        for key in self._subconfigs:
+        for key, item in self._subconfigs.items():
             if key not in config:
                 continue
 
             # pylint: disable=protected-access
-            self._subconfigs[key]._load_yaml_dict(root, config.pop(key))
+            item._load_yaml_dict(root, config.pop(key))
 
         if config:
             # Make it fail
@@ -149,7 +149,7 @@ class Configuration:
 
         if key not in self._config and key not in self._subconfigs:
             raise ConfigurationError(
-                "Configuration does not have an attribute " "'{}'.".format(key)
+                f"Configuration does not have an attribute '{key}'."
             )
         if key in self._subconfigs:
             return self._subconfigs[key]
@@ -167,7 +167,7 @@ class Configuration:
             value = config_setting["default"]
         else:
             raise ConfigurationError(
-                "Configuration not set and no default " "provided: {}.".format(key)
+                f"Configuration not set and no default provided: {key}."
             )
 
         if config_setting.get("deprecated"):
@@ -207,20 +207,18 @@ class Configuration:
                 self._deprecate(key, value)
 
         elif key in ["_config", "_subconfigs"]:
-            super(Configuration, self).__setattr__(key, value)
+            super().__setattr__(key, value)
 
         elif key in self._subconfigs:
-            raise ValueError(
-                "Configuration already contains subconfiguration {}".format(key)
-            )
+            raise ValueError(f"Configuration already contains subconfiguration {key}")
 
         elif isinstance(value, Configuration):
             self._subconfigs[key] = value
 
         else:
             raise TypeError(
-                "Can only set {} as a Configuration, not {}. Use add_option to set a "
-                "new option.".format(key, type(value))
+                f"Can only set {key} as a Configuration, not {type(value)}. "
+                "Use add_option to set a new option."
             )
 
     # pylint: disable=unused-argument
@@ -263,15 +261,14 @@ class Configuration:
 
         """
         if isinstance(value, Configuration):
-            raise TypeError(
-                "Cannot overwrite option {} with a configuration".format(key)
-            )
+            raise TypeError(f"Cannot overwrite option {key} with a configuration")
 
         try:
             self._config[key]["type"](value)
         except ValueError as e:
-            message = "Option {} of type {} cannot be set to {} with type {}".format(
-                key, self._config[key]["type"], value, type(value)
+            message = (
+                f"Option {key} of type {self._config[key]['type']} "
+                f"cannot be set to {value} with type {type(value)}"
             )
             raise TypeError(message) from e
 
@@ -307,7 +304,7 @@ class Configuration:
         else:
             subconfig = getattr(self, keys[0])
             if subconfig is None:
-                raise KeyError("'{}' is not defined in configuration.".format(keys[0]))
+                raise KeyError(f"'{keys[0]}' is not defined in configuration.")
             subconfig[".".join(keys[1:])] = value
 
     def __getitem__(self, key):
@@ -329,14 +326,14 @@ class Configuration:
             key_config = self._config.get(keys[0], None)
             if key_config is None:
                 raise ConfigurationError(
-                    "Configuration does not have an attribute " "'{}'.".format(keys[0])
+                    f"Configuration does not have an attribute '{keys[0]}'."
                 )
             return key_config.get(keys[1][1:], None)
         elif len(keys) > 1:
             subconfig = getattr(self, keys[0])
             if subconfig is None:
                 raise ConfigurationError(
-                    "Configuration does not have an attribute " "'{}'.".format(key)
+                    f"Configuration does not have an attribute '{key}'."
                 )
             return subconfig[".".join(keys[1:])]
         # Set in current configuration
@@ -382,7 +379,7 @@ class Configuration:
         """
         key = _curate(key)
         if key in self._config or key in self._subconfigs:
-            raise ValueError("Configuration already contains {}".format(key))
+            raise ValueError(f"Configuration already contains {key}")
         self._config[key] = {"type": option_type}
         if env_var is not None:
             self._config[key]["env_var"] = env_var
@@ -399,7 +396,7 @@ class Configuration:
             help = "Undocumented"
 
         if default is not NOT_SET:
-            help += " (default: {})".format(default)
+            help += f" (default: {default})"
         if deprecate is not None:
             help = "(DEPRECATED) " + help
         self._config[key]["help"] = help
@@ -422,21 +419,21 @@ class Configuration:
 
         """
         if rename is None:
-            rename = dict()
+            rename = {}
 
-        for key in self._config:
+        for key, item in self._config.items():
             # TODO: Try with list and nargs='*', but it may case issues with
             # nargs=argparse.REMAINDER.
-            if self._config[key]["type"] in (dict, list, tuple):
+            if item["type"] in (dict, list, tuple):
                 continue
 
             # NOTE: Do not set default, if parser.parse_argv().options[key] is None, then code
             # should look to config[key].
-            arg_name = rename.get(key, "--{}".format(key.replace("_", "-")))
+            arg_name = rename.get(key, f"--{key.replace('_', '-')}")
             parser.add_argument(
                 arg_name,
-                type=self._config[key]["type"],
-                help=self._config[key].get("help"),
+                type=item["type"],
+                help=item.get("help"),
             )
 
     def __contains__(self, key):
@@ -445,7 +442,7 @@ class Configuration:
 
     def to_dict(self):
         """Return a dictionary representation of the configuration"""
-        config = dict()
+        config = {}
 
         with _disable_logger():
             for key in self._config:
