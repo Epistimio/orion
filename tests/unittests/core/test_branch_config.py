@@ -772,9 +772,9 @@ class TestResolutionsWithMarkers(object):
             -1
         ] = "-w_d~+normal(0,1,default_value='a')"
         backward.populate_space(new_config_with_w)
-        with pytest.raises(TypeError) as exc:
+        with pytest.raises(ValueError) as exc:
             detect_conflicts(parent_config, new_config_with_w)
-        assert "Parameter '/w_d': Incorrect arguments." in str(exc.value)
+        assert "Parameter '/w_d' has incorrect arguments: a is not" in str(exc.value)
 
     def test_add_changed(self, parent_config, changed_config):
         """Test if changed dimension conflict is automatically resolved"""

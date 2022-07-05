@@ -252,9 +252,9 @@ class DimensionBuilder(object):
         """
         try:
             dimension = self._build(name, expression)
-        except ValueError as exc:
-            raise TypeError(
-                "Parameter '{}': Incorrect arguments.".format(name)
+        except (TypeError, ValueError) as exc:
+            raise type(exc)(
+                f"Parameter '{name}' has incorrect arguments: {str(exc)}"
             ) from exc
         except IndexError as exc:
             error_msg = (

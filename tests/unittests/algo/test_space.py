@@ -96,17 +96,17 @@ class TestDimension(object):
 
     def test_ban_size_kwarg(self):
         """Should not be able to use 'size' kwarg."""
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             Dimension("yolo", "norm", 0.9, size=(3, 2))
 
     def test_ban_seed_kwarg(self):
         """Should not be able to use 'seed' kwarg."""
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             Dimension("yolo", "norm", 0.9, seed=8)
 
     def test_ban_rng_kwarg(self):
         """Should not be able to use 'random_state' kwarg."""
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             Dimension("yolo", "norm", 0.9, random_state=8)
 
     def test_with_predefined_dist(self, seed):
@@ -118,7 +118,7 @@ class TestDimension(object):
 
     def test_ban_discrete_kwarg(self):
         """Do not allow use for 'discrete' kwarg, because now there's `_Discrete`."""
-        with pytest.raises(ValueError) as exc:
+        with pytest.raises(TypeError) as exc:
             Dimension("yolo", "uniform", -3, 4, shape=(4, 4), discrete=True)
         assert "pure `_Discrete`" in str(exc.value)
 
@@ -699,13 +699,13 @@ class TestFidelity(object):
 
     def test_min_resources(self):
         """Test that an error is raised if min is smaller than 1"""
-        with pytest.raises(AttributeError) as exc:
+        with pytest.raises(ValueError) as exc:
             Fidelity("epoch", 0, 2)
         assert "Minimum resources must be a positive number." == str(exc.value)
 
     def test_min_max_resources(self):
         """Test that an error is raised if min is larger than max"""
-        with pytest.raises(AttributeError) as exc:
+        with pytest.raises(ValueError) as exc:
             Fidelity("epoch", 3, 2)
         assert "Minimum resources must be smaller than maximum resources." == str(
             exc.value
@@ -713,7 +713,7 @@ class TestFidelity(object):
 
     def test_base(self):
         """Test that an error is raised if base is smaller than 1"""
-        with pytest.raises(AttributeError) as exc:
+        with pytest.raises(ValueError) as exc:
             Fidelity("epoch", 1, 2, 0)
         assert "Base should be greater than or equal to 1" == str(exc.value)
 

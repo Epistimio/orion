@@ -186,7 +186,7 @@ class TestDimensionBuilder(object):
         assert dim._prior_name == "Distribution"
         assert isinstance(dim.prior, dists.rv_discrete)
 
-        with pytest.raises(TypeError) as exc:
+        with pytest.raises(ValueError) as exc:
             dimbuilder.build("yolo2", "choices({'adfa': 0.1, 3: 0.4})")
         assert "Parameter" in str(exc.value)
         assert "sum" in str(exc.value.__cause__)

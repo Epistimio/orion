@@ -130,17 +130,17 @@ class Dimension:
     def validate(self):
         """Validate dimension arguments"""
         if "random_state" in self._kwargs or "seed" in self._kwargs:
-            raise ValueError(
+            raise TypeError(
                 "random_state/seed cannot be set in a "
                 "parameter's definition! Set seed globally!"
             )
         if "discrete" in self._kwargs:
-            raise ValueError(
+            raise TypeError(
                 "Do not use kwarg 'discrete' on `Dimension`, "
                 "use pure `_Discrete` class instead!"
             )
         if "size" in self._kwargs:
-            raise ValueError("Use 'shape' keyword only instead of 'size'.")
+            raise TypeError("Use 'shape' keyword only instead of 'size'.")
 
         if (
             self.default_value is not self.NO_DEFAULT_VALUE
