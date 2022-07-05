@@ -6,11 +6,11 @@ from typing import ClassVar
 import numpy
 import pytest
 
-from orion.algo.dehb.dehb import IMPORT_ERROR, UnsupportedConfiguration
+from orion.algo.dehb.dehb import UnsupportedConfiguration, import_optional
 from orion.core.utils import backward, format_trials
 from orion.testing.algo import BaseAlgoTests, TestPhase, last_phase_only
 
-if IMPORT_ERROR:
+if import_optional.failed:
     pytest.skip("skipping DEHB tests", allow_module_level=True)
 
 

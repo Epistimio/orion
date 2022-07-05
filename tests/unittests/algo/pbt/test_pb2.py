@@ -6,11 +6,11 @@ from typing import ClassVar
 
 import pytest
 
-from orion.algo.pbt.pb2_utils import HAS_PB2
+from orion.algo.pbt.pb2_utils import import_optional
 from orion.testing.algo import BaseAlgoTests, TestPhase
 
-if not HAS_PB2:
-    pytest.skip("PB2 deps not installed", allow_module_level=True)
+if import_optional.failed:
+    pytest.skip("skipping PB2 tests", allow_module_level=True)
 
 population_size = 10
 generations = 5

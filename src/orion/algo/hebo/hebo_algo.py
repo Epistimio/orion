@@ -22,21 +22,18 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.hebo.random_state import RandomState
 from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils.format_trials import dict_to_trial
+from orion.core.utils.module_import import ImportOptional
 from orion.core.worker.trial import Trial
 
-_HEBO_REQUIRED_ERROR = None
-try:
+with ImportOptional("HEBO") as import_optional:
     import hebo
     from hebo.acquisitions.acq import MACE, Acquisition
     from hebo.design_space import DesignSpace
     from hebo.design_space.param import Parameter
     from torch.quasirandom import SobolEngine
 
-except ImportError as err:
+if import_optional.failed:
     MACE = object
-    _HEBO_REQUIRED_ERROR = ImportError(
-        "The HEBO package is not installed. Install it with `pip install orion[hebo]`"
-    )
 
 if typing.TYPE_CHECKING and _HEBO_REQUIRED_ERROR:
     Acquisition = object  # noqa
@@ -137,8 +134,7 @@ class HEBO(BaseAlgorithm):
         seed: int | None = None,
         parameters: Parameters | dict | None = None,
     ):
-        if _HEBO_REQUIRED_ERROR:
-            raise _HEBO_REQUIRED_ERROR
+        import_optional.ensure()
 
         super().__init__(space)
         if isinstance(parameters, dict):

@@ -11,22 +11,17 @@ import logging
 import pickle
 from typing import Callable, Iterable, Sequence, SupportsInt
 
+from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
+from orion.core.utils.format_trials import dict_to_trial
+from orion.core.utils.module_import import ImportOptional
 from orion.core.worker.trial import Trial
 
-try:
+with ImportOptional("nevergrad") as import_optional:
     import nevergrad as ng
     from nevergrad.parametrization.container import Instrumentation
     from nevergrad.parametrization.core import Parameter
 
-    IMPORT_ERROR = None
-
-except ImportError as err:
-    IMPORT_ERROR = err
-
-
-from orion.algo.base import BaseAlgorithm
-from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
-from orion.core.utils.format_trials import dict_to_trial
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +40,7 @@ def register(dimension_type: str, prior: str):
 
 def to_ng_space(orion_space: Space) -> Instrumentation:
     """Convert an orion space to a nevergrad space."""
-    if IMPORT_ERROR:
-        raise IMPORT_ERROR
+    import_optional.ensure()
     converted_dimensions: dict[str, Parameter] = {}
     for name, dim in orion_space.items():
         try:
@@ -183,8 +177,7 @@ class NevergradOptimizer(BaseAlgorithm):
         budget: int = 100,
         num_workers: int = 10,
     ):
-        if IMPORT_ERROR:
-            raise IMPORT_ERROR
+        import_optional.ensure()
 
         super().__init__(space)
         self.model_name = model_name

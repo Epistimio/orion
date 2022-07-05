@@ -8,8 +8,11 @@ import pytest
 from pytest import FixtureRequest, MarkDecorator
 
 from orion.algo.nevergradoptimizer import NOT_WORKING as NOT_WORKING_MODEL_NAMES
-from orion.algo.nevergradoptimizer import NevergradOptimizer
+from orion.algo.nevergradoptimizer import NevergradOptimizer, import_guard
 from orion.testing.algo import BaseAlgoTests, TestPhase
+
+if import_guard.failed:
+    pytest.skip("skipping Nevergrad tests", allow_module_level=True)
 
 TEST_MANY_TRIALS = 10
 

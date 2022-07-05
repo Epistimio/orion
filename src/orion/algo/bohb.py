@@ -8,21 +8,21 @@ import copy
 
 import numpy as np
 
-try:
-    from hpbandster.optimizers.config_generators.bohb import BOHB as CG_BOHB
-    from hpbandster.optimizers.iterations import SuccessiveHalving
-    from sspace.convert import convert_space, reverse, transform
-
-    has_HpBandSter = True
-except ImportError:
-    CG_BOHB = None
-    SuccessiveHalving = None
-    has_HpBandSter = False
-
 from orion.algo.base import BaseAlgorithm
 from orion.algo.parallel_strategy import strategy_factory
 from orion.algo.space import Fidelity
 from orion.core.utils.format_trials import dict_to_trial
+from orion.core.utils.module_import import ImportOptional
+
+with ImportOptional("BOHB") as import_optional:
+    from hpbandster.optimizers.config_generators.bohb import BOHB as CG_BOHB
+    from hpbandster.optimizers.iterations import SuccessiveHalving
+    from sspace.convert import convert_space, reverse, transform
+
+if import_optional.failed:
+    CG_BOHB = None
+    SuccessiveHalving = None
+
 
 SPACE_ERROR = """
 BOHB cannot be used if space does not contain a fidelity dimension.
@@ -110,6 +110,7 @@ class BOHB(BaseAlgorithm):
         min_bandwidth=1e-3,
         parallel_strategy=None,
     ):  # pylint: disable=too-many-arguments
+        import_optional.ensure()
 
         if parallel_strategy is None:
             parallel_strategy = {

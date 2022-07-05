@@ -6,20 +6,19 @@ import contextlib
 import copy
 from typing import List, Optional
 
-try:
-    from ax.service.ax_client import AxClient
-    from ax.service.utils.instantiation import ObjectiveProperties
-
-    has_Ax = True
-except ImportError:
-    AxClient = None
-    ObjectiveProperties = None
-    has_Ax = False
-
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.utils import format_trials
 from orion.core.utils.flatten import flatten
+from orion.core.utils.module_import import ImportOptional
+
+with ImportOptional("Ax") as import_optional:
+    from ax.service.ax_client import AxClient
+    from ax.service.utils.instantiation import ObjectiveProperties
+
+if import_optional.failed:
+    AxClient = None
+    ObjectiveProperties = None
 
 
 class AxOptimizer(BaseAlgorithm):
@@ -75,6 +74,8 @@ class AxOptimizer(BaseAlgorithm):
         extra_objectives: Optional[List[str]] = None,
         constraints: Optional[List[str]] = None,
     ):
+        import_optional.ensure()
+
         extra_objectives = set(extra_objectives if extra_objectives else [])
         constraints = constraints if constraints else []
 

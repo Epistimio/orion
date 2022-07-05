@@ -10,7 +10,7 @@ import time
 import numpy as np
 import pandas
 
-from orion.algo.pbt.pb2_utils import select_config
+from orion.algo.pbt.pb2_utils import import_optional, select_config
 from orion.algo.pbt.pbt import PBT
 from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
@@ -79,6 +79,8 @@ class PB2(PBT):
         exploit=None,
         fork_timeout=60,
     ):
+        import_optional.ensure()
+
         super().__init__(
             space,
             seed=seed,
