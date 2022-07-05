@@ -302,6 +302,7 @@ def get_cmd_config(cmdargs):
     Arguments of commandline have priority over options in configuration file.
     """
     cmdargs = resolve_config.fetch_config_from_cmdargs(cmdargs)
+
     cmd_config = resolve_config.fetch_config(cmdargs)
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
@@ -337,7 +338,6 @@ def get_cmd_config(cmdargs):
     cmd_config["space"] = cmd_config["metadata"].get("priors", None)
 
     backward.update_db_config(cmd_config)
-
     return cmd_config
 
 
@@ -356,6 +356,7 @@ def build_from_args(cmdargs):
 
     cmd_config = get_cmd_config(cmdargs)
 
+    # breakpoint()
     if "name" not in cmd_config:
         raise NoNameError()
 
@@ -404,6 +405,9 @@ class ExperimentBuilder:
 
     def __init__(self, storage=None, debug=False) -> None:
         singleton = None
+        log.debug("Using for storage %s", storage)
+
+
         if not isinstance(storage, dict):
             singleton = storage
             storage = None

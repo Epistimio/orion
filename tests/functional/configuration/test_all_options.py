@@ -65,19 +65,30 @@ class ConfigurationTestSuite:
     @contextmanager
     def setup_global_config(self, tmp_path):
         """Setup temporary yaml file for the global configuration"""
-        with OrionState(storage=self.default_storage):
+        with OrionState(storage=self.default_storage) as cfg:
             conf_file = tmp_path / "config.yaml"
+
+            if 'storage' not in self.config:
+                self.config['storage'] = self.default_storage
 
             config_str = yaml.dump(self.config)
             config_str = config_str.replace('${tmp_path}', str(tmp_path))
+            config_str = config_str.replace('${file}', str(cfg.tempfile_path))
 
             conf_file.write_text(config_str)
             conf_files = orion.core.DEF_CONFIG_FILES_PATHS
             orion.core.DEF_CONFIG_FILES_PATHS = [conf_file]
+
             orion.core.config = orion.core.build_config()
+
             try:
                 yield conf_file
             finally:
+                try:
+                    os.remove(orion.core.config.storage.database.host)
+                except:
+                    pass
+
                 orion.core.DEF_CONFIG_FILES_PATHS = conf_files
                 orion.core.config = orion.core.build_config()
 
@@ -205,7 +216,6 @@ class TestStorage(ConfigurationTestSuite):
     def check_global_config(self, tmp_path, monkeypatch):
         """Check that global configuration is set properly"""
         update_singletons()
-
 
         storage_config = copy.deepcopy(self.config["storage"])
         storage_config['database']['host'] = storage_config['database']['host'].replace('${tmp_path}', str(tmp_path))
@@ -512,7 +522,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
         self._compare(
             self.config["experiment"], orion.core.config.to_dict()["experiment"]
         )
-
         command = f"hunt --init-only -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 

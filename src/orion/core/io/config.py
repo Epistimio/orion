@@ -458,6 +458,8 @@ class Configuration:
 
     def reset(self):
         """Reset config to default"""
+        logger.debug("Resetting Config")
+
 
         with _disable_logger():
             for key in self._config:
@@ -468,6 +470,9 @@ class Configuration:
 
     def from_dict(self, config):
         """Set the configuration from a dictionary"""
+
+        logger.debug("Setting config to %s", config)
+        logger.debug("Config was %s", repr(self))
 
         if config is None:
             self.reset()
@@ -485,6 +490,8 @@ class Configuration:
             for key in self._subconfigs:
                 value = config.get(key)
                 self[key].from_dict(value)
+
+        logger.debug("Config is %s", repr(self))
 
     def __repr__(self) -> str:
         confs = []
