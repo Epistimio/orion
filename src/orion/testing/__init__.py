@@ -127,8 +127,6 @@ def generate_benchmark_experiments_trials(
     gen_trials = []
     algo_num = len(benchmark_algorithms)
     for i in range(task_number * algo_num):
-        import copy
-
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
         exp["name"] = "experiment-name-{}".format(i)
@@ -136,12 +134,14 @@ def generate_benchmark_experiments_trials(
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)
-        for j in range(max_trial):
-            trial = copy.deepcopy(trial_config)
-            trial["_id"] = "{}{}".format(i, j)
-            trial["experiment"] = i
-            trials = generate_trials(trial, ["completed"])
-            gen_trials.extend(trials)
+
+        exp_trial_config = copy.deepcopy(trial_config)
+        exp_trial_config["experiment"] = i
+        for j, trial in enumerate(
+            generate_trials(exp_trial_config, ["completed"] * max_trial)
+        ):
+            trial["_id"] = f"{i}_{j}"
+            gen_trials.append(trial)
 
     return gen_exps, gen_trials
 

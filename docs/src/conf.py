@@ -85,7 +85,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -254,6 +254,7 @@ intersphinx_mapping = {
     "plotly": ("https://plotly.com/python-api-reference/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None)
 }
 
 
@@ -276,7 +277,7 @@ extlinks = {
 # Enable nitpicky mode - which ensures that all references in the docs
 # resolve.
 
-ignore_algo_attr = [
+ignore_obj_attr = [
     "configuration",
     "is_done",
     "should_suspend",
@@ -294,6 +295,8 @@ ignore_algo_attr = [
     "orion.benchmark.task.BenchmarkTask.__call__",
     "orion.benchmark.task.base.BenchmarkTask.__call__",
     "AlreadyReleased",
+    "EvolutionStrategyName",
+    "ModelName",
 ]
 
 type_hints = [
@@ -306,9 +309,11 @@ type_hints = [
     "orion.core.worker.primary_algo.AlgoType",
     "orion.algo.hyperband.Owner",
     "nevergrad.parametrization.container.Instrumentation",
+    "EvolutionStrategyName",
+    "ModelName",
 ]
 nitpicky = True
-nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr] + [
+nitpick_ignore = [("py:obj", attr) for attr in ignore_obj_attr] + [
     ("py:class", annotation_str) for annotation_str in type_hints
 ]
 

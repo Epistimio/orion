@@ -6,6 +6,8 @@ from orion.algo.pbt.explore import PerturbExplore, PipelineExplore, ResampleExpl
 from orion.algo.space import Categorical, Dimension
 from orion.core.utils.flatten import flatten
 
+pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
+
 
 class TestPipelineExplore:
     def test_no_explore(self):

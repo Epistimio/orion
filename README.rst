@@ -84,8 +84,8 @@ guide`_.
 Presentations
 =============
 
-- 2021-07-14 - SciPy 2021
-- 2021-05-19 - Dask Summit 2021
+- 2021-07-14 - SciPy 2021 (`Video <https://youtu.be/H1jQBQIbQmA>`__) (`Slides <https://docs.google.com/presentation/d/1Aekt1hKtiT1y7pyvWeRRoVND4cDUYFj53xAzk8Zb8z0/edit?usp=sharing>`__)
+- 2021-05-19 - Dask Summit 2021 (`Video <https://youtu.be/W5oWdRiSSr8>`__) (`Slides <https://docs.google.com/presentation/d/1MBy0gjWNV-8GjtEXVLCThN8JddK7znHSg7puycwkBZ4/edit?usp=sharing>`__)
 - 2021-03-16 - AICamp
   (`Video 
   <https://www.youtube.com/watch?v=QQ69vxF3LTI>`__)
@@ -118,7 +118,7 @@ If you use Oríon for published work, please cite our work using the following b
 
 .. code-block:: bibtex
 
-   @software{xavier_bouthillier_2022_0_2_3,
+   @software{xavier_bouthillier_2022_0_2_4,
      author       = {Xavier Bouthillier and
                      Christos Tsirigotis and
                      François Corneau-Tremblay and
@@ -143,10 +143,10 @@ If you use Oríon for published work, please cite our work using the following b
                      Pascal Lamblin and
                      Christopher Beckham},
      title        = {{Epistimio/orion: Asynchronous Distributed Hyperparameter Optimization}},
-     month        = mar,
+     month        = may,
      year         = 2022,
      publisher    = {Zenodo},
-     version      = {v0.2.3},
+     version      = {v0.2.4},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }

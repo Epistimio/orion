@@ -1,25 +1,18 @@
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
 from __future__ import annotations
 
 from typing import ClassVar
 
 import pytest
-from base import (
-    ExploitStub,
-    ExploreStub,
-    ObjectiveStub,
-    TrialStub,
-    no_shutil_copytree,
-    sample_trials,
-    space,
-)
+from base import ExploitStub, ExploreStub, sample_trials
 
 from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.algo.space import Space
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
+
+pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
 
 
 class TestComputeFidelities:
@@ -309,7 +302,7 @@ class TestPBTSuggest:
 
         # Exploit will return parent_trial, but Explore will return params of child, sampling
         # a duplite, since child is already registered. ExploitStub.should_receive will
-        # test that base_trial is passed as expected to exploit when attempting more attemps
+        # test that base_trial is passed as expected to exploit when attempting more attempts
         # of exploit and explore.
         with pytest.raises(RuntimeError):
             pbt._generate_offspring(base_trial)

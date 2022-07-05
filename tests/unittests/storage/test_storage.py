@@ -523,10 +523,13 @@ class TestStorage:
             trial_dict = cfg.trials[0]
 
             trial1 = storage.get_trial(trial=Trial(**trial_dict))
-            trial2 = storage.get_trial(uid=trial1.id)
+            trial2 = storage.get_trial(uid=trial1.id, experiment_uid=trial1.experiment)
 
             with pytest.raises(MissingArguments):
                 storage.get_trial()
+
+            with pytest.raises(MissingArguments):
+                storage.get_trial(uid=trial1.id)
 
             with pytest.raises(AssertionError):
                 storage.get_trial(trial=trial1, uid="123")
@@ -599,7 +602,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = get_storage().get_trial(cfg.get_trial(1))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -625,7 +628,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = get_storage().get_trial(cfg.get_trial(1))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -655,7 +658,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = get_storage().get_trial(cfg.get_trial(1))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 

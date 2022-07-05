@@ -236,7 +236,13 @@ class EphemeralCollection(object):
     def _get_new_id(self):
         """Return max id + 1"""
         if self._documents:
-            return max(d["_id"] for d in self._documents) + 1
+            # NOTE: Custom ids than are not integers should simply not be accounted for
+            #       when infering what next id should be.
+            ids = [d["_id"] for d in self._documents if isinstance(d["_id"], int)]
+            if not ids:
+                return 0
+
+            return max(ids) + 1
 
         return 1
 

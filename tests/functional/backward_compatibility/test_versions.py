@@ -44,7 +44,7 @@ def get_evc_argument(version):
     Before v0.1.16 EVC was enabled by default. Starting from v0.1.16 it must be enabled with
     --enable-evc.
     """
-    major, minor, patch = list(map(int, version.split(".")))
+    major, minor, patch = list(map(int, version.split(".")[:3]))
     return "--enable-evc" if (major > 0 or minor > 1 or patch > 15) else ""
 
 
@@ -256,6 +256,14 @@ class TestBackwardCompatibility:
 
         experiments = storage.fetch_experiments({})
         assert "version" in experiments[0]
+
+        trials = storage.fetch_trials(uid=experiments[0]["_id"])
+        for trial in trials:
+            assert trial.id_override is not None
+            trial_2 = storage.get_trial(
+                uid=trial.id, experiment_uid=experiments[0]["_id"]
+            )
+            assert trial == trial_2
 
     def test_db_test(self):
         """Verify db test command"""
