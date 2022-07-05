@@ -11,12 +11,12 @@ from pathlib import Path
 import numpy
 import pytest
 
+from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
 from orion.client import create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
-from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
