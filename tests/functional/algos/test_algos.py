@@ -16,6 +16,7 @@ from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
+from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
@@ -112,6 +113,24 @@ algorithm_configs = {
         }
     },
 }
+
+
+def xfail_if_not_installed(value, import_optional):
+    name = next(iter(value.keys()))
+    return pytest.param(
+        value,
+        marks=pytest.mark.xfail(
+            condition=import_optional.failed,
+            reason=f"{name} dependency is requered for these tests",
+            raises=ImportError,
+        ),
+    )
+
+
+algorithm_configs["pb2"] = xfail_if_not_installed(
+    algorithm_configs["pb2"], pb2_import_optional
+)
+
 
 no_fidelity_algorithms = ["random", "tpe", "gridsearch"]
 no_fidelity_algorithm_configs = {

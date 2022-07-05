@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-import nevergrad as ng
 import pytest
 from pytest import FixtureRequest, MarkDecorator
 
@@ -13,6 +12,8 @@ from orion.testing.algo import BaseAlgoTests, TestPhase
 
 if import_optional.failed:
     pytest.skip("skipping Nevergrad tests", allow_module_level=True)
+
+import nevergrad as ng
 
 TEST_MANY_TRIALS = 10
 
