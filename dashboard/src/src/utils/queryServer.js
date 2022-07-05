@@ -17,7 +17,7 @@ function makeRESTCall(path, parameters, resolve, reject) {
     responseType: 'json',
     responseEncoding: 'utf8',
     adapter: adapter,
-    timeout: 600000,
+    timeout: 300000,
   };
   if (Object.keys(parameters).length) config.params = parameters;
   axios(config)
