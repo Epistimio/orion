@@ -460,7 +460,6 @@ class Configuration:
         """Reset config to default"""
         logger.debug("Resetting Config")
 
-
         with _disable_logger():
             for key in self._config:
                 self._config[key].pop("value", None)

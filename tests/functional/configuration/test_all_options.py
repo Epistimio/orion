@@ -6,7 +6,6 @@ import random
 import shutil
 import tempfile
 from contextlib import contextmanager
-from orion.core.io import experiment_builder
 
 import pytest
 import yaml
@@ -17,6 +16,7 @@ import orion.core.cli.hunt
 import orion.core.evc.conflicts
 import orion.core.io.resolve_config
 from orion.client import get_experiment
+from orion.core.io import experiment_builder
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.storage.base import setup_storage
@@ -38,14 +38,17 @@ def with_storage_fork(func):
     def call(*args, **kwargs):
 
         with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+
             storage = setup_storage()
             old_path = storage._db.host
-            storage._db.host = tmp_file.name
+
+            # storage._db.host = tmp_file.name
+            orion.core.config.storage.database.host = tmp_file.name
             shutil.copyfile(old_path, tmp_file.name)
 
             rval = func(*args, **kwargs)
 
-            storage._db.host = old_path
+            orion.core.config.storage.database.host = old_path
 
         return rval
 
@@ -68,12 +71,12 @@ class ConfigurationTestSuite:
         with OrionState(storage=self.default_storage) as cfg:
             conf_file = tmp_path / "config.yaml"
 
-            if 'storage' not in self.config:
-                self.config['storage'] = self.default_storage
+            if "storage" not in self.config:
+                self.config["storage"] = self.default_storage
 
             config_str = yaml.dump(self.config)
-            config_str = config_str.replace('${tmp_path}', str(tmp_path))
-            config_str = config_str.replace('${file}', str(cfg.tempfile_path))
+            config_str = config_str.replace("${tmp_path}", str(tmp_path))
+            config_str = config_str.replace("${file}", str(cfg.tempfile_path))
 
             conf_file.write_text(config_str)
             conf_files = orion.core.DEF_CONFIG_FILES_PATHS
@@ -99,7 +102,7 @@ class ConfigurationTestSuite:
             tmp = {}
             for key, value in self.env_vars.items():
                 if isinstance(value, str):
-                    value = value.replace('${tmp_path}', str(tmp_path))
+                    value = value.replace("${tmp_path}", str(tmp_path))
 
                 tmp[key] = os.environ.pop(key, None)
                 os.environ[key] = str(value)
@@ -127,7 +130,7 @@ class ConfigurationTestSuite:
             conf_file = tmp_path / "local.yaml"
 
             config_str = yaml.dump(self.local)
-            config_str = config_str.replace('${tmp_path}', str(tmp_path))
+            config_str = config_str.replace("${tmp_path}", str(tmp_path))
 
             conf_file.write_text(config_str)
             yield conf_file
@@ -218,18 +221,20 @@ class TestStorage(ConfigurationTestSuite):
         update_singletons()
 
         storage_config = copy.deepcopy(self.config["storage"])
-        storage_config['database']['host'] = storage_config['database']['host'].replace('${tmp_path}', str(tmp_path))
+        storage_config["database"]["host"] = storage_config["database"]["host"].replace(
+            "${tmp_path}", str(tmp_path)
+        )
         assert orion.core.config.storage.to_dict() == storage_config
 
         # Build storage
         storage = setup_storage()
-        assert len(storage.fetch_experiments({'name': 'test'})) == 0
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
         # if hunt worked it should insert its experiment
-        assert len(storage.fetch_experiments({'name': 'test'})) == 1
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
@@ -244,25 +249,29 @@ class TestStorage(ConfigurationTestSuite):
             "database": {
                 "name": self.env_vars["ORION_DB_NAME"],
                 "type": self.env_vars["ORION_DB_TYPE"],
-                "host": self.env_vars["ORION_DB_ADDRESS"].replace('${tmp_path}', str(tmp_path)),
+                "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                    "${tmp_path}", str(tmp_path)
+                ),
                 "port": int(self.env_vars["ORION_DB_PORT"]),
             },
         }
 
         # Build storage
         storage = setup_storage()
-        assert len(storage.fetch_experiments({'name': 'test'})) == 0
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         # Make sure hunt is picking up the right database
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
         # if hunt worked it should insert its experiment
-        assert len(storage.fetch_experiments({'name': 'test'})) == 1
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"].replace('${tmp_path}', str(tmp_path))
+        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"].replace(
+            "${tmp_path}", str(tmp_path)
+        )
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -277,7 +286,9 @@ class TestStorage(ConfigurationTestSuite):
             "database": {
                 "name": self.env_vars["ORION_DB_NAME"],
                 "type": self.env_vars["ORION_DB_TYPE"],
-                "host": self.env_vars["ORION_DB_ADDRESS"].replace('${tmp_path}', str(tmp_path)),
+                "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                    "${tmp_path}", str(tmp_path)
+                ),
                 "port": int(self.env_vars["ORION_DB_PORT"]),
             },
         }
@@ -287,14 +298,14 @@ class TestStorage(ConfigurationTestSuite):
         builder = experiment_builder.ExperimentBuilder(cmd_config["storage"])
         storage = builder.storage
 
-        assert len(storage.fetch_experiments({'name': 'test'})) == 0
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         # Make sure hunt is picking up the right database
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
         # if hunt worked it should insert its experiment
-        assert len(storage.fetch_experiments({'name': 'test'})) == 1
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
@@ -334,18 +345,17 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         """Check that global configuration is set properly"""
         update_singletons()
 
-
         database = copy.deepcopy(self.config["database"])
-        database['host'] = database['host'].replace('${tmp_path}', str(tmp_path))
+        database["host"] = database["host"].replace("${tmp_path}", str(tmp_path))
         assert orion.core.config.database.to_dict() == database
 
         storage = setup_storage()
-        assert len(storage.fetch_experiments({'name': 'test'})) == 0
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        assert len(storage.fetch_experiments({'name': 'test'})) == 1
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
@@ -358,21 +368,25 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         assert orion.core.config.database.to_dict() == {
             "name": self.env_vars["ORION_DB_NAME"],
             "type": self.env_vars["ORION_DB_TYPE"],
-            "host": self.env_vars["ORION_DB_ADDRESS"].replace('${tmp_path}', str(tmp_path)),
+            "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                "${tmp_path}", str(tmp_path)
+            ),
             "port": int(self.env_vars["ORION_DB_PORT"]),
         }
 
         storage = setup_storage()
-        assert len(storage.fetch_experiments({'name': 'test'})) == 0
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        assert len(storage.fetch_experiments({'name': 'test'})) == 1
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"].replace('${tmp_path}', str(tmp_path))
+        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"].replace(
+            "${tmp_path}", str(tmp_path)
+        )
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -385,7 +399,9 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         assert orion.core.config.database.to_dict() == {
             "name": self.env_vars["ORION_DB_NAME"],
             "type": self.env_vars["ORION_DB_TYPE"],
-            "host": self.env_vars["ORION_DB_ADDRESS"].replace('${tmp_path}', str(tmp_path)),
+            "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                "${tmp_path}", str(tmp_path)
+            ),
             "port": int(self.env_vars["ORION_DB_PORT"]),
         }
 
@@ -393,14 +409,14 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         builder = experiment_builder.ExperimentBuilder(cmd_config["storage"])
         storage = builder.storage
 
-        assert len(storage.fetch_experiments({'name': 'test'})) == 0
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         # Make sure hunt is picking up the right database
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
         # if hunt worked it should insert its experiment
-        assert len(storage.fetch_experiments({'name': 'test'})) == 1
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
 
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)

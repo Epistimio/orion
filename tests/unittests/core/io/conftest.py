@@ -20,19 +20,17 @@ class _GenerateConfig:
         self.database_file = None
 
     def __enter__(self):
-        file_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), self.name
-        )
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.name)
 
         self.generated_config = tempfile.NamedTemporaryFile()
         self.database_file = tempfile.NamedTemporaryFile()
 
-        with open(file_path, 'r') as config:
-            new_config = config.read().replace('${FILE}', self.database_file.name)
-            self.generated_config.write(new_config.encode('utf-8'))
+        with open(file_path, "r") as config:
+            new_config = config.read().replace("${FILE}", self.database_file.name)
+            self.generated_config.write(new_config.encode("utf-8"))
             self.generated_config.flush()
 
-        return open(self.generated_config.name, 'r')
+        return open(self.generated_config.name, "r")
 
     def __exit__(self, *args, **kwargs):
         self.database_file.close()

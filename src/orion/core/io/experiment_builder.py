@@ -407,7 +407,6 @@ class ExperimentBuilder:
         singleton = None
         log.debug("Using for storage %s", storage)
 
-
         if not isinstance(storage, dict):
             singleton = storage
             storage = None
