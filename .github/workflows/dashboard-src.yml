@@ -49,7 +49,9 @@ jobs:
       # check files formatting using Carbon's `ci-check` script
       - run: yarn ci-check
       # Run tests
-      - run: yarn test --all --verbose
+      # NB: Tests are running in parallel by default, this may cause backend to receive too many requests in small time
+      # Option --runInBand allows running tests sequentially: https://jestjs.io/docs/cli#--runinband
+      - run: yarn test --all --verbose --runInBand
       # Upload orion backend log.
       - name: Get Orion backend log
         if: always()
