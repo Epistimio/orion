@@ -90,17 +90,17 @@ algorithm_configs = {
         "pb2": {
             "seed": 1,
             "generations": 3,
-            "population_size": 20,
+            "population_size": 30,
             "exploit": {
                 "exploit_configs": [
                     {
-                        "candidate_pool_ratio": 0.4,
+                        "candidate_pool_ratio": 0.5,
                         "min_forking_population": 2,
                         "of_type": "BacktrackExploit",
                         "truncation_quantile": 0.9,
                     },
                     {
-                        "candidate_pool_ratio": 0.4,
+                        "candidate_pool_ratio": 0.5,
                         "min_forking_population": 2,
                         "of_type": "TruncateExploit",
                         "truncation_quantile": 0.8,
