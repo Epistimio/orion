@@ -395,7 +395,7 @@ class TestRegistration:
 
         base_original = format_trials.dict_to_trial({"x": 10}, space=original_space)
         base_transformed = transformed_space.transform(base_original)
-        assert base_transformed.params == {"x": 2.302585092994046}
+        assert base_transformed.params == {"x": numpy.log(10)}
 
         algo = GenealogistAlgo(
             space=transformed_space, base_suggestion=base_transformed
@@ -421,7 +421,7 @@ class TestRegistration:
 
         base_original = format_trials.dict_to_trial({"x": 10}, space=original_space)
         base_transformed = transformed_space.transform(base_original)
-        assert base_transformed.params == {"x": 2.302585092994046}
+        assert base_transformed.params == {"x": numpy.log(10)}
 
         algo = GenealogistAlgo(space=transformed_space, base_suggestion=None)
 
