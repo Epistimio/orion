@@ -122,13 +122,12 @@ class MongoDB(Database):
         )
 
     def __repr__(self) -> str:
-        return "{name}({args})".format(
-            name=type(self).__qualname__,
-            args=", ".join(
-                f"{name}={getattr(self, name)}"
-                for name in ["host", "name", "port", "username", "password", "options"]
-            ),
+        name = type(self).__qualname__
+        args = ", ".join(
+            f"{name}={getattr(self, name)}"
+            for name in ["host", "name", "port", "username", "password", "options"]
         )
+        return f"{name}({args})"
 
     def __getstate__(self):
         state = {}
