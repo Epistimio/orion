@@ -11,10 +11,10 @@ from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
 if import_optional.failed:
     pytest.skip("skipping Ax tests", allow_module_level=True)
-else:
-    import numpy
-    from botorch.test_functions.multi_objective import BraninCurrin
-    from torch import Tensor
+
+import numpy
+from botorch.test_functions.multi_objective import BraninCurrin
+from torch import Tensor
 
 N_INIT = 5
 TOL = 0.1

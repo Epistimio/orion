@@ -21,9 +21,9 @@ if typing.TYPE_CHECKING:
 
 if import_optional.failed:
     pytest.skip("skipping HEBO tests", allow_module_level=True)
-else:
-    from hebo.models.model_factory import model_dict
-    from pymoo.factory import get_algorithm_options
+
+from hebo.models.model_factory import model_dict
+from pymoo.factory import get_algorithm_options
 
 _model_names = sorted(model_dict.keys())
 _es_names = sorted(dict(get_algorithm_options()).keys())
