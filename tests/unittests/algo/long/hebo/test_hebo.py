@@ -11,7 +11,7 @@ from orion.algo.hebo.hebo_algo import (
     HEBO,
     EvolutionStrategyName,
     ModelName,
-    import_guard,
+    import_optional,
     properly_seeded_models,
 )
 from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
@@ -19,7 +19,7 @@ from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 if typing.TYPE_CHECKING:
     from _pytest.fixtures import SubRequest
 
-if import_guard.failed:
+if import_optional.failed:
     pytest.skip("skipping HEBO tests", allow_module_level=True)
 else:
     from hebo.models.model_factory import model_dict

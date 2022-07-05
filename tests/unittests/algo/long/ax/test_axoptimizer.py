@@ -4,12 +4,12 @@ from typing import ClassVar, List
 
 import pytest
 
-from orion.algo.axoptimizer import import_guard
+from orion.algo.axoptimizer import import_optional
 from orion.benchmark.task.base import BenchmarkTask
 from orion.core.utils import backward
 from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
-if import_guard.failed:
+if import_optional.failed:
     pytest.skip("skipping Ax tests", allow_module_level=True)
 else:
     import numpy
