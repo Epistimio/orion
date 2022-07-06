@@ -8,6 +8,7 @@ Provides functions for communicating with `orion.core`.
 from __future__ import annotations
 
 import logging
+from typing import Callable
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.algo.base import BaseAlgorithm
@@ -22,6 +23,7 @@ from orion.core.utils.exceptions import RaceCondition
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 __all__ = [
     "interrupt_trial",
@@ -293,7 +295,13 @@ def get_experiment(name, version=None, mode="r", storage=None):
 
 
 def workon(
-    function, space, name="loop", algorithms=None, max_trials=None, max_broken=None
+    function: Callable,
+    space: dict,
+    name: str = "loop",
+    algorithms: type[BaseAlgorithm] | str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    knowledge_base: KnowledgeBase | None = None,
 ):
     """Optimize a function over a given search space
 
@@ -343,11 +351,15 @@ def workon(
             algorithms=algorithms,
             max_trials=max_trials,
             max_broken=max_broken,
+            knowledge_base=knowledge_base,
         )
 
         producer = Producer(experiment)
-
-        experiment_client = ExperimentClient(experiment, producer)
+        # TODO: Potential bug here, the second argument to ExperimentClient should be a
+        # BaseExecutor, not a Producer!
+        experiment_client = ExperimentClient(
+            experiment, producer, knowledge_base=knowledge_base
+        )
         with experiment_client.tmp_executor("singleexecutor", n_workers=1):
             experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 

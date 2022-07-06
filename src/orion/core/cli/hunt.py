@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Module running the optimization command
@@ -7,7 +6,7 @@ Module running the optimization command
 Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
-
+from __future__ import annotations
 import logging
 
 import orion.core
@@ -24,6 +23,7 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Conducts hyperparameter optimization"
@@ -137,6 +137,7 @@ def workon(
     executor=None,
     executor_configuration=None,
     idle_timeout=None,
+    knowledge_base: KnowledgeBase | None = None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
 
@@ -144,7 +145,7 @@ def workon(
     if max_idle_time is not None and reservation_timeout is None:
         reservation_timeout = max_idle_time
 
-    producer = Producer(experiment)
+    producer = Producer(experiment, knowledge_base=knowledge_base)
     consumer = Consumer(
         experiment,
         user_script_config,

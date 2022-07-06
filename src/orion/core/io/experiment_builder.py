@@ -82,9 +82,11 @@ import inspect
 import logging
 import pprint
 import sys
+from typing import Any, Dict, Type, TypeVar, Union, cast
 from typing_extensions import Literal
 
 import orion.core
+from orion.core.io.config import ConfigurationError
 import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
@@ -193,6 +195,7 @@ def build(
     if len(config["space"]) == 0:
         raise NoConfigurationError("No prior found. Please include at least one.")
 
+    knowledge_base = knowledge_base or config.pop("knowledge_base", None)
     experiment = create_experiment(
         mode="x",
         knowledge_base=knowledge_base,
@@ -366,6 +369,9 @@ def load(name, version=None, mode="r"):
 
 
 Mode = Literal["r", "w", "x"]
+T = TypeVar("T", bound=Type)
+
+Configuration = Union[Type[T], Dict[str, Any]]
 
 
 def create_experiment(
@@ -373,7 +379,7 @@ def create_experiment(
     version: int,
     mode: Mode,
     space: dict | Space,
-    knowledge_base: KnowledgeBase | None = None,
+    knowledge_base: KnowledgeBase | Configuration[KnowledgeBase] | None = None,
     **kwargs,
 ) -> Experiment:
     """Instantiate the experiment and its attribute objects
@@ -404,9 +410,12 @@ def create_experiment(
         Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
-    knowledge_base: AbstractKnowledgeBase, optional
-        Knowledge base, or Knowledge base configuration.
+    knowledge_base: KnowledgeBase or dict, optional
+        Knowledge base, or Knowledge base configuration, or None.
     """
+    if knowledge_base is not None and not isinstance(knowledge_base, KnowledgeBase):
+        knowledge_base = _instantiate_knowledge_base(knowledge_base)
+
     experiment = Experiment(
         name=name, version=version, mode=mode, knowledge_base=knowledge_base
     )
@@ -500,7 +509,7 @@ def _instantiate_adapters(config):
     return BaseAdapter.build(config)
 
 
-def _instantiate_space(config):
+def _instantiate_space(config: Space | dict[str, str | dict[str, str]]) -> Space:
     """Instantiate the space object
 
     Build the Space object if argument is a dictionary, else return the Space object as is.
@@ -515,6 +524,51 @@ def _instantiate_space(config):
         return config
 
     return SpaceBuilder().build(config)
+
+
+KnowledgeBaseT = TypeVar("KnowledgeBaseT", bound=KnowledgeBase)
+
+
+def _instantiate_knowledge_base(
+    type_or_config: type[KnowledgeBaseT] | dict[str, Any]
+) -> KnowledgeBaseT:
+    """Instantiate the Knowledge base.
+
+    Parameters
+    ----------
+    type_or_config:
+        Type of Knowledge base to instantiate or configuration dictionary.
+
+    """
+    if not isinstance(type_or_config, dict):
+        kb_type = type_or_config
+        return kb_type()
+
+    config = type_or_config
+    if len(config) != 1:
+        raise ConfigurationError(
+            f"The configuration for the KB should only have one key (the name of the KB "
+            f"class) and the dict of kwargs. (got {config})"
+        )
+    kb_type_name = list(config.keys())[0]
+    kb_types_with_name = [
+        subclass
+        for subclass in KnowledgeBase.__subclasses__()
+        if subclass.__qualname__ == kb_type_name
+    ]
+    if len(kb_types_with_name) == 0:
+        raise RuntimeError(
+            f"Unable to find a subclass of KnowledgeBase with the given name: {kb_type_name}"
+        )
+    if len(kb_types_with_name) > 1:
+        raise RuntimeError(
+            f"Multiple subclasses of KnowledgeBase with the given name: {kb_type_name}"
+        )
+    kb_type = kb_types_with_name[0]
+    # Note: Type checker incorrectly narrows `kb_type` to `Type[KnowledgeBase]`
+    kb_type = cast(Type[KnowledgeBaseT], kb_type)
+    kb_kwargs = config[kb_type_name]
+    return kb_type(**kb_kwargs)  # type: ignore
 
 
 def _instantiate_algo(
