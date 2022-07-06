@@ -3,11 +3,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import singledispatch
+import inspect
+from typing import Any, overload
 
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start.knowledge_base import ExperimentInfo
+from typing_extensions import TypeGuard
 
 
 class WarmStarteable(BaseAlgorithm, ABC):
@@ -16,7 +19,9 @@ class WarmStarteable(BaseAlgorithm, ABC):
     """
 
     @abstractmethod
-    def warm_start(self, warm_start_trials: dict[ExperimentInfo, list[Trial]]):
+    def warm_start(
+        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+    ) -> None:
         """Use the given trials to warm-start the algorithm.
 
         These experiments and their trials were fetched from some knowledge base, and
@@ -36,8 +41,33 @@ class WarmStarteable(BaseAlgorithm, ABC):
         )
 
 
-@singledispatch
-def is_warmstarteable(algo: BaseAlgorithm | type[BaseAlgorithm]) -> bool:
+@overload
+def is_warmstarteable(algo: type[BaseAlgorithm]) -> TypeGuard[type[WarmStarteable]]:
+    ...
+
+
+@overload
+def is_warmstarteable(algo: BaseAlgorithm) -> TypeGuard[WarmStarteable]:
+    ...
+
+
+@overload
+def is_warmstarteable(
+    algo: AlgoWrapper,
+) -> TypeGuard[WarmStarteable | AlgoWrapper[WarmStarteable]]:
+    ...
+
+
+@overload
+def is_warmstarteable(algo: str) -> bool:
+    ...
+
+
+def is_warmstarteable(
+    algo: BaseAlgorithm | type[BaseAlgorithm] | str | AlgoWrapper,
+) -> TypeGuard[
+    WarmStarteable | AlgoWrapper[WarmStarteable] | type[WarmStarteable]
+] | bool:
     """Returns whether the given algo type or instance supports warm-starting.
 
     Parameters
@@ -50,31 +80,19 @@ def is_warmstarteable(algo: BaseAlgorithm | type[BaseAlgorithm]) -> bool:
     bool
         Whether the input is a warm-starteable algorithm.
     """
+    if isinstance(algo, AlgoWrapper):
+        # NOTE: Not going directly to algo.unwrapped, because the MultiTask wrapper makes the algo
+        # WarmStarteable. Check down the chain of wrappers instead.
+        return isinstance(algo, WarmStarteable) or is_warmstarteable(algo.algorithm)
+    if isinstance(algo, BaseAlgorithm):
+        return isinstance(algo, WarmStarteable)
+    if isinstance(algo, str):
+        # NOTE: I don't think the algorithm should ever be a string, since now we pass the algo class
+        # in create_algo. Adding this here in case it comes in handy at some point.
+        algo_type = algo_factory.get_class(algo)
+        return is_warmstarteable(algo_type)
+    if inspect.isclass(algo):
+        return issubclass(algo, WarmStarteable)
     raise NotImplementedError(
         f"Don't know how to tell if {algo} is a warm-starteable algorithm."
     )
-
-
-@is_warmstarteable.register(BaseAlgorithm)
-def _(algo: BaseAlgorithm) -> bool:
-    return isinstance(algo, WarmStarteable)
-
-
-@is_warmstarteable.register(type)
-def _(algo: type[BaseAlgorithm]) -> bool:
-    return issubclass(algo, WarmStarteable)
-
-
-@is_warmstarteable.register(AlgoWrapper)
-def _(algo: AlgoWrapper) -> bool:
-    # NOTE: Not going directly to algo.unwrapped, because the MultiTask wrapper makes the algo
-    # WarmStarteable. Check down the chain of wrappers instead.
-    return is_warmstarteable(algo) or is_warmstarteable(algo.algorithm)
-
-
-@is_warmstarteable.register(str)
-def _(algo: str) -> bool:
-    # NOTE: I don't think the algorithm should ever be a string, since now we pass the algo class
-    # in create_algo. Adding this here in case it comes in handy at some point.
-    algo_type = algo_factory.get_class(algo)
-    return is_warmstarteable(algo_type)

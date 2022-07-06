@@ -81,7 +81,9 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         # TODO: Do we need to do something smarter here?
         return trial_from_other_experiment in self.space
 
-    def warm_start(self, warm_start_trials: dict[ExperimentInfo, list[Trial]]) -> None:
+    def warm_start(
+        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+    ) -> None:
         """Use the given trials to warm-start the algorithm.
 
         These experiments and their trials were fetched from some knowledge base, and
@@ -92,7 +94,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
 
         Parameters
         ----------
-        warm_start_trials : Dict[ExperimentInfo, List[Trial]]
+        warm_start_trials:
             Dictionary mapping from ExperimentInfo objects (containing the experiment config) to
             the list of Trials associated with that experiment.
         """
@@ -136,17 +138,21 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             logger.info("No new new warm-starting trials detected.")
             return
 
-        new_trials_with_task_ids = {
-            task_id: [self._add_task_id(trial, task_id) for trial in trials]
-            for task_id, trials in new_compatible_trials.items()
-        }
-
+        total_trials = sum(map(len, new_compatible_trials.values()))
+        logger.info(
+            "Algo will observe a total of %s trials from other experiments.",
+            total_trials,
+        )
         with self.algorithm.warm_start_mode():
-            total_new_points = sum(map(len, new_trials_with_task_ids.values()))
-            logger.info(
-                f"About to observe {total_new_points} new warm-starting points!"
-            )
-            self.algorithm.observe(new_trials_with_task_ids)
+            for task_id, trials in new_compatible_trials.items():
+                logger.debug(
+                    "Observing %s new trials from task %s", len(trials), task_id
+                )
+
+                with self.in_task(task_id):
+                    # NOTE: self.observe adds the task ids to the trials (via the base class) that
+                    # calls `self.transform`.
+                    self.observe(trials)
 
     @property
     def n_suggested(self):

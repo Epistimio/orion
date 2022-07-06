@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
 Description of an optimization attempt
@@ -7,14 +6,17 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
+from __future__ import annotations
 import contextlib
 import copy
 import datetime
 import inspect
 import logging
 from dataclasses import dataclass, field
-
+import typing
+from typing import Generator, Generic, TypeVar
 import pandas
+from orion.algo.space import Space
 
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
@@ -24,7 +26,13 @@ from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
 from orion.storage.base import FailedUpdate, get_storage
 
+if typing.TYPE_CHECKING:
+    from orion.algo.base import BaseAlgorithm
+    from orion.core.worker.trial import Trial
+    from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+
 log = logging.getLogger(__name__)
+AlgoT = TypeVar("AlgoT", bound="BaseAlgorithm")
 
 
 @dataclass
@@ -56,7 +64,7 @@ class ExperimentStats:
 
 
 # pylint: disable=too-many-public-methods
-class Experiment:
+class Experiment(Generic[AlgoT]):
     """Represents an entry in database/experiments collection.
 
     Attributes
@@ -124,6 +132,7 @@ class Experiment:
         "space",
         "algorithms",
         "working_dir",
+        "knowledge_base",
         "_id",
         "_storage",
         "_node",
@@ -131,18 +140,21 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
-    def __init__(self, name, version=None, mode="r"):
+    def __init__(
+        self, name, version=None, mode="r", knowledge_base: KnowledgeBase | None = None
+    ):
         self._id = None
         self.name = name
         self.version = version if version else 1
         self._mode = mode
+        self.knowledge_base = knowledge_base
         self._node = None
         self.refers = {}
         self.metadata = {}
         self.max_trials = None
         self.max_broken = None
-        self.space = None
-        self.algorithms = None
+        self.space: Space | None = None
+        self.algorithms: AlgoT | None = None
         self.working_dir = None
 
         self._storage = get_storage()
@@ -244,7 +256,7 @@ class Experiment:
         self._check_if_writable()
         return self._storage.set_trial_status(*args, **kwargs)
 
-    def reserve_trial(self, score_handle=None):
+    def reserve_trial(self, score_handle=None) -> Trial | None:
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
@@ -389,7 +401,9 @@ class Experiment:
         self._storage.register_trial(trial)
 
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, timeout=60, retry_interval=1):
+    def acquire_algorithm_lock(
+        self, timeout=60, retry_interval=1
+    ) -> Generator[AlgoT, None, None]:
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
@@ -556,21 +570,21 @@ class Experiment:
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
-        config = dict()
-        for attrname in self.__slots__:
-            if attrname.startswith("_"):
+        config = {}
+        for attribute in self.__slots__:
+            if attribute.startswith("_"):
                 continue
-            attribute = copy.deepcopy(getattr(self, attrname))
-            config[attrname] = attribute
-            if attrname == "space":
-                config[attrname] = attribute.configuration
-            elif attrname == "algorithms" and not isinstance(attribute, dict):
-                config[attrname] = attribute.configuration
-            elif attrname == "refers" and isinstance(
-                attribute.get("adapter"), BaseAdapter
+            value = getattr(self, attribute)
+            if hasattr(value, "configuration"):
+                config[attribute] = value.configuration
+            elif attribute == "refers" and isinstance(
+                value.get("adapter"), BaseAdapter
             ):
-                config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-
+                value = value.copy()
+                value["adapter"] = value["adapter"].configuration
+                config[attribute] = value
+            else:
+                config[attribute] = value
         if self.id is not None:
             config["_id"] = self.id
 

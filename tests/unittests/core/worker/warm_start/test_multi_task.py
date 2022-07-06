@@ -54,7 +54,6 @@ class DummyWarmStarteableAlgo(Random, WarmStarteable):
         self._warm_start_trials = {}
 
     def warm_start(self, warm_start_trials: dict[ExperimentInfo, list[Trial]]):
-        assert False, f"heyo! {warm_start_trials}"
         self._warm_start_trials = warm_start_trials
 
     def __repr__(self) -> str:
@@ -121,7 +120,7 @@ class TestMultiTaskWrapper:
             trial_with_result = add_result(trial, objective)
             # TODO: Fix outdated format of `experiment.observe` method.
             experiment.observe(trial_with_result, [])
-
+        assert experiment._experiment.knowledge_base is knowledge_base
         algo = experiment.algorithms
         # TODO: Add type hints to the `Experiment` class, and make it generic in terms of the
         # algorithms, so that we could get the `algorithms` to be `Random` here.

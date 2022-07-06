@@ -11,8 +11,11 @@ import logging
 import typing
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.worker.experiment import AlgoT
+from orion.core.worker.warm_start.warm_starteable import is_warmstarteable
 
 if typing.TYPE_CHECKING:
+    from orion.core.worker.experiment import Experiment
     from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 
@@ -28,7 +31,9 @@ class Producer:
 
     """
 
-    def __init__(self, experiment, knowledge_base: KnowledgeBase | None = None):
+    def __init__(
+        self, experiment: Experiment[AlgoT], knowledge_base: KnowledgeBase | None = None
+    ):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -55,6 +60,20 @@ class Producer:
         with self.experiment.acquire_algorithm_lock(
             timeout=timeout, retry_interval=retry_interval
         ) as algorithm:
+            if (
+                self.knowledge_base
+                and not self.warm_started
+                and is_warmstarteable(algorithm)
+            ):
+                similar_trials = self.knowledge_base.get_related_trials(self.experiment)
+                log.debug(
+                    "### Warm Starting with up to %s experiments and a total of %s trials.",
+                    len(similar_trials),
+                    sum(len(trials) for _, trials in similar_trials),
+                )
+                algorithm.warm_start(similar_trials)
+                self.warm_started = True
+
             new_trials = algorithm.suggest(pool_size)
 
             if not new_trials and not algorithm.is_done:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=too-many-lines
 """
 Experiment wrapper client
@@ -6,9 +5,11 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
+from __future__ import annotations
 import inspect
 import logging
 from contextlib import contextmanager
+import typing
 
 import orion.core
 import orion.core.utils.format_trials as format_trials
@@ -25,14 +26,23 @@ from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.executor.base import executor_factory
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+from orion.executor.base import BaseExecutor, executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
+
+if typing.TYPE_CHECKING:
+    from orion.core.worker.experiment import Experiment
 
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer, pool_size, timeout=None):
+def reserve_trial(
+    experiment: Experiment,
+    producer: Producer,
+    pool_size: int,
+    timeout: int | None = None,
+) -> Trial:
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
 
@@ -82,9 +92,15 @@ class ExperimentClient:
         Experiment object serving for interaction with storage
     """
 
-    def __init__(self, experiment, executor=None, heartbeat=None):
+    def __init__(
+        self,
+        experiment: Experiment,
+        executor: BaseExecutor | None = None,
+        heartbeat: int | None = None,
+        knowledge_base: KnowledgeBase | None = None,
+    ):
         self._experiment = experiment
-        self._producer = Producer(experiment)
+        self._producer = Producer(experiment, knowledge_base=knowledge_base)
         self._pacemakers = {}
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat

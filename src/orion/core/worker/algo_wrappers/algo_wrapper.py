@@ -4,11 +4,14 @@ from __future__ import annotations
 import copy
 from contextlib import contextmanager
 from logging import getLogger as get_logger
-from typing import Generic, Sequence, TypeVar
+from typing import TYPE_CHECKING, Generic, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.worker.trial import Trial
+
+if TYPE_CHECKING:
+    from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 
 logger = get_logger(__name__)
 
@@ -91,6 +94,18 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
 
     def should_suspend(self, trial: Trial) -> bool:
         return self.algorithm.should_suspend(trial)
+
+    def warm_start(
+        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+    ) -> None:
+        from orion.core.worker.warm_start.warm_starteable import is_warmstarteable
+
+        if not is_warmstarteable(self.algorithm):
+            raise RuntimeError(
+                f"The wrapped algorithm ({self.algorithm}) does not support warm starting with "
+                f"trials from prior experiments."
+            )
+        self.algorithm.warm_start(warm_start_trials)
 
     @contextmanager
     def warm_start_mode(self):

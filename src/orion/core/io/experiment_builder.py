@@ -82,6 +82,7 @@ import inspect
 import logging
 import pprint
 import sys
+from typing_extensions import Literal
 
 import orion.core
 import orion.core.utils.backward as backward
@@ -113,7 +114,13 @@ log = logging.getLogger(__name__)
 ##
 
 
-def build(name, version=None, branching=None, knowledge_base=None, **config):
+def build(
+    name: str,
+    version: int | None = None,
+    branching: dict | None = None,
+    knowledge_base: KnowledgeBase | None = None,
+    **config,
+):
     """Build an experiment object
 
     If new, ``space`` argument must be provided, else all arguments are fetched from the database
@@ -358,7 +365,17 @@ def load(name, version=None, mode="r"):
     return create_experiment(mode=mode, **db_config)
 
 
-def create_experiment(name, version, mode, space, **kwargs):
+Mode = Literal["r", "w", "x"]
+
+
+def create_experiment(
+    name: str,
+    version: int,
+    mode: Mode,
+    space: dict | Space,
+    knowledge_base: KnowledgeBase | None = None,
+    **kwargs,
+) -> Experiment:
     """Instantiate the experiment and its attribute objects
 
     All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
@@ -390,7 +407,9 @@ def create_experiment(name, version, mode, space, **kwargs):
     knowledge_base: AbstractKnowledgeBase, optional
         Knowledge base, or Knowledge base configuration.
     """
-    experiment = Experiment(name=name, version=version, mode=mode)
+    experiment = Experiment(
+        name=name, version=version, mode=mode, knowledge_base=knowledge_base
+    )
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
     experiment.max_trials = kwargs.get(
         "max_trials", orion.core.config.experiment.max_trials

@@ -1,11 +1,12 @@
 """ Interface for the Knowledge Base, which is not currently in the Orion codebase.
 """
 from __future__ import annotations
+import inspect
 
 import typing
 from abc import ABC, abstractmethod
 from logging import getLogger
-from typing import Container
+from typing import Any, Container
 
 if typing.TYPE_CHECKING:
     from orion.client import ExperimentClient
@@ -64,6 +65,21 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
         experiment : Union[Experiment, ExperimentClient]
             Experiment or experiment client to add to the KB.
         """
+
+    @property
+    def configuration(self) -> dict[str, Any]:
+        """Returns the configuration of the knowledge base.
+
+        By default, returns a dictionary containing the attributes of `self` which are also
+        constructor arguments.
+        """
+        init_signature = inspect.signature(type(self).__init__)
+        init_arguments_that_are_attributes = {
+            name: getattr(self, name)
+            for name in init_signature.parameters
+            if name != "self" and hasattr(self, name)
+        }
+        return {type(self).__qualname__: init_arguments_that_are_attributes}
 
     # NOTE: Not making this an abstract method, since we might need to adapt this a bit.
     # @abstractmethod

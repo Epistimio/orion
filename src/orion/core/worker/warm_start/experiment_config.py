@@ -120,6 +120,14 @@ class ExperimentInfo(Config):
     working_dir: str
     """ Working directory. """
 
+    knowledge_base: Optional[Dict[str, Any]]
+    """ Configuration of the knowledge base.
+
+    TODO: Still a bit unsure about what this should contain. For instance, should it contain the
+    configuration of all the experiments in the KB? or of the Storage objects in the KB? Or
+    something else?
+    """
+
     # _id: int
 
     # IDEA: Store a reference to the Storage object associated with the experiment in

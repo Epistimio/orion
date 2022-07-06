@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from logging import getLogger as get_logger
 from typing import TypeVar
+import typing
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
@@ -17,7 +18,8 @@ from orion.core.worker.transformer import TransformedSpace, build_required_space
 from orion.core.worker.trial import Trial
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
-
+if typing.TYPE_CHECKING:
+    from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 logger = get_logger(__name__)
 
 
@@ -77,6 +79,16 @@ class SpaceTransform(TransformWrapper[AlgoType]):
 
     def reverse_transform(self, trial: Trial) -> Trial:
         return self.transformed_space.reverse(trial)
+
+    def warm_start(
+        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+    ) -> None:
+        super().warm_start(
+            [
+                (experiment_info, [self.transform(trial) for trial in trials])
+                for experiment_info, trials in warm_start_trials
+            ]
+        )
 
     def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
         space = space or self.space

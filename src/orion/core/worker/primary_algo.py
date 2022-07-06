@@ -86,6 +86,10 @@ def create_algo(
     -------
         An AlgoWrapper around the algorithm of type `algo_type`.
     """
+    if not (inspect.isclass(algo_type) and issubclass(algo_type, BaseAlgorithm)):
+        raise RuntimeError(
+            f"algo_type must be a type of algorithm (a subclass of BaseAlgorithm), not {algo_type}"
+        )
     spaces = [space]
     # Create the spaces for each wrapper, from the top down.
     if knowledge_base and not is_warmstarteable(algo_type):
@@ -94,11 +98,6 @@ def create_algo(
 
     space = InsistSuggest.transform_space(space)
     spaces.append(space)
-
-    if not (inspect.isclass(algo_type) and issubclass(algo_type, BaseAlgorithm)):
-        raise RuntimeError(
-            f"algo_type must be a type of algorithm (a subclass of BaseAlgorithm), not {algo_type}"
-        )
 
     space = SpaceTransform.transform_space(space, algo_type=algo_type)
     spaces.append(space)

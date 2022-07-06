@@ -253,7 +253,9 @@ def build_experiment(
                 "code repository."
             ) from e
 
-    return ExperimentClient(experiment, executor, heartbeat)
+    return ExperimentClient(
+        experiment, executor, heartbeat, knowledge_base=knowledge_base
+    )
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
