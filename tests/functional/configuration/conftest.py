@@ -1,6 +1,6 @@
 """Common fixtures and utils for configuration tests."""
 from orion.algo.base import BaseAlgorithm
-from orion.algo.parallel_strategy import ParallelStrategy, strategy_factory
+from orion.algo.parallel_strategy import ParallelStrategy
 
 
 def __init__(self, *args, **params):
@@ -11,7 +11,6 @@ def __init__(self, *args, **params):
 
 def stub(self, *args, **kwargs):
     """Just a stub..."""
-    pass
 
 
 def configuration(self):

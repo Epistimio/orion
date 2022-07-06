@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.Benchmark`."""
 
 import plotly
@@ -10,7 +9,6 @@ from orion.benchmark import Benchmark, Study
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client.experiment import ExperimentClient
-from orion.core.worker.experiment import Experiment
 from orion.testing import OrionState, create_study_experiments
 
 

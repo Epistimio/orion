@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=protected-access
 """
 Experiment node for EVC
@@ -194,7 +193,7 @@ class ExperimentNode(TreeNode):
 
         adapt_trials(children_trials)
 
-        return sum([node.item["trials"] for node in children_trials.root], [])
+        return sum((node.item["trials"] for node in children_trials.root), [])
 
 
 def _adapt_parent_trials(node, parent_trials_node, ids):
@@ -206,13 +205,10 @@ def _adapt_parent_trials(node, parent_trials_node, ids):
 
     """
     # Ids from children are passed to prioritized them if they are also present in parent nodes.
-    node_ids = (
-        set(
-            trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
-            for trial in node.item["trials"]
-        )
-        | ids
-    )
+    node_ids = {
+        trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+        for trial in node.item["trials"]
+    } | ids
     if parent_trials_node is not None:
         adapter = node.item["experiment"].refers["adapter"]
         for parent in parent_trials_node.root:
@@ -239,10 +235,10 @@ def _adapt_children_trials(node, children_trials_nodes):
         To call with node.map(fct, node.children) to connect with children
 
     """
-    ids = set(
+    ids = {
         trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
         for trial in node.item["trials"]
-    )
+    }
 
     for child in children_trials_nodes:
         adapter = child.item["experiment"].refers["adapter"]

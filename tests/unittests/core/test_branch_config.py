@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.experiment_branch_builder`."""
 
 import copy
@@ -249,7 +248,7 @@ def conflicts(
     return conflicts
 
 
-class TestConflictDetection(object):
+class TestConflictDetection:
     """Test detection of conflicts between two configurations"""
 
     def test_no_conflicts(self, parent_config, child_config):
@@ -397,7 +396,7 @@ class TestConflictDetection(object):
         assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
 
 
-class TestResolutions(object):
+class TestResolutions:
     """Test resolution of conflicts"""
 
     def test_add_single_hit(self, parent_config, new_config_with_w):
@@ -731,7 +730,7 @@ class TestResolutions(object):
         assert len(conflicts.get_resolved()) == 9
 
 
-class TestResolutionsWithMarkers(object):
+class TestResolutionsWithMarkers:
     """Test resolution of conflicts with markers"""
 
     def test_add_new(self, parent_config, new_config_with_w):
@@ -1086,7 +1085,7 @@ class TestResolutionsWithMarkers(object):
         assert conflict.resolution.type == change_type
 
 
-class TestAdapters(object):
+class TestAdapters:
     """Test creation of adapters"""
 
     def test_adapter_add_new(self, parent_config, cl_config):
@@ -1157,7 +1156,7 @@ class TestAdapters(object):
         assert isinstance(adapters[1], evc.adapters.DimensionPriorChange)
 
 
-class TestResolutionsConfig(object):
+class TestResolutionsConfig:
     """Test auto-resolution with specific types from orion.core.config.evc"""
 
     def test_cli_change(self, parent_config, changed_cli_config):

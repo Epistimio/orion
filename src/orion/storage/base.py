@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Generic Storage Protocol
 ========================
@@ -22,8 +21,6 @@ raises more granular error messages.
 """
 import contextlib
 import copy
-import functools
-import inspect
 import logging
 
 import orion.core
@@ -112,19 +109,13 @@ def get_trial_uid_and_exp(trial=None, uid=None, experiment_uid=None):
 class FailedUpdate(Exception):
     """Exception raised when we are unable to update a trial' status"""
 
-    pass
-
 
 class MissingArguments(Exception):
     """Raised when calling a function without the minimal set of parameters"""
 
-    pass
-
 
 class LockAcquisitionTimeout(Exception):
     """Raised when the lock acquisition timeout (not lock is granted)."""
-
-    pass
 
 
 class LockedAlgorithmState:
@@ -511,7 +502,7 @@ class BaseStorageProtocol:
         Returns
         -------
         ``orion.storage.base.LockedAlgorithmState``
-            The locked state of the algoithm. Note that the lock is not acquired by the process
+            The locked state of the algorithm. Note that the lock is not acquired by the process
             calling ``get_algorithm_lock_info`` and the value of LockedAlgorithmState.locked
             may not be valid if another process is running and could acquire the lock concurrently.
         """
@@ -599,7 +590,7 @@ def setup_storage(storage=None, debug=False):
         Configuration for the storage backend. If not defined, global configuration
         is used.
     debug: bool, optional
-        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        If using in debug mode, the storage config is overridden with legacy:EphemeralDB.
         Defaults to False.
 
     """
@@ -633,7 +624,7 @@ def setup_storage(storage=None, debug=False):
 
 
 # pylint: disable=too-few-public-methods
-class ReadOnlyStorageProtocol(object):
+class ReadOnlyStorageProtocol:
     """Read-only interface from a storage protocol.
 
     .. seealso::

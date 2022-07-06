@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Configuration parsing and resolving
 ===================================
@@ -275,7 +274,7 @@ def fetch_metadata(user=None, user_args=None, user_script_config=None):
     if user_args is None:
         user_args = []
 
-    # Trailing white space are catched by argparse as an empty argument
+    # Trailing white space are caught by argparse as an empty argument
     if len(user_args) == 1 and user_args[0] == "":
         user_args = []
 

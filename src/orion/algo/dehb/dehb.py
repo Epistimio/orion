@@ -7,15 +7,15 @@ Module for the wrapper around DEHB: https://github.com/automl/DEHB.
 from __future__ import annotations
 
 import logging
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from copy import deepcopy
-from typing import Any, ClassVar, NamedTuple
+from typing import ClassVar, NamedTuple
 
 import numpy
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.dehb.brackets import SHBracketManager
-from orion.algo.space import Dimension, Fidelity, Space
+from orion.algo.space import Fidelity, Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
 
@@ -38,8 +38,6 @@ logger = logging.getLogger(__name__)
 
 class UnsupportedConfiguration(Exception):
     """Raised when an unsupported configuration is sent"""
-
-    pass
 
 
 SPACE_ERROR = """
@@ -76,7 +74,6 @@ class _CustomDEHBImpl(DEHBImpl):
 
     def f_objective(self, *args, **kwargs) -> None:
         """Not needed for Orion, the objective is called by the worker"""
-        pass
 
     def _start_new_bracket(self) -> SHBracketManager:
         """Starts a new bracket based on Hyperband"""
@@ -203,7 +200,7 @@ class _CustomDEHBImpl(DEHBImpl):
 class DEHB(BaseAlgorithm):
     """Differential Evolution with HyperBand
 
-    This class is a wrapper around the librairy DEHB:
+    This class is a wrapper around the library DEHB:
     https://github.com/automl/DEHB.
 
     For more information on the algorithm,

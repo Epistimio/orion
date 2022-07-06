@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Benchmark definition
 ======================
@@ -159,7 +158,7 @@ class Benchmark:
                 experiment_table.append(exp_column)
 
         if not silent:
-            print("Total Experiments: {}".format(len(experiment_table)))
+            print(f"Total Experiments: {len(experiment_table)}")
             self._pretty_table(experiment_table)
 
         return experiment_table
@@ -415,7 +414,7 @@ class Study:
         """Represent the object as a string."""
         algorithms_list = [algorithm.name for algorithm in self.algorithms]
 
-        return "Study(assessment=%s, task=%s, algorithms=[%s])" % (
+        return "Study(assessment={}, task={}, algorithms=[{}])".format(
             self.assess_name,
             self.task_name,
             ",".join(algorithms_list),

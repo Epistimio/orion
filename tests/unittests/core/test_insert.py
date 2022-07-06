@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform unit-test on functions user for insert cli."""
 import numbers
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parse and generate user script's configuration
 ==============================================
@@ -60,7 +59,6 @@ class BaseConverter(ABC):
 
     def set_state_dict(self, state):
         """Reset the converter based on previous state"""
-        pass
 
     @abstractmethod
     def parse(self, filepath):
@@ -72,12 +70,10 @@ class BaseConverter(ABC):
            Full path to the original user script's configuration.
 
         """
-        pass
 
     @abstractmethod
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        pass
 
 
 class YAMLConverter(BaseConverter):
@@ -125,7 +121,7 @@ class JSONConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath, "r", encoding="utf8") as f:
+        with open(filepath, encoding="utf8") as f:
             return self.json.load(f)
 
     def generate(self, filepath, data):
@@ -189,7 +185,7 @@ class GenericConverter(BaseConverter):
         r"""Read dictionary out of the configuration file.
 
         Create a template for Python 3 string format and save it as this
-        object's state, by substituing '{\1}' wherever the pattern
+        object's state, by substituting '{\1}' wherever the pattern
         was matched. By default, the first matched group (\1) corresponds
         with a dimension's namespace.
 
@@ -201,7 +197,7 @@ class GenericConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath, "r", encoding="utf8") as f:
+        with open(filepath, encoding="utf8") as f:
             self.template = f.read()
 
         # Search for Oríon semantic pattern

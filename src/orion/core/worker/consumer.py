@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Evaluate objective on a set of parameters
 =========================================
@@ -34,7 +33,7 @@ class ExecutionError(Exception):
         self.return_code = return_code
 
 
-class Consumer(object):
+class Consumer:
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
     It uses an `Experiment` object to push an evaluated trial, if results are
@@ -129,7 +128,7 @@ class Consumer(object):
         return results
 
     def retrieve_results(self, results_file):
-        """Retrive the results from the file"""
+        """Retrieve the results from the file"""
         try:
             results = JSONConverter().parse(results_file.name)
         except json.decoder.JSONDecodeError as exc:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Routines for manual interaction with database
 ===============================================

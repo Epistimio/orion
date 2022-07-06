@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
 import hashlib
 import logging
 import os
 import shutil
-import socket
 
 import git
 import pytest
@@ -65,7 +63,7 @@ def test_fetch_metadata_non_executable_users_script():
 
 
 def test_fetch_metadata_python_users_script(script_path):
-    """Verify user script is correctly infered if called with python"""
+    """Verify user script is correctly inferred if called with python"""
     metadata = resolve_config.fetch_metadata(
         user_args=["python", script_path, "some", "args"]
     )
@@ -207,7 +205,7 @@ def test_fetch_config_no_hit():
 
 
 def test_fetch_config(config_file):
-    """Verify fetch_config returns valid dictionnary"""
+    """Verify fetch_config returns valid dictionary"""
     config = resolve_config.fetch_config({"config": config_file})
 
     assert config.pop("storage") == {
@@ -660,7 +658,7 @@ def test_infer_versioning_metadata_on_clean_repo(repo):
     assert not vcs["is_dirty"]
     assert vcs["active_branch"] == "master"
     # the diff should be empty so the diff_sha should be equal to the diff sha of an empty string
-    assert vcs["diff_sha"] == hashlib.sha256("".encode("utf-8")).hexdigest()
+    assert vcs["diff_sha"] == hashlib.sha256(b"").hexdigest()
 
 
 def test_infer_versioning_metadata_on_dirty_repo(repo):
@@ -679,13 +677,13 @@ def test_infer_versioning_metadata_on_dirty_repo(repo):
     vcs = resolve_config.infer_versioning_metadata(".git")
     assert vcs["is_dirty"]
     assert vcs["active_branch"] == "feature"
-    assert vcs["diff_sha"] != hashlib.sha256("".encode("utf-8")).hexdigest()
+    assert vcs["diff_sha"] != hashlib.sha256(b"").hexdigest()
     repo.git.add("README.md")
     commit = repo.index.commit("Added dummy_file")
     vcs = resolve_config.infer_versioning_metadata(".git")
     assert not vcs["is_dirty"]
     assert vcs["HEAD_sha"] == commit.hexsha
-    assert vcs["diff_sha"] == hashlib.sha256("".encode("utf-8")).hexdigest()
+    assert vcs["diff_sha"] == hashlib.sha256(b"").hexdigest()
 
 
 def test_fetch_user_repo_on_non_repo(caplog):
@@ -694,7 +692,7 @@ def test_fetch_user_repo_on_non_repo(caplog):
         resolve_config.fetch_user_repo(".")
     messages = [rec.message for rec in caplog.records]
     assert len(messages) == 1
-    assert "Script {} is not in a git repository".format(os.getcwd()) in messages[0]
+    assert f"Script {os.getcwd()} is not in a git repository" in messages[0]
 
 
 def test_infer_versioning_metadata_on_detached_head(repo):

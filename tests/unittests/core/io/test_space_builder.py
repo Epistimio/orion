@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.space_builder`."""
 import pytest
 from scipy.stats import distributions as dists
@@ -20,7 +19,7 @@ def spacebuilder():
     return SpaceBuilder()
 
 
-class TestDimensionBuilder(object):
+class TestDimensionBuilder:
     """Ways of Dimensions builder."""
 
     def test_build_loguniform(self, dimbuilder):
@@ -200,7 +199,7 @@ class TestDimensionBuilder(object):
         assert "form for prior" in str(exc.value)
 
 
-class TestSpaceBuilder(object):
+class TestSpaceBuilder:
     """Check whether space definition from various input format is successful."""
 
     def test_configuration_rebuild(self, spacebuilder):

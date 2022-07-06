@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Base Search Algorithm
 =====================
@@ -16,15 +15,12 @@ Examples
 """
 from __future__ import annotations
 
-import copy
-import hashlib
 import inspect
 import logging
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 from orion.algo.registry import Registry
-from orion.algo.space import Fidelity
-from orion.core.utils import GenericFactory, format_trials
+from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -140,7 +136,6 @@ class BaseAlgorithm:
 
         .. note:: This methods does nothing if the algorithm is deterministic.
         """
-        pass
 
     @property
     def state_dict(self):
@@ -213,7 +208,6 @@ class BaseAlgorithm:
         this method. This is important for the algorithm to be able to keep track of the trials it
         has suggested/observed, and for the auto-generated unit-tests to pass.
         """
-        pass
 
     def observe(self, trials):
         """Observe the `results` of the evaluation of the `trials` in the
@@ -325,19 +319,19 @@ class BaseAlgorithm:
             return False
 
         fidelity_index = self.fidelity_index
-
-        def _is_completed(trial: Trial) -> bool:
-            return trial.status == "completed"
+        max_fidelity_value = None
 
         # When a fidelity dimension is present, we only count trials that have the maximum value.
         if fidelity_index is not None:
             _, max_fidelity_value = self.space[fidelity_index].interval()
 
-            def _is_completed(trial: Trial) -> bool:
-                return (
-                    trial.status == "completed"
-                    and trial.params[fidelity_index] >= max_fidelity_value
-                )
+        def _is_completed(trial: Trial) -> bool:
+            if fidelity_index is None:
+                return trial.status == "completed"
+            return (
+                trial.status == "completed"
+                and trial.params[fidelity_index] >= max_fidelity_value
+            )
 
         return sum(map(_is_completed, self.registry)) >= max_trials
 
@@ -354,7 +348,7 @@ class BaseAlgorithm:
 
         Returns
         -------
-        A subjective measure of expected perfomance.
+        A subjective measure of expected performance.
 
         """
         return 0

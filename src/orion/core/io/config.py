@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=redefined-builtin
 """
 Configuration object
@@ -43,10 +42,10 @@ class Configuration:
     """Configuration object
 
     Provides default values configurable at different levels. The configuration object can have
-    global default values, which may be overriden by user with yaml configuration files, environment
-    variables or by setting directly the values in the configuration object. In order, direct
-    definition overrides, environment variables, which overrides yaml configuration, which overrides
-    default values in configuration object definition.
+    global default values, which may be overridden by user with yaml configuration files,
+    environment variables or by setting directly the values in the configuration object. In order,
+    direct definition overrides, environment variables, which overrides yaml configuration, which
+    overrides default values in configuration object definition.
 
     Examples
     --------
@@ -94,7 +93,7 @@ class Configuration:
             If some option in the yaml file does not exist in the config
 
         """
-        with open(path, "r", encoding="utf8") as f:
+        with open(path, encoding="utf8") as f:
             cfg = yaml.safe_load(f)
             if cfg is None:
                 return
@@ -183,7 +182,7 @@ class Configuration:
         key: str
             The key or namespace to set the value of the configuration.
             If the configuration has subconfiguration, the key may be
-            hierarchical with each level seperated by dots.
+            hierarchical with each level separated by dots.
             Ex: 'first.second.third'
         value: object or Configuration
             A general object to set an option or a configuration object to set
@@ -280,7 +279,7 @@ class Configuration:
         key: str
             The key or namespace to set the value of the configuration.
             If the configuration has subconfiguration, the key may be
-            hierarchical with each levels seperated by dots.
+            hierarchical with each levels separated by dots.
             Ex: 'first.second.third'
         value: object
             A general object to set an option.
@@ -315,7 +314,7 @@ class Configuration:
         key: str
             The key or namespace to set the value of the configuration.
             If the configuration has subconfiguration, the key may be
-            hierarchical with each levels seperated by dots.
+            hierarchical with each levels separated by dots.
             Ex: 'first.second.third'
 
         """
@@ -371,7 +370,7 @@ class Configuration:
             `alternative` to provide a different name then the key. This is useful if the key
             is in a subconfiguration and we want the deprecation error message to include the full
             path. This will add (DEPRECATED) at the beginning of the help message.
-        help : str, optionial
+        help : str, optional
             Documentation for the option. Can be reused to build documentation
             or to build parsers with help messages.
             Default help message is 'Undocumented'.

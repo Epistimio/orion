@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Web application endpoint
 ========================
@@ -56,7 +55,6 @@ class GunicornApp(BaseApplication):
 
     def init(self, parser, opts, args):
         """Pre-run initialization"""
-        pass
 
     def load_config(self):
         """Load the gunicorn config"""

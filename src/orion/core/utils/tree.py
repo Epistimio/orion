@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tree data structure
 ===================
@@ -106,14 +105,14 @@ class DepthFirstTraversal(Iterable[NodeType]):
 class TreeNode(Generic[T], Iterable[T]):
     r"""Tree node data structure
 
-    Nodes have an attribute item to carry arbitrary information. A node may only have one parent and
-    can have as many children as desired.
+    Nodes have an attribute item to carry arbitrary information. A node may only have one parent
+    and can have as many children as desired.
 
-    Parents can be set at initialiation or via `node.set_parent`. Setting a parent automatically set
-    the current node as the child of the parent.
+    Parents can be set at initialization or via `node.set_parent`. Setting a parent automatically
+    set the current node as the child of the parent.
 
-    Children can be set at initialiation or via `node.add_children`. Setting children automatically
-    set their parent as the current node.
+    Children can be set at initialization or via `node.add_children`. Setting children
+    automatically set their parent as the current node.
 
     Tree of nodes are iterable, by default with preorder traversal.
 
@@ -128,7 +127,7 @@ class TreeNode(Generic[T], Iterable[T]):
     parent: None or instance of `orion.core.utils.tree.TreeNode`
         The parent of the current node, None if the current node is the root.
     children: None or list of instances of `orion.core.utils.tree.TreeNode`
-        The children of the curent node.
+        The children of the current node.
     root: instance of `orion.core.utils.tree.TreeNode`
         The top node of the current tree. The root node returns itself.
 
@@ -290,7 +289,7 @@ class TreeNode(Generic[T], Iterable[T]):
                 raise TypeError(f"Cannot add {child} to children")
 
             if child not in self._children:
-                # TreeNode.set_parent uses add_children so using it here could cause an infinit
+                # TreeNode.set_parent uses add_children so using it here could cause an infinite
                 # recursion. add_children() gets the dirty job done.
                 child.drop_parent()
                 # pylint: disable=protected-access
@@ -345,7 +344,7 @@ class TreeNode(Generic[T], Iterable[T]):
 
         nodes = self.map(has_depth, self.children)
 
-        return sum([node.item for node in nodes], [])
+        return sum((node.item for node in nodes), [])
 
     # NOTE: Would be nice to type-annotate this method with overloads, but it's really tough.
 

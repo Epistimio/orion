@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform functional tests for the parsing of the basic arguments groups."""
 import argparse
 import os
-
-import pytest
 
 import orion.core.cli.base as cli
 

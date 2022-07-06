@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Mocks Oríon's runtime
 =====================
@@ -33,7 +32,7 @@ class BaseOrionState:
     Parameters
     ----------
     benchmarks: List, optional
-       List of benchmarks ot insert into the database
+       List of benchmarks to insert into the database
     experiments: list, optional
         List of experiments to insert into the database
     trials: list, optional
@@ -213,7 +212,7 @@ class LegacyOrionState(BaseOrionState):
     """See :func:`~orion.testing.state.BaseOrionState`"""
 
     def __init__(self, *args, **kwargs):
-        super(LegacyOrionState, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.initialized = False
 
     @property

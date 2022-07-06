@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Pickled Database
 ================
@@ -35,7 +34,7 @@ This is likely due to one or many of the following scenarios:
 
 2. The database is growing large with thousands of trials and many experiments.
    If so, you can use a different PickleDB (different file, that is, different `host`)
-   for each experiment seperately to alleviate this issue.
+   for each experiment separately to alleviate this issue.
 
 3. The filesystem is slow. Parallel filesystems on HPC often suffer from
    large pool of users generating frequent I/O. In this case try using a separate
@@ -119,11 +118,9 @@ class PickledDB(Database):
 
     def initiate_connection(self):
         """Do nothing"""
-        pass
 
     def close_connection(self):
         """Do nothing"""
-        pass
 
     def ensure_index(self, collection_name, keys, unique=False):
         """Create given indexes if they do not already exist in database.

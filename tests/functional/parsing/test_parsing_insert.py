@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform functional tests for the parsing of the different commands."""
 import argparse
 import os
-
-import pytest
 
 from orion.core.cli import insert
 

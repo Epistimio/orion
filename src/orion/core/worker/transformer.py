@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 """
 Perform transformations on Dimensions
@@ -177,7 +176,7 @@ def build_required_space(
     return space
 
 
-class Transformer(object, metaclass=ABCMeta):
+class Transformer(metaclass=ABCMeta):
     """Define an (injective) function and its inverse. Base transformation class.
 
     Attributes
@@ -197,12 +196,10 @@ class Transformer(object, metaclass=ABCMeta):
     @abstractmethod
     def transform(self, point):
         """Transform a point from domain dimension to the target dimension."""
-        pass
 
     @abstractmethod
     def reverse(self, transformed_point, index=None):
         """Reverse transform a point from target dimension to the domain dimension."""
-        pass
 
     def infer_target_shape(self, shape):
         """Return the shape of the dimension after transformation."""
@@ -313,7 +310,7 @@ class Compose(Transformer):
 
     @property
     def target_type(self):
-        """Infer type of the tranformation target."""
+        """Infer type of the transformation target."""
         type_before = self.composition.target_type
         type_after = self.apply.target_type
         return type_after if type_after else type_before
@@ -593,7 +590,7 @@ class View(Transformer):
         )
 
 
-class TransformedDimension(object):
+class TransformedDimension:
     """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality,
     while transform automatically and appropriately an underlying
     :class:`orion.algo.space.Dimension` object according to a `Transformer` object.

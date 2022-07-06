@@ -2,13 +2,10 @@
 Script to turn the database ``examples/plotting/database.pkl`` into a clean
 version ``examples/base_db.pkl`` for the examples.
 """
-import pprint
 import shutil
 
-from orion.client import get_experiment
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.storage.base import get_storage, setup_storage
-
 
 shutil.copy("./examples/plotting/database.pkl", "./examples/base_db.pkl")
 

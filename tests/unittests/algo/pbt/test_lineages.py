@@ -9,7 +9,6 @@ from base import (
     build_full_tree,
     build_population,
     compare_generations,
-    no_shutil_copytree,
 )
 
 from orion.algo.pbt.pbt import LineageNode, Lineages

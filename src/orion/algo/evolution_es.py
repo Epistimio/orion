@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The Evolved Transformer and large-scale evolution of image classifiers
 ======================================================================
@@ -15,7 +14,7 @@ from typing import Callable, ClassVar, Sequence
 
 import numpy as np
 
-from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket, RungDict
+from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket
 from orion.algo.space import Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial

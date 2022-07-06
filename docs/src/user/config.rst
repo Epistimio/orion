@@ -56,7 +56,7 @@ However, if ``experiment.max_trials`` is set to 10 in local configuration file
 (the file passed with ``--config`` to the hunt command) or with commandline argument
 ``--exp-max-trials``, then the experiments ``max_trials`` will be updated to 10.
 This make it possible to resume experiments without specifying the whole configuration,
-because experiment configuration from database is reused, but it also makes it possble
+because experiment configuration from database is reused, but it also makes it possible
 to create a new experiment based on a previous one by simply specifying what to change.
 
 **5. Local Configuration**
@@ -707,6 +707,6 @@ orion_version_change
 :Default: False
 :Env var: ORION_EVC_ORION_VERSION_CHANGE
 :Description:
-    If ``True``, set orion version change as resolved if branching event occured.
+    If ``True``, set orion version change as resolved if branching event occurred.
     Child and parent experiment have access to all trials from each other
     when the only difference between them is the orion version used during execution.

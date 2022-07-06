@@ -1,17 +1,13 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.storage`."""
 import copy
-import json
 import logging
 import os
-import tempfile
 
 import pytest
 
 from orion.core.io.database import database_factory
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.exceptions import MissingResultFile
 from orion.core.utils.singleton import (
     SingletonAlreadyInstantiatedError,
     SingletonNotInstantiatedError,
@@ -80,7 +76,7 @@ def test_setup_database_default(monkeypatch):
 
 
 def test_setup_database_bad():
-    """Test how setup fails when configuring with non-existant backends"""
+    """Test how setup fails when configuring with non-existent backends"""
     update_singletons()
     with pytest.raises(NotImplementedError) as exc:
         setup_database({"type": "idontexist"})
@@ -106,7 +102,7 @@ def test_setup_database_bad_override():
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
         setup_database({"type": "mongodb"})
 
-    assert exc.match("A singleton instance of \(type: Database\)")
+    assert exc.match(r"A singleton instance of \(type: Database\)")
 
 
 def test_setup_database_bad_config_override():
@@ -125,7 +121,7 @@ def test_get_database_uninitiated():
     with pytest.raises(SingletonNotInstantiatedError) as exc:
         get_database()
 
-    assert exc.match("No singleton instance of \(type: Database\) was created")
+    assert exc.match(r"No singleton instance of \(type: Database\) was created")
 
 
 def test_get_database():

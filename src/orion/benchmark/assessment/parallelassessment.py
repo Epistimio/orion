@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Parallel Advantage Assessment
 =============================
@@ -36,7 +35,7 @@ class ParallelAssessment(BenchmarkAssessment):
         self, task_num=1, executor=None, n_workers=(1, 2, 4), **executor_config
     ):
 
-        super(ParallelAssessment, self).__init__(
+        super().__init__(
             task_num=task_num * len(n_workers),
             executor=executor,
             n_workers=n_workers,
@@ -94,7 +93,7 @@ class ParallelAssessment(BenchmarkAssessment):
     @property
     def configuration(self):
         """Return the configuration of the assessment."""
-        config = super(ParallelAssessment, self).configuration
+        config = super().configuration
         config[self.__class__.__qualname__]["task_num"] = int(
             self.task_num / self.worker_num
         )

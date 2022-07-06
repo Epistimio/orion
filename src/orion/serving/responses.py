@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Helpers for building responses according to the specification
 =============================================================

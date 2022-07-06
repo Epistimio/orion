@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
 import contextlib
@@ -177,7 +176,7 @@ def space():
     return SpaceBuilder().build({"/index": "uniform(0, 10)"})
 
 
-class TestReserveTrial(object):
+class TestReserveTrial:
     """Calls to interface `Experiment.reserve_trial`."""
 
     @pytest.mark.usefixtures("setup_pickleddb_database")
@@ -208,8 +207,8 @@ class TestReserveTrial(object):
 
     def test_reserve_when_exhausted(self):
         """Return None once all the trials have been allocated"""
-        stati = ["new", "reserved", "interrupted", "completed", "broken"]
-        with OrionState(trials=generate_trials(stati)) as cfg:
+        statuses = ["new", "reserved", "interrupted", "completed", "broken"]
+        with OrionState(trials=generate_trials(statuses)) as cfg:
             exp = Experiment("supernaekei", mode="x")
             exp._id = cfg.trials[0]["experiment"]
             assert exp.reserve_trial() is not None
@@ -497,14 +496,14 @@ def test_fetch_pending_trials():
     trials.status in ['new', 'interrupted', 'suspended']
     """
     pending_stati = ["new", "interrupted", "suspended"]
-    stati = pending_stati + ["completed", "broken", "reserved"]
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = pending_stati + ["completed", "broken", "reserved"]
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x")
         exp._id = cfg.trials[0]["experiment"]
 
         trials = exp.fetch_pending_trials()
         assert len(trials) == 3
-        assert set(trial.status for trial in trials) == set(pending_stati)
+        assert {trial.status for trial in trials} == set(pending_stati)
 
 
 def test_fetch_non_completed_trials():
@@ -513,14 +512,14 @@ def test_fetch_non_completed_trials():
     trials.status in ['new', 'interrupted', 'suspended', 'broken']
     """
     non_completed_stati = ["new", "interrupted", "suspended", "reserved"]
-    stati = non_completed_stati + ["completed"]
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = non_completed_stati + ["completed"]
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x")
         exp._id = cfg.trials[0]["experiment"]
 
         trials = exp.fetch_noncompleted_trials()
         assert len(trials) == 4
-        assert set(trial.status for trial in trials) == set(non_completed_stati)
+        assert {trial.status for trial in trials} == set(non_completed_stati)
 
 
 def test_is_done_property_with_pending(algorithm):
@@ -572,8 +571,8 @@ def test_broken_property():
     """Check experiment stopping conditions for maximum number of broken."""
     MAX_BROKEN = 5
 
-    stati = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN - 1))
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN - 1))
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x")
         exp._id = cfg.trials[0]["experiment"]
 
@@ -581,8 +580,8 @@ def test_broken_property():
 
         assert not exp.is_broken
 
-    stati = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN))
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN))
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x")
         exp._id = cfg.trials[0]["experiment"]
 
@@ -595,8 +594,8 @@ def test_configurable_broken_property():
     """Check if max_broken changes after configuration."""
     MAX_BROKEN = 5
 
-    stati = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN))
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN))
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x")
         exp._id = cfg.trials[0]["experiment"]
 
@@ -612,8 +611,8 @@ def test_configurable_broken_property():
 def test_experiment_stats():
     """Check that property stats is returning a proper summary of experiment's results."""
     NUM_COMPLETED = 3
-    stati = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x")
         exp._id = cfg.trials[0]["experiment"]
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
@@ -636,8 +635,6 @@ def test_experiment_pickleable():
         exp_trials = exp.fetch_trials()
 
         assert len(exp_trials) > 0
-
-        from orion.storage.base import storage_factory
 
         exp_bytes = pickle.dumps(exp)
 
@@ -688,8 +685,8 @@ ignore = ["non_branching_attrs", "mode", "node"]
 
 dummy_trial = Trial(**_generate(base_trial, "status", value="reserved"))
 
-stati = (["completed"] * 3) + (["reserved"] * 2)
-trials = generate_trials(stati)
+statuses = (["completed"] * 3) + (["reserved"] * 2)
+trials = generate_trials(statuses)
 running_trial = Trial(**trials[-1])
 
 kwargs = {

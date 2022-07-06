@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: skip-file
 """
 Container class for `Trial` entity
@@ -22,8 +21,6 @@ log = logging.getLogger(__name__)
 class AlreadyReleased(Exception):
     """Raised when a trial gets released twice"""
 
-    pass
-
 
 def validate_status(status):
     """
@@ -31,9 +28,7 @@ def validate_status(status):
     ``completed``, ``interrupted``, or ``broken``.
     """
     if status is not None and status not in Trial.allowed_stati:
-        raise ValueError(
-            "Given status `{0}` not one of: {1}".format(status, Trial.allowed_stati)
-        )
+        raise ValueError(f"Given status `{status}` not one of: {Trial.allowed_stati}")
 
 
 class Trial:
@@ -145,7 +140,7 @@ class Trial:
 
         def __str__(self):
             """Represent partially with a string."""
-            ret = "{0}(name={1}, type={2}, value={3})".format(
+            ret = "{}(name={}, type={}, value={})".format(
                 type(self).__name__, repr(self.name), repr(self.type), repr(self.value)
             )
             return ret
@@ -161,7 +156,7 @@ class Trial:
         def type(self, type_):
             if type_ is not None and type_ not in self.allowed_types:
                 raise ValueError(
-                    "Given type, {0}, not one of: {1}".format(type_, self.allowed_types)
+                    f"Given type, {type_}, not one of: {self.allowed_types}"
                 )
             self._type = type_
 
@@ -300,7 +295,7 @@ class Trial:
 
     def __str__(self):
         """Represent partially with a string."""
-        return "Trial(experiment={0}, status={1}, params={2})".format(
+        return "Trial(experiment={}, status={}, params={})".format(
             repr(self.experiment), repr(self._status), self.format_params(self._params)
         )
 
@@ -322,7 +317,7 @@ class Trial:
         objective = self._fetch_one_result_of_type("objective", results)
 
         if objective is None:
-            raise InvalidResult("No objective found in results: {}".format(results))
+            raise InvalidResult(f"No objective found in results: {results}")
         if not isinstance(objective.value, (float, int)):
             raise InvalidResult(
                 "Results must contain a type `objective` with type float/int: {}".format(

@@ -22,7 +22,7 @@ together. A minimal Slurm script to launch 10 workers would thus only require th
     orion hunt -n parallel-exp python main.py --lr~'loguniform(1e-5, 1.0)'
 
 All workers are optimizing the experiment ``parallel-exp`` in parallel, each holding a copy of the
-optimization algorithm. Adding Slurm options to execute the mnist example with proper ressources
+optimization algorithm. Adding Slurm options to execute the mnist example with proper resources
 gives the following
 
 .. code-block:: bash

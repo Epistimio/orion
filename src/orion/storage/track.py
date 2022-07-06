@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Track Storage Protocol
 ======================
@@ -12,7 +11,6 @@ import datetime
 import hashlib
 import logging
 import sys
-import warnings
 from collections import defaultdict
 
 import orion.core
@@ -428,7 +426,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
                 new_query["metadata.name"] = v
 
             elif k.startswith("metadata"):
-                new_query["metadata.{}".format(k)] = v
+                new_query[f"metadata.{k}"] = v
 
             elif k == "_id":
                 new_query["_uid"] = v
@@ -726,7 +724,6 @@ class Track(BaseStorageProtocol):  # noqa: F811
     def push_trial_results(self, trial):
         """Push the trial's results to the database"""
         # Track already pushed the info no need to do it here
-        pass
 
     def fetch_noncompleted_trials(self, experiment):
         """Fetch all non completed trials"""
