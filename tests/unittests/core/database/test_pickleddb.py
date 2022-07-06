@@ -186,3 +186,9 @@ def test_file_locks(monkeypatch, fs_type, options, file_lock_class):
     monkeypatch.setattr("orion.core.io.database.pickleddb._get_fs", _get_fs)
 
     assert isinstance(_create_lock("/whatever/the/path/is"), file_lock_class)
+
+
+def test_repr(orion_db: PickledDB):
+    assert (
+        str(orion_db) == f"PickledDB(host={orion_db.host}, timeout={orion_db.timeout})"
+    )

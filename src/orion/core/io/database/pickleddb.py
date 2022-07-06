@@ -109,6 +109,9 @@ class PickledDB(Database):
         if os.path.dirname(host):
             os.makedirs(os.path.dirname(host), exist_ok=True)
 
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}(host={self.host}, timeout={self.timeout})"
+
     @property
     def is_connected(self):
         """Return true, always."""

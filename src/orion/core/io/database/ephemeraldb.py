@@ -35,6 +35,9 @@ class EphemeralDB(Database):
 
     """
 
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}()"
+
     @property
     def is_connected(self):
         """Return true, always."""

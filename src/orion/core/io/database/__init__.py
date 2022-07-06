@@ -59,6 +59,9 @@ class Database(object):
         self._conn = None
         self.initiate_connection()
 
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}(host={self.host})"
+
     @property
     @abstractmethod
     def is_connected(self):

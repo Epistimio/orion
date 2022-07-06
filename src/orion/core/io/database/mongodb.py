@@ -121,6 +121,14 @@ class MongoDB(Database):
             authSource=name,
         )
 
+    def __repr__(self) -> str:
+        name = type(self).__qualname__
+        args = ", ".join(
+            f"{name}={getattr(self, name)}"
+            for name in ["host", "name", "port", "username", "password", "options"]
+        )
+        return f"{name}({args})"
+
     def __getstate__(self):
         state = {}
         for key in ["host", "name", "port", "username", "password", "options"]:
