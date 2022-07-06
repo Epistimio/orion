@@ -168,7 +168,7 @@ class Experiment:
 
     def __getstate__(self):
         """Remove storage instance during experiment serialization"""
-        state = dict()
+        state = {}
         for entry in self.__slots__:
             state[entry] = getattr(self, entry)
 
@@ -554,7 +554,7 @@ class Experiment:
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
-        config = dict()
+        config = {}
         for attrname in self.__slots__:
             if attrname.startswith("_"):
                 continue
@@ -582,7 +582,7 @@ class Experiment:
         completed_trials = self.fetch_trials_by_status("completed")
 
         if not completed_trials:
-            return dict()
+            return {}
         trials_completed = len(completed_trials)
         best_trials_id = None
         trial = completed_trials[0]
@@ -612,8 +612,7 @@ class Experiment:
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "Experiment(name=%s, metadata.user=%s, version=%s)" % (
-            self.name,
-            self.metadata.get("user", "n/a"),
-            self.version,
+        return (
+            f"Experiment(name={self.name}, metadata.user={self.metadata.get('user', 'n/a')}, "
+            f"version={self.version})"
         )

@@ -100,7 +100,7 @@ class PickledDB(Database):
     def __init__(self, host="", timeout=60, *args, **kwargs):
         if host == "":
             host = DEFAULT_HOST
-        super(PickledDB, self).__init__(host)
+        super().__init__(host)
 
         self.host = os.path.abspath(host)
 
@@ -108,6 +108,9 @@ class PickledDB(Database):
 
         if os.path.dirname(host):
             os.makedirs(os.path.dirname(host), exist_ok=True)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}(host={self.host}, timeout={self.timeout})"
 
     @property
     def is_connected(self):

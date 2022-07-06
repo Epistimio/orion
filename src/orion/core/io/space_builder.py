@@ -137,7 +137,7 @@ class DimensionBuilder(object):
                 return Categorical(name, *args, **kwargs)
         except IndexError as exc:
             raise TypeError(
-                "Parameter '{}': " "Expected argument with categories.".format(name)
+                f"Parameter '{name}': " "Expected argument with categories."
             ) from exc
 
         return Categorical(name, args, **kwargs)
@@ -235,10 +235,8 @@ class DimensionBuilder(object):
             klass = Integer
         else:
             raise TypeError(
-                "Parameter '{0}': "
-                "'{1}' does not correspond to a supported distribution.".format(
-                    name, prior
-                )
+                f"Parameter '{name}': "
+                f"'{prior}' does not correspond to a supported distribution."
             )
         dimension = klass(name, prior, *args, **kwargs)
 
@@ -258,9 +256,9 @@ class DimensionBuilder(object):
             ) from exc
         except IndexError as exc:
             error_msg = (
-                "Parameter '{0}': Please provide a valid form for prior:\n"
+                f"Parameter '{name}': Please provide a valid form for prior:\n"
                 "'distribution(*args, **kwargs)'\n"
-                "Provided: '{1}'".format(name, expression)
+                f"Provided: '{expression}'"
             )
             raise TypeError(error_msg) from exc
 
@@ -268,16 +266,13 @@ class DimensionBuilder(object):
             dimension.sample()
         except TypeError as exc:
             error_msg = (
-                "Parameter '{0}': Incorrect arguments for distribution '{1}'.\n"
-                "Scipy Docs::\n\n{2}".format(
-                    name, dimension._prior_name, dimension.prior.__doc__
-                )
+                f"Parameter '{name}': "
+                f"Incorrect arguments for distribution '{dimension._prior_name}'.\n"
+                f"Scipy Docs::\n\n{dimension.prior.__doc__}"
             )
             raise TypeError(error_msg) from exc
         except ValueError as exc:
-            raise TypeError(
-                "Parameter '{0}': Incorrect arguments.".format(name)
-            ) from exc
+            raise TypeError(f"Parameter '{name}': Incorrect arguments.") from exc
 
         return dimension
 
@@ -323,7 +318,7 @@ class SpaceBuilder(object):
             try:
                 self.space.register(dimension)
             except ValueError as exc:
-                error_msg = "Conflict for name '{}' in parameters".format(namespace)
+                error_msg = f"Conflict for name '{namespace}' in parameters"
                 raise ValueError(error_msg) from exc
 
         return self.space

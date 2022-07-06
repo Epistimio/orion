@@ -59,7 +59,11 @@ class Database(object):
         self._conn = None
         self.initiate_connection()
 
-    @abstractproperty
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}(host={self.host})"
+
+    @property
+    @abstractmethod
     def is_connected(self):
         """True, if practical connection has been achieved."""
         pass
@@ -305,7 +309,7 @@ class ReadOnlyDB(object):
         """Get attribute only if valid"""
         if attr not in self.valid_attributes:
             raise AttributeError(
-                "Cannot access attribute %s on view-only experiments." % attr
+                f"Cannot access attribute {attr} on view-only experiments."
             )
 
         return getattr(self._database, attr)

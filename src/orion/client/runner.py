@@ -37,7 +37,7 @@ class Protected(object):
 
     def __init__(self):
         self.signal_received = None
-        self.handlers = dict()
+        self.handlers = {}
         self.start = 0
         self.delayed = 0
         self.signal_installed = False
@@ -172,7 +172,7 @@ class Runner:
         self.worker_broken_trials = 0
         self.trials = 0
         self.futures = []
-        self.pending_trials = dict()
+        self.pending_trials = {}
         self.stat = _Stat()
         self.n_worker_override = n_workers
 
@@ -405,7 +405,7 @@ class Runner:
             except AlreadyReleased:
                 pass
 
-        self.pending_trials = dict()
+        self.pending_trials = {}
 
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""

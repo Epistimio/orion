@@ -8,6 +8,7 @@ Provides functions for communicating with `orion.core`.
 """
 import logging
 
+# pylint: disable=consider-using-from-import
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.cli import (
     interrupt_trial,

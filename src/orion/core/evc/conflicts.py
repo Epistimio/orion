@@ -194,7 +194,7 @@ class Conflicts(object):
 
         if dimension_name is not None and not found_conflicts:
             raise ValueError(
-                "Dimension name '{}' not found in conflicts".format(dimension_name)
+                f"Dimension name '{dimension_name}' not found in conflicts"
             )
 
         return found_conflicts
@@ -349,7 +349,7 @@ class Conflict(object, metaclass=ABCMeta):
         """Return True if conflict is set as resolved or if it has a resolution"""
         return self._is_resolved or self.resolution is not None
 
-    # pylint:disable=unused-argument,no-self-use
+    # pylint: disable = unused-argument
     def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Return arguments from marked resolutions in new configuration
 
@@ -567,7 +567,7 @@ class NewDimensionConflict(Conflict):
 
     def __init__(self, old_config, new_config, dimension, prior):
         """Initialize conflict as non-resolved"""
-        super(NewDimensionConflict, self).__init__(old_config, new_config)
+        super().__init__(old_config, new_config)
         self.dimension = dimension
         self.prior = prior
 
@@ -597,7 +597,7 @@ class NewDimensionConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "New {0}".format(standard_param_name(self.dimension.name))
+        return f"New {standard_param_name(self.dimension.name)}"
 
     class AddDimensionResolution(Resolution):
         """Representation of a new dimension resolution
@@ -649,9 +649,8 @@ class NewDimensionConflict(Conflict):
                 default_value not in self.conflict.dimension
             ):
                 raise ValueError(
-                    "Default value `{}` is outside of dimension's prior interval `{}`".format(
-                        default_value, self.conflict.prior
-                    )
+                    f"Default value `{default_value}` is outside of "
+                    f"dimension's prior interval `{self.conflict.prior}`"
                 )
 
         def get_adapters(self):
@@ -662,9 +661,7 @@ class NewDimensionConflict(Conflict):
         @property
         def prefix(self):
             """Build the prefix including the marker"""
-            return "{0}{1}".format(
-                standard_param_name(self.conflict.dimension.name), self.MARKER
-            )
+            return f"{standard_param_name(self.conflict.dimension.name)}{self.MARKER}"
 
         @property
         def new_prior(self):
@@ -678,7 +675,7 @@ class NewDimensionConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0}{1}".format(self.prefix, self.new_prior)
+            return f"{self.prefix}{self.new_prior}"
 
 
 class ChangedDimensionConflict(Conflict):
@@ -709,7 +706,7 @@ class ChangedDimensionConflict(Conflict):
 
     def __init__(self, old_config, new_config, dimension, old_prior, new_prior):
         """Initialize conflict as non-resolved"""
-        super(ChangedDimensionConflict, self).__init__(old_config, new_config)
+        super().__init__(old_config, new_config)
         self.dimension = dimension
         self.old_prior = old_prior
         self.new_prior = new_prior
@@ -728,9 +725,8 @@ class ChangedDimensionConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "{0}~{1} != {0}~{2}".format(
-            standard_param_name(self.dimension.name), self.old_prior, self.new_prior
-        )
+        dim_name = standard_param_name(self.dimension.name)
+        return f"{dim_name}~{self.old_prior} != {dim_name}~{self.new_prior}"
 
     class ChangeDimensionResolution(Resolution):
         """Representation of a changed prior resolution
@@ -756,15 +752,13 @@ class ChangedDimensionConflict(Conflict):
         @property
         def prefix(self):
             """Build the new prior string, including the default value"""
-            return "{0}{1}".format(
-                standard_param_name(self.conflict.dimension.name), self.MARKER
-            )
+            return f"{standard_param_name(self.conflict.dimension.name)}{self.MARKER}"
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0}{1}".format(self.prefix, self.conflict.new_prior)
+            return f"{self.prefix}{self.conflict.new_prior}"
 
 
 class MissingDimensionConflict(Conflict):
@@ -793,7 +787,7 @@ class MissingDimensionConflict(Conflict):
 
     def __init__(self, old_config, new_config, dimension, prior):
         """Initialize conflict as non-resolved"""
-        super(MissingDimensionConflict, self).__init__(old_config, new_config)
+        super().__init__(old_config, new_config)
         self.dimension = dimension
         self.prior = prior
 
@@ -872,9 +866,7 @@ class MissingDimensionConflict(Conflict):
                     [NewDimensionConflict], dimension_name=new_dimension_name
                 )[0]
             except ValueError as e:
-                if "Dimension name '{}' not found".format(
-                    new_dimension_name
-                ) not in str(e):
+                if f"Dimension name '{new_dimension_name}' not found" not in str(e):
                     return {}
 
                 raise
@@ -924,7 +916,7 @@ class MissingDimensionConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Missing {0}".format(standard_param_name(self.dimension.name))
+        return f"Missing {standard_param_name(self.dimension.name)}"
 
     class RenameDimensionResolution(Resolution):
         """Representation of a rename dimension resolution
@@ -1002,18 +994,13 @@ class MissingDimensionConflict(Conflict):
         @property
         def prefix(self):
             """Build the new prior string, including the default value"""
-            return "{0}{1}".format(
-                standard_param_name(self.conflict.dimension.name), self.MARKER
-            )
+            return f"{standard_param_name(self.conflict.dimension.name)}{self.MARKER}"
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0}{1}".format(
-                self.prefix,
-                standard_param_name(self.new_dimension_conflict.dimension.name),
-            )
+            return f"{self.prefix}{standard_param_name(self.new_dimension_conflict.dimension.name)}"
 
     class RemoveDimensionResolution(Resolution):
         """Representation of a remove dimension resolution
@@ -1066,9 +1053,8 @@ class MissingDimensionConflict(Conflict):
                 default_value not in self.conflict.dimension
             ):
                 raise ValueError(
-                    "Default value `{}` is outside of dimension's prior interval `{}`".format(
-                        default_value, self.conflict.prior
-                    )
+                    f"Default value `{default_value}` is outside of "
+                    f"dimension's prior interval `{self.conflict.prior}`"
                 )
 
         def get_adapters(self):
@@ -1079,9 +1065,7 @@ class MissingDimensionConflict(Conflict):
         @property
         def prefix(self):
             """Build the new prior string, including the default value"""
-            return "{0}{1}".format(
-                standard_param_name(self.conflict.dimension.name), self.MARKER
-            )
+            return f"{standard_param_name(self.conflict.dimension.name)}{self.MARKER}"
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
@@ -1089,7 +1073,7 @@ class MissingDimensionConflict(Conflict):
             """
             string = self.prefix
             if self.default_value is not Dimension.NO_DEFAULT_VALUE:
-                string += "{}".format(repr(self.default_value))
+                string += repr(self.default_value)
             return string
 
 
@@ -1128,10 +1112,9 @@ class AlgorithmConflict(Conflict):
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
         # TODO: select different subset rather than printing the old dict
-        return "{0}\n   !=\n{1}".format(
-            pprint.pformat(self.old_config["algorithms"]),
-            pprint.pformat(self.new_config["algorithms"]),
-        )
+        formatted_old_config = pprint.pformat(self.old_config["algorithms"])
+        formatted_new_config = pprint.pformat(self.new_config["algorithms"])
+        return f"{formatted_old_config}\n   !=\n{formatted_new_config}"
 
     class AlgorithmResolution(Resolution):
         """Representation of an algorithn configuration resolution
@@ -1152,7 +1135,7 @@ class AlgorithmConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0}".format(self.ARGUMENT)
+            return str(self.ARGUMENT)
 
 
 class CodeConflict(Conflict):
@@ -1239,12 +1222,13 @@ class CodeConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Old hash commit '{0}'  != new hash commit '{1}'".format(
-            pprint.pformat(self.old_config["metadata"].get("VCS", None)).replace(
-                "\n", ""
-            ),
-            pprint.pformat(self.new_config["metadata"].get("VCS")).replace("\n", ""),
+        old_commit = pprint.pformat(
+            self.old_config["metadata"].get("VCS", None)
+        ).replace("\n", "")
+        new_commit = pprint.pformat(self.new_config["metadata"].get("VCS")).replace(
+            "\n", ""
         )
+        return f"Old hash commit '{old_commit}'  != new hash commit '{new_commit}'"
 
     class CodeResolution(Resolution):
         """Representation of an code change resolution
@@ -1297,7 +1281,7 @@ class CodeConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0} {1}".format(self.ARGUMENT, self.type)
+            return f"{self.ARGUMENT} {self.type}"
 
 
 class CommandLineConflict(Conflict):
@@ -1410,10 +1394,9 @@ class CommandLineConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Old arguments '{0}' != new arguments '{1}'".format(
-            self.get_nameless_args(self.old_config),
-            self.get_nameless_args(self.new_config),
-        )
+        old_args = self.get_nameless_args(self.old_config)
+        new_args = self.get_nameless_args(self.new_config)
+        return f"Old arguments '{old_args}' != new arguments '{new_args}'"
 
     class CommandLineResolution(Resolution):
         """Representation of an commandline change resolution
@@ -1466,7 +1449,7 @@ class CommandLineConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0} {1}".format(self.ARGUMENT, self.type)
+            return f"{self.ARGUMENT} {self.type}"
 
 
 class ScriptConfigConflict(Conflict):
@@ -1621,7 +1604,7 @@ class ScriptConfigConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0} {1}".format(self.ARGUMENT, self.type)
+            return f"{self.ARGUMENT} {self.type}"
 
 
 class ExperimentNameConflict(Conflict):
@@ -1689,8 +1672,9 @@ class ExperimentNameConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Experiment name '{0}' already exist with version '{1}'".format(
-            self.old_config["name"], self.version
+        return (
+            f"Experiment name '{self.old_config['name']}' "
+            f"already exist with version '{self.version}'"
         )
 
     class ExperimentNameResolution(Resolution):
@@ -1749,9 +1733,8 @@ class ExperimentNameConflict(Conflict):
                 # If we are trying to actually branch from experiment
                 if not self._name_is_unique():
                     raise ValueError(
-                        "Cannot branch from {} with name {} since it already exists.".format(
-                            self.old_name, self.new_name
-                        )
+                        f"Cannot branch from {self.old_name} with name {self.new_name} "
+                        "since it already exists."
                     )
                 # Since the name changes, we reset the version count.
                 self.new_version = 1
@@ -1799,7 +1782,7 @@ class ExperimentNameConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0} {1}".format(self.ARGUMENT, self.new_name)
+            return f"{self.ARGUMENT} {self.new_name}"
 
         @property
         def is_marked(self):
@@ -1844,10 +1827,9 @@ class OrionVersionConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "{0} != {1}".format(
-            self.old_config["metadata"]["orion_version"],
-            self.new_config["metadata"]["orion_version"],
-        )
+        old_version = self.old_config["metadata"]["orion_version"]
+        new_version = self.new_config["metadata"]["orion_version"]
+        return f"{old_version} != {new_version}"
 
     class OrionVersionResolution(Resolution):
         """Representation of an orion version resolution
@@ -1868,4 +1850,4 @@ class OrionVersionConflict(Conflict):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return "{0}".format(self.ARGUMENT)
+            return str(self.ARGUMENT)

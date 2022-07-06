@@ -19,7 +19,7 @@ def _convert_keys_to_name(keys):
     if len(keys) == 1 and keys[0] == "_id":
         index = "_id_"
     else:
-        index = "_".join("{}_1".format(k) for k in keys)
+        index = "_".join(f"{k}_1" for k in keys)
 
     return index
 
@@ -34,6 +34,9 @@ class EphemeralDB(Database):
     .. seealso:: :class:`orion.core.io.database.Database` for more on attributes.
 
     """
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}()"
 
     @property
     def is_connected(self):
@@ -153,7 +156,7 @@ class EphemeralCollection(object):
     def __init__(self):
         """Initialise the collection, with no documents and only _id unique index."""
         self._documents = []
-        self._indexes = dict()
+        self._indexes = {}
         self.create_index("_id", unique=True)
 
     def create_index(self, keys, unique=False):
@@ -189,7 +192,7 @@ class EphemeralCollection(object):
         EphemeralCollection may only contain unique indexes.
         """
         if name not in self._indexes:
-            raise DatabaseError("index not found with name {}".format(name))
+            raise DatabaseError(f"index not found with name {name}")
 
         del self._indexes[name]
 
@@ -228,9 +231,7 @@ class EphemeralCollection(object):
             document_values = tuple(document[key] for key in keys)
             if document_values in data:
                 raise DuplicateKeyError(
-                    "Duplicate key error: index={} value={}".format(
-                        name, document_values
-                    )
+                    f"Duplicate key error: index={name} value={document_values}"
                 )
 
     def _get_new_id(self):
@@ -333,7 +334,7 @@ class EphemeralCollection(object):
     def drop(self):
         """Drop the collection, removing all documents and indexes."""
         self._documents = []
-        self._indexes = dict()
+        self._indexes = {}
         self.create_index("_id", unique=True)
 
 
@@ -370,7 +371,7 @@ class EphemeralDocument(object):
 
         return True
 
-    def _is_operator(self, key):  # pylint: disable=no-self-use
+    def _is_operator(self, key):
         return key.split(".")[-1].startswith("$")
 
     def _get_key_operator(self, key):
@@ -379,9 +380,7 @@ class EphemeralDocument(object):
         key = ".".join(path[:-1])
 
         if operator not in self.operators:
-            raise ValueError(
-                "Operator '{}' is not supported by EphemeralDB".format(operator)
-            )
+            raise ValueError(f"Operator '{operator}' is not supported by EphemeralDB")
 
         return key, self.operators[operator]
 
@@ -416,7 +415,7 @@ class EphemeralDocument(object):
         n_keys = sum(keys[key] for key in keys_without_id)
         if n_keys != 0 and n_keys != len(keys_without_id):
             raise ValueError(
-                "Cannot mix selection with 1 and 0s except for _id: {}".format(keys)
+                f"Cannot mix selection with 1 and 0s except for _id: {keys}"
             )
 
         # All given keys are 0 (with possible exception of _id)
@@ -452,7 +451,7 @@ class EphemeralDocument(object):
         keys = flatten(keys)
         keys = self._validate_keys(keys)
 
-        selection = dict()
+        selection = {}
 
         def key_is_match(key, selected_key):
             """Test if key matches the selected key
