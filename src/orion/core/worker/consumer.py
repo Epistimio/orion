@@ -118,8 +118,6 @@ class Consumer(object):
             True if the trial was successfully executed. False if the trial is broken.
 
         """
-        trial.exp_working_dir = self.experiment.working_dir
-
         log.debug("Consumer context: %s", trial.working_dir)
         os.makedirs(trial.working_dir, exist_ok=True)
 

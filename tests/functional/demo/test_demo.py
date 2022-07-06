@@ -250,28 +250,31 @@ def generate_config(template):
     """Generate a configuration file inside a temporary directory with the current storage config"""
     tmp_path = tempfile.mkdtemp("orion_test")
 
-    with OrionState() as cfg:
-        with open(template, 'r') as file:
-            conf = yaml.safe_load(file)
+    with open(template, 'r') as file:
+        conf = yaml.safe_load(file)
 
-        conf['storage'] = orion.core.config.storage.to_dict()
-        conf_file = os.path.join(tmp_path, "config.yaml")
-        config_str = yaml.dump(conf)
+    conf['storage'] = orion.core.config.storage.to_dict()
+    conf_file = os.path.join(tmp_path, "config.yaml")
+    config_str = yaml.dump(conf)
 
-        with open(conf_file, 'w') as file:
-            file.write(config_str)
+    with open(conf_file, 'w') as file:
+        file.write(config_str)
 
-        with open(conf_file, 'r') as file:
-            yield file
+    with open(conf_file, 'r') as file:
+        yield file
 
-        shutil.rmtree(tmp_path)
+    shutil.rmtree(tmp_path)
 
 
 def logging_directory():
     base_repo = os.path.dirname(os.path.abspath(orion.core.__file__))
     logdir = os.path.abspath(os.path.join(base_repo, '..', '..', '..', 'logdir'))
 
-    shutil.rmtree(logdir)
+    try:
+        shutil.rmtree(logdir)
+    except:
+        pass
+
     return logdir
 
 
@@ -292,6 +295,8 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
                     "--logdir",
                     logdir,
                     "hunt",
+                    "--working-dir",
+                    str(tmp_path),
                     "-n",
                     "four_workers_demo",
                     "--config",
@@ -299,9 +304,7 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
                     "--max-trials",
                     "20",
                     "./black_box.py",
-                    "-x~norm(34, 3)",
-                    "--working-dir",
-                    str(tmp_path)
+                    "-x~norm(34, 3)"
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -318,7 +321,9 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
 
             assert rcode == 0
 
-    print(storage.fetch_experiments({}))
+    assert storage._db.host == orion.core.config.storage.database.host
+    print(storage._db.host)
+
     exp = list(storage.fetch_experiments({"name": "four_workers_demo"}))
     assert len(exp) == 1
     exp = exp[0]
@@ -359,9 +364,11 @@ def test_workon():
     ]
 
     with OrionState() as cfg:
-        experiment = experiment_builder.ExperimentBuilder(cfg.storage).build_from_args(
-            config
-        )
+        cmd_config = experiment_builder.get_cmd_config(config)
+
+        builder = experiment_builder.ExperimentBuilder(cfg.storage, debug=cmd_config.get("debug"))
+
+        experiment = builder.build(**cmd_config)
 
         workon(
             experiment,
@@ -696,10 +703,8 @@ def test_worker_trials(storage, monkeypatch):
     assert n_completed() == 6
 
 
-def test_resilience(monkeypatch):
+def test_resilience(storage, monkeypatch):
     """Test if Oríon stops after enough broken trials."""
-
-    storage = setup_storage()
 
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -720,27 +725,26 @@ def test_resilience(monkeypatch):
     assert len(exp.fetch_trials_by_status("broken")) == MAX_BROKEN
 
 
-def test_demo_with_shutdown_quickly(monkeypatch):
+def test_demo_with_shutdown_quickly(storage, monkeypatch):
     """Check simple pipeline with random search is reasonably fast."""
-
-    storage = setup_storage()
 
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     monkeypatch.setattr(orion.core.config.worker, "heartbeat", 120)
 
-    process = subprocess.Popen(
-        [
-            "orion",
-            "hunt",
-            "--config",
-            "./orion_config_random.yaml",
-            "--max-trials",
-            "10",
-            "./black_box.py",
-            "-x~uniform(-50, 50)",
-        ]
-    )
+    with generate_config('orion_config_random.yaml') as conf_file:
+        process = subprocess.Popen(
+            [
+                "orion",
+                "hunt",
+                "--config",
+                f"{conf_file.name}",
+                "--max-trials",
+                "10",
+                "./black_box.py",
+                "-x~uniform(-50, 50)",
+            ]
+        )
 
     assert process.wait(timeout=40) == 0
 
