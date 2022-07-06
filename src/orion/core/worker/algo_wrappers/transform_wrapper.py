@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import copy
+import typing
 from abc import ABC, abstractmethod
 from logging import getLogger as get_logger
 from typing import Any
-import typing
 
 from orion.algo.registry import RegistryMapping
 from orion.algo.space import Space
@@ -198,9 +198,15 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
         """
         return self.algorithm.judge(self.transform(trial), measurements)
 
-    def warm_start(self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]):
-        """ """
-        return self.algorithm.warm_start(warm_start_trials)
+    def warm_start(
+        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+    ) -> None:
+        super().warm_start(
+            [
+                (experiment_info, [self.transform(trial) for trial in trials])
+                for experiment_info, trials in warm_start_trials
+            ]
+        )
 
 
 def _copy_status_and_results(

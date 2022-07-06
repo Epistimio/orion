@@ -95,9 +95,8 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     def should_suspend(self, trial: Trial) -> bool:
         return self.algorithm.should_suspend(trial)
 
-    def warm_start(
-        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
-    ) -> None:
+    def warm_start(self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]):
+        """Warm start the HPO algorithm by observing the given _related_ trials from other tasks."""
         from orion.core.worker.warm_start.warm_starteable import is_warmstarteable
 
         if not is_warmstarteable(self.algorithm):

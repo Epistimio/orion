@@ -8,22 +8,21 @@ Performs checks and organizes required transformations of points.
 from __future__ import annotations
 
 from logging import getLogger as get_logger
-from typing import TypeVar
-import typing
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
-from orion.core.worker.algo_wrappers.transform_wrapper import TransformWrapper
-from orion.core.worker.transformer import TransformedSpace, build_required_space
+from orion.core.worker.algo_wrappers.transform_wrapper import AlgoT, TransformWrapper
+from orion.core.worker.transformer import (
+    ReshapedSpace,
+    TransformedSpace,
+    build_required_space,
+)
 from orion.core.worker.trial import Trial
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
-if typing.TYPE_CHECKING:
-    from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 logger = get_logger(__name__)
 
 
-class SpaceTransform(TransformWrapper[AlgoType]):
+class SpaceTransform(TransformWrapper[AlgoT]):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -39,7 +38,7 @@ class SpaceTransform(TransformWrapper[AlgoType]):
         Algorithm to be wrapped.
     """
 
-    def __init__(self, space: Space, algorithm: AlgoType):
+    def __init__(self, space: Space, algorithm: AlgoT):
         super().__init__(space=space, algorithm=algorithm)
 
     @property
@@ -50,28 +49,30 @@ class SpaceTransform(TransformWrapper[AlgoType]):
         return self.space
 
     @property
-    def transformed_space(self) -> TransformedSpace:
+    def transformed_space(self) -> TransformedSpace | ReshapedSpace:
         """The transformed space (after transformations).
         This is only exposed to the wrapped algo, not to classes outside of this.
         """
         transformed_space = self.algorithm.space
-        assert isinstance(transformed_space, TransformedSpace)
+        assert isinstance(transformed_space, (TransformedSpace, ReshapedSpace))
         return transformed_space
 
     # pylint: disable=arguments-differ
     @classmethod
     def transform_space(
         cls, space: Space, algo_type: type[BaseAlgorithm]
-    ) -> TransformedSpace:
+    ) -> TransformedSpace | ReshapedSpace:
         """Transform the space, so that the algorithm that is passed to the constructor already
         has the right space.
         """
-        return build_required_space(
+        transformed_space = build_required_space(
             space,
             type_requirement=algo_type.requires_type,
             shape_requirement=algo_type.requires_shape,
             dist_requirement=algo_type.requires_dist,
         )
+        assert isinstance(transformed_space, (TransformedSpace, ReshapedSpace))
+        return transformed_space
 
     def transform(self, trial: Trial) -> Trial:
         self._verify_trial(trial)
@@ -79,16 +80,6 @@ class SpaceTransform(TransformWrapper[AlgoType]):
 
     def reverse_transform(self, trial: Trial) -> Trial:
         return self.transformed_space.reverse(trial)
-
-    def warm_start(
-        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
-    ) -> None:
-        super().warm_start(
-            [
-                (experiment_info, [self.transform(trial) for trial in trials])
-                for experiment_info, trials in warm_start_trials
-            ]
-        )
 
     def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
         space = space or self.space
