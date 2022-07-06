@@ -90,19 +90,19 @@ algorithm_configs = {
     "pb2": {
         "pb2": {
             "seed": 1,
-            "generations": 3,
-            "population_size": 30,
+            "generations": 2,
+            "population_size": 10,
             "exploit": {
                 "exploit_configs": [
                     {
                         "candidate_pool_ratio": 0.5,
-                        "min_forking_population": 2,
+                        "min_forking_population": 5,
                         "of_type": "BacktrackExploit",
                         "truncation_quantile": 0.9,
                     },
                     {
                         "candidate_pool_ratio": 0.5,
-                        "min_forking_population": 2,
+                        "min_forking_population": 5,
                         "of_type": "TruncateExploit",
                         "truncation_quantile": 0.8,
                     },
@@ -329,7 +329,7 @@ def test_with_fidelity(algorithm: dict):
     assert exp.configuration["algorithms"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 30
+    assert len(trials) >= 30 or exp.algorithms.is_done
     assert trials[29].status == "completed"
 
     trials = [trial for trial in trials if trial.status == "completed"]
@@ -365,7 +365,7 @@ def test_with_multidim(algorithm):
     assert exp.configuration["algorithms"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 25  # Grid-search is a bit smaller
+    assert len(trials) >= 25 or exp.algorithms.is_done
     completed_trials = exp.fetch_trials_by_status("completed")
     assert len(completed_trials) >= MAX_TRIALS or len(completed_trials) == len(trials)
 
@@ -421,7 +421,7 @@ def test_with_evc(algorithm, storage):
     assert len(trials) >= 20
 
     trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-    assert len(trials_with_evc) >= 30
+    assert len(trials_with_evc) >= 30 or exp.algorithms.is_done
     assert len(trials_with_evc) - len(trials) == 10
 
     completed_trials = [
@@ -466,7 +466,7 @@ def test_parallel_workers(algorithm, storage):
     assert exp.configuration["algorithms"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= MAX_TRIALS
+    assert len(trials) >= MAX_TRIALS or exp.algorithms.is_done
 
     completed_trials = [trial for trial in trials if trial.status == "completed"]
     assert MAX_TRIALS <= len(completed_trials) <= MAX_TRIALS + 2
