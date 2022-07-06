@@ -11,15 +11,19 @@ from orion.core import config
 IS_ORION_ON = False
 _HAS_REPORTED_RESULTS = False
 RESULTS_FILENAME = os.getenv("ORION_RESULTS_PATH", None)
-if RESULTS_FILENAME and os.path.isfile(RESULTS_FILENAME):
-    import json
 
-    IS_ORION_ON = True
+if RESULTS_FILENAME:
+    if os.path.isfile(RESULTS_FILENAME):
+        import json
+
+        IS_ORION_ON = True
+    else:
+        raise RuntimeWarning(f'{RESULTS_FILENAME} is not a file')
 
 if RESULTS_FILENAME and not IS_ORION_ON:
     raise RuntimeWarning(
-        "Results file path provided in environmental variable "
-        "does not correspond to an existing file."
+        f"Results file path ({RESULTS_FILENAME}) provided in environmental variable "
+        "does not correspond to an existing file. "
     )
 
 

@@ -118,6 +118,8 @@ class Consumer(object):
             True if the trial was successfully executed. False if the trial is broken.
 
         """
+        trial.exp_working_dir = self.experiment.working_dir
+
         log.debug("Consumer context: %s", trial.working_dir)
         os.makedirs(trial.working_dir, exist_ok=True)
 
@@ -210,6 +212,7 @@ class Consumer(object):
         log.debug("New temp results file: %s", results_file.name)
 
         log.debug("Building command line argument and configuration for trial.")
+
         env = self.get_execution_environment(trial, results_file.name)
         cmd_args = self.template_builder.format(
             config_file.name, trial, self.experiment
@@ -252,13 +255,21 @@ class Consumer(object):
         command = cmd_args
 
         try:
-            process = subprocess.Popen(command, env=environ)
+            process = subprocess.Popen(
+                command,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
         except PermissionError:
             log.debug("Script is not executable")
             raise InexecutableUserScript(" ".join(cmd_args))
+
+        stdout, _ = process.communicate()
 
         return_code = process.wait()
         log.debug(f"Script finished with return code {return_code}")
 
         if return_code != 0:
+            log.debug("%s", stdout.decode('utf-8'))
             raise ExecutionError(return_code)

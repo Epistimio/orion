@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform a functional test for demo purposes."""
+from contextlib import contextmanager
 import os
 import shutil
 import subprocess
@@ -244,31 +245,80 @@ def test_demo_inexecutable_script(storage, monkeypatch, capsys):
     assert "User script is not executable" in captured
 
 
-def test_demo_four_workers(storage, monkeypatch):
+@contextmanager
+def generate_config(template):
+    """Generate a configuration file inside a temporary directory with the current storage config"""
+    tmp_path = tempfile.mkdtemp("orion_test")
+
+    with OrionState() as cfg:
+        with open(template, 'r') as file:
+            conf = yaml.safe_load(file)
+
+        conf['storage'] = orion.core.config.storage.to_dict()
+        conf_file = os.path.join(tmp_path, "config.yaml")
+        config_str = yaml.dump(conf)
+
+        with open(conf_file, 'w') as file:
+            file.write(config_str)
+
+        with open(conf_file, 'r') as file:
+            yield file
+
+        shutil.rmtree(tmp_path)
+
+
+def logging_directory():
+    base_repo = os.path.dirname(os.path.abspath(orion.core.__file__))
+    logdir = os.path.abspath(os.path.join(base_repo, '..', '..', '..', 'logdir'))
+
+    shutil.rmtree(logdir)
+    return logdir
+
+
+def test_demo_four_workers(tmp_path, storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    processes = []
-    for _ in range(4):
-        process = subprocess.Popen(
-            [
-                "orion",
-                "hunt",
-                "-n",
-                "four_workers_demo",
-                "--config",
-                "./orion_config_random.yaml",
-                "--max-trials",
-                "20",
-                "./black_box.py",
-                "-x~norm(34, 3)",
-            ]
-        )
-        processes.append(process)
 
-    for process in processes:
-        rcode = process.wait()
-        assert rcode == 0
+    logdir = logging_directory()
+    print(logdir)
 
+    with generate_config('orion_config_random.yaml') as conf_file:
+        processes = []
+        for _ in range(4):
+            process = subprocess.Popen(
+                [
+                    "orion",
+                    "-vvv",
+                    "--logdir",
+                    logdir,
+                    "hunt",
+                    "-n",
+                    "four_workers_demo",
+                    "--config",
+                    f"{conf_file.name}",
+                    "--max-trials",
+                    "20",
+                    "./black_box.py",
+                    "-x~norm(34, 3)",
+                    "--working-dir",
+                    str(tmp_path)
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            processes.append(process)
+
+        for process in processes:
+            stdout, _ = process.communicate()
+
+            rcode = process.wait()
+
+            if rcode != 0:
+                print('OUT', stdout.decode('utf-8'))
+
+            assert rcode == 0
+
+    print(storage.fetch_experiments({}))
     exp = list(storage.fetch_experiments({"name": "four_workers_demo"}))
     assert len(exp) == 1
     exp = exp[0]
@@ -363,6 +413,7 @@ def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
         [
+            "-vvv",
             "hunt",
             "--max-trials={}".format(how_many),
             "--name=lalala",

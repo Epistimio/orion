@@ -37,6 +37,7 @@ class SetupWorkingDir:
         if self.tmp:
             base_path = os.path.join(tempfile.gettempdir(), "orion")
             os.makedirs(base_path, exist_ok=True)
+
             self._tmpdir = tempfile.TemporaryDirectory(
                 prefix=f"{self.experiment.name}-v{self.experiment.version}",
                 dir=self.experiment.working_dir,
@@ -53,4 +54,5 @@ class SetupWorkingDir:
         """Cleanup temporary directory."""
         if self.tmp:
             self._tmpdir.cleanup()
+            # self._tmpdir._finalizer.detach()
             self.experiment.working_dir = None
