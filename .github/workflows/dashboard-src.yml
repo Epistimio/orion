@@ -42,7 +42,7 @@ jobs:
       - run: |
             # Start Orion backend in repository root folder.
             cd ../../
-            orion serve -c .github/workflows/orion/orion_config.yaml 2> orion-backend.log &
+            orion serve -c .github/workflows/orion/orion_config.yaml 2> orion-backend-${{ matrix.node-version }}.log &
             cd dashboard/src/
       # install
       - run: yarn
@@ -58,4 +58,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: orion-backend-log-artifact-${{ matrix.node-version }}
-          path: orion-backend.log
+          path: orion-backend-${{ matrix.node-version }}.log
