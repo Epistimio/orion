@@ -41,8 +41,12 @@ const TrialTable = ({ rows, headers, experiment }) => {
                   {row.cells.map((cell, cellIndex) => (
                     <TableCell key={cell.id}>
                       {cellIndex === 0 && cell.value.length > 7 ? (
-                        <span title={cell.value}>{cell.value.substr(0,7)}...</span>
-                      ) : cell.value}
+                        <span title={cell.value}>
+                          {cell.value.substr(0, 7)}...
+                        </span>
+                      ) : (
+                        cell.value
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
