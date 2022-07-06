@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Plotting testing support module
 ===============================
@@ -250,7 +249,7 @@ def assert_partial_dependencies_plot(
         y_tested = set()
         for dim_i, dim_name in enumerate(dims):
             if dim_i > 0:
-                # Test lable at left of row
+                # Test label at left of row
                 y_index = dim_i * len(dims)
                 assert _ax_layout("y", y_index).title.text == dim_name
                 y_tested.add(y_index + 1)

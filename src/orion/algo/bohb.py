@@ -53,7 +53,7 @@ class FakeJob:  # pylint: disable=too-few-public-methods
 class BOHB(BaseAlgorithm):
     """Bayesian Optimization with HyperBand
 
-    This class is a wrapper around the librairy HpBandSter:
+    This class is a wrapper around the library HpBandSter:
     https://github.com/automl/HpBandSter.
 
     For more information on the algorithm,

@@ -5,15 +5,12 @@ import {
   Table,
   TableHead,
   TableRow,
-  TableExpandHeader,
   TableHeader,
   TableBody,
-  TableExpandRow,
   TableCell,
-  TableExpandedRow,
 } from 'carbon-components-react';
 
-const TrialTable = ({ rows, headers }) => {
+const TrialTable = ({ rows, headers, experiment }) => {
   return (
     <DataTable
       rows={rows}
@@ -26,12 +23,11 @@ const TrialTable = ({ rows, headers }) => {
         getTableProps,
       }) => (
         <TableContainer
-          title="Experiment Trials"
-          description="Trials of selected experiments.">
+          title={`Experiment Trials for "${experiment}"`}
+          description={`${rows.length} trial(s) for experiment "${experiment}"`}>
           <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
-                <TableExpandHeader />
                 {headers.map(header => (
                   <TableHeader {...getHeaderProps({ header })}>
                     {header.header}
@@ -41,16 +37,19 @@ const TrialTable = ({ rows, headers }) => {
             </TableHead>
             <TableBody>
               {rows.map(row => (
-                <React.Fragment key={row.id}>
-                  <TableExpandRow {...getRowProps({ row })}>
-                    {row.cells.map(cell => (
-                      <TableCell key={cell.id}>{cell.value}</TableCell>
-                    ))}
-                  </TableExpandRow>
-                  <TableExpandedRow colSpan={headers.length + 1}>
-                    <p>TODO: Trial detailed configuration</p>
-                  </TableExpandedRow>
-                </React.Fragment>
+                <TableRow key={row.id} {...getRowProps({ row })}>
+                  {row.cells.map((cell, cellIndex) => (
+                    <TableCell key={cell.id}>
+                      {cellIndex === 0 && cell.value.length > 7 ? (
+                        <span title={cell.value}>
+                          {cell.value.substr(0, 7)}...
+                        </span>
+                      ) : (
+                        cell.value
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
               ))}
             </TableBody>
           </Table>

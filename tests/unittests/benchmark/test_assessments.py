@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.assessment`."""
 
-from os import name
 
 import plotly
 import pytest
@@ -152,7 +150,7 @@ class TestParallelAssessment:
                 algorithms.append(algo)
 
                 for worker in n_workers:
-                    names.append((algo + "_workers_" + str(worker)))
+                    names.append(algo + "_workers_" + str(worker))
 
             assert len(figure["ParallelAssessment"]["task_name"]) == 3
             assert_regrets_plot(

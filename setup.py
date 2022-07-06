@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Installation script for Oríon."""
 import os
 
 from setuptools import setup
 
 import versioneer
-
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -49,7 +47,7 @@ extras_require = {
     ],
     "dehb": [
         "ConfigSpace",
-        "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
+        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
@@ -66,13 +64,20 @@ extras_require = {
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
+dashboard_files = []
+for root, sub_directories, files in os.walk("dashboard/build"):
+    for file in files:
+        # Install dashboard build in a folder `orion-dashboard`
+        install_root = os.path.join("orion-dashboard", *root.split(os.sep)[1:])
+        dashboard_files.append((install_root, [os.path.join(root, file)]))
+
 setup_args = dict(
     name="orion",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="Asynchronous [black-box] Optimization",
     long_description=open(
-        os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
+        os.path.join(repo_root, "README.rst"), encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
     author="Epistímio",
@@ -80,6 +85,7 @@ setup_args = dict(
     url="https://github.com/epistimio/orion",
     packages=packages,
     package_dir={"": "src"},
+    data_files=dashboard_files,
     include_package_data=True,
     python_requires=">=3.7",
     entry_points={
@@ -94,7 +100,7 @@ setup_args = dict(
             "dehb = orion.algo.dehb.dehb:DEHB",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
-            "pbt = orion.algo.pbt.pbt:PBT",
+            # "pbt = orion.algo.pbt.pbt:PBT",
             "ax = orion.algo.axoptimizer:AxOptimizer",
             "mofa = orion.algo.mofa.mofa:MOFA",
             "pb2 = orion.algo.pbt.pb2:PB2",

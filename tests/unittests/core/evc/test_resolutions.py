@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests resolutions in :mod:`orion.core.evc.conflicts`."""
 import pytest
 
@@ -64,7 +63,7 @@ def experiment_name_resolution(setup_pickleddb_database, experiment_name_conflic
     )
 
 
-class TestAddDimensionResolution(object):
+class TestAddDimensionResolution:
     """Test methods for resolution of new dimension"""
 
     def test_init_no_default(self, new_dimension_conflict):
@@ -193,7 +192,7 @@ class TestAddDimensionResolution(object):
         assert new_dimension_conflict.resolution is None
 
 
-class TestChangeDimensionResolution(object):
+class TestChangeDimensionResolution:
     """Test methods for resolution of changed dimensions"""
 
     def test_prefix(self, change_dimension_resolution):
@@ -243,7 +242,7 @@ class TestChangeDimensionResolution(object):
         pytest.lazy_fixture("missing_dimension_from_config_conflict"),
     ],
 )
-class TestRemoveDimensionResolution(object):
+class TestRemoveDimensionResolution:
     """Test methods for resolution of missing dimensions"""
 
     def test_prefix(self, dimension_conflict):
@@ -330,7 +329,7 @@ class TestRemoveDimensionResolution(object):
         assert dimension_conflict.resolution is None
 
 
-class TestRenameDimensionResolution(object):
+class TestRenameDimensionResolution:
     """Test methods for renaming of missing dimensions"""
 
     def test_init_same_prior(
@@ -422,7 +421,7 @@ class TestRenameDimensionResolution(object):
         assert new_dimension_conflict.resolution is None
 
 
-class TestAlgorithmResolution(object):
+class TestAlgorithmResolution:
     """Test methods for resolution of algorithm changes"""
 
     def test_adapters(self, algorithm_resolution):
@@ -446,7 +445,7 @@ class TestAlgorithmResolution(object):
         assert algorithm_conflict.resolution is None
 
 
-class TestOrionVersionResolution(object):
+class TestOrionVersionResolution:
     """Test methods for resolution of orion version changes"""
 
     def test_adapters(self, orion_version_resolution):
@@ -470,7 +469,7 @@ class TestOrionVersionResolution(object):
         assert orion_version_conflict.resolution is None
 
 
-class TestCodeResolution(object):
+class TestCodeResolution:
     """Test methods for resolution of code conflict"""
 
     def test_wrong_input(self, code_conflict):
@@ -502,7 +501,7 @@ class TestCodeResolution(object):
         assert code_conflict.resolution is None
 
 
-class TestExperimentNameResolution(object):
+class TestExperimentNameResolution:
     """Test methods for resolution of experiment name conflict"""
 
     def test_adapters(self, experiment_name_resolution):

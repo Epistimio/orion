@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from dataclasses import asdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Type, Union, overload
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union
 
 import numpy as np
 
@@ -37,7 +37,6 @@ from orion.core.utils import compute_identity
 from orion.core.utils.flatten import flatten
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.worker import transformer
-from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
@@ -87,7 +86,7 @@ class ProfetTask(BenchmarkTask, ABC):
     device : str, optional
         The device to use for training, by default None.
     with_grad : bool, optional
-        Wether the task should also return the gradients of the objective function with respect to
+        Whether the task should also return the gradients of the objective function with respect to
         the inputs. Defaults to `False`.
     """
 

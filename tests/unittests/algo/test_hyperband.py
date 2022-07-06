@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.hyperband`."""
 from __future__ import annotations
 
 import copy
-import hashlib
 import logging
 import typing
 from typing import Any, ClassVar, Sequence

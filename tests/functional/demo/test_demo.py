@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test for demo purposes."""
 import os
 import shutil
@@ -362,12 +361,12 @@ def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
     orion.core.cli.main(
         [
             "hunt",
-            "--max-trials={}".format(how_many),
+            f"--max-trials={how_many}",
             "--name=lalala",
             "--config",
             "./stress_gradient.yaml",
             "./dir_per_trial.py",
-            "--dir={}".format(str(tmpdir)),
+            f"--dir={str(tmpdir)}",
             "--other-name",
             "{exp.name}",
             "--name",
@@ -552,7 +551,7 @@ def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
     with open("strategy_config.yaml") as f:
         config = yaml.safe_load(f.read())
 
-    config_file = "{}_strategy_config.yaml".format(strategy)
+    config_file = f"{strategy}_strategy_config.yaml"
 
     with open(config_file, "w") as f:
         config["producer"]["strategy"] = strategy

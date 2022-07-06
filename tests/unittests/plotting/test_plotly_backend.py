@@ -162,7 +162,7 @@ def mock_model():
             """Returns counting of predictions requested."""
             data = numpy.arange(data.shape[0]) + self.i
             self.i += data.shape[0]
-            return data  #  + numpy.random.normal(0, self.i, size=data.shape[0])
+            return data  # + numpy.random.normal(0, self.i, size=data.shape[0])
 
     return Model()
 
@@ -577,7 +577,7 @@ class TestPartialDependencies:
         )
 
     def test_one_param(self, monkeypatch):
-        """Test ploting a space with only 1 dim"""
+        """Test plotting a space with only 1 dim"""
         mock_train_regressor(monkeypatch)
         config = mock_space(y=None)
         mock_experiment(monkeypatch, y="drop")
@@ -1100,7 +1100,7 @@ class TestParallelAdvantage:
         ):
             plot = parallel_assessment({"random": [experiment] * 2})
 
-        asset_parallel_assessment_plot(plot, [f"random"], 1)
+        asset_parallel_assessment_plot(plot, ["random"], 1)
 
     def test_list_of_experiments(self, monkeypatch):
         """Tests the parallel_assessment with list of experiments"""

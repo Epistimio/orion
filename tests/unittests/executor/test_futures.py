@@ -36,8 +36,6 @@ class FunctionException(Exception):
 
     """
 
-    pass
-
 
 def function(exception, sleep_time, result):
     """Simple test function"""
@@ -114,7 +112,7 @@ class TestFutures:
 
         future.wait(0.01)
 
-        # SingleExecutor is not truely async so
+        # SingleExecutor is not truly async so
         # results are always ready after a wait
         if not isinstance(executor, SingleExecutor):
             assert future.ready() is False

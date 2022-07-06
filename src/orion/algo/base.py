@@ -113,11 +113,12 @@ class BaseAlgorithm:
         if kwargs:
             param_names = list(kwargs)
         else:
-            init_signature = inspect.signature(type(self))
+            init_signature = inspect.signature(type(self).__init__)
             param_names = [
                 name
                 for name, param in init_signature.parameters.items()
-                if name != "space" and param.kind != param.VAR_KEYWORD
+                if name not in ["self", "space"]
+                and param.kind not in [param.VAR_KEYWORD, param.VAR_POSITIONAL]
             ]
         self._param_names = param_names
         # Instantiate tunable parameters of an algorithm

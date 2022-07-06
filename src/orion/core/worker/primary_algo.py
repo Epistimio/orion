@@ -30,6 +30,7 @@ def create_algo(
     *algo_args: P.args,
     **algo_kwargs: P.kwargs,
 ) -> InsistSuggest[SpaceTransform[AlgoT]]:
+    """Creates an algorithm of the given type."""
     ...
 
 

@@ -23,7 +23,7 @@ except ImportError:
 
 if not HAS_PB2:
 
-    class Kern:
+    class Kern:  # noqa
         def __init__(self, *args, **kwargs):
             pass
 
@@ -203,7 +203,7 @@ def select_length(Xraw, yraw, bounds, num_f):
 
             scores.append(m.log_likelihood())
         idx = np.argmax(scores)
-        length = (idx + int((min_len / 10))) * 10
+        length = (idx + int(min_len / 10)) * 10
         return length
 
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable-all
 """
 Utilitary functions for printing trees
@@ -66,7 +65,7 @@ def print_tree(
     """ Printing of "up" branch. """
     for child in up:
         next_last = "up" if up.index(child) == 0 else ""
-        next_indent = "{0}{1}{2}".format(
+        next_indent = "{}{}{}".format(
             indent, " " if "up" in last else "│", " " * len(name(current_node))
         )
         print_tree(child, childattr, nameattr, next_indent, next_last)
@@ -88,12 +87,12 @@ def print_tree(
     else:
         end_shape = ""
 
-    print("{0}{1}{2}{3}".format(indent, start_shape, name(current_node), end_shape))
+    print(f"{indent}{start_shape}{name(current_node)}{end_shape}")
 
     """ Printing of "down" branch. """
     for child in down:
         next_last = "down" if down.index(child) is len(down) - 1 else ""
-        next_indent = "{0}{1}{2}".format(
+        next_indent = "{}{}{}".format(
             indent, " " if "down" in last else "│", " " * len(name(current_node))
         )
         print_tree(child, childattr, nameattr, next_indent, next_last)

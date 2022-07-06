@@ -8,7 +8,7 @@ use of multiple concurrent workers attempting to generate or reserve trials in p
 While these race conditions are tested in unit-tests with hand-crafted scenarios it is impossible
 to ensure tests coverage for all possible scenarios.
 The stress tests aims at pushing the Oríon to it's limit, increasing the chances of
-uncovering hidden bugs from the unit-tests. Being ressource intensive, the stress-tests
+uncovering hidden bugs from the unit-tests. Being resource intensive, the stress-tests
 are not part of the continuous integration pipeline that is executed for every
 contribution to code. The stress-test should be run before every release, with the
 resulting plots shared on the pull-request of the release candidate. Core members
@@ -36,7 +36,7 @@ is free of bugs, but stress tests are very likely to uncover them.
 
 The tests verifies that the number of trials for the completed experiments is exactly equal to
 ``max_trials`` and verifies that all points are different.
-Additionaly, each worker reports the number of trials that was executed. The total
+Additionally, each worker reports the number of trials that was executed. The total
 of the number of executed trials is matched against ``max_trials``.
 
 Finally, the benchmarking of the different scenarios, for different number of workers,

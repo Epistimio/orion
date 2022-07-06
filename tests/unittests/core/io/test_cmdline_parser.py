@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.cmdline_parser`."""
 import os
 from collections import OrderedDict
@@ -192,8 +191,8 @@ def test_set_state_dict():
     )
 
     assert cmdline_parser.format(
-        {"_pos_0": "voici", "_pos_1": "voila", "with": "classe"}
-    ) == ["voici", "voila", "--with", "classe", "--plus", "--booleans"]
+        {"_pos_0": "voici", "_pos_1": "voila", "with": "class"}
+    ) == ["voici", "voila", "--with", "class", "--plus", "--booleans"]
 
 
 def test_parse_not_enough_dashes():

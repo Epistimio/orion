@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module responsible for the plots/ REST endpoint
 ================================================
@@ -14,7 +13,7 @@ from orion.serving.parameters import retrieve_experiment
 from orion.storage.base import get_storage
 
 
-class PlotsResource(object):
+class PlotsResource:
     """Serves all the requests made to plots/ REST endpoint"""
 
     def __init__(self):

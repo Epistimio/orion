@@ -1,19 +1,10 @@
-# -*- coding: utf-8 -*-
 """Tests :func:`orion.analysis.partial_dependency`"""
 import copy
 
 import numpy
 import pandas as pd
 import pytest
-from sklearn.ensemble import (
-    AdaBoostRegressor,
-    BaggingRegressor,
-    ExtraTreesRegressor,
-    GradientBoostingRegressor,
-    RandomForestRegressor,
-)
 
-from orion.analysis.base import flatten_numpy, to_numpy, train_regressor
 from orion.analysis.partial_dependency_utils import (
     make_grid,
     partial_dependency,
@@ -93,7 +84,7 @@ def mock_model():
             """Returns counting of predictions requested."""
             data = numpy.arange(data.shape[0]) + self.i
             self.i += data.shape[0]
-            return data  #  + numpy.random.normal(0, self.i, size=data.shape[0])
+            return data  # + numpy.random.normal(0, self.i, size=data.shape[0])
 
     return Model()
 

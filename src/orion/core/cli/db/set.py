@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the set command
 ==============================
@@ -11,6 +10,7 @@ import argparse
 import logging
 import sys
 
+# pylint:disable=consider-using-from-import
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.core.utils.terminal import confirm_name
@@ -127,7 +127,7 @@ VALID_QUERY_ATTRS = ["status", "id"]
 VALID_UPDATE_ATTRS = ["status"]
 
 
-def build_query(query):
+def build_query(experiment, query):
     """Convert query string to dict format
 
     String format must be <attr name>=<value>
@@ -142,10 +142,12 @@ def build_query(query):
             f"Invalid query attribute `{attribute}`. Must be one of {VALID_QUERY_ATTRS}"
         )
 
-    if attribute == "id":
-        attribute = "_id"
+    query = {attribute: value}
 
-    return {attribute: value}
+    if attribute == "id":
+        query["experiment"] = experiment.id
+
+    return query
 
 
 def build_update(update):
@@ -174,7 +176,7 @@ def main(args):
     ).node
 
     try:
-        query = build_query(args["query"])
+        query = build_query(root.item, args["query"])
         update = build_update(args["update"])
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)

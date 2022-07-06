@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to info experiments
 ==========================
@@ -10,8 +9,8 @@ Commandline support to print details of experiments in terminal
 import logging
 import sys
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli.base import get_basic_args_group
+from orion.core.io import experiment_builder
 from orion.core.utils.format_terminal import format_info
 
 log = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ def main(args):
     try:
         experiment = experiment_builder.get_from_args(args, mode="r")
     except ValueError:
-        print("Experiment {} not found in db.".format(args.get("name", None)))
+        print(f"Experiment {args.get('name', None)} not found in db.")
         sys.exit(1)
 
     print(format_info(experiment))

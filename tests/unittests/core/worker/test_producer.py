@@ -1,21 +1,15 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.producer`."""
 import contextlib
 import copy
-import datetime
 import threading
 import time
 
 import pytest
 
 from orion.core.io.experiment_builder import build
-from orion.core.utils import format_trials
-from orion.core.utils.exceptions import ReservationTimeout, WaitingForTrials
 from orion.core.worker.producer import Producer
-from orion.core.worker.trial import Trial
 from orion.testing import OrionState, generate_trials
-from orion.testing.trial import compare_trials
 
 
 def produce_lies(producer):
@@ -163,6 +157,7 @@ def test_concurent_producers(monkeypatch):
         assert (
             len(storage._fetch_trials({"status": "new"})) == new_trials_in_db_before + 1
         )
+        random_dt = NotImplemented  # todo: undefined variable.
         new_trials = list(
             storage._fetch_trials({"status": "new", "submit_time": random_dt})
         )
@@ -278,7 +273,7 @@ def test_evc(monkeypatch, producer):
 
 @pytest.mark.skip("Should be reactivated when algorithms can be warm-started")
 def test_evc_duplicates(monkeypatch, producer):
-    """Verify that producer wont register samples that are available in parent experiment"""
+    """Verify that producer won't register samples that are available in parent experiment"""
     experiment = producer.experiment
     new_experiment = build(
         experiment.name, algorithms="random", branching={"enable": True}

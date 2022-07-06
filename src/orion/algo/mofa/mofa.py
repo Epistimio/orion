@@ -11,7 +11,7 @@ from __future__ import annotations
 import copy
 import logging
 from collections import defaultdict
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -332,7 +332,7 @@ class MOFA(BaseAlgorithm):
 def get_factorial_performance_analysis(
     oa_table: pd.DataFrame, space: Space, n_levels: int
 ) -> pd.DataFrame:
-    """Compute the factorial perfomance analysis"""
+    """Compute the factorial performance analysis"""
     levels = list(range(1, n_levels + 1))
     factorial_performance_analysis = [[level] for level in levels]
     for key in space.keys():
@@ -384,7 +384,7 @@ def select_new_region_of_interest(
     space: Space,
     threshold: float,
     n_levels: int,
-) -> Tuple[Space, dict]:
+) -> tuple[Space, dict]:
     """Select new region of interest and frozen parameter values based on factorial analysis.
 
     Parameters

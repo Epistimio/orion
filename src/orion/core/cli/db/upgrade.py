@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to upgrade DB schemes
 ============================
@@ -11,7 +10,7 @@ import argparse
 import logging
 import sys
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import experiment_builder
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
@@ -40,7 +39,7 @@ def ask_question(question, default=None):
 
     """
     if default is not None:
-        question = question + " (default: {}) ".format(default)
+        question = f"{question} (default: {default}) "
 
     answer = input(question)
 
@@ -129,6 +128,17 @@ def upgrade_documents(storage):
         storage.update_experiment(uid=experiment, **experiment)
         storage.initialize_algorithm_lock(uid, experiment["algorithms"])
 
+        for trial in storage.fetch_trials(uid=uid):
+            # trial_config = trial.to_dict()
+            assert trial.id_override is not None
+            # This will overwrite the trial with correct dict structure
+            # (ex: have _id set to id_override and id set to trial.hash_name == trial.id.
+            # storage.update_trial(trial, uid=trial.id_override)
+            # pylint: disable=protected-access
+            storage._db.write(
+                "trials", data=trial.to_dict(), query={"_id": trial.id_override}
+            )
+
 
 def add_version(experiment):
     """Add version 1 if not present"""
@@ -157,7 +167,6 @@ def update_indexes(database):
 # pylint: disable=unused-argument
 def upgrade_mongodb(database):
     """Update mongo specific db scheme."""
-    pass
 
 
 def upgrade_pickledb(database):
@@ -171,7 +180,7 @@ def upgrade_pickledb(database):
         if state["_indexes"] and isinstance(
             next(iter(state["_indexes"].keys())), tuple
         ):
-            self._indexes = dict()
+            self._indexes = {}
             for keys, values in state["_indexes"].items():
                 if isinstance(keys, str):
                     self._indexes[keys] = values

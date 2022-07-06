@@ -32,7 +32,7 @@ def float_to_digits_list(number):
     """Convert a float into a list of digits, without conserving exponent"""
     # Get rid of scientific-format exponent
     str_number = str(number)
-    str_number = str_number.split("e")[0]
+    str_number = str_number.split("e", maxsplit=1)[0]
 
     res = [int(ele) for ele in str_number if ele.isdigit()]
 
@@ -147,12 +147,11 @@ class GenericFactory(Generic[T]):
         constructors = self.get_classes()
 
         if of_type not in constructors:
-            error = "Could not find implementation of {}, type = '{}'".format(
-                self.base.__name__, of_type
+            raise NotImplementedError(
+                f"Could not find implementation of {self.base.__name__}, type = '{of_type}'\n"
+                "Currently, there is an implementation for types:\n"
+                f"{sorted(constructors.keys())}"
             )
-            error += "\nCurrently, there is an implementation for types:\n"
-            error += str(sorted(constructors.keys()))
-            raise NotImplementedError(error)
 
         return constructors[of_type]
 
@@ -183,12 +182,11 @@ class Factory(ABCMeta):
             if name == of_type.lower():
                 return inherited_class(*args, **kwargs)
 
-        error = "Could not find implementation of {}, type = '{}'".format(
-            cls.__base__.__name__, of_type
+        raise NotImplementedError(
+            f"Could not find implementation of {cls.__base__.__name__}, type = '{of_type}'\n"
+            "Currently, there is an implementation for types:\n"
+            f"{sorted(cls.types.keys())}"
         )
-        error += "\nCurrently, there is an implementation for types:\n"
-        error += str(sorted(cls.types.keys()))
-        raise NotImplementedError(error)
 
 
 def compute_identity(size: int = 16, **sample) -> str:

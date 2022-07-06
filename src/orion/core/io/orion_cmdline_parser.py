@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parse command line arguments for Orion
 ======================================
@@ -47,7 +46,7 @@ class OrionCmdlineParser:
         Prefix for the configuration file used by the parser to identify it.
     allow_non_existing_files : bool, optional
         If True, will parse all commandline but ignore non existing user script or configuration
-        files if non existant. Default is False
+        files if non-existent. Default is False
 
     Attributes
     ----------
@@ -155,8 +154,7 @@ class OrionCmdlineParser:
         duplicated_priors = set(self.cmd_priors.keys()) & set(self.file_priors.keys())
         if duplicated_priors:
             raise ValueError(
-                "Conflict: definition of same prior in commandline and config: "
-                "{}".format(duplicated_priors)
+                f"Conflict: definition of same prior in commandline and config: {duplicated_priors}"
             )
 
     def infer_user_script(self, user_args):
@@ -365,7 +363,7 @@ class OrionCmdlineParser:
         """Insert parameters if it has a prior.
 
         Match the regex for priors with the `value` argument to extract the information
-        regarding the prior. If it posseses such information, insert the parameters inside
+        regarding the prior. If it possesses such information, insert the parameters inside
         the `cmd_priors` attribute.
 
         Parameters

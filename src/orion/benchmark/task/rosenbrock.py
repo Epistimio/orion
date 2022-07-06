@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Task for RosenBrock Function
 ==============================
@@ -15,7 +14,7 @@ class RosenBrock(BenchmarkTask):
 
     def __init__(self, max_trials=20, dim=2):
         self.dim = dim
-        super(RosenBrock, self).__init__(max_trials=max_trials, dim=dim)
+        super().__init__(max_trials=max_trials, dim=dim)
 
     def call(self, x):
         """Evaluate a n-D rosenbrock function."""
@@ -26,6 +25,6 @@ class RosenBrock(BenchmarkTask):
 
     def get_search_space(self):
         """Return the search space for the task objective function"""
-        rspace = {"x": "uniform(-5, 10, shape={})".format(self.dim)}
+        rspace = {"x": f"uniform(-5, 10, shape={self.dim})"}
 
         return rspace

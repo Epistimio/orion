@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Utility functions for formatting data
 =====================================
@@ -22,12 +21,9 @@ def trial_to_tuple(trial, space):
     space_keys = set(space.keys())
     if trial_keys != space_keys:
         raise ValueError(
-            """"
-The trial {} has wrong params:
-Trial params: {}
-Space dims: {}""".format(
-                trial.id, sorted(trial_keys), sorted(space_keys)
-            )
+            f"The trial {trial.id} has wrong params:\n"
+            f"Trial params: {sorted(trial_keys)}\n"
+            f"Space dims: {sorted(space_keys)}"
         )
     return tuple(params[name] for name in space.keys())
 
@@ -45,9 +41,7 @@ def dict_to_trial(data, space):
     for name, dim in space.items():
         if name not in data and dim.default_value is dim.NO_DEFAULT_VALUE:
             raise ValueError(
-                "Dimension {} not specified and does not have a default value.".format(
-                    name
-                )
+                f"Dimension {name} not specified and does not have a default value."
             )
         value = data.get(name, dim.default_value)
 
@@ -92,7 +86,7 @@ def tuple_to_trial(data, space, status="new"):
 
 def get_trial_results(trial):
     """Format results from a `orion.core.worker.trial.Trial` using standard structures."""
-    results = dict()
+    results = {}
 
     lie = trial.lie
     objective = trial.objective

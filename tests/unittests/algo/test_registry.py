@@ -1,5 +1,4 @@
 import copy
-from atexit import register
 
 import pytest
 

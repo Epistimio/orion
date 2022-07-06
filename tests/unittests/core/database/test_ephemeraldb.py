@@ -1,15 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import pytest
-from test_database import clean_db, orion_db
 
 from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import (
-    EphemeralCollection,
-    EphemeralDB,
-    EphemeralDocument,
-)
+from orion.core.io.database.ephemeraldb import EphemeralCollection, EphemeralDocument
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -54,8 +48,12 @@ def collection(document, db_type):
 # TESTS SET
 
 
+def test_repr(orion_db: EphemeralDB):
+    assert str(orion_db) == f"EphemeralDB()"
+
+
 @pytest.mark.usefixtures("clean_db")
-class TestIndex(object):
+class TestIndex:
     """Test index for :meth:`orion.core.io.database.ephemeraldb.EphemeralCollection`."""
 
     def test_create_index(self, collection):
@@ -101,7 +99,7 @@ class TestIndex(object):
 
 
 @pytest.mark.usefixtures("clean_db")
-class TestSelect(object):
+class TestSelect:
     """Calls :meth:`orion.core.io.database.ephemeraldb.EphemeralDocument.select`."""
 
     def test_select_all(self, document):

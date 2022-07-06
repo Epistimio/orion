@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client`."""
 import copy
 import json
@@ -70,7 +69,7 @@ def data():
     return "this is datum"
 
 
-class TestReportResults(object):
+class TestReportResults:
     """Check functionality and edge cases of `report_results` helper interface."""
 
     def test_with_no_env(self, monkeypatch, capsys, data):
@@ -111,7 +110,7 @@ class TestReportResults(object):
         assert out == ""
         assert err == ""
 
-        with open(path, mode="r") as results_file:
+        with open(path) as results_file:
             res = json.load(results_file)
         assert res == data
 
@@ -176,7 +175,7 @@ class TestCreateExperiment:
             with pytest.raises(NoConfigurationError) as exc:
                 create_experiment(name=name)
 
-            assert "Experiment {} does not exist in DB".format(name) in str(exc.value)
+            assert f"Experiment {name} does not exist in DB" in str(exc.value)
 
     def test_create_experiment_bad_storage(self):
         """Test error message if storage is not configured properly"""
@@ -268,7 +267,7 @@ class TestCreateExperiment:
             assert experiment.working_dir == config["working_dir"]
 
     def test_create_experiment_race_condition(self, monkeypatch):
-        """Test that a single race condition is handled seemlessly
+        """Test that a single race condition is handled seamlessly
 
         RaceCondition during registration is already handled by `build()`, therefore we will only
         test for race conditions during version update.
