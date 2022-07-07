@@ -12,6 +12,7 @@ import logging
 import tabulate
 
 from orion.core.cli import base as cli
+from orion.core.io import experiment_builder
 from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)

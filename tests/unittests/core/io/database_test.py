@@ -4,11 +4,6 @@
 import pytest
 
 from orion.core.io.database import ReadOnlyDB, database_factory
-from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import (
-    SingletonAlreadyInstantiatedError,
-    SingletonNotInstantiatedError,
-)
 from orion.storage.base import setup_storage
 
 

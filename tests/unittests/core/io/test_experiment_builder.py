@@ -19,7 +19,6 @@ from orion.core.utils.exceptions import (
     RaceCondition,
     UnsupportedOperation,
 )
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy

@@ -261,7 +261,7 @@ class Consumer:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-        except PermissionError:
+        except PermissionError as exc:
             log.debug("Script is not executable")
             raise InexecutableUserScript(" ".join(cmd_args)) from exc
 

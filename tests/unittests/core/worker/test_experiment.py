@@ -494,8 +494,8 @@ def test_fetch_pending_trials():
     trials.status in ['new', 'interrupted', 'suspended']
     """
     pending_stati = ["new", "interrupted", "suspended"]
-    stati = pending_stati + ["completed", "broken", "reserved"]
-    with OrionState(trials=generate_trials(stati)) as cfg:
+    statuses = pending_stati + ["completed", "broken", "reserved"]
+    with OrionState(trials=generate_trials(statuses)) as cfg:
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
         exp._id = cfg.trials[0]["experiment"]
 

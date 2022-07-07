@@ -14,7 +14,7 @@ from orion.client import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy

@@ -14,9 +14,6 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli.hunt import workon
-from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.storage.base import setup_storage
-from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
@@ -249,7 +246,7 @@ def generate_config(template):
     """Generate a configuration file inside a temporary directory with the current storage config"""
     tmp_path = tempfile.mkdtemp("orion_test")
 
-    with open(template, "r") as file:
+    with open(template) as file:
         conf = yaml.safe_load(file)
 
     conf["storage"] = orion.core.config.storage.to_dict()
@@ -259,7 +256,7 @@ def generate_config(template):
     with open(conf_file, "w") as file:
         file.write(config_str)
 
-    with open(conf_file, "r") as file:
+    with open(conf_file) as file:
         yield file
 
     shutil.rmtree(tmp_path)

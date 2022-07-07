@@ -6,7 +6,6 @@ import subprocess
 
 from orion.client import get_experiment
 from orion.core.utils.singleton import update_singletons
-from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))

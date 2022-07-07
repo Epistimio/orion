@@ -13,7 +13,6 @@ from orion.serving.parameters import (
     verify_status,
 )
 from orion.serving.responses import build_trial_response, build_trials_response
-from orion.storage.base import setup_storage
 
 SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 

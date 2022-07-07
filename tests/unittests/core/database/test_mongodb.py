@@ -7,12 +7,7 @@ import pymongo
 import pytest
 from pymongo import MongoClient
 
-from orion.core.io.database import (
-    Database,
-    DatabaseError,
-    DuplicateKeyError,
-    database_factory,
-)
+from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
 from .conftest import insert_test_collection

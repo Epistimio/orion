@@ -5,7 +5,6 @@ Represent the '/' REST endpoint
 import json
 
 import orion.core
-from orion.storage.base import setup_storage
 
 
 class RuntimeResource:

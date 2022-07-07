@@ -3,7 +3,6 @@ import copy
 import datetime
 
 from orion.core.worker.trial import Trial
-from orion.storage.base import setup_storage
 
 current_id = 0
 

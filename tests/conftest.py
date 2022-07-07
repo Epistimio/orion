@@ -2,7 +2,6 @@
 """Common fixtures and utils for unittests and functional tests."""
 import getpass
 import os
-import tempfile
 
 import numpy
 import pytest
@@ -16,10 +15,8 @@ from orion.algo.space import Space
 from orion.core.io import resolve_config
 from orion.core.io.database import database_factory
 from orion.core.utils import format_trials
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import setup_storage, storage_factory
-from orion.storage.legacy import Legacy
+from orion.storage.base import storage_factory
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")

@@ -3,7 +3,11 @@
 import pytest
 
 from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import EphemeralCollection, EphemeralDocument
+from orion.core.io.database.ephemeraldb import (
+    EphemeralCollection,
+    EphemeralDB,
+    EphemeralDocument,
+)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -49,7 +53,7 @@ def collection(document, db_type):
 
 
 def test_repr(orion_db: EphemeralDB):
-    assert str(orion_db) == f"EphemeralDB()"
+    assert str(orion_db) == "EphemeralDB()"
 
 
 @pytest.mark.usefixtures("clean_db")

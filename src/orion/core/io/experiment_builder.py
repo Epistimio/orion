@@ -744,7 +744,7 @@ class ExperimentBuilder:
             name_conflict = conflicts.get([ExperimentNameConflict])[0]
             if not name_conflict.is_resolved and not version:
                 log.debug(
-                    "A race condition likely occured during conflicts resolutions. "
+                    "A race condition likely occurred during conflicts resolutions. "
                     "Now rolling back and attempting re-building the branched experiment."
                 )
                 raise RaceCondition(

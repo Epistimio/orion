@@ -19,7 +19,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
     UnsupportedOperation,
 )
-from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState

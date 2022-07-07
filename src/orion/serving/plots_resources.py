@@ -10,7 +10,6 @@ from falcon import Request, Response
 
 from orion.client import ExperimentClient
 from orion.serving.parameters import retrieve_experiment
-from orion.storage.base import setup_storage
 
 
 class PlotsResource:

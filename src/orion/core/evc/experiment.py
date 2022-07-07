@@ -17,7 +17,6 @@ import functools
 import logging
 
 from orion.core.utils.tree import TreeNode
-from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 

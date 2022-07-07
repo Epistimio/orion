@@ -17,7 +17,6 @@ from orion.serving.responses import (
     build_experiment_response,
     build_experiments_response,
 )
-from orion.storage.base import setup_storage
 
 
 class ExperimentsResource:

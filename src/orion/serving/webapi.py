@@ -16,7 +16,6 @@ from orion.serving.experiments_resource import ExperimentsResource
 from orion.serving.plots_resources import PlotsResource
 from orion.serving.runtime import RuntimeResource
 from orion.serving.trials_resource import TrialsResource
-from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

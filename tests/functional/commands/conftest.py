@@ -10,10 +10,7 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.io.database import database_factory
 from orion.core.worker.trial import Trial
-from orion.storage.base import setup_storage
-from orion.storage.legacy import setup_database
 
 
 @pytest.fixture()

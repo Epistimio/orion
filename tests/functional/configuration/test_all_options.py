@@ -18,7 +18,7 @@ import orion.core.io.resolve_config
 from orion.client import get_experiment
 from orion.core.io import experiment_builder
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState

@@ -7,7 +7,6 @@ import falcon
 
 from orion.core.io import experiment_builder
 from orion.core.worker.trial import Trial
-from orion.storage.base import setup_storage
 
 base_experiment = dict(
     name="experiment-name",
