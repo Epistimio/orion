@@ -51,16 +51,17 @@ base_trial = {
 }
 
 
-def add_experiment(**kwargs):
+def add_experiment(storage, **kwargs):
     """Adds experiment to the dummy orion instance"""
     base_experiment.update(copy.deepcopy(kwargs))
     experiment_builder.build(
         branching=dict(branch_from=base_experiment["name"], enable=True),
+        storage=storage,
         **base_experiment
     )
 
 
-def add_trial(experiment: int, status: str = None, value=10, **kwargs):
+def add_trial(storage, experiment: int, status: str = None, value=10, **kwargs):
     """
     Add trials to the dummy orion instance
 
@@ -81,7 +82,7 @@ def add_trial(experiment: int, status: str = None, value=10, **kwargs):
 
     base_trial.update(copy.deepcopy(kwargs))
     base_trial["params"][0]["value"] = value
-    setup_storage().register_trial(Trial(**base_trial))
+    storage.register_trial(Trial(**base_trial))
 
 
 def test_root_endpoint_not_supported(client):
@@ -108,11 +109,13 @@ class TestTrialCollection:
             "description": 'Experiment "unknown-experiment" does not exist',
         }
 
-    def test_unknown_parameter(self, client):
+    def test_unknown_parameter(self, client, ephemeral_storage):
         """
         Tests that if an unknown parameter is specified in
         the query string, an error is returned even if the experiment doesn't exist.
         """
+        storage = ephemeral_storage.storage
+
         expected_error_message = (
             'Parameter "unknown" is not supported. '
             "Expected one of ['ancestors', 'status', 'version']."
@@ -126,7 +129,7 @@ class TestTrialCollection:
             "description": expected_error_message,
         }
 
-        add_experiment(name="a", version=1, _id=1)
+        add_experiment(storage, name="a", version=1, _id=1)
 
         response = client.simulate_get("/trials/a?unknown=true")
 
@@ -136,15 +139,17 @@ class TestTrialCollection:
             "description": expected_error_message,
         }
 
-    def test_trials_for_latest_version(self, client):
+    def test_trials_for_latest_version(self, client, ephemeral_storage):
         """Tests that it returns the trials of the latest version of the experiment"""
-        add_experiment(name="a", version=1, _id=1)
-        add_experiment(name="a", version=2, _id=2)
+        storage = ephemeral_storage.storage
 
-        add_trial(experiment=1, id_override="00", value=10)
-        add_trial(experiment=2, id_override="01", value=10)
-        add_trial(experiment=1, id_override="02", value=11)
-        add_trial(experiment=2, id_override="03", value=12)
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_experiment(storage, name="a", version=2, _id=2)
+
+        add_trial(storage, experiment=1, id_override="00", value=10)
+        add_trial(storage, experiment=2, id_override="01", value=10)
+        add_trial(storage, experiment=1, id_override="02", value=11)
+        add_trial(storage, experiment=2, id_override="03", value=12)
 
         response = client.simulate_get("/trials/a")
 
@@ -154,15 +159,17 @@ class TestTrialCollection:
             {"id": "36b6bb34f0a01764e1793fe2d4de9078"},
         ]
 
-    def test_trials_for_specific_version(self, client):
+    def test_trials_for_specific_version(self, client, ephemeral_storage):
         """Tests specific version of experiment"""
-        add_experiment(name="a", version=1, _id=1)
-        add_experiment(name="a", version=2, _id=2)
-        add_experiment(name="a", version=3, _id=3)
+        storage = ephemeral_storage.storage
 
-        add_trial(experiment=1, id_override="00")
-        add_trial(experiment=2, id_override="01")
-        add_trial(experiment=3, id_override="02")
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_experiment(storage, name="a", version=2, _id=2)
+        add_experiment(storage, name="a", version=3, _id=3)
+
+        add_trial(storage, experiment=1, id_override="00")
+        add_trial(storage, experiment=2, id_override="01")
+        add_trial(storage, experiment=3, id_override="02")
 
         # Happy case
         response = client.simulate_get("/trials/a?version=2")
@@ -179,16 +186,18 @@ class TestTrialCollection:
             "description": 'Experiment "a" has no version "4"',
         }
 
-    def test_trials_for_all_versions(self, client):
+    def test_trials_for_all_versions(self, client, ephemeral_storage):
         """Tests that trials from all ancestors are shown"""
-        add_experiment(name="a", version=1, _id=1)
-        add_experiment(name="a", version=2, _id=2)
-        add_experiment(name="a", version=3, _id=3)
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_experiment(storage, name="a", version=2, _id=2)
+        add_experiment(storage, name="a", version=3, _id=3)
 
         # Specify values to avoid duplicates
-        add_trial(experiment=1, id_override="00", value=1)
-        add_trial(experiment=2, id_override="01", value=2)
-        add_trial(experiment=3, id_override="02", value=3)
+        add_trial(storage, experiment=1, id_override="00", value=1)
+        add_trial(storage, experiment=2, id_override="01", value=2)
+        add_trial(storage, experiment=3, id_override="02", value=3)
 
         # Happy case default
         response = client.simulate_get("/trials/a?ancestors=true")
@@ -216,9 +225,11 @@ class TestTrialCollection:
             'The value of the parameter must be "true" or "false".',
         }
 
-    def test_trials_by_status(self, client):
+    def test_trials_by_status(self, client, ephemeral_storage):
         """Tests that trials are returned"""
-        add_experiment(name="a", version=1, _id=1)
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
 
         # There exist no trial of the given status in an empty experiment
         response = client.simulate_get("/trials/a?status=completed")
@@ -227,7 +238,7 @@ class TestTrialCollection:
         assert response.json == []
 
         # There exist no trial of the given status while other status are present
-        add_trial(experiment=1, id_override="00", status="broken", value=0)
+        add_trial(storage, experiment=1, id_override="00", status="broken", value=0)
 
         response = client.simulate_get("/trials/a?status=completed")
         assert response.status == "200 OK"
@@ -258,17 +269,19 @@ class TestTrialCollection:
             "'interrupted', 'broken']",
         }
 
-    def test_trials_by_from_specific_version_by_status_with_ancestors(self, client):
+    def test_trials_by_from_specific_version_by_status_with_ancestors(self, client, ephemeral_storage):
         """Tests that mixing parameters work as intended"""
-        add_experiment(name="a", version=1, _id=1)
-        add_experiment(name="b", version=1, _id=2)
-        add_experiment(name="a", version=2, _id=3)
-        add_experiment(name="a", version=3, _id=4)
+        storage = ephemeral_storage.storage
 
-        add_trial(experiment=1, id_override="00", value=1, status="completed")
-        add_trial(experiment=3, id_override="01", value=2, status="broken")
-        add_trial(experiment=3, id_override="02", value=3, status="completed")
-        add_trial(experiment=2, id_override="03", value=4, status="completed")
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_experiment(storage, name="b", version=1, _id=2)
+        add_experiment(storage, name="a", version=2, _id=3)
+        add_experiment(storage, name="a", version=3, _id=4)
+
+        add_trial(storage, experiment=1, id_override="00", value=1, status="completed")
+        add_trial(storage, experiment=3, id_override="01", value=2, status="broken")
+        add_trial(storage, experiment=3, id_override="02", value=3, status="completed")
+        add_trial(storage, experiment=2, id_override="03", value=4, status="completed")
 
         response = client.simulate_get(
             "/trials/a?ancestors=true&version=2&status=completed"
@@ -284,7 +297,7 @@ class TestTrialCollection:
 class TestTrialItem:
     """Tests trials/:experiment_name/:trial_id"""
 
-    def test_unknown_experiment(self, client):
+    def test_unknown_experiment(self, client, ephemeral_storage):
         """Tests that an unknown experiment returns a not found error"""
         response = client.simulate_get("/trials/unknown-experiment/a-trial")
 
@@ -294,9 +307,11 @@ class TestTrialItem:
             "description": 'Experiment "unknown-experiment" does not exist',
         }
 
-    def test_unknown_trial(self, client):
+    def test_unknown_trial(self, client, ephemeral_storage):
         """Tests that an unknown experiment returns a not found error"""
-        add_experiment(name="a", version=1, _id=1)
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
 
         response = client.simulate_get("/trials/a/unknown-trial")
 
@@ -306,11 +321,13 @@ class TestTrialItem:
             "description": 'Trial "unknown-trial" does not exist',
         }
 
-    def test_get_trial(self, client):
+    def test_get_trial(self, client, ephemeral_storage):
         """Tests that an existing trial is returned according to the API specification"""
-        add_experiment(name="a", version=1, _id=1)
-        add_trial(experiment=1, id_override="00", status="completed", value=0)
-        add_trial(experiment=1, id_override="01", status="completed", value=1)
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
 
         response = client.simulate_get("/trials/a/79a873a1146cbdcc385f53e7c14f41aa")
 

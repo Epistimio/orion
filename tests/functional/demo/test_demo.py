@@ -746,7 +746,7 @@ def test_demo_with_shutdown_quickly(storage, monkeypatch):
             ]
         )
 
-    assert process.wait(timeout=40) == 0
+        assert process.wait(timeout=40) == 0
 
 
 def test_demo_with_nondefault_config_keyword(storage, monkeypatch):
@@ -835,30 +835,27 @@ def test_demo_precision(storage, monkeypatch):
     assert value == float(numpy.format_float_scientific(value, precision=4))
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
-def test_debug_mode(monkeypatch):
+def test_debug_mode(storage, monkeypatch):
     """Test debug mode."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-    orion.core.cli.main(
-        [
-            "--debug",
-            "hunt",
-            "--config",
-            "./orion_config.yaml",
-            "--max-trials",
-            "2",
-            "./black_box.py",
-        ]
-        + user_args
-    )
+    with generate_config('orion_config.yaml') as conf_file:
+        orion.core.cli.main(
+            [
+                "--debug",
+                "hunt",
+                "--config",
+                f"{conf_file.name}",
+                "--max-trials",
+                "2",
+                "./black_box.py",
+            ]
+            + user_args
+        )
 
-    storage = setup_storage()
-
-    assert isinstance(storage, Legacy)
-    assert isinstance(storage._db, EphemeralDB)
+    assert len(list(storage.fetch_experiments({}))) == 0
 
 
 def test_no_args(capsys):

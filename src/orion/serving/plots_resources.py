@@ -17,15 +17,15 @@ from orion.storage.base import setup_storage
 class PlotsResource(object):
     """Serves all the requests made to plots/ REST endpoint"""
 
-    def __init__(self):
-        self.storage = setup_storage()
+    def __init__(self, storage):
+        self.storage = storage
 
     def on_get_lpi(self, req: Request, resp: Response, experiment_name: str):
         """
         Handle GET requests for plotting lpi plots on plots/lpi/:experiment
         where ``experiment`` is the user-defined name of the experiment.
         """
-        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        experiment = ExperimentClient(retrieve_experiment(self.storage, experiment_name), None)
         resp.body = experiment.plot.lpi().to_json()
 
     def on_get_parallel_coordinates(
@@ -36,7 +36,7 @@ class PlotsResource(object):
         plots/parallel_coordinates/:experiment where ``experiment`` is the user-defined name of the
         experiment.
         """
-        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        experiment = ExperimentClient(retrieve_experiment(self.storage, experiment_name), None)
         resp.body = experiment.plot.parallel_coordinates().to_json()
 
     def on_get_partial_dependencies(
@@ -47,7 +47,7 @@ class PlotsResource(object):
         plots/partial_dependencies/:experiment where ``experiment`` is the user-defined name of the
         experiment.
         """
-        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        experiment = ExperimentClient(retrieve_experiment(self.storage, experiment_name), None)
         resp.body = experiment.plot.partial_dependencies().to_json()
 
     def on_get_regret(self, req: Request, resp: Response, experiment_name: str):
@@ -55,5 +55,5 @@ class PlotsResource(object):
         Handle GET requests for plotting regret plots on plots/regret/:experiment
         where ``experiment`` is the user-defined name of the experiment.
         """
-        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        experiment = ExperimentClient(retrieve_experiment(self.storage, experiment_name), None)
         resp.body = experiment.plot.regret().to_json()

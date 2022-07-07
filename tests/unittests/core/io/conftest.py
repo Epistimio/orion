@@ -36,6 +36,13 @@ class _GenerateConfig:
         self.database_file.close()
         self.generated_config.close()
 
+@pytest.fixture()
+def raw_config():
+    """Open config file with new config"""
+    file_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "orion_config.yaml"
+    )
+    return open(file_path)
 
 @pytest.fixture()
 def config_file():

@@ -12,8 +12,8 @@ from orion.storage.base import setup_storage
 class RuntimeResource(object):
     """Handle requests for the '/' REST endpoint"""
 
-    def __init__(self):
-        pass
+    def __init__(self, storage):
+        self.storage = storage
 
     def on_get(self, req, resp):
         """Handle the HTTP GET requests for the '/' endpoint
@@ -25,7 +25,7 @@ class RuntimeResource(object):
         resp
             The response to send back
         """
-        database = setup_storage()._db.__class__.__name__
+        database = self.storage._db.__class__.__name__
         response = {
             "orion": orion.core.__version__,
             "server": "gunicorn",

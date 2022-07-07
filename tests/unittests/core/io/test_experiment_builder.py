@@ -171,9 +171,9 @@ def child_version_config(parent_version_config):
 
 
 @pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
-def test_get_cmd_config(config_file):
+def test_get_cmd_config(raw_config):
     """Test local config (cmdconfig, cmdargs)"""
-    cmdargs = {"config": config_file}
+    cmdargs = {"config": raw_config}
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
     assert local_config["algorithms"] == "random"
@@ -182,9 +182,9 @@ def test_get_cmd_config(config_file):
     assert local_config["name"] == "voila_voici"
     assert local_config["storage"] == {
         "database": {
-            "host": "mongodb://user:pass@localhost",
+            "host": "${FILE}",
             "name": "orion_test",
-            "type": "mongodb",
+            "type": "pickleddb",
         }
     }
     assert local_config["metadata"] == {"orion_version": "XYZ", "user": "tsirif"}
@@ -253,9 +253,9 @@ def test_get_from_args_no_hit(config_file):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_get_from_args_hit(config_file, random_dt, new_config):
+def test_get_from_args_hit(raw_config, random_dt, new_config):
     """Try building experiment view when in db"""
-    cmdargs = {"name": "supernaekei", "config": config_file}
+    cmdargs = {"name": "supernaekei", "config": raw_config}
 
     with OrionState(experiments=[new_config], trials=[]):
         exp_view = experiment_builder.get_from_args(cmdargs)
