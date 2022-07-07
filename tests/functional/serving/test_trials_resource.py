@@ -245,7 +245,7 @@ class TestTrialCollection:
         assert response.json == []
 
         # There exist at least one trial of the given status
-        add_trial(experiment=1, id_override="01", status="completed", value=1)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
 
         response = client.simulate_get("/trials/a?status=completed")
 
@@ -269,7 +269,9 @@ class TestTrialCollection:
             "'interrupted', 'broken']",
         }
 
-    def test_trials_by_from_specific_version_by_status_with_ancestors(self, client, ephemeral_storage):
+    def test_trials_by_from_specific_version_by_status_with_ancestors(
+        self, client, ephemeral_storage
+    ):
         """Tests that mixing parameters work as intended"""
         storage = ephemeral_storage.storage
 

@@ -184,17 +184,6 @@ def test_setup_storage_bad_override():
     # assert exc.match(r"A singleton instance of \(type: BaseStorageProtocol\)")
 
 
-@pytest.mark.xfail(reason="Fix this when introducing #135 in v0.2.0")
-def test_setup_storage_bad_config_override():
-    """Test setup with different config than existing singleton"""
-    update_singletons()
-    storage = setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    assert isinstance(storage, Legacy)
-    assert isinstance(storage._db, PickledDB)
-    # with pytest.raises(SingletonAlreadyInstantiatedError):
-    #     setup_storage({"database": {"type": "mongodb"}})
-
-
 def test_setup_storage_stateless():
     """Test that passed configuration dictionary is not modified by the function"""
     update_singletons()

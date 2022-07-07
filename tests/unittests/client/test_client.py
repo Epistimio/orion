@@ -390,7 +390,7 @@ class TestCreateExperiment:
 
         conf_file = str(tmp_path / "db.pkl")
 
-        create_experiment(
+        experiment = create_experiment(
             config["name"],
             space={"x": "uniform(0, 10)"},
             storage={
@@ -399,22 +399,18 @@ class TestCreateExperiment:
             },
         )
 
-        storage = setup_storage()
-
+        storage = experiment._experiment._storage
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
 
-        update_singletons()
-
-        create_experiment(
+        experiment = create_experiment(
             config["name"],
             space={"x": "uniform(0, 10)"},
             storage={"type": "legacy", "database": {"type": "pickleddb"}},
             debug=True,
         )
 
-        storage = setup_storage()
-
+        storage = experiment._experiment._storage
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)
 
@@ -551,26 +547,28 @@ class TestGetExperiment:
             "no view can be created." == str(exception.value)
         )
 
-    @pytest.mark.usefixtures("mock_database")
-    def test_experiment_exist(self):
+    def test_experiment_exist(self, mock_database):
         """
         Tests that an instance of :class:`orion.client.experiment.ExperimentClient` is
         returned representing the latest version when none is given.
         """
-        experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
+        experiment = create_experiment(
+            "a", space={"x": "uniform(0, 10)"}, storage=mock_database.storage
+        )
 
-        experiment = get_experiment("a")
+        experiment = get_experiment("a", storage=mock_database.storage)
 
         assert experiment
         assert isinstance(experiment, ExperimentClient)
         assert experiment.mode == "r"
 
-    @pytest.mark.usefixtures("mock_database")
-    def test_version_do_not_exist(self, caplog):
+    def test_version_do_not_exist(self, caplog, mock_database):
         """Tests that a warning is printed when the experiment exist but the version doesn't"""
-        create_experiment("a", space={"x": "uniform(0, 10)"})
+        create_experiment(
+            "a", space={"x": "uniform(0, 10)"}, storage=mock_database.storage
+        )
 
-        experiment = get_experiment("a", 2)
+        experiment = get_experiment("a", 2, storage=mock_database.storage)
 
         assert experiment.version == 1
         assert (
@@ -578,13 +576,14 @@ class TestGetExperiment:
             in caplog.text
         )
 
-    @pytest.mark.usefixtures("mock_database")
-    def test_read_write_mode(self):
+    def test_read_write_mode(self, mock_database):
         """Tests that experiment can be created in write mode"""
-        experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
+        experiment = create_experiment(
+            "a", space={"x": "uniform(0, 10)"}, storage=mock_database.storage
+        )
         assert experiment.mode == "x"
 
-        experiment = get_experiment("a", 2, mode="r")
+        experiment = get_experiment("a", 2, mode="r", storage=mock_database.storage)
         assert experiment.mode == "r"
 
         with pytest.raises(UnsupportedOperation) as exc:
@@ -592,7 +591,7 @@ class TestGetExperiment:
 
         assert exc.match("ExperimentClient must have write rights to execute `insert()")
 
-        experiment = get_experiment("a", 2, mode="w")
+        experiment = get_experiment("a", 2, mode="w", storage=mock_database.storage)
         assert experiment.mode == "w"
 
         trial = experiment.insert({"x": 0})

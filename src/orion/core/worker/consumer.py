@@ -271,5 +271,5 @@ class Consumer:
         log.debug(f"Script finished with return code {return_code}")
 
         if return_code != 0:
-            log.debug("%s", stdout.decode('utf-8'))
+            log.debug("%s", stdout.decode("utf-8"))
             raise ExecutionError(return_code)

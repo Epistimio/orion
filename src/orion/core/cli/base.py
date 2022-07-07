@@ -78,13 +78,13 @@ class OrionArgsParser:
         verbose = args.pop("verbose", 0)
         levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
 
-        logdir = args.pop('logdir')
+        logdir = args.pop("logdir")
         logfile = None
         if logdir is not None:
             os.makedirs(logdir, exist_ok=True)
 
             pid = os.getpid()
-            logfile = os.path.join(logdir, f'orion_{pid}.log')
+            logfile = os.path.join(logdir, f"orion_{pid}.log")
 
         logging.basicConfig(
             format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",

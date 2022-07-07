@@ -454,68 +454,70 @@ class TestScriptConfigConflict:
 class TestExperimentNameConflict:
     """Tests methods related to experiment name conflicts"""
 
-    def test_try_resolve_twice(self, experiment_name_conflict):
+    def test_try_resolve_twice(self, experiment_name_conflict, storage):
         """Verify that conflict cannot be resolved twice"""
         assert not experiment_name_conflict.is_resolved
         assert isinstance(
-            experiment_name_conflict.try_resolve("dummy"),
+            experiment_name_conflict.try_resolve("dummy", storage=storage),
             experiment_name_conflict.ExperimentNameResolution,
         )
         assert experiment_name_conflict.is_resolved
-        assert experiment_name_conflict.try_resolve() is None
+        assert experiment_name_conflict.try_resolve(storage=storage) is None
 
-    def test_try_resolve(self, experiment_name_conflict):
+    def test_try_resolve(self, experiment_name_conflict, storage):
         """Verify that resolution is achievable with a valid name"""
         new_name = "dummy"
         assert not experiment_name_conflict.is_resolved
-        resolution = experiment_name_conflict.try_resolve(new_name)
+        resolution = experiment_name_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, experiment_name_conflict.ExperimentNameResolution)
         assert experiment_name_conflict.is_resolved
         assert resolution.conflict is experiment_name_conflict
         assert resolution.new_name == new_name
 
-    def test_branch_w_existing_exp(self, existing_exp_conflict):
+    def test_branch_w_existing_exp(self, existing_exp_conflict, storage):
         """Test branching when an existing experiment with the new name already exists"""
         with pytest.raises(ValueError) as exc:
-            existing_exp_conflict.try_resolve("dummy")
+            existing_exp_conflict.try_resolve("dummy", storage=storage)
 
         assert "Cannot" in str(exc.value)
 
-    def test_conflict_exp_no_child(self, exp_no_child_conflict):
+    def test_conflict_exp_no_child(self, exp_no_child_conflict, storage):
         """Verify the version number is incremented when exp has no child."""
         new_name = "test"
         assert not exp_no_child_conflict.is_resolved
-        resolution = exp_no_child_conflict.try_resolve(new_name)
+        resolution = exp_no_child_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, exp_no_child_conflict.ExperimentNameResolution)
         assert exp_no_child_conflict.is_resolved
         assert resolution.conflict is exp_no_child_conflict
         assert resolution.old_version == 1
         assert resolution.new_version == 2
 
-    def test_conflict_exp_w_child(self, exp_w_child_conflict):
+    def test_conflict_exp_w_child(self, exp_w_child_conflict, storage):
         """Verify the version number is incremented from child when exp has a child."""
         new_name = "test"
         assert not exp_w_child_conflict.is_resolved
-        resolution = exp_w_child_conflict.try_resolve(new_name)
+        resolution = exp_w_child_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
         assert exp_w_child_conflict.is_resolved
         assert resolution.conflict is exp_w_child_conflict
         assert resolution.new_version == 3
 
-    def test_conflict_exp_w_child_as_parent(self, exp_w_child_as_parent_conflict):
+    def test_conflict_exp_w_child_as_parent(
+        self, exp_w_child_as_parent_conflict, storage
+    ):
         """Verify that an error is raised when trying to branch from parent."""
         new_name = "test"
         with pytest.raises(ValueError) as exc:
-            exp_w_child_as_parent_conflict.try_resolve(new_name)
+            exp_w_child_as_parent_conflict.try_resolve(new_name, storage=storage)
 
         assert "Experiment name" in str(exc.value)
 
-    def test_conflict_exp_renamed(self, exp_w_child_conflict):
+    def test_conflict_exp_renamed(self, exp_w_child_conflict, storage):
         """Verify the version number is not incremented when exp is renamed."""
         # It increments from child
         new_name = "test2"
         assert not exp_w_child_conflict.is_resolved
-        resolution = exp_w_child_conflict.try_resolve(new_name)
+        resolution = exp_w_child_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
         assert exp_w_child_conflict.is_resolved
         assert resolution.conflict is exp_w_child_conflict

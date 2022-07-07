@@ -34,6 +34,9 @@ def count_benchmarks():
     return len(setup_storage().fetch_benchmark({}))
 
 
+storage_instance = ""
+
+
 class TestCreateBenchmark:
     """Test Benchmark creation"""
 
@@ -89,7 +92,9 @@ class TestCreateBenchmark:
             exc.value
         )
 
-    def test_create_experiment_debug_mode(self, tmp_path, benchmark_config_py):
+    def test_create_experiment_debug_mode(
+        self, monkeypatch, tmp_path, benchmark_config_py
+    ):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
         update_singletons()
 
@@ -101,20 +106,26 @@ class TestCreateBenchmark:
             "database": {"type": "pickleddb", "host": conf_file},
         }
 
-        get_or_create_benchmark(**config).close()
+        old_setup = benchmark_client.setup_storage
 
-        storage = setup_storage()
+        def retrieve_storage(*args, **kwargs):
+            global storage_instance
 
+            storage_instance = old_setup(*args, **kwargs)
+            return storage_instance
+
+        monkeypatch.setattr(benchmark_client, "setup_storage", retrieve_storage)
+        benchmark = get_or_create_benchmark(**config).close()
+
+        storage = storage_instance
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
 
-        update_singletons()
         config["storage"] = {"type": "legacy", "database": {"type": "pickleddb"}}
         config["debug"] = True
         get_or_create_benchmark(**config).close()
 
-        storage = setup_storage()
-
+        storage = storage_instance
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)
 
@@ -192,7 +203,7 @@ class TestCreateBenchmark:
                     get_or_create_benchmark(
                         **benchmark_config_py,
                         executor=executor,
-                        storage=cfg.storage_config
+                        storage=cfg.storage_config,
                     )
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
 

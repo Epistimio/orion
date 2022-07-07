@@ -26,12 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-<<<<<<< HEAD
         toxenv: [black]
 
-=======
-        toxenv: [pylint, doc8, docs]
->>>>>>> 5fb2b4e2ff119d8fd3efb8e79100e4f81100faf7
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.9

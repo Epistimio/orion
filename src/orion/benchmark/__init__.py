@@ -55,13 +55,22 @@ class Benchmark:
         Executor to run the benchmark experiments
     """
 
-    def __init__(self, name, algorithms, targets, storage=None, executor=None):
+    def __init__(
+        self,
+        name,
+        algorithms,
+        targets,
+        storage=None,
+        executor=None,
+        storage_instance=None,
+    ):
         self._id = None
         self.name = name
         self.algorithms = algorithms
         self.targets = targets
         self.metadata = {}
         self.storage_config = storage
+        self.storage = storage_instance
         self._executor = executor
         self._executor_owner = False
 
@@ -353,7 +362,7 @@ class Study:
                     space=space,
                     algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
-                    storage=self.benchmark.storage_config,
+                    storage=self.benchmark.storage,
                     executor=executor,
                 )
                 self.experiments_info.append((task_index, experiment))

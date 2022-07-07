@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """Perform a functional test for demo purposes."""
-from contextlib import contextmanager
 import os
 import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
+from contextlib import contextmanager
 
 import numpy
 import pytest
@@ -249,17 +249,17 @@ def generate_config(template):
     """Generate a configuration file inside a temporary directory with the current storage config"""
     tmp_path = tempfile.mkdtemp("orion_test")
 
-    with open(template, 'r') as file:
+    with open(template, "r") as file:
         conf = yaml.safe_load(file)
 
-    conf['storage'] = orion.core.config.storage.to_dict()
+    conf["storage"] = orion.core.config.storage.to_dict()
     conf_file = os.path.join(tmp_path, "config.yaml")
     config_str = yaml.dump(conf)
 
-    with open(conf_file, 'w') as file:
+    with open(conf_file, "w") as file:
         file.write(config_str)
 
-    with open(conf_file, 'r') as file:
+    with open(conf_file, "r") as file:
         yield file
 
     shutil.rmtree(tmp_path)
@@ -267,7 +267,7 @@ def generate_config(template):
 
 def logging_directory():
     base_repo = os.path.dirname(os.path.abspath(orion.core.__file__))
-    logdir = os.path.abspath(os.path.join(base_repo, '..', '..', '..', 'logdir'))
+    logdir = os.path.abspath(os.path.join(base_repo, "..", "..", "..", "logdir"))
 
     try:
         shutil.rmtree(logdir)
@@ -284,7 +284,7 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
     logdir = logging_directory()
     print(logdir)
 
-    with generate_config('orion_config_random.yaml') as conf_file:
+    with generate_config("orion_config_random.yaml") as conf_file:
         processes = []
         for _ in range(4):
             process = subprocess.Popen(
@@ -303,7 +303,7 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
                     "--max-trials",
                     "20",
                     "./black_box.py",
-                    "-x~norm(34, 3)"
+                    "-x~norm(34, 3)",
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -316,7 +316,7 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
             rcode = process.wait()
 
             if rcode != 0:
-                print('OUT', stdout.decode('utf-8'))
+                print("OUT", stdout.decode("utf-8"))
 
             assert rcode == 0
 
@@ -365,7 +365,9 @@ def test_workon():
     with OrionState() as cfg:
         cmd_config = experiment_builder.get_cmd_config(config)
 
-        builder = experiment_builder.ExperimentBuilder(cfg.storage, debug=cmd_config.get("debug"))
+        builder = experiment_builder.ExperimentBuilder(
+            cfg.storage, debug=cmd_config.get("debug")
+        )
 
         experiment = builder.build(**cmd_config)
 
@@ -731,7 +733,7 @@ def test_demo_with_shutdown_quickly(storage, monkeypatch):
 
     monkeypatch.setattr(orion.core.config.worker, "heartbeat", 120)
 
-    with generate_config('orion_config_random.yaml') as conf_file:
+    with generate_config("orion_config_random.yaml") as conf_file:
         process = subprocess.Popen(
             [
                 "orion",
@@ -840,7 +842,7 @@ def test_debug_mode(storage, monkeypatch):
 
     user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-    with generate_config('orion_config.yaml') as conf_file:
+    with generate_config("orion_config.yaml") as conf_file:
         orion.core.cli.main(
             [
                 "--debug",

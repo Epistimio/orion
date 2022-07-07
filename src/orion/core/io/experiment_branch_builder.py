@@ -59,7 +59,7 @@ class ExperimentBranchBuilder:
         enabled=True,
         manual_resolution=None,
         storage=None,
-        **branching_arguments
+        **branching_arguments,
     ):
         self.storage = storage
         # TODO: handle all other arguments

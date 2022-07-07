@@ -996,7 +996,7 @@ class TestResolutionsWithMarkers:
         storage.create_experiment(parent_config)
         child_config["version"] = 1
         conflicts = detect_conflicts(parent_config, child_config)
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 1
         assert len(conflicts.get_resolved()) == 1
@@ -1017,7 +1017,7 @@ class TestResolutionsWithMarkers:
         child_config2 = copy.deepcopy(child_config)
         child_config2["version"] = 1
         conflicts = detect_conflicts(parent_config, child_config2)
-        ExperimentBranchBuilder(conflicts, branch_to=new_name)
+        ExperimentBranchBuilder(conflicts, branch_to=new_name, storage=storage)
 
         assert len(conflicts.get()) == 1
         assert len(conflicts.get_resolved()) == 1
@@ -1030,7 +1030,9 @@ class TestResolutionsWithMarkers:
         assert conflict.new_config["version"] == 1
         assert conflict.is_resolved
 
-    def test_bad_name_experiment(self, parent_config, child_config, monkeypatch):
+    def test_bad_name_experiment(
+        self, parent_config, child_config, monkeypatch, storage
+    ):
         """Test if experiment name conflict is not resolved when invalid name is marked"""
 
         def _is_unique(self, *args, **kwargs):
@@ -1043,7 +1045,7 @@ class TestResolutionsWithMarkers:
         )
 
         conflicts = detect_conflicts(parent_config, child_config)
-        ExperimentBranchBuilder(conflicts, branch_to="test2")
+        ExperimentBranchBuilder(conflicts, branch_to="test2", storage=storage)
 
         assert len(conflicts.get()) == 1
         assert len(conflicts.get_resolved()) == 0
@@ -1211,11 +1213,11 @@ class TestAdapters:
 class TestResolutionsConfig:
     """Test auto-resolution with specific types from orion.core.config.evc"""
 
-    def test_cli_change(self, parent_config, changed_cli_config):
+    def test_cli_change(self, parent_config, changed_cli_config, storage):
         """Test if giving a proper change-type solves the command line conflict"""
         conflicts = detect_conflicts(parent_config, changed_cli_config)
         orion.core.config.evc.cli_change_type = "noeffect"
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 2
         assert len(conflicts.get_resolved()) == 2
@@ -1226,21 +1228,21 @@ class TestResolutionsConfig:
         assert conflict.resolution.type == "noeffect"
         orion.core.config.evc.cli_change_type = "break"
 
-    def test_bad_cli_change(self, capsys, parent_config, changed_cli_config):
+    def test_bad_cli_change(self, capsys, parent_config, changed_cli_config, storage):
         """Test if giving an invalid change-type fails the the resolution"""
         conflicts = detect_conflicts(parent_config, changed_cli_config)
         orion.core.config.evc.cli_change_type = "bad-type"
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 2
         assert len(conflicts.get_resolved()) == 1
         orion.core.config.evc.cli_change_type = "break"
 
-    def test_code_change(self, parent_config, changed_code_config):
+    def test_code_change(self, parent_config, changed_code_config, storage):
         """Test if giving a proper change-type solves the code conflict"""
         conflicts = detect_conflicts(parent_config, changed_code_config)
         orion.core.config.evc.code_change_type = "noeffect"
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 2
         assert len(conflicts.get_resolved()) == 2
@@ -1251,21 +1253,21 @@ class TestResolutionsConfig:
         assert conflict.resolution.type == "noeffect"
         orion.core.config.evc.code_change_type = "break"
 
-    def test_bad_code_change(self, capsys, parent_config, changed_code_config):
+    def test_bad_code_change(self, capsys, parent_config, changed_code_config, storage):
         """Test if giving an invalid change-type prints error message and do nothing"""
         conflicts = detect_conflicts(parent_config, changed_code_config)
         orion.core.config.evc.code_change_type = "bad-type"
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 2
         assert len(conflicts.get_resolved()) == 1
         orion.core.config.evc.code_change_type = "break"
 
-    def test_config_change(self, parent_config, changed_userconfig_config):
+    def test_config_change(self, parent_config, changed_userconfig_config, storage):
         """Test if giving a proper change-type solves the user script config conflict"""
         conflicts = detect_conflicts(parent_config, changed_userconfig_config)
         orion.core.config.evc.config_change_type = "noeffect"
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 4
         assert len(conflicts.get_resolved()) == 4
@@ -1275,11 +1277,13 @@ class TestResolutionsConfig:
         assert isinstance(conflict, ScriptConfigConflict)
         assert conflict.resolution.type == "noeffect"
 
-    def test_bad_config_change(self, capsys, parent_config, changed_userconfig_config):
+    def test_bad_config_change(
+        self, capsys, parent_config, changed_userconfig_config, storage
+    ):
         """Test if giving an invalid change-type prints error message and do nothing"""
         conflicts = detect_conflicts(parent_config, changed_userconfig_config)
         orion.core.config.evc.config_change_type = "bad-type"
-        ExperimentBranchBuilder(conflicts)
+        ExperimentBranchBuilder(conflicts, storage=storage)
 
         assert len(conflicts.get()) == 4
         assert len(conflicts.get_resolved()) == 3

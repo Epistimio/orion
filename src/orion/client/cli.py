@@ -17,7 +17,7 @@ if RESULTS_FILENAME:
 
         IS_ORION_ON = True
     else:
-        raise RuntimeWarning(f'{RESULTS_FILENAME} is not a file')
+        raise RuntimeWarning(f"{RESULTS_FILENAME} is not a file")
 
 if RESULTS_FILENAME and not IS_ORION_ON:
     raise RuntimeWarning(

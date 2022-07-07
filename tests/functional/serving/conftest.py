@@ -13,6 +13,7 @@ def ephemeral_storage():
     with OrionState(storage=storage) as cfg:
         yield cfg
 
+
 @pytest.fixture()
 def client(ephemeral_storage):
     """Mock the falcon.API instance for testing with an in memory database"""
@@ -28,6 +29,6 @@ def client_with_frontends_uri(ephemeral_storage):
             {
                 "storage": ephemeral_storage.storage,
                 "frontends_uri": ["http://123.456", "http://example.com"],
-            }
+            },
         )
     )

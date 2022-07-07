@@ -253,11 +253,17 @@ def test_get_from_args_no_hit(config_file):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_get_from_args_hit(raw_config, random_dt, new_config):
+def test_get_from_args_hit(monkeypatch, raw_config, random_dt, new_config):
     """Try building experiment view when in db"""
     cmdargs = {"name": "supernaekei", "config": raw_config}
 
-    with OrionState(experiments=[new_config], trials=[]):
+    with OrionState(experiments=[new_config], trials=[]) as cfg:
+
+        def get_storage(*args, **kwargs):
+            return cfg.storage
+
+        monkeypatch.setattr(experiment_builder, "setup_storage", get_storage)
+
         exp_view = experiment_builder.get_from_args(cmdargs)
 
     assert exp_view._id == new_config["_id"]
@@ -270,7 +276,9 @@ def test_get_from_args_hit(raw_config, random_dt, new_config):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
+def test_get_from_args_hit_no_conf_file(
+    monkeypatch, config_file, random_dt, new_config
+):
     """Try building experiment view when in db, and local config file of user script does
     not exist
     """
@@ -281,6 +289,12 @@ def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
     ]
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
+
+        def get_storage(*args, **kwargs):
+            return cfg.storage
+
+        monkeypatch.setattr(experiment_builder, "setup_storage", get_storage)
+
         exp_view = experiment_builder.get_from_args(cmdargs)
 
     assert exp_view._id == new_config["_id"]
@@ -293,7 +307,9 @@ def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
 
 
 @pytest.mark.usefixtures("with_user_dendi")
-def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config):
+def test_build_from_args_no_hit(
+    monkeypatch, config_file, random_dt, script_path, new_config
+):
     """Try building experiment when not in db"""
     cmdargs = {
         "name": "supernaekei",
@@ -301,12 +317,17 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
         "user_args": [script_path, "x~uniform(0,10)"],
     }
 
-    with OrionState(experiments=[], trials=[]):
+    with OrionState(experiments=[], trials=[]) as cfg:
         with pytest.raises(NoConfigurationError) as exc_info:
             experiment_builder.get_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(
             exc_info.value
         )
+
+        def get_storage(*args, **kwargs):
+            return cfg.storage
+
+        monkeypatch.setattr(experiment_builder, "setup_storage", get_storage)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
@@ -328,7 +349,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
 @pytest.mark.usefixtures(
     "version_XYZ", "with_user_tsirif", "mock_infer_versioning_metadata"
 )
-def test_build_from_args_hit(old_config_file, script_path, new_config):
+def test_build_from_args_hit(monkeypatch, old_config_file, script_path, new_config):
     """Try building experiment when in db (no branch)"""
     cmdargs = {
         "name": "supernaekei",
@@ -336,7 +357,13 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
         "user_args": [script_path, "--mini-batch~uniform(32, 256, discrete=True)"],
     }
 
-    with OrionState(experiments=[new_config], trials=[]):
+    with OrionState(experiments=[new_config], trials=[]) as cfg:
+
+        def get_storage(*args, **kwargs):
+            return cfg.storage
+
+        monkeypatch.setattr(experiment_builder, "setup_storage", get_storage)
+
         # Test that experiment already exists
         experiment_builder.get_from_args(cmdargs)
 
@@ -363,59 +390,60 @@ def test_build_from_args_force_user(new_config):
     assert exp_view.metadata["user"] == "tsirif"
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
-def test_build_from_args_debug_mode(script_path, storage):
+def test_build_from_args_debug_mode(monkeypatch, script_path, storage):
     """Try building experiment in debug mode"""
 
-    experiment_builder.build_from_args(
+    experiment = experiment_builder.build_from_args(
         {
             "name": "whatever",
             "user_args": [script_path, "--mini-batch~uniform(32, 256)"],
         }
     )
 
+    storage = experiment._storage
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
 
-    update_singletons()
-
-    experiment_builder.build_from_args(
+    experiment = experiment_builder.build_from_args(
         {
             "name": "whatever",
             "user_args": [script_path, "--mini-batch~uniform(32, 256)"],
             "debug": True,
         }
     )
-    storage = setup_storage()
 
+    storage = experiment._storage
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, EphemeralDB)
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
-def test_get_from_args_debug_mode(script_path):
+storage_instance = ""
+
+
+def test_get_from_args_debug_mode(monkeypatch, script_path, storage):
     """Try building experiment view in debug mode"""
-    update_singletons()
+
+    old_factory = experiment_builder.setup_storage
+
+    def retrieve_storage(*args, **kwargs):
+        global storage_instance
+
+        storage_instance = old_factory(*args, **kwargs)
+        return storage_instance
+
+    monkeypatch.setattr(experiment_builder, "setup_storage", retrieve_storage)
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
     with pytest.raises(NoConfigurationError):
         experiment_builder.get_from_args({"name": "whatever"})
 
-    storage = setup_storage()
-
-    assert isinstance(storage, Legacy)
-    assert isinstance(storage._db, PickledDB)
-
-    update_singletons()
+    assert isinstance(storage_instance._db, PickledDB)
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
     with pytest.raises(NoConfigurationError):
         experiment_builder.get_from_args({"name": "whatever", "debug": True})
 
-    storage = setup_storage()
-
-    assert isinstance(storage, Legacy)
-    assert isinstance(storage._db, EphemeralDB)
+    assert isinstance(storage_instance._db, EphemeralDB)
 
 
 @pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
@@ -510,13 +538,21 @@ def test_build_without_config_hit(python_api_config):
 @pytest.mark.usefixtures(
     "with_user_tsirif", "version_XYZ", "mock_infer_versioning_metadata"
 )
-def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
+def test_build_from_args_without_cmd(
+    monkeypatch, old_config_file, script_path, new_config
+):
     """Try building experiment without commandline when in db (no branch)"""
     name = "supernaekei"
 
     cmdargs = {"name": name, "config": old_config_file}
 
-    with OrionState(experiments=[new_config], trials=[]):
+    with OrionState(experiments=[new_config], trials=[]) as cfg:
+
+        def get_storage(*args, **kwargs):
+            return cfg.storage
+
+        monkeypatch.setattr(experiment_builder, "setup_storage", get_storage)
+
         # Test that experiment already exists (this should fail otherwise)
         experiment_builder.get_from_args(cmdargs)
 
