@@ -825,7 +825,7 @@ class TestTransformedDimension:
         tdim2.original_dimension._default_value = "bad-default"
 
         # It does not pass
-        with pytest.raises(ValueError) as exc:
+        with pytest.raises(TypeError) as exc:
             tdim.validate()
         assert "Use 'shape' keyword only instead of 'size'." in str(exc.value)
 

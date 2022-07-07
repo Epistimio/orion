@@ -192,6 +192,16 @@ class DimensionBuilder:
         klass = _real_or_int(kwargs)
         return klass(name, "reciprocal", *args, **kwargs)
 
+    def _build_custom(self, expression, globals_, locals_):
+        name = expression.split("(")[0]
+        if not hasattr(self, name):
+            return None
+        try:
+            dimension = eval("self." + expression, globals_, locals_)
+            return dimension
+        except AttributeError as error:
+            raise AttributeError(f"Parameter '{name}': {error}") from error
+
     def _build(self, name, expression):
         """Build a `Dimension` object using a string as its `name` and another
         string, `expression`, from configuration as a "function" to create it.
@@ -204,12 +214,10 @@ class DimensionBuilder:
         import numpy as np
 
         globals_["np"] = np
-        try:
-            dimension = eval("self." + expression, globals_, {"self": self})
-
+        locals_ = {"self": self}
+        dimension = self._build_custom(expression, globals_, locals_)
+        if dimension is not None:
             return dimension
-        except AttributeError:
-            pass
 
         # If not found in the methods of `DimensionBuilder`.
         # try to see if it is legit scipy stuff and call a `Dimension`
@@ -241,8 +249,10 @@ class DimensionBuilder:
         """
         try:
             dimension = self._build(name, expression)
-        except ValueError as exc:
-            raise TypeError(f"Parameter '{name}': Incorrect arguments.") from exc
+        except (TypeError, ValueError) as exc:
+            raise type(exc)(
+                f"Parameter '{name}' has incorrect arguments: {str(exc)}"
+            ) from exc
         except IndexError as exc:
             error_msg = (
                 f"Parameter '{name}': Please provide a valid form for prior:\n"
