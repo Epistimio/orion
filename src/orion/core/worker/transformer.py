@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 """
 Perform transformations on Dimensions
@@ -177,7 +176,7 @@ def build_required_space(
     return space
 
 
-class Transformer(object, metaclass=ABCMeta):
+class Transformer(metaclass=ABCMeta):
     """Define an (injective) function and its inverse. Base transformation class.
 
     Attributes
@@ -197,21 +196,18 @@ class Transformer(object, metaclass=ABCMeta):
     @abstractmethod
     def transform(self, point):
         """Transform a point from domain dimension to the target dimension."""
-        pass
 
     @abstractmethod
     def reverse(self, transformed_point, index=None):
         """Reverse transform a point from target dimension to the domain dimension."""
-        pass
 
-    # pylint:disable=no-self-use
     def infer_target_shape(self, shape):
         """Return the shape of the dimension after transformation."""
         return shape
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
-        return "{}({})".format(self.__class__.__name__, what)
+        return f"{self.__class__.__name__}({what})"
 
     def _get_hashable_members(self):
         return (self.__class__.__name__, self.domain_type, self.target_type)
@@ -314,7 +310,7 @@ class Compose(Transformer):
 
     @property
     def target_type(self):
-        """Infer type of the tranformation target."""
+        """Infer type of the transformation target."""
         type_before = self.composition.target_type
         type_after = self.apply.target_type
         return type_after if type_after else type_before
@@ -348,9 +344,7 @@ class Reverse(Transformer):
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
-        return "{}{}".format(
-            self.__class__.__name__, self.transformer.repr_format(what)
-        )
+        return f"{self.__class__.__name__}{self.transformer.repr_format(what)}"
 
     @property
     def target_type(self):
@@ -398,7 +392,7 @@ class Precision(Transformer):
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
-        return "{}({}, {})".format(self.__class__.__name__, self.precision, what)
+        return f"{self.__class__.__name__}({self.precision}, {what})"
 
 
 class Quantize(Transformer):
@@ -491,7 +485,7 @@ class OneHotEncode(Transformer):
         grid = numpy.meshgrid(
             *[numpy.arange(dim) for dim in point_.shape], indexing="ij"
         )
-        hot[grid + [point_]] = 1
+        hot[tuple(grid + [point_])] = 1
         return hot
 
     # pylint:disable=unused-argument
@@ -534,7 +528,7 @@ class OneHotEncode(Transformer):
         return tuple(list(shape) + [self.num_cats]) if self.num_cats > 2 else shape
 
     def _get_hashable_members(self):
-        return super(OneHotEncode, self)._get_hashable_members() + (self.num_cats,)
+        return super()._get_hashable_members() + (self.num_cats,)
 
 
 class Linearize(Transformer):
@@ -591,12 +585,12 @@ class View(Transformer):
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
-        return "{}(shape={}, index={}, {})".format(
-            self.__class__.__name__, self.shape, self.index, what
+        return (
+            f"{self.__class__.__name__}(shape={self.shape}, index={self.index}, {what})"
         )
 
 
-class TransformedDimension(object):
+class TransformedDimension:
     """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality,
     while transform automatically and appropriately an underlying
     :class:`orion.algo.space.Dimension` object according to a `Transformer` object.
@@ -718,7 +712,7 @@ class ReshapedDimension(TransformedDimension):
     """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality."""
 
     def __init__(self, transformer, original_dimension, index, name=None):
-        super(ReshapedDimension, self).__init__(transformer, original_dimension)
+        super().__init__(transformer, original_dimension)
         if name is None:
             name = original_dimension.name
         self._name = name
@@ -748,7 +742,7 @@ class ReshapedDimension(TransformedDimension):
     @property
     def cardinality(self):
         """Compute cardinality"""
-        cardinality = super(ReshapedDimension, self).cardinality
+        cardinality = super().cardinality
         if isinstance(self.transformer, View):
             cardinality /= numpy.prod(self.transformer.shape)
 
@@ -782,7 +776,7 @@ class TransformedSpace(Space):
     contains = TransformedDimension
 
     def __init__(self, space, *args, **kwargs):
-        super(TransformedSpace, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._original_space = space
 
     def transform(self, trial):
@@ -827,7 +821,7 @@ class ReshapedSpace(Space):
     contains = ReshapedDimension
 
     def __init__(self, original_space, *args, **kwargs):
-        super(ReshapedSpace, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._original_space = original_space
 
     @property
@@ -883,7 +877,7 @@ class ReshapedSpace(Space):
 
         """
         if isinstance(key_or_trial, str):
-            return super(ReshapedSpace, self).__contains__(key_or_trial)
+            return super().__contains__(key_or_trial)
 
         return self.restore_shape(key_or_trial) in self.original
 

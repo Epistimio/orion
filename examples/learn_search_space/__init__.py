@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 :mod:`orion.core.transfer` --
 Learning search spaces for Bayesian optimization:
@@ -13,7 +12,6 @@ Another view of hyperparameter transfer learning
 import logging
 
 import numpy as np
-
 
 log = logging.getLogger(__name__)
 # It should apply experiment and trials objects (in its same root path?)
@@ -56,8 +54,9 @@ def rep_task(hist_tasks, curr_task):
 
     for i in range(len(hist_tasks)):
         for j in range(len(hist_tasks[i]["params"])):
-            hist_opt[i, hpp_idx_map[hist_tasks[i]["params"][j]["name"]]] = \
-                hist_tasks[i]["params"][j]["value"]
+            hist_opt[i, hpp_idx_map[hist_tasks[i]["params"][j]["name"]]] = hist_tasks[
+                i
+            ]["params"][j]["value"]
 
     return hist_opt, curr_bound
 
@@ -76,7 +75,7 @@ def shrink_bbox_space(hist_tasks, curr_task):
     adj_bound[1, :] = np.min(np.stack((hist_bound[1], curr_bound[1])), axis=0)
 
     if np.any(adj_bound[0] > adj_bound[1]):
-        return  # if no intersection, reture curr setting space
+        return  # if no intersection, return curr setting space
     for i in range(len(curr_task["space"])):
         key_item = next(iter(curr_task["space"][i].keys()))
         curr_task["space"][i][key_item][0] = adj_bound[0, i]
@@ -112,7 +111,9 @@ def rej_sampling_ellips_space(matrix_a, vector_b, curr_task):
         x = np.mat(np.linalg.inv(matrix_a)) * np.matrix.transpose(np.mat(t - vector_b))
         x = np.array(x).ravel()
         diff = curr_bound - np.tile(x, (2, 1))
-        if np.all(diff[0, :] <= 0) and np.all(diff[1, :] >= 0):  # x in curr search space
+        if np.all(diff[0, :] <= 0) and np.all(
+            diff[1, :] >= 0
+        ):  # x in curr search space
             is_feasible = True
 
     # x is in the same order as curr_task representation
@@ -124,19 +125,28 @@ if __name__ == "__main__":
     #                   [{"lr": [0.001, 0.04]},
     #                    {"wd": [0.00001, 0.00005]}]}
 
-    curr_task = {"space":
-                 [{"lr": [0.001, 0.04]},
-                  {"wd": [0.00001, 0.01]}]}
+    curr_task = {"space": [{"lr": [0.001, 0.04]}, {"wd": [0.00001, 0.01]}]}
 
-    hist_task = [{"params":
-                  [{"name": "lr", "type": "real", "value": 0.05},
-                   {"name": "wd", "type": "real", "value": 0.0001}]},
-                 {"params":
-                  [{"name": "lr", "type": "real", "value": 0.02},
-                   {"name": "wd", "type": "real", "value": 0.0003}]},
-                 {"params":
-                  [{"name": "lr", "type": "real", "value": 0.007},
-                   {"name": "wd", "type": "real", "value": 0.0002}]}]
+    hist_task = [
+        {
+            "params": [
+                {"name": "lr", "type": "real", "value": 0.05},
+                {"name": "wd", "type": "real", "value": 0.0001},
+            ]
+        },
+        {
+            "params": [
+                {"name": "lr", "type": "real", "value": 0.02},
+                {"name": "wd", "type": "real", "value": 0.0003},
+            ]
+        },
+        {
+            "params": [
+                {"name": "lr", "type": "real", "value": 0.007},
+                {"name": "wd", "type": "real", "value": 0.0002},
+            ]
+        },
+    ]
 
     shrink_bbox_space(hist_task, curr_task)
     print("update curr task:", curr_task)

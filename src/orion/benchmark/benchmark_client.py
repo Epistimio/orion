@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Benchmark client
 =================
@@ -41,7 +40,7 @@ def get_or_create_benchmark(
     executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     debug: bool, optional
-        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        If using in debug mode, the storage config is overridden with legacy:EphemeralDB.
         Defaults to False.
 
     Returns

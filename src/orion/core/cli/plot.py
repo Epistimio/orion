@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the plot command
 ========================
@@ -9,9 +8,9 @@ Exposes the interface for plotting for command-line usage.
 """
 import logging
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
 from orion.core.cli import base as cli
+from orion.core.io import experiment_builder
 from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
 
 log = logging.getLogger(__name__)
@@ -94,7 +93,7 @@ def get_output(experiment, output, kind, out_type):
     """Create output file name based on experiment name, plot kind and file type.
 
     If the output filename is provided, it is appended with the file type if filename
-    does not already has the corresponding extention. (ex output.name -> output.name.png)
+    does not already has the corresponding extension. (ex output.name -> output.name.png)
     """
 
     if not output:
@@ -124,7 +123,7 @@ def main(args):
     elif args["type"] in HTML_TYPES:
         output_plot.write_html(args["output"])
     elif args["type"] in JSON_TYPES:
-        with open(args["output"], "w") as f_out:
+        with open(args["output"], "w", encoding="utf8") as f_out:
             # Note that this is the content of the "body" in the WebApi.
             f_out.write(output_plot.to_json())
     else:

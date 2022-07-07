@@ -3,10 +3,8 @@ import glob
 import os
 import shutil
 import subprocess
-import sys
 
 from orion.client import get_experiment
-from orion.core.cli.db.rm import process_exp_rm
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage

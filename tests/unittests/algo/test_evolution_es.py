@@ -1,30 +1,23 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.evolution_es`."""
 from __future__ import annotations
 
 import copy
-import hashlib
 from typing import ClassVar
 
 import numpy as np
 import pytest
-from test_hyperband import (
-    compare_registered_trial,
-    create_rung_from_points,
-    create_trial_for_hb,
-    force_observe,
-)
+from test_hyperband import create_rung_from_points, create_trial_for_hb
 
 from orion.algo.evolution_es import (
     BracketEVES,
     BudgetTuple,
     EvolutionES,
-    RungDict,
     compute_budgets,
 )
+from orion.algo.hyperband import RungDict
 from orion.algo.space import Fidelity, Real, Space
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.utils import backward
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, _are_equal
 from orion.testing.trial import create_trial
@@ -513,7 +506,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
 
         repetition_id, rung_id = self.infer_repetition_and_rung(num - 1)
 
-        brackets = algo.algorithm.brackets
+        brackets = []  # algo.algorithm.brackets
 
         assert len(brackets) == repetition_id
 

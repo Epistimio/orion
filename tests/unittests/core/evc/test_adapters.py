@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.evc.adapters`."""
 import logging
 
@@ -88,11 +87,11 @@ def trials(
     """Trials with dimensions for all priors defined as fixtures"""
     N_TRIALS = 10
 
-    priors = dict(
-        (name, prior)
+    priors = {
+        name: prior
         for (name, prior) in locals().items()
         if isinstance(name, str) and name.endswith("_prior")
-    )
+    }
 
     return generate_trials(priors, N_TRIALS)
 
@@ -113,7 +112,7 @@ def generate_trials(priors, n_trials):
     return trials
 
 
-class TestDimensionAdditionInit(object):
+class TestDimensionAdditionInit:
     """Test initialization of :class:`orion.core.evc.adapters.DimensionAddition`"""
 
     def test_dimension_addition_init_with_param(self, dummy_param):
@@ -149,7 +148,7 @@ class TestDimensionAdditionInit(object):
         assert "'Param' object has no attribute 'bad'" in str(exc_info.value)
 
 
-class TestDimensionDeletionInit(object):
+class TestDimensionDeletionInit:
     """Test initialization of :class:`orion.core.evc.adapters.DimensionDeletion`"""
 
     def test_dimension_deletion_init_with_param(self, dummy_param):
@@ -185,7 +184,7 @@ class TestDimensionDeletionInit(object):
         assert "'Param' object has no attribute 'bad'" in str(exc_info.value)
 
 
-class TestDimensionPriorChangeInit(object):
+class TestDimensionPriorChangeInit:
     """Test initialization of :class:`orion.core.evc.adapters.DimensionPriorChange`"""
 
     def test_dimension_prior_change_init_with_dimensions(
@@ -216,7 +215,7 @@ class TestDimensionPriorChangeInit(object):
         )
 
 
-class TestDimensionRenamingInit(object):
+class TestDimensionRenamingInit:
     """Test initialization of :class:`orion.core.evc.adapters.DimensionRenaming`"""
 
     def test_dimension_renaming_init(self):
@@ -237,7 +236,7 @@ class TestDimensionRenamingInit(object):
         assert "" in str(exc_info.value)
 
 
-class TestAlgorithmChangeInit(object):
+class TestAlgorithmChangeInit:
     """Test initialization of :class:`orion.core.evc.adapters.AlgorithmChange`"""
 
     def test_algorithm_change_init(self):
@@ -245,7 +244,7 @@ class TestAlgorithmChangeInit(object):
         AlgorithmChange()
 
 
-class TestOrionVersionChangeInit(object):
+class TestOrionVersionChangeInit:
     """Test initialization of :class:`orion.core.evc.adapters.OrionVersionChange`"""
 
     def test_orion_version_change_init(self):
@@ -253,7 +252,7 @@ class TestOrionVersionChangeInit(object):
         OrionVersionChange()
 
 
-class TestCodeChangeInit(object):
+class TestCodeChangeInit:
     """Test initialization of :class:`orion.core.evc.adapters.CodeChange`"""
 
     def test_code_change_init(self):
@@ -276,7 +275,7 @@ class TestCodeChangeInit(object):
         assert "Invalid code change type 'bad type'" in str(exc_info.value)
 
 
-class TestCompositeAdapterInit(object):
+class TestCompositeAdapterInit:
     """Test initialization of :class:`orion.core.evc.adapters.CompositeAdapter`"""
 
     def test_composite_adapter_init_emtpy(self):
@@ -321,7 +320,7 @@ def test_adapter_creation(dummy_param):
     assert adapter.adapters[0].param.to_dict() == dummy_param.to_dict()
 
 
-class TestDimensionAdditionForwardBackward(object):
+class TestDimensionAdditionForwardBackward:
     """Test :meth:`orion.core.evc.adapters.DimensionAddition.forward` and
     :meth:`orion.core.evc.adapters.DimensionAddition.backward`
     """
@@ -404,7 +403,7 @@ class TestDimensionAdditionForwardBackward(object):
         )
 
 
-class TestDimensionDeletionForwardBackward(object):
+class TestDimensionDeletionForwardBackward:
     """Test :meth:`orion.core.evc.adapters.DimensionDeletion.forward` and
     :meth:`orion.core.evc.adapters.DimensionDeletion.backward`
     """
@@ -487,7 +486,7 @@ class TestDimensionDeletionForwardBackward(object):
         )
 
 
-class TestDimensionPriorChangeForwardBackward(object):
+class TestDimensionPriorChangeForwardBackward:
     """Test :meth:`orion.core.evc.adapters.DimensionPriorChange.forward` and
     :meth:`orion.core.evc.adapters.DimensionPriorChange.backward`
     """
@@ -583,7 +582,7 @@ class TestDimensionPriorChangeForwardBackward(object):
         assert len(adapted_trials) == 0
 
 
-class TestDimensionRenamingForwardBackward(object):
+class TestDimensionRenamingForwardBackward:
     """Test :meth:`orion.core.evc.adapters.DimensionRenaming.forward` and
     :meth:`orion.core.evc.adapters.DimensionRenaming.backward`
     """
@@ -657,7 +656,7 @@ class TestDimensionRenamingForwardBackward(object):
         )
 
 
-class TestAlgorithmChangeForwardBackward(object):
+class TestAlgorithmChangeForwardBackward:
     """Test :meth:`orion.core.evc.adapters.AlgorithmChange.forward` and
     :meth:`orion.core.evc.adapters.AlgorithmChange.backward`
     """
@@ -685,7 +684,7 @@ class TestAlgorithmChangeForwardBackward(object):
         assert adapted_trials[-1] is trials[-1]
 
 
-class TestOrionVersionChangeForwardBackward(object):
+class TestOrionVersionChangeForwardBackward:
     """Test :meth:`orion.core.evc.adapters.OrionVersionChange.forward` and
     :meth:`orion.core.evc.adapters.OrionVersionChange.backward`
     """
@@ -713,7 +712,7 @@ class TestOrionVersionChangeForwardBackward(object):
         assert adapted_trials[-1] is trials[-1]
 
 
-class TestCodeChangeForwardBackward(object):
+class TestCodeChangeForwardBackward:
     """Test :meth:`orion.core.evc.adapters.CodeChange.forward` and
     :meth:`orion.core.evc.adapters.CodeChange.backward`
     """
@@ -776,7 +775,7 @@ class TestCodeChangeForwardBackward(object):
         assert len(adapted_trials) == 0
 
 
-class TestCompositeAdapterForwardBackward(object):
+class TestCompositeAdapterForwardBackward:
     """Test :meth:`orion.core.evc.adapters.CompositeAdapter.forward` and
     :meth:`orion.core.evc.adapters.CompositeAdapter.backward`
     """

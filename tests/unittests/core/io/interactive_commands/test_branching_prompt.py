@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.interactive_commands.branching_prompt`."""
 import shlex
 
@@ -90,7 +89,7 @@ def branch_solver_prompt(branch_builder):
     return BranchingPrompt(branch_builder)
 
 
-class TestCommands(object):
+class TestCommands:
     """Test the commands of the prompt"""
 
     def test_add_dim(self, conflicts, branch_solver_prompt):
@@ -167,7 +166,7 @@ class TestCommands(object):
         branch_solver_prompt.do_add("new")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -193,7 +192,7 @@ class TestCommands(object):
         branch_solver_prompt.do_add("changed")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -271,7 +270,7 @@ class TestCommands(object):
         branch_solver_prompt.do_remove("missing")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -317,20 +316,20 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 2
         assert len(conflicts.get()) == 12
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 12
 
     def test_reset_rename_with_different_priors(self, conflicts, branch_solver_prompt):
-        """Verify that rename resolution is reverted and side-effect conflit is removed"""
+        """Verify that rename resolution is reverted and side-effect conflict is removed"""
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 12
         branch_solver_prompt.do_rename("missing new")
         assert len(conflicts.get_resolved()) == 2
         assert len(conflicts.get()) == 13
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 12
@@ -365,7 +364,7 @@ class TestCommands(object):
         branch_solver_prompt.do_code("break")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -391,7 +390,7 @@ class TestCommands(object):
         branch_solver_prompt.do_algo("")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "' {}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"' {str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -417,7 +416,7 @@ class TestCommands(object):
         branch_solver_prompt.do_orion_version("")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "' {}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"' {str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -453,7 +452,7 @@ class TestCommands(object):
         branch_solver_prompt.do_config("break")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -491,7 +490,7 @@ class TestCommands(object):
         branch_solver_prompt.do_commandline("break")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -525,7 +524,7 @@ class TestCommands(object):
         branch_solver_prompt.do_name("new-name")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+            f"'{str(conflicts.get_resolved()[0].resolution)}'"
         )
         assert len(conflicts.get_resolved()) == 0
 
@@ -564,11 +563,11 @@ class TestCommands(object):
 
         reset_strings = []
         for resolution in conflicts.get_resolutions():
-            resolution_string = shlex.quote((str(resolution)))
+            resolution_string = shlex.quote(str(resolution))
             # Otherwise --argument is interpreted as an argument by argparse rather than a
             # positional string
             if not resolution_string.startswith("'"):
-                resolution_string = "' {}'".format(resolution_string)
+                resolution_string = f"' {resolution_string}'"
             reset_strings.append(resolution_string)
         branch_solver_prompt.do_reset(" ".join(reset_strings))
         assert len(conflicts.get_resolved()) == 0

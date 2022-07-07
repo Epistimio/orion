@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test of the plot command."""
-import os
 import random
 
 import pytest

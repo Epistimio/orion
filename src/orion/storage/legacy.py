@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Legacy storage
 ==============
@@ -8,24 +7,19 @@ Old Storage implementation.
 """
 import contextlib
 import datetime
-import json
 import logging
 import pickle
 import time
 
-import bson
-
 import orion.core
 import orion.core.utils.backward as backward
 from orion.core.io.database import Database, OutdatedDatabaseError, database_factory
-from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
     BaseStorageProtocol,
     FailedUpdate,
     LockAcquisitionTimeout,
     LockedAlgorithmState,
-    MissingArguments,
     get_trial_uid_and_exp,
     get_uid,
 )

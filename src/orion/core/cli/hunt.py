@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the optimization command
 =======================================
@@ -11,10 +10,10 @@ Gets an experiment and iterates over it until one of the exit conditions is met
 import logging
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
+from orion.core.io import experiment_builder
 from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import (
     BrokenExperiment,

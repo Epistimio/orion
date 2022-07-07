@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 from logging import getLogger as get_logger
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.registry import Registry, RegistryMapping
@@ -19,14 +19,14 @@ from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
+AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
 
 
 def create_algo(
-    algo_type: type[AlgoType],
+    algo_type: type[AlgoT],
     space: Space,
     **algo_kwargs,
-) -> SpaceTransformAlgoWrapper[AlgoType]:
+) -> SpaceTransformAlgoWrapper[AlgoT]:
     """Creates an algorithm of the given type, taking care of transforming the space if needed."""
     original_space = space
     from orion.core.worker.transformer import build_required_space
@@ -45,7 +45,7 @@ def create_algo(
 
 
 # pylint: disable=too-many-public-methods
-class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
+class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -64,9 +64,9 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
     """
 
-    def __init__(self, space: Space, algorithm: AlgoType):
+    def __init__(self, space: Space, algorithm: AlgoT):
         super().__init__(space=space)
-        self.algorithm: AlgoType = algorithm
+        self.algorithm: AlgoT = algorithm
         self.registry = Registry()
         self.registry_mapping = RegistryMapping(
             original_registry=self.registry,
@@ -337,7 +337,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         """
         return self.algorithm.fidelity_index
 
-    def _verify_trial(self, trial: Trial, space: Optional[Space] = None) -> None:
+    def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
         if space is None:
             space = self.space
 

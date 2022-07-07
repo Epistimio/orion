@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # pylint: disable=too-few-public-methods
 """
 Web application endpoint
@@ -132,11 +131,10 @@ class GunicornApp(BaseApplication):
             options["bind"] = f"localhost:{args['port']}"
         self.options = options
         self.application = app
-        super(GunicornApp, self).__init__()
+        super().__init__()
 
     def init(self, parser, opts, args):
         """Pre-run initialization"""
-        pass
 
     def load_config(self):
         """Load the gunicorn config"""

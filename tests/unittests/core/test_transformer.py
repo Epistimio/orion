@@ -28,7 +28,7 @@ from orion.core.worker.transformer import (
 )
 
 
-class TestIdentity(object):
+class TestIdentity:
     """Test subclasses of `Identity` transformation."""
 
     def test_deepcopy(self):
@@ -70,7 +70,7 @@ class TestIdentity(object):
         assert t.repr_format("asfa") == "asfa"
 
 
-class TestReverse(object):
+class TestReverse:
     """Test subclasses of `Reverse` transformation."""
 
     def test_deepcopy(self):
@@ -118,7 +118,7 @@ class TestReverse(object):
         assert t.repr_format("asfa") == "ReverseQuantize(asfa)"
 
 
-class TestCompose(object):
+class TestCompose:
     """Test subclasses of `Compose` transformation."""
 
     def test_deepcopy(self):
@@ -153,8 +153,10 @@ class TestCompose(object):
         assert numpy.all(t.transform(2) == numpy.array((1.0, 0.0, 0.0)))
         assert numpy.all(t.transform("asfa") == numpy.array((0.0, 1.0, 0.0)))
         assert numpy.all(t.transform("ipsi") == numpy.array((0.0, 0.0, 1.0)))
+
         with pytest.raises(KeyError):
             t.transform("aafdasfa")
+
         assert numpy.all(
             t.transform([["ipsi", "asfa"], [2, "ipsi"]])
             == numpy.array(
@@ -239,7 +241,7 @@ class TestCompose(object):
         assert t.repr_format("asfa") == "OneHotEncode(Enumerate(asfa))"
 
 
-class TestPrecision(object):
+class TestPrecision:
     """Test subclasses of `Precision` transformation."""
 
     def test_deepcopy(self):
@@ -284,7 +286,7 @@ class TestPrecision(object):
         assert t.repr_format("asfa") == "Precision(4, asfa)"
 
 
-class TestQuantize(object):
+class TestQuantize:
     """Test subclasses of `Quantize` transformation."""
 
     def test_deepcopy(self):
@@ -327,7 +329,7 @@ class TestQuantize(object):
         assert t.repr_format("asfa") == "Quantize(asfa)"
 
 
-class TestEnumerate(object):
+class TestEnumerate:
     """Test subclasses of `Enumerate` transformation."""
 
     def test_deepcopy(self):
@@ -398,7 +400,7 @@ class TestEnumerate(object):
         assert t.repr_format("asfa") == "Enumerate(asfa)"
 
 
-class TestOneHotEncode(object):
+class TestOneHotEncode:
     """Test subclasses of `OneHotEncode` transformation."""
 
     def test_deepcopy(self):
@@ -520,7 +522,7 @@ class TestOneHotEncode(object):
         assert t.repr_format("asfa") == "OneHotEncode(asfa)"
 
 
-class TestLinearize(object):
+class TestLinearize:
     """Test subclasses of `Linearize` transformation."""
 
     def test_domain_and_target_type(self):
@@ -534,7 +536,7 @@ class TestLinearize(object):
     def test_transform(self):
         """Check if it transforms properly."""
         t = Linearize()
-        assert t.transform(numpy.e) == 1
+        assert t.transform(numpy.e) == numpy.log(numpy.e)
         t.transform(0)
 
     def test_reverse(self):
@@ -548,7 +550,7 @@ class TestLinearize(object):
         assert t.repr_format(1.0) == "Linearize(1.0)"
 
 
-class TestView(object):
+class TestView:
     """Test subclasses of `View` transformation."""
 
     def test_domain_and_target_type(self):
@@ -707,7 +709,7 @@ def rdims3(tdim3):
     return {tdim3.name: rdim3}
 
 
-class TestTransformedDimension(object):
+class TestTransformedDimension:
     """Check functionality of class `TransformedDimension`."""
 
     def test_transform(self, tdim):
@@ -868,7 +870,7 @@ class TestTransformedDimension(object):
         assert tuple(tdim2.default_value) == (0, 1, 0, 0)
 
 
-class TestReshapedDimension(object):
+class TestReshapedDimension:
     """Check functionality of class `ReshapedDimension`."""
 
     def test_transform(self, rdim):
@@ -1017,7 +1019,7 @@ def rspace(tspace, rdims, rdims2, rdims3):
     return rspace
 
 
-class TestTransformedSpace(object):
+class TestTransformedSpace:
     """Check functionality of class `TransformedSpace`."""
 
     def test_extends_space(self, tspace):
@@ -1039,7 +1041,6 @@ class TestTransformedSpace(object):
     def test_sample(self, space, tspace, seed):
         """Check method `sample`."""
         points = tspace.sample(n_samples=2, seed=seed)
-        # pytest.set_trace()
         assert len(points) == 2
         assert points[0] in tspace
         assert points[1] in tspace
@@ -1047,7 +1048,7 @@ class TestTransformedSpace(object):
         assert tspace.reverse(points[1]) in space
 
 
-class TestReshapedSpace(object):
+class TestReshapedSpace:
     """Check functionality of class `ReshapeSpace`."""
 
     def test_reverse(self, space, tspace, rspace, seed):
@@ -1160,7 +1161,7 @@ def space_each_type(dim, dim2, dim3, logdim, logintdim):
     return space
 
 
-class TestRequiredSpaceBuilder(object):
+class TestRequiredSpaceBuilder:
     """Check functionality of builder function `build_required_space`."""
 
     @pytest.mark.xfail(

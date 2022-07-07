@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to upgrade DB schemes
 ============================
@@ -11,7 +10,7 @@ import argparse
 import logging
 import sys
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import experiment_builder
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
@@ -39,7 +38,7 @@ def ask_question(question, default=None):
 
     """
     if default is not None:
-        question = question + " (default: {}) ".format(default)
+        question = f"{question} (default: {default}) "
 
     answer = input(question)
 
@@ -165,7 +164,6 @@ def update_indexes(database):
 # pylint: disable=unused-argument
 def upgrade_mongodb(database):
     """Update mongo specific db scheme."""
-    pass
 
 
 def upgrade_pickledb(database):
@@ -179,7 +177,7 @@ def upgrade_pickledb(database):
         if state["_indexes"] and isinstance(
             next(iter(state["_indexes"].keys())), tuple
         ):
-            self._indexes = dict()
+            self._indexes = {}
             for keys, values in state["_indexes"].items():
                 if isinstance(keys, str):
                     self._indexes[keys] = values

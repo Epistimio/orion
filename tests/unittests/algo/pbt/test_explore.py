@@ -1,6 +1,6 @@
 import numpy
 import pytest
-from base import ExploreStub, RNGStub, TrialStub, hspace, space
+from base import RNGStub, TrialStub
 
 from orion.algo.pbt.explore import PerturbExplore, PipelineExplore, ResampleExplore
 from orion.algo.space import Categorical, Dimension

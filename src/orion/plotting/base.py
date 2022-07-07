@@ -121,7 +121,7 @@ def partial_dependencies(
     model_kwargs=None,
 ):
     """
-    Make countour plots to visualize the search space of each combination of params.
+    Make contour plots to visualize the search space of each combination of params.
 
     Parameters
     ----------
@@ -148,7 +148,7 @@ def partial_dependencies(
     n_grid_points: int, optional
         Number of points in the grid to compute partial dependency. Default is 10.
 
-    n_samples: int, optinal
+    n_samples: int, optional
         Number of samples to randomly generate the grid used to compute the partial dependency.
         Default is 50.
 
@@ -503,7 +503,7 @@ class PlotAccessor:
         return self(kind="parallel_coordinates", **kwargs)
 
     def partial_dependencies(self, **kwargs):
-        """Make countour plots to visualize the search space of each combination of params."""
+        """Make contour plots to visualize the search space of each combination of params."""
         __doc__ = partial_dependencies.__doc__
         return self(kind="partial_dependencies", **kwargs)
 

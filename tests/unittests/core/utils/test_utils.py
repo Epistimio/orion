@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Test base functionalities of :mod:`orion.core.utils`."""
 
 import pytest
@@ -11,7 +10,7 @@ def test_deprecated_factory_subclasses_detection():
     """Verify that meta-class Factory finds all subclasses"""
     # TODO: Remove in v0.3.0
 
-    class Base(object):
+    class Base:
         pass
 
     class A(Base):
@@ -61,7 +60,7 @@ def test_deprecated_factory_subclasses_detection():
 def test_new_factory_subclasses_detection():
     """Verify that Factory finds all subclasses"""
 
-    class Base(object):
+    class Base:
         pass
 
     class A(Base):

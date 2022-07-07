@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #  Copyright (c) 2005-2010 ActiveState Software Inc.
 #  Copyright (c) 2013 Eddy Petrișor
 
@@ -428,7 +427,7 @@ def user_log_dir(appname=None, appauthor=None, version=None, opinion=True):
     return path
 
 
-class AppDirs(object):
+class AppDirs:
     """Convenience wrapper for getting application dirs."""
 
     def __init__(
@@ -596,17 +595,17 @@ def _get_win_folder_with_jna(csidl_name):
 
 if system == "win32":
     try:
-        import win32com.shell
+        pass
 
         _get_win_folder = _get_win_folder_with_pywin32
     except ImportError:
         try:
-            from ctypes import windll
+            pass
 
             _get_win_folder = _get_win_folder_with_ctypes
         except ImportError:
             try:
-                import com.sun.jna
+                pass
 
                 _get_win_folder = _get_win_folder_with_jna
             except ImportError:
@@ -634,19 +633,19 @@ if __name__ == "__main__":
     print("-- app dirs (with optional 'version')")
     dirs = AppDirs(appname, appauthor, version="1.0")
     for prop in props:
-        print("%s: %s" % (prop, getattr(dirs, prop)))
+        print(f"{prop}: {getattr(dirs, prop)}")
 
     print("\n-- app dirs (without optional 'version')")
     dirs = AppDirs(appname, appauthor)
     for prop in props:
-        print("%s: %s" % (prop, getattr(dirs, prop)))
+        print(f"{prop}: {getattr(dirs, prop)}")
 
     print("\n-- app dirs (without optional 'appauthor')")
     dirs = AppDirs(appname)
     for prop in props:
-        print("%s: %s" % (prop, getattr(dirs, prop)))
+        print(f"{prop}: {getattr(dirs, prop)}")
 
     print("\n-- app dirs (with disabled 'appauthor')")
     dirs = AppDirs(appname, appauthor=False)
     for prop in props:
-        print("%s: %s" % (prop, getattr(dirs, prop)))
+        print(f"{prop}: {getattr(dirs, prop)}")

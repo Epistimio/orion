@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Non permanent database
 ======================
@@ -19,7 +18,7 @@ def _convert_keys_to_name(keys):
     if len(keys) == 1 and keys[0] == "_id":
         index = "_id_"
     else:
-        index = "_".join("{}_1".format(k) for k in keys)
+        index = "_".join(f"{k}_1" for k in keys)
 
     return index
 
@@ -34,6 +33,9 @@ class EphemeralDB(Database):
     .. seealso:: :class:`orion.core.io.database.Database` for more on attributes.
 
     """
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}()"
 
     @property
     def is_connected(self):
@@ -141,7 +143,7 @@ class EphemeralDB(Database):
         return {}
 
 
-class EphemeralCollection(object):
+class EphemeralCollection:
     """Non permanent collection
 
     This collection is meant for debugging purposes within the EphemeralDB.
@@ -153,7 +155,7 @@ class EphemeralCollection(object):
     def __init__(self):
         """Initialise the collection, with no documents and only _id unique index."""
         self._documents = []
-        self._indexes = dict()
+        self._indexes = {}
         self.create_index("_id", unique=True)
 
     def create_index(self, keys, unique=False):
@@ -189,7 +191,7 @@ class EphemeralCollection(object):
         EphemeralCollection may only contain unique indexes.
         """
         if name not in self._indexes:
-            raise DatabaseError("index not found with name {}".format(name))
+            raise DatabaseError(f"index not found with name {name}")
 
         del self._indexes[name]
 
@@ -228,16 +230,14 @@ class EphemeralCollection(object):
             document_values = tuple(document[key] for key in keys)
             if document_values in data:
                 raise DuplicateKeyError(
-                    "Duplicate key error: index={} value={}".format(
-                        name, document_values
-                    )
+                    f"Duplicate key error: index={name} value={document_values}"
                 )
 
     def _get_new_id(self):
         """Return max id + 1"""
         if self._documents:
             # NOTE: Custom ids than are not integers should simply not be accounted for
-            #       when infering what next id should be.
+            #       when inferring what next id should be.
             ids = [d["_id"] for d in self._documents if isinstance(d["_id"], int)]
             if not ids:
                 return 0
@@ -333,11 +333,11 @@ class EphemeralCollection(object):
     def drop(self):
         """Drop the collection, removing all documents and indexes."""
         self._documents = []
-        self._indexes = dict()
+        self._indexes = {}
         self.create_index("_id", unique=True)
 
 
-class EphemeralDocument(object):
+class EphemeralDocument:
     """Non permanent document
 
     This document is meant for debugging purposes within the EphemeralDB.
@@ -370,7 +370,7 @@ class EphemeralDocument(object):
 
         return True
 
-    def _is_operator(self, key):  # pylint: disable=no-self-use
+    def _is_operator(self, key):
         return key.split(".")[-1].startswith("$")
 
     def _get_key_operator(self, key):
@@ -379,9 +379,7 @@ class EphemeralDocument(object):
         key = ".".join(path[:-1])
 
         if operator not in self.operators:
-            raise ValueError(
-                "Operator '{}' is not supported by EphemeralDB".format(operator)
-            )
+            raise ValueError(f"Operator '{operator}' is not supported by EphemeralDB")
 
         return key, self.operators[operator]
 
@@ -416,12 +414,12 @@ class EphemeralDocument(object):
         n_keys = sum(keys[key] for key in keys_without_id)
         if n_keys != 0 and n_keys != len(keys_without_id):
             raise ValueError(
-                "Cannot mix selection with 1 and 0s except for _id: {}".format(keys)
+                f"Cannot mix selection with 1 and 0s except for _id: {keys}"
             )
 
         # All given keys are 0 (with possible exception of _id)
         if n_keys == 0:
-            new_keys = dict((key, 1) for key in self._data.keys() if key not in keys)
+            new_keys = {key: 1 for key in self._data.keys() if key not in keys}
             new_keys["_id"] = keys.get("_id", 1)
             keys = new_keys
 
@@ -432,7 +430,7 @@ class EphemeralDocument(object):
     def select(self, keys):
         """Only select or only drop the specified keys
 
-        For a pair (key, value) in the dictionnary, value=0 means the key will not be included
+        For a pair (key, value) in the dictionary, value=0 means the key will not be included
         while value=1 means it will.
 
         All specified keys should be 0 or 1. They cannot have different values with the exception
@@ -452,7 +450,7 @@ class EphemeralDocument(object):
         keys = flatten(keys)
         keys = self._validate_keys(keys)
 
-        selection = dict()
+        selection = {}
 
         def key_is_match(key, selected_key):
             """Test if key matches the selected key

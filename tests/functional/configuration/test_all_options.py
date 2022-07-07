@@ -29,7 +29,7 @@ script = os.path.join(
 
 
 def with_storage_fork(func):
-    """Copy PickledDB to a tmp adress and work in the tmp path within the func execution.
+    """Copy PickledDB to a tmp address and work in the tmp path within the func execution.
 
     Functions decorated with this decorator should only be called after the storage has been
     initialized.
@@ -275,7 +275,6 @@ class TestStorage(ConfigurationTestSuite):
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
@@ -313,7 +312,6 @@ class TestStorage(ConfigurationTestSuite):
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
-        pass
 
 
 class TestDatabaseDeprecated(ConfigurationTestSuite):
@@ -390,7 +388,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
@@ -424,7 +421,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
-        pass
 
 
 class TestExperimentConfig(ConfigurationTestSuite):
@@ -599,7 +595,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
         command = f"hunt --worker-max-trials 0 -c {conf_file} --branch-from test-name --enable-evc"
         command += " " + " ".join(
-            "--{} {}".format(name, value) for name, value in self.cmdargs.items()
+            f"--{name} {value}" for name, value in self.cmdargs.items()
         )
         orion.core.cli.main(command.split(" "))
 
@@ -803,7 +799,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
@@ -840,7 +835,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
         command = f"hunt -c {conf_file} -n cmd-test"
         command += " " + " ".join(
-            "--{} {}".format(name, value) for name, value in self.cmdargs.items()
+            f"--{name} {value}" for name, value in self.cmdargs.items()
         )
         command += f" python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
@@ -1032,7 +1027,6 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""

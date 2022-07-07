@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.storage`."""
 
 import copy
 import datetime
-import inspect
 import logging
 import os
 import pickle
@@ -22,7 +20,6 @@ from orion.core.utils.singleton import (
 )
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
-    BaseStorageProtocol,
     FailedUpdate,
     LockAcquisitionTimeout,
     LockedAlgorithmState,
@@ -133,7 +130,7 @@ def test_setup_storage_default():
 
 
 def test_setup_storage_bad():
-    """Test how setup fails when configuring with non-existant backends"""
+    """Test how setup fails when configuring with non-existent backends"""
     update_singletons()
     with pytest.raises(NotImplementedError) as exc:
         setup_storage({"type": "idontexist"})
@@ -184,7 +181,7 @@ def test_setup_storage_bad_override():
     # with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
     #     setup_storage({"type": "track"})
 
-    # assert exc.match("A singleton instance of \(type: BaseStorageProtocol\)")
+    # assert exc.match(r"A singleton instance of \(type: BaseStorageProtocol\)")
 
 
 @pytest.mark.xfail(reason="Fix this when introducing #135 in v0.2.0")
@@ -199,7 +196,7 @@ def test_setup_storage_bad_config_override():
 
 
 def test_setup_storage_stateless():
-    """Test that passed configuration dictionary is not modified by the fonction"""
+    """Test that passed configuration dictionary is not modified by the function"""
     update_singletons()
     config = {"database": {"type": "pickleddb", "host": "test.pkl"}}
     passed_config = copy.deepcopy(config)
@@ -514,9 +511,9 @@ class TestStorage:
     def test_fetch_lost_trials(self, storage):
         """Test update heartbeat"""
         lost_trials = [
-            make_lost_trial(2),  # Is not lost for long enough to be catched
-            make_lost_trial(10),
-        ]  # Is lost for long enough to be catched
+            make_lost_trial(2),  # Is not lost for long enough to be caught
+            make_lost_trial(10),  # Is lost for long enough to be caught
+        ]
         # Force recent heartbeat to avoid mixing up with lost trials.
         trials = lost_trials + generate_trials(heartbeat=datetime.datetime.utcnow())
         with OrionState(

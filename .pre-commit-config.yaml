@@ -1,15 +1,14 @@
 ---
 repos:
   - repo: https://github.com/python/black
-    rev: 22.3.0
+    rev: 22.6.0
     hooks:
       - id: black
   - repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:
       - id: codespell
-        args:
-          - --ignore-words-list=nd,reacher,thist,ths,hist
+        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/build/**", "--ignore-words-list=hist,wont"]
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:
@@ -26,7 +25,7 @@ repos:
       - id: isort
         args: ["--profile", "black"]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.31.0
+    rev: v2.34.0
     hooks:
       - id: pyupgrade
         args: ["--py37-plus"]
@@ -36,8 +35,10 @@ repos:
       - id: autoflake
         args: ["--in-place", "--expand-star-imports", "--remove-all-unused-imports", "--ignore-init-module-imports"]
 
-  - repo: https://github.com/PyCQA/doc8
-    rev: 0.8.1
-    hooks:
-      - id: doc8
-        args: ["--max-line-length=100", "--file-encoding=utf-8"]
+  # BUG: Appears not to not always work properly! Enable locally if you want, but the CI will use
+  # the tox variant for now.
+  # - repo: https://github.com/PyCQA/doc8
+  #   rev: 0.8.1
+  #   hooks:
+  #     - id: doc8
+  #       args: ["--max-line-length=100", "--file-encoding=utf-8"]

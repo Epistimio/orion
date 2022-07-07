@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Installation script for Oríon."""
 import os
 
 from setuptools import setup
 
 import versioneer
-
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -49,7 +47,7 @@ extras_require = {
     ],
     "dehb": [
         "ConfigSpace",
-        "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
+        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
@@ -79,7 +77,7 @@ setup_args = dict(
     cmdclass=versioneer.get_cmdclass(),
     description="Asynchronous [black-box] Optimization",
     long_description=open(
-        os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
+        os.path.join(repo_root, "README.rst"), encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
     author="Epistímio",

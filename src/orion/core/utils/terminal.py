@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Helper functions for terminal i/o
 =================================
@@ -30,10 +29,10 @@ def ask_question(question, default=None, choice=None, ignore_case=False):
     if choice is not None:
         if ignore_case:
             choice = [value.lower() for value in choice]
-        question = question + " (choice: {})".format(", ".join(choice))
+        question = f"{question} (choice: {', '.join(choice)})"
 
     if default is not None:
-        question = question + " (default: {}) ".format(default)
+        question = f"{question} (default: {default})"
 
     while True:
         answer = input(question)
@@ -44,11 +43,7 @@ def ask_question(question, default=None, choice=None, ignore_case=False):
             break
         if answer in choice or (ignore_case and answer.lower() in choice):
             break
-        print(
-            "Unexpected value: {}. Must be one of: {}\n".format(
-                answer, ", ".join(choice)
-            )
-        )
+        print(f"Unexpected value: {answer}. Must be one of: {', '.join(choice)}\n")
 
     return answer
 

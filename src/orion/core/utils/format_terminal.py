@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Utility functions for formatting prints to terminal
 ===================================================
@@ -106,7 +105,7 @@ def format_dict(dictionary, depth=0, width=4, templates=None):
 
     # To avoid using mutable objects as default values in function signature.
     if templates is None:
-        templates = dict()
+        templates = {}
 
     empty_leaf_template = templates.get("empty_leaf", DICT_EMPTY_LEAF_TEMPLATE)
     leaf_template = templates.get("leaf", DICT_LEAF_TEMPLATE)
@@ -197,7 +196,7 @@ def format_list(a_list, depth=0, width=4, templates=None):
     """
     # To avoid using mutable objects as default values in function signature.
     if templates is None:
-        templates = dict()
+        templates = {}
 
     list_template = templates.get("list", LIST_TEMPLATE)
     item_template = templates.get("item", LIST_ITEM_TEMPLATE)
@@ -330,9 +329,9 @@ def format_metadata(experiment):
 
 REFERS_TEMPLATE = """\
 {title}
-root: {root}
-parent: {parent}
-adapter: {adapter}
+root:{root}
+parent:{parent}
+adapter:{adapter}
 """
 
 
@@ -351,8 +350,8 @@ def format_refers(experiment):
 
     refers_string = REFERS_TEMPLATE.format(
         title=format_title("Parent experiment"),
-        root=root,
-        parent=parent,
+        root=(" " + root) if root else "",
+        parent=(" " + parent) if parent else "",
         adapter=adapter,
     )
 

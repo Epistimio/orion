@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple one dimensional example with noise level for a possible user's script."""
 import argparse
 import random

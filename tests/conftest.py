@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
-import datetime
 import getpass
 import os
 import tempfile
@@ -17,8 +15,6 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io import resolve_config
 from orion.core.io.database import database_factory
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import format_trials
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
@@ -97,7 +93,7 @@ class DumbAlgo(BaseAlgorithm):
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
-        super(DumbAlgo, self).__init__(
+        super().__init__(
             space,
             value=value,
             scoring=scoring,
@@ -119,7 +115,7 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(DumbAlgo, self).state_dict
+        _state_dict = super().state_dict
         _state_dict.update(
             {
                 "index": self._index,
@@ -135,7 +131,7 @@ class DumbAlgo(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(DumbAlgo, self).set_state(state_dict)
+        super().set_state(state_dict)
         self._index = state_dict["index"]
         self._suggested = state_dict["suggested"]
         self._num = state_dict["num"]
@@ -162,7 +158,7 @@ class DumbAlgo(BaseAlgorithm):
 
     def observe(self, trials):
         """Log inputs."""
-        super(DumbAlgo, self).observe(trials)
+        super().observe(trials)
         self._trials += trials
 
     def score(self, trial):
@@ -177,14 +173,14 @@ class DumbAlgo(BaseAlgorithm):
         return self.judgement
 
     def should_suspend(self, trial):
-        """Cound how many times it has been called and return `suspend`."""
+        """Count how many times it has been called and return `suspend`."""
         self._suspend_trial = trial
         self._times_called_suspend += 1
         return self.suspend
 
     @property
     def is_done(self):
-        """Cound how many times it has been called and return `done`."""
+        """Count how many times it has been called and return `done`."""
         self._times_called_is_done += 1
         return self.done
 

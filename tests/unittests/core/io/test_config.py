@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.config`."""
 
 import argparse
@@ -103,7 +102,7 @@ def test_set_non_existing_option():
 
 
 def test_set_subconfig_over_option():
-    """Test that overwritting an option with a subconfig is not possible"""
+    """Test that overwriting an option with a subconfig is not possible"""
     config = Configuration()
     config.add_option("test", option_type=int)
     config.test = 1

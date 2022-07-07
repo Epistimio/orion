@@ -280,7 +280,7 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
 
     objective = get_objective_name(competitions)
     fig.update_layout(
-        title=f"Average Rankings",
+        title="Average Rankings",
         xaxis_title=f"Trials ordered by {order_by} time",
         yaxis_title=f"Ranking based on {objective}",
         hovermode="x",
@@ -342,7 +342,7 @@ def partial_dependencies(
     def _plot_marginalized_std(data, x_name):
         return go.Scatter(
             x=list(data[0][x_name]) + list(data[0][x_name])[::-1],
-            y=list(data[1] - data[2]) + list((data[1] + data[2]))[::-1],
+            y=list(data[1] - data[2]) + list(data[1] + data[2])[::-1],
             mode="lines",
             name=None,
             fill="toself",
@@ -684,9 +684,9 @@ def regrets(
                 )
 
                 if x in average_keys.split(","):
-                    x = "{}_mean".format(x)
+                    x = f"{x}_mean"
                 if y in average_keys.split(","):
-                    y = "{}_mean".format(y)
+                    y = f"{y}_mean"
 
                 df["name"] = [name] * len(df)
 
@@ -746,7 +746,7 @@ def regrets(
         duration, time_unit = infer_unit_time(exp_data, min_unit=3)
         if x_col in ["duration", "duration_mean"]:
             x = duration
-            x_title = "Experiment duration by {}".format(time_unit)
+            x_title = f"Experiment duration by {time_unit}"
 
         fig.add_scatter(
             x=x,

@@ -4,8 +4,6 @@ MOFA transformer stage module
 
 from __future__ import annotations
 
-from typing import Tuple
-
 import numpy as np
 import pandas as pd
 from skopt.space import Space as SkSpace
@@ -16,8 +14,8 @@ from orion.core.worker.trial import Trial
 
 
 def fix_shape_intervals(
-    intervals: list[Tuple[float, float]]
-) -> list[Tuple[float, float]]:
+    intervals: list[tuple[float, float]]
+) -> list[tuple[float, float]]:
     """Fix issue for intervals of dims with shape
     (https://github.com/Epistimio/orion/issues/800)
     """
@@ -82,7 +80,7 @@ class Transformer:
     @staticmethod
     def _collapse_levels(olh_perf_table: pd.DataFrame, n_levels: int) -> pd.DataFrame:
         """
-        Collapses the levels of an orthagonal Latin hypercube parameter table
+        Collapses the levels of an orthogonal Latin hypercube parameter table
 
         Parameters
         ----------

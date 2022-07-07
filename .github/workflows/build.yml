@@ -13,14 +13,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip install pre-commit
+      - run: pre-commit --version
+      - run: pre-commit install
+      - run: pre-commit run --all-files
   pretest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+<<<<<<< HEAD
         toxenv: [black]
 
+=======
+        toxenv: [pylint, doc8, docs]
+>>>>>>> 5fb2b4e2ff119d8fd3efb8e79100e4f81100faf7
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -70,7 +83,7 @@ jobs:
       run: pytest tests/functional/serving/test_frontend.py
 
   test:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
@@ -101,7 +114,7 @@ jobs:
         fail_ci_if_error: false
 
   test-long-algos:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
@@ -135,7 +148,7 @@ jobs:
         fail_ci_if_error: false
 
   test_no_extras:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -158,7 +171,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   mongodb:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -187,7 +200,7 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
   backward-compatibility:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 2

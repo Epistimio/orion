@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Singleton helpers and boilerplate
 =================================
@@ -17,9 +16,7 @@ class SingletonAlreadyInstantiatedError(ValueError):
     def __init__(self, name):
         """Pass the same constant message to ValueError underneath."""
         super().__init__(
-            "A singleton instance of (type: {}) has already been instantiated.".format(
-                name
-            )
+            f"A singleton instance of (type: {name}) has already been instantiated."
         )
 
 
@@ -30,7 +27,7 @@ class SingletonNotInstantiatedError(TypeError):
 
     def __init__(self, name):
         """Pass the same constant message to TypeError underneath."""
-        super().__init__("No singleton instance of (type: {}) was created".format(name))
+        super().__init__(f"No singleton instance of (type: {name}) was created")
 
 
 class SingletonType(type):
@@ -38,14 +35,14 @@ class SingletonType(type):
 
     def __init__(cls, name, bases, dictionary):
         """Create a class instance variable and initiate it to None object."""
-        super(SingletonType, cls).__init__(name, bases, dictionary)
+        super().__init__(name, bases, dictionary)
         cls.instance = None
 
     def __call__(cls, *args, **kwargs):
         """Create an object if does not already exist, otherwise return what there is."""
         if cls.instance is None:
             try:
-                cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
+                cls.instance = super().__call__(*args, **kwargs)
             except TypeError as exception:
                 raise SingletonNotInstantiatedError(cls.__name__) from exception
 
@@ -58,14 +55,10 @@ class SingletonType(type):
 class AbstractSingletonType(SingletonType, ABCMeta):
     """This will create singleton base classes, that need to be subclassed and implemented."""
 
-    pass
-
 
 class SingletonFactory(AbstractSingletonType, Factory):
     """Wrapping `orion.core.utils.Factory` with `SingletonType`. Keep compatibility with
     `AbstractSingletonType`."""
-
-    pass
 
 
 def update_singletons(values=None):
@@ -100,7 +93,7 @@ class GenericSingletonFactory(GenericFactory):
     """
 
     def __init__(self, base):
-        super(GenericSingletonFactory, self).__init__(base=base)
+        super().__init__(base=base)
         self.instance = None
 
     def create(self, of_type=None, *args, **kwargs):
@@ -139,9 +132,7 @@ class GenericSingletonFactory(GenericFactory):
 
         elif self.instance is None:
             try:
-                self.instance = super(GenericSingletonFactory, self).create(
-                    of_type, *args, **kwargs
-                )
+                self.instance = super().create(of_type, *args, **kwargs)
             except TypeError as exception:
                 raise SingletonNotInstantiatedError(self.base.__name__) from exception
 

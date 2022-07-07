@@ -74,11 +74,11 @@ async function lookupPlot(...texts) {
 
 /**
  * Wait for given amount of time
- * @param milliseonds - time to wait
+ * @param milliseconds - time to wait
  */
-async function sleep(milliseonds) {
+async function sleep(milliseconds) {
   let value = 0;
-  await new Promise(r => setTimeout(r, milliseonds)).then(() => {
+  await new Promise(r => setTimeout(r, milliseconds)).then(() => {
     value = 1;
   });
   expect(value).toBe(1);

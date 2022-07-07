@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Perform functional tests for the REST endpoint `/experiments`"""
 import copy
 import datetime

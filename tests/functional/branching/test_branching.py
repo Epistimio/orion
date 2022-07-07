@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test for branching."""
 
 import logging
@@ -32,7 +31,7 @@ def init_full_x(setup_pickleddb_database, monkeypatch):
         .format(name=name)
         .split(" ")
     )
-    orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=0".split(" "))
 
 
 @pytest.fixture
@@ -51,18 +50,10 @@ def init_no_evc(monkeypatch):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {name} script -x=1 -y=1".format(name=name).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {name} script -x=-1 -y=1".format(name=name).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {name} script -x=1 -y=-1".format(name=name).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {name} script -x=-1 -y=-1".format(name=name).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {name} script -x=1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=-1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=1 -y=-1".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=-1 -y=-1".split(" "))
 
 
 @pytest.fixture
@@ -83,18 +74,10 @@ def init_full_x_full_y(init_full_x):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1 -y=1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1 -y=1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1 -y=-1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1 -y=-1".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=1 -y=-1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1 -y=-1".split(" "))
 
 
 @pytest.fixture
@@ -113,12 +96,8 @@ def init_half_x_full_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=2 -y=2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=2 -y=-2".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=2 -y=2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=2 -y=-2".split(" "))
 
 
 @pytest.fixture
@@ -137,12 +116,8 @@ def init_full_x_half_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=3 -y=3".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-3 -y=3".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=3 -y=3".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-3 -y=3".split(" "))
 
 
 @pytest.fixture
@@ -159,18 +134,10 @@ def init_full_x_rename_y_z(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=4 -z=4".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-4 -z=4".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=4 -z=-4".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-4 -z=-4".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=4 -z=4".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-4 -z=4".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=4 -z=-4".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-4 -z=-4".split(" "))
 
 
 @pytest.fixture
@@ -187,12 +154,8 @@ def init_full_x_rename_half_y_half_z(init_full_x_half_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=5 -z=5".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-5 -z=5".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=5 -z=5".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-5 -z=5".split(" "))
 
 
 @pytest.fixture
@@ -211,18 +174,10 @@ def init_full_x_rename_half_y_full_z(init_full_x_half_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=6 -z=6".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-6 -z=6".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=6 -z=-6".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-6 -z=-6".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=6 -z=6".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-6 -z=6".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=6 -z=-6".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-6 -z=-6".split(" "))
 
 
 @pytest.fixture
@@ -240,12 +195,8 @@ def init_full_x_remove_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=7".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-7".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=7".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-7".split(" "))
 
 
 @pytest.fixture
@@ -263,12 +214,8 @@ def init_full_x_full_y_add_z_remove_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=7 -z=2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-7 -z=2".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=7 -z=2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-7 -z=2".split(" "))
 
 
 @pytest.fixture
@@ -286,12 +233,8 @@ def init_full_x_remove_z(init_full_x_rename_y_z):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=8".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-8".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=8".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-8".split(" "))
 
 
 @pytest.fixture
@@ -309,12 +252,8 @@ def init_full_x_remove_z_default_4(init_full_x_rename_y_z):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=9".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-9".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=9".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-9".split(" "))
 
 
 @pytest.fixture
@@ -332,12 +271,8 @@ def init_full_x_new_algo(init_full_x):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1.1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1.1".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1.1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1.1".split(" "))
 
 
 @pytest.fixture
@@ -354,12 +289,8 @@ def init_full_x_new_cli(init_full_x):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1.2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1.2".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1.2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1.2".split(" "))
 
 
 @pytest.fixture
@@ -376,7 +307,7 @@ def init_full_x_ignore_cli(init_full_x):
         .format(name=name)
         .split(" ")
     )
-    orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=0".split(" "))
 
     orion.core.cli.main(
         (
@@ -389,8 +320,8 @@ def init_full_x_ignore_cli(init_full_x):
         .format(name=name)
         .split(" ")
     )
-    orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
-    orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=1.2".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=-1.2".split(" "))
 
 
 @pytest.fixture
@@ -424,12 +355,8 @@ def init_full_x_new_config(init_full_x, tmp_path, caplog):
         # For child experiment
         assert "User script config: custom-config" in caplog.text
 
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1.2 -y=2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1.2 -y=3".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1.2 -y=2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1.2 -y=3".split(" "))
 
 
 @pytest.fixture
@@ -442,11 +369,10 @@ def init_entire(
     init_full_x_remove_z_default_4,
 ):  # 1.1.3.2
     """Initialize all experiments"""
-    pass
 
 
 def get_name_value_pairs(trials):
-    """Turn parameters into pairs for easy comparisions"""
+    """Turn parameters into pairs for easy comparisons"""
     pairs = []
     for trial in trials:
         pairs.append([])
@@ -787,42 +713,40 @@ def test_entire_full_x_full_y(init_entire):
     )
 
     pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
-    assert set(pairs) == set(
-        (
-            (("/x", 0), ("/y", 1)),
-            # full_x_full_y
-            (("/x", 1), ("/y", 1)),
-            (("/x", -1), ("/y", 1)),
-            (("/x", 1), ("/y", -1)),
-            (("/x", -1), ("/y", -1)),
-            # half_x_full_y
-            (("/x", 2), ("/y", 2)),
-            (("/x", 2), ("/y", -2)),
-            # full_x_half_y
-            (("/x", 3), ("/y", 3)),
-            (("/x", -3), ("/y", 3)),
-            # full_x_rename_y_z
-            (("/x", 4), ("/y", 4)),
-            (("/x", -4), ("/y", 4)),
-            (("/x", 4), ("/y", -4)),
-            (("/x", -4), ("/y", -4)),
-            # full_x_rename_half_y_half_z
-            (("/x", 5), ("/y", 5)),
-            (("/x", -5), ("/y", 5)),
-            # full_x_rename_half_y_full_z
-            (("/x", 6), ("/y", 6)),
-            (("/x", -6), ("/y", 6)),
-            # full_x_remove_y
-            (("/x", 7), ("/y", 1)),
-            (("/x", -7), ("/y", 1)),
-            # full_x_remove_z
-            (("/x", 8), ("/y", 1)),
-            (("/x", -8), ("/y", 1)),
-            # full_x_remove_z_default_4
-            (("/x", 9), ("/y", 4)),
-            (("/x", -9), ("/y", 4)),
-        )
-    )
+    assert set(pairs) == {
+        (("/x", 0), ("/y", 1)),
+        # full_x_full_y
+        (("/x", 1), ("/y", 1)),
+        (("/x", -1), ("/y", 1)),
+        (("/x", 1), ("/y", -1)),
+        (("/x", -1), ("/y", -1)),
+        # half_x_full_y
+        (("/x", 2), ("/y", 2)),
+        (("/x", 2), ("/y", -2)),
+        # full_x_half_y
+        (("/x", 3), ("/y", 3)),
+        (("/x", -3), ("/y", 3)),
+        # full_x_rename_y_z
+        (("/x", 4), ("/y", 4)),
+        (("/x", -4), ("/y", 4)),
+        (("/x", 4), ("/y", -4)),
+        (("/x", -4), ("/y", -4)),
+        # full_x_rename_half_y_half_z
+        (("/x", 5), ("/y", 5)),
+        (("/x", -5), ("/y", 5)),
+        # full_x_rename_half_y_full_z
+        (("/x", 6), ("/y", 6)),
+        (("/x", -6), ("/y", 6)),
+        # full_x_remove_y
+        (("/x", 7), ("/y", 1)),
+        (("/x", -7), ("/y", 1)),
+        # full_x_remove_z
+        (("/x", 8), ("/y", 1)),
+        (("/x", -8), ("/y", 1)),
+        # full_x_remove_z_default_4
+        (("/x", 9), ("/y", 4)),
+        (("/x", -9), ("/y", 4)),
+    }
 
 
 def test_run_entire_full_x_full_y(init_entire):

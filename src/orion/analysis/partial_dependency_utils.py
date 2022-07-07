@@ -86,7 +86,7 @@ def partial_dependency(
     ]
     data = pandas.DataFrame(data, columns=flattened_space.keys())
 
-    partial_dependencies = dict()
+    partial_dependencies = {}
     for x_i, x_name in enumerate(params):
         grid, averages, stds = partial_dependency_grid(
             flattened_space, model, [x_name], data, n_grid_points

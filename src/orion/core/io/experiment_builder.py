@@ -9,7 +9,7 @@ configuration.
 The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
 when the user request an experiment with specific options. One can easily create a new experiment
 with ``Experiment('some_experiment_name')``, but the configuration of a _writable_ experiment is
-less straighforward. This is because there is many sources of configuration and they have a strict
+less straightforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
@@ -83,7 +83,7 @@ import pprint
 import sys
 
 import orion.core
-import orion.core.utils.backward as backward
+import orion.core.utils.backward as backward  # pylint:disable=consider-using-from-import
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
@@ -278,7 +278,7 @@ def _fetch_config_version(configs, version=None):
 
     if version > max_version:
         log.warning(
-            "Version %s was specified but most recent version is only %s. " "Using %s.",
+            "Version %s was specified but most recent version is only %s. Using %s.",
             version,
             max_version,
             max_version,
