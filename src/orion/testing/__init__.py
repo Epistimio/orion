@@ -13,10 +13,13 @@ import datetime
 import os
 from contextlib import contextmanager
 
+from falcon import testing
+
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.producer import Producer
+from orion.serving.webapi import WebApi
 from orion.testing.state import OrionState
 
 base_experiment = {
@@ -223,6 +226,37 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
         yield cfg, experiment, client
 
     client.close()
+
+
+def falcon_client(exp_config=None, trial_config=None, statuses=None):
+    """Context manager for the creation of an ExperimentClient and storage init"""
+    if exp_config is None:
+        raise ValueError("Parameter 'exp_config' is missing")
+    if trial_config is None:
+        raise ValueError("Parameter 'trial_config' is missing")
+    if statuses is None:
+        statuses = ["new", "interrupted", "suspended", "reserved", "completed"]
+
+    from orion.client.experiment import ExperimentClient
+
+    with OrionState(
+        experiments=[exp_config],
+        trials=generate_trials(trial_config, statuses, exp_config),
+    ) as cfg:
+
+        experiment = experiment_builder.build(
+            name=exp_config["name"], storage=cfg.storage_config
+        )
+
+        if cfg.trials:
+            experiment._id = cfg.trials[0]["experiment"]
+
+        exp_client = ExperimentClient(experiment)
+        falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
+
+        yield cfg, experiment, exp_client, falcon_client
+
+    exp_client.close()
 
 
 class MockDatetime(datetime.datetime):
