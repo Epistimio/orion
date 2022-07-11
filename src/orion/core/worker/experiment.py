@@ -140,6 +140,7 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         name: str,
