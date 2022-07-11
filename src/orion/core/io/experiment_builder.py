@@ -403,7 +403,6 @@ def create_experiment(
         Configuration of the storage backend.
 
     """
-    space = _instantiate_space(space)
 
     T = TypeVar("T")
     V = TypeVar("V")
@@ -411,16 +410,8 @@ def create_experiment(
     def _default(v: T | None, default: V) -> T | V:
         return v if v is not None else default
 
-    default_metadata = dict(user=_default(user, getpass.getuser()))
-    default_refers = dict(parent_id=None, root_id=None, adapter=[])
-
+    space = _instantiate_space(space)
     max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
-    max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
-    working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
-    metadata = _default(metadata, default_metadata)
-    refers = _default(refers, default_refers)
-    refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))  # type: ignore
-
     instantiated_algorithm = _instantiate_algo(
         space=space,
         max_trials=max_trials,
@@ -428,9 +419,14 @@ def create_experiment(
         ignore_unavailable=mode != "x",
     )
 
+    max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
+    working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
+    metadata = _default(metadata, {"user": _default(user, getpass.getuser())})
+    refers = _default(refers, dict(parent_id=None, root_id=None, adapter=[]))
+    refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))  # type: ignore
+
     # TODO: Remove for v0.4
-    strategy_config: dict | None = (producer or {}).get("strategy")
-    _instantiate_strategy(strategy_config)
+    _instantiate_strategy((producer or {}).get("strategy"))
 
     experiment = Experiment(
         name=name,
@@ -439,8 +435,8 @@ def create_experiment(
         space=space,
         _id=_id,
         max_trials=max_trials,
-        max_broken=max_broken,
         algorithms=instantiated_algorithm,
+        max_broken=max_broken,
         working_dir=working_dir,
         metadata=metadata,
         refers=refers,
