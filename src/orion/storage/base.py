@@ -587,10 +587,6 @@ def setup_storage(storage=None, debug=False):
     if storage is None:
         storage = orion.core.config.storage.to_dict()
 
-    import traceback
-
-    log.info("Setting up storage %s", "".join(traceback.format_stack()[33:]))
-
     storage = copy.deepcopy(storage)
 
     if storage.get("type") == "legacy" and "database" not in storage:
