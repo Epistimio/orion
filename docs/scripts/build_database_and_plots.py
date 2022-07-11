@@ -5,7 +5,6 @@ import shutil
 import subprocess
 
 from orion.client import get_experiment
-from orion.core.utils.singleton import update_singletons
 from orion.storage.base import setup_storage
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -69,7 +68,6 @@ def prepare_dbs():
 
 def setup_tmp_storage(host):
     # Clear singletons
-    update_singletons()
 
     return setup_storage(
         storage={

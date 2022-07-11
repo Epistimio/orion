@@ -15,10 +15,7 @@ import yaml
 
 import orion
 from orion.core.io import experiment_builder as experiment_builder
-from orion.core.utils.singleton import (
-    SingletonAlreadyInstantiatedError,
-    update_singletons,
-)
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage, storage_factory
 
@@ -184,17 +181,13 @@ class BaseOrionState:
 
     def __enter__(self):
         """Load a new database state"""
-        self.singletons = update_singletons()
         self.cleanup()
         return self.init(self.make_config())
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup database state"""
         self.cleanup()
-        print("Conf", orion.core.config.storage)
         orion.core.config.storage.from_dict(self.previous_config)
-        print("Conf", orion.core.config.storage)
-        update_singletons(self.singletons)
 
     def setup_storage(self, config=None):
         """Return test storage"""

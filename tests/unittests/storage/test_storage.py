@@ -13,7 +13,6 @@ import pytest
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
     FailedUpdate,
@@ -118,7 +117,7 @@ def generate_experiments():
 @pytest.mark.usefixtures("setup_pickleddb_database")
 def test_setup_storage_default():
     """Test that storage is setup using default config"""
-    update_singletons()
+
     storage = setup_storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
@@ -126,7 +125,7 @@ def test_setup_storage_default():
 
 def test_setup_storage_bad():
     """Test how setup fails when configuring with non-existent backends"""
-    update_singletons()
+
     with pytest.raises(NotImplementedError) as exc:
         setup_storage({"type": "idontexist"})
 
@@ -135,7 +134,7 @@ def test_setup_storage_bad():
 
 def test_setup_storage_custom():
     """Test setup with local configuration"""
-    update_singletons()
+
     storage = setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
@@ -146,7 +145,7 @@ def test_setup_storage_custom():
 
 def test_setup_storage_custom_type_missing():
     """Test setup with local configuration with type missing"""
-    update_singletons()
+
     storage = setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
 
     assert isinstance(storage, Legacy)
@@ -157,7 +156,7 @@ def test_setup_storage_custom_type_missing():
 @pytest.mark.usefixtures("setup_pickleddb_database")
 def test_setup_storage_custom_legacy_emtpy():
     """Test setup with local configuration with legacy but no config"""
-    update_singletons()
+
     storage = setup_storage({"type": "legacy"})
 
     assert isinstance(storage, Legacy)
@@ -167,7 +166,7 @@ def test_setup_storage_custom_legacy_emtpy():
 
 def test_setup_storage_bad_override():
     """Test setup with different type than existing singleton"""
-    update_singletons()
+
     storage = setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
@@ -181,7 +180,7 @@ def test_setup_storage_bad_override():
 
 def test_setup_storage_stateless():
     """Test that passed configuration dictionary is not modified by the function"""
-    update_singletons()
+
     config = {"database": {"type": "pickleddb", "host": "test.pkl"}}
     passed_config = copy.deepcopy(config)
     setup_storage(passed_config)

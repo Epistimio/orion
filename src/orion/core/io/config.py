@@ -457,10 +457,10 @@ class Configuration:
         logger.debug("Resetting Config")
 
         with _disable_logger():
-            for key in self._config:
-                self._config[key].pop("value", None)
+            for value in self._config.values():
+                value.pop("value", None)
 
-            for key, value in self._subconfigs.items():
+            for value in self._subconfigs.values():
                 value.reset()
 
     def from_dict(self, config):
@@ -474,7 +474,7 @@ class Configuration:
             return
 
         with _disable_logger():
-            for key, values in self._config.items():
+            for key in self._config:  # pylint: disable=consider-using-dict-items
                 value = config.get(key)
 
                 if value:

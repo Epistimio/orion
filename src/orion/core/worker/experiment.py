@@ -20,7 +20,6 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.core.utils.singleton import update_singletons
 from orion.storage.base import FailedUpdate, setup_storage
 
 log = logging.getLogger(__name__)
@@ -153,6 +152,11 @@ class Experiment:
             self.name, self.version, experiment=self, storage=self._storage
         )
 
+    @property
+    def storage(self):
+        """Return the storage currently in use by this experiment"""
+        return self._storage
+
     def _check_if_writable(self):
         if self.mode == "r":
             calling_function = inspect.stack()[1].function
@@ -173,19 +177,11 @@ class Experiment:
         for entry in self.__slots__:
             state[entry] = getattr(self, entry)
 
-        # TODO: This should be removed when singletons and `setup_storage()` are removed.
-        #       See https://github.com/Epistimio/orion/issues/606
-        singletons = update_singletons()
-        state["singletons"] = singletons
-        update_singletons(singletons)
-
         return state
 
     def __setstate__(self, state):
         for entry in self.__slots__:
             setattr(self, entry, state[entry])
-
-        update_singletons(state.pop("singletons"))
 
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment

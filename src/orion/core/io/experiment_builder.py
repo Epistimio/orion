@@ -388,13 +388,26 @@ def get_from_args(cmdargs, mode="r"):
 
 
 def build(name, version=None, branching=None, storage=None, **config):
-    """Shortcut to"""
+    """Build an experiment.
+
+    .. seealso::
+
+        :func:`orion.core.io.experiment_builder.Experiment.build` for more information
+
+    """
     if storage is None:
         storage = setup_storage()
     return ExperimentBuilder(storage).build(name, version, branching, **config)
 
 
 def load(name, version=None, mode="r", storage=None):
+    """Load an experiment.
+
+    .. seealso::
+
+        :func:`orion.core.io.experiment_builder.Experiment.load` for more information
+
+    """
     if storage is None:
         storage = setup_storage()
     return ExperimentBuilder(storage).load(name, version, mode)
@@ -426,20 +439,22 @@ class ExperimentBuilder:
     def build(self, name, version=None, branching=None, **config):
         """Build an experiment object
 
-        If new, ``space`` argument must be provided, else all arguments are fetched from the database
-        based on (name, version). If any argument given does not match the corresponding ones in the
-        database for given (name, version), than the version is incremented and the experiment will be a
-        child of the previous version.
+        If new, ``space`` argument must be provided, else all arguments are fetched from the
+        database based on (name, version). If any argument given does not match the corresponding
+        ones in the database for given (name, version), than the version is incremented and the
+        experiment will be a child of the previous version.
 
         Parameters
         ----------
         name: str
             Name of the experiment to build
         version: int, optional
-            Version to select. If None, last version will be selected. If version given is larger than
-            largest version available, the largest version will be selected.
+            Version to select. If None, last version will be selected.
+            If version given is larger than largest version available, the largest version
+            will be selected.
         space: dict, optional
-            Optimization space of the algorithm. Should have the form ``dict(name='<prior>(args)')``.
+            Optimization space of the algorithm.
+            Should have the form ``dict(name='<prior>(args)')``.
         algorithms: str or dict, optional
             Algorithm used for optimization.
         strategy: str or dict, optional
@@ -473,7 +488,8 @@ class ExperimentBuilder:
                 How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
                 'break'.  Defaults to 'break'.
             cli_change_type: str, optional
-                How to resolve cli change automatically. Must be one of 'noeffect', 'unsure' or 'break'.
+                How to resolve cli change automatically.
+                Must be one of 'noeffect', 'unsure' or 'break'.
                 Defaults to 'break'.
             config_change_type: str, optional
                 How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
@@ -490,9 +506,7 @@ class ExperimentBuilder:
 
         if "space" not in config:
             raise NoConfigurationError(
-                "Experiment {} does not exist in DB and space was not defined.".format(
-                    name
-                )
+                f"Experiment {name} does not exist in DB and space was not defined."
             )
 
         if len(config["space"]) == 0:
@@ -557,8 +571,9 @@ class ExperimentBuilder:
         name: str
             Name of the experiment to build
         version: int, optional
-            Version to select. If None, last version will be selected. If version given is larger than
-            largest version available, the largest version will be selected.
+            Version to select. If None, last version will be selected.
+            If version given is larger than largest version available,
+            the largest version will be selected.
         mode: str, optional
             The access rights of the experiment on the database.
             'r': read access only
@@ -574,9 +589,10 @@ class ExperimentBuilder:
         db_config = self.fetch_config_from_db(name, version)
 
         if not db_config:
+            version = version if version else "*"
             message = (
-                "No experiment with given name '%s' and version '%s' inside database, "
-                "no view can be created." % (name, version if version else "*")
+                f"No experiment with given name '{name}' and version '{version}' inside database, "
+                "no view can be created."
             )
             raise NoConfigurationError(message)
 
@@ -592,8 +608,9 @@ class ExperimentBuilder:
         name: str
             Name of the experiment to fetch
         version: int, optional
-            Version to select. If None, last version will be selected. If version given is larger than
-            largest version available, the largest version will be selected.
+            Version to select. If None, last version will be selected.
+            If version given is larger than largest version available,
+            the largest version will be selected.
 
         """
         configs = self.storage.fetch_experiments({"name": name})

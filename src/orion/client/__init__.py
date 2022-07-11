@@ -17,7 +17,6 @@ from orion.client.cli import (
 )
 from orion.client.experiment import ExperimentClient
 from orion.core.utils.exceptions import RaceCondition
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
 
@@ -323,29 +322,21 @@ def workon(
         If the algorithm specified is not properly installed.
 
     """
-    # Clear singletons and keep pointers to restore them.
-    singletons = update_singletons()
+    experiment = experiment_builder.build(
+        name,
+        version=1,
+        space=space,
+        algorithms=algorithms,
+        max_trials=max_trials,
+        max_broken=max_broken,
+        storage={"type": "legacy", "database": {"type": "EphemeralDB"}},
+    )
 
-    try:
-        experiment = experiment_builder.build(
-            name,
-            version=1,
-            space=space,
-            algorithms=algorithms,
-            max_trials=max_trials,
-            max_broken=max_broken,
-            storage={"type": "legacy", "database": {"type": "EphemeralDB"}},
-        )
+    producer = Producer(experiment)
 
-        producer = Producer(experiment)
+    experiment_client = ExperimentClient(experiment, producer)
 
-        experiment_client = ExperimentClient(experiment, producer)
-
-        with experiment_client.tmp_executor("singleexecutor", n_workers=1):
-            experiment_client.workon(function, n_workers=1, max_trials=max_trials)
-
-    finally:
-        # Restore singletons
-        update_singletons(singletons)
+    with experiment_client.tmp_executor("singleexecutor", n_workers=1):
+        experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 
     return experiment_client

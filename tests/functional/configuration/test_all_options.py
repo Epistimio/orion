@@ -18,7 +18,6 @@ import orion.core.io.resolve_config
 from orion.client import get_experiment
 from orion.core.io import experiment_builder
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import update_singletons
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
@@ -143,14 +142,14 @@ class ConfigurationTestSuite:
 
     def test_global_config(self, tmp_path, monkeypatch):
         """Test that global configuration is set properly based on global yaml"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_global_config(tmp_path):
             self.check_global_config(tmp_path, monkeypatch)
 
     def test_env_var_config(self, tmp_path, monkeypatch):
         """Test that env vars are set properly in global config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_env_var_config(tmp_path):
             self.check_env_var_config(tmp_path, monkeypatch)
@@ -160,7 +159,7 @@ class ConfigurationTestSuite:
     )
     def test_db_config(self, tmp_path):
         """Test that exp config in db overrides global config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_db_config(tmp_path):
             self.check_db_config()
@@ -168,7 +167,7 @@ class ConfigurationTestSuite:
     @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_local_config(self, tmp_path, monkeypatch):
         """Test that local config overrides db/global config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_local_config(tmp_path) as conf_file:
             self.check_local_config(tmp_path, conf_file, monkeypatch)
@@ -176,7 +175,7 @@ class ConfigurationTestSuite:
     @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_cmd_args_config(self, tmp_path, monkeypatch):
         """Test that cmd_args config overrides local config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_cmd_args_config(tmp_path) as conf_file:
             self.check_cmd_args_config(tmp_path, conf_file, monkeypatch)
@@ -218,7 +217,6 @@ class TestStorage(ConfigurationTestSuite):
 
     def check_global_config(self, tmp_path, monkeypatch):
         """Check that global configuration is set properly"""
-        update_singletons()
 
         storage_config = copy.deepcopy(self.config["storage"])
         storage_config["database"]["host"] = storage_config["database"]["host"].replace(
@@ -242,7 +240,6 @@ class TestStorage(ConfigurationTestSuite):
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
-        update_singletons()
 
         assert orion.core.config.storage.to_dict() == {
             "type": self.env_vars["ORION_STORAGE_TYPE"],
@@ -278,7 +275,6 @@ class TestStorage(ConfigurationTestSuite):
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        update_singletons()
 
         assert orion.core.config.storage.to_dict() == {
             "type": self.env_vars["ORION_STORAGE_TYPE"],
@@ -341,7 +337,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
 
     def check_global_config(self, tmp_path, monkeypatch):
         """Check that global configuration is set properly"""
-        update_singletons()
 
         database = copy.deepcopy(self.config["database"])
         database["host"] = database["host"].replace("${tmp_path}", str(tmp_path))
@@ -361,7 +356,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
-        update_singletons()
 
         assert orion.core.config.database.to_dict() == {
             "name": self.env_vars["ORION_DB_NAME"],
@@ -391,7 +385,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        update_singletons()
 
         assert orion.core.config.database.to_dict() == {
             "name": self.env_vars["ORION_DB_NAME"],

@@ -7,7 +7,6 @@ import os
 import pytest
 
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate
 from orion.storage.legacy import setup_database
@@ -64,14 +63,14 @@ db_backends = [{"type": "legacy", "database": mongodb_config}]
 @pytest.mark.usefixtures("setup_pickleddb_database")
 def test_setup_database_default(monkeypatch):
     """Test that database is setup using default config"""
-    update_singletons()
+
     database = setup_database()
     assert isinstance(database, PickledDB)
 
 
 def test_setup_database_bad():
     """Test how setup fails when configuring with non-existent backends"""
-    update_singletons()
+
     with pytest.raises(NotImplementedError) as exc:
         setup_database({"type": "idontexist"})
 
@@ -80,7 +79,7 @@ def test_setup_database_bad():
 
 def test_setup_database_custom():
     """Test setup with local configuration"""
-    update_singletons()
+
     database = setup_database({"type": "pickleddb", "host": "test.pkl"})
 
     assert isinstance(database, PickledDB)
@@ -89,7 +88,7 @@ def test_setup_database_custom():
 
 def test_setup_database_bad_override():
     """Test setup with different type than existing singleton"""
-    update_singletons()
+
     database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
 
@@ -100,7 +99,7 @@ def test_setup_database_bad_override():
 
 def test_setup_database_bad_config_override():
     """Test setup with different config than existing singleton"""
-    update_singletons()
+
     database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
     # with pytest.raises(SingletonAlreadyInstantiatedError):
@@ -109,7 +108,7 @@ def test_setup_database_bad_config_override():
 
 def test_get_database():
     """Test that get database gets the singleton"""
-    update_singletons()
+
     database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
 

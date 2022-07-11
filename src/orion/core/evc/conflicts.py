@@ -287,7 +287,7 @@ class Conflicts:
         except AssertionError:
             # something terribly wrong happened
             raise
-        except Exception as err:  # pylint:disable=broad-except
+        except Exception:  # pylint:disable=broad-except
             conflict.resolution = None
             conflict._is_resolved = None  # pylint:disable=protected-access
 

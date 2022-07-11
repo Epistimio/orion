@@ -12,7 +12,6 @@ from pymongo import MongoClient
 from orion.client import create_experiment
 from orion.core.io.database import DatabaseTimeout
 from orion.core.utils.exceptions import ReservationTimeout
-from orion.core.utils.singleton import update_singletons
 
 DB_FILE = "stress.pkl"
 
@@ -143,7 +142,6 @@ def stress_test(storage, space_type, workers, size):
         database.workers.drop()
         database.resources.drop()
         client.close()
-    update_singletons()
 
     print("Worker  |  Point")
 
@@ -183,7 +181,6 @@ def stress_test(storage, space_type, workers, size):
         database.workers.drop()
         database.resources.drop()
         client.close()
-    update_singletons()
 
     return trials
 

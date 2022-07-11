@@ -848,7 +848,7 @@ class ExperimentClient:
             raise RuntimeError(f"Reservation for trial {trial.id} has been lost.")
 
     def _maintain_reservation(self, trial):
-        self._pacemakers[trial.id] = TrialPacemaker(trial, self._experiment._storage)
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self.storage)
         self._pacemakers[trial.id].start()
 
     def _release_reservation(self, trial, raise_if_unreserved=True):
@@ -861,3 +861,8 @@ class ExperimentClient:
                 return
 
         self._pacemakers.pop(trial.id).stop()
+
+    @property
+    def storage(self):
+        """Return the storage currently in use by this client"""
+        return self._experiment.storage

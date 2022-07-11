@@ -14,7 +14,6 @@ from orion.client import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.core.utils.singleton import update_singletons
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
@@ -49,7 +48,6 @@ class TestCreateBenchmark:
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
             # Reset the Storage and drop instances so that setup_storage() would fail.
             cfg.cleanup()
-            cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `get_or_create_benchmark()`
             # with pytest.raises(SingletonNotInstantiatedError):
@@ -79,7 +77,6 @@ class TestCreateBenchmark:
         """Test error message if storage is not configured properly"""
         name = "oopsie_bad_storage"
         # Make sure there is no existing storage singleton
-        update_singletons()
 
         with pytest.raises(NotImplementedError) as exc:
             benchmark_config_py["storage"] = {
@@ -96,7 +93,6 @@ class TestCreateBenchmark:
         self, monkeypatch, tmp_path, benchmark_config_py
     ):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
-        update_singletons()
 
         conf_file = str(tmp_path / "db.pkl")
 

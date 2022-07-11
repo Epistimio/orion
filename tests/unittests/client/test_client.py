@@ -19,7 +19,6 @@ from orion.core.utils.exceptions import (
     RaceCondition,
     UnsupportedOperation,
 )
-from orion.core.utils.singleton import update_singletons
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -156,7 +155,6 @@ class TestCreateExperiment:
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
             # Reset the Storage and drop instances so that setup_storage() would fail.
             cfg.cleanup()
-            cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `create_experiment()`
             # with pytest.raises(SingletonNotInstantiatedError):
@@ -183,7 +181,6 @@ class TestCreateExperiment:
         """Test error message if storage is not configured properly"""
         name = "oopsie_bad_storage"
         # Make sure there is no existing storage singleton
-        update_singletons()
 
         with pytest.raises(NotImplementedError) as exc:
             create_experiment(
@@ -386,7 +383,6 @@ class TestCreateExperiment:
 
     def test_create_experiment_debug_mode(self, tmp_path):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
-        update_singletons()
 
         conf_file = str(tmp_path / "db.pkl")
 
@@ -469,7 +465,6 @@ class TestWorkon:
         monkeypatch.setattr("orion.core.io.experiment_builder.build", build_fail)
 
         # Flush storage singleton
-        update_singletons()
 
         with pytest.raises(RuntimeError) as exc:
             experiment = workon(
