@@ -561,27 +561,9 @@ class BaseStorageProtocol:
 storage_factory = GenericFactory(BaseStorageProtocol)
 
 
-def get_storage_2():
-    """Return current storage
-
-    This is a wrapper around the Storage Singleton object to provide
-    better error message when it is used without being initialized.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying storage was not initialized prior to calling this function
-
-    Notes
-    -----
-    To initialize the underlying storage you must first call `Storage(...)`
-    with the appropriate arguments for the chosen backend
-
-    """
-    return setup_storage()
-
-
+@contextlib.contextmanager
 def with_storage(config):
+    """Update the storage configuration"""
     old = copy.deepcopy(orion.core.config.storage)
     orion.core.config.storage.from_dict(config)
 
