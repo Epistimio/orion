@@ -81,6 +81,8 @@ import getpass
 import logging
 import pprint
 import sys
+import warnings
+from typing import TypeVar
 
 import orion.core
 import orion.core.utils.backward as backward  # pylint:disable=consider-using-from-import
@@ -111,7 +113,9 @@ log = logging.getLogger(__name__)
 ##
 
 
-def build(name, version=None, branching=None, **config):
+def build(
+    name: str, version: int | None = None, branching: dict | None = None, **config
+) -> Experiment:
     """Build an experiment object
 
     If new, ``space`` argument must be provided, else all arguments are fetched from the database
@@ -202,6 +206,7 @@ def build(name, version=None, branching=None, **config):
     log.debug(f"Experiment {config['name']}-v{config['version']} already existed.")
 
     conflicts = _get_conflicts(experiment, branching)
+    assert branching is not None
     must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
 
     if must_branch and branching.get("enable", orion.core.config.evc.enable):
@@ -218,7 +223,7 @@ def build(name, version=None, branching=None, **config):
     return experiment
 
 
-def clean_config(name, config, branching):
+def clean_config(name: str, config: dict, branching: dict | None):
     """Clean configuration from hidden fields (ex: ``_id``) and update branching if necessary"""
     log.debug("Cleaning config")
 
@@ -246,7 +251,7 @@ def clean_config(name, config, branching):
     return name, config, branching
 
 
-def consolidate_config(name, version, config):
+def consolidate_config(name: str, version: int | None, config: dict):
     """Merge together given configuration with db configuration matching
     for experiment (``name``, ``version``)
     """
@@ -278,7 +283,7 @@ def consolidate_config(name, version, config):
     return config
 
 
-def merge_algorithm_config(config, new_config):
+def merge_algorithm_config(config: dict, new_config: dict) -> None:
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
     if isinstance(config.get("algorithms"), dict) and len(config["algorithms"]) > 1:
@@ -289,7 +294,7 @@ def merge_algorithm_config(config, new_config):
 
 
 # TODO: Remove for v0.4
-def merge_producer_config(config, new_config):
+def merge_producer_config(config: dict, new_config: dict) -> None:
     """Merge given producer configuration with db config"""
     if (
         isinstance(config.get("producer", {}).get("strategy"), dict)
@@ -312,7 +317,7 @@ def build_view(name, version=None):
     return load(name, version=version, mode="r")
 
 
-def load(name: str, version: int | None = None, mode: Mode = "r"):
+def load(name: str, version: int | None = None, mode: Mode = "r") -> Experiment:
     """Load experiment from database
 
     An experiment view provides all reading operations of standard experiment but prevents the
@@ -351,8 +356,22 @@ def load(name: str, version: int | None = None, mode: Mode = "r"):
     return create_experiment(mode=mode, **db_config)
 
 
+# pylint: disable=too-many-arguments
 def create_experiment(
-    name: str, version: int, mode: Mode, space: Space | dict[str, str], **kwargs
+    name: str,
+    version: int,
+    mode: Mode,
+    space: Space | dict[str, str],
+    algorithms: str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    working_dir: str | None = None,
+    metadata: dict | None = None,
+    refers: dict | None = None,
+    producer: dict | None = None,
+    user: str | None = None,
+    _id: int | str | None = None,
+    **kwargs,
 ) -> Experiment:
     """Instantiate the experiment and its attribute objects
 
@@ -385,25 +404,34 @@ def create_experiment(
 
     """
     space = _instantiate_space(space)
-    _id = kwargs.get("_id", None)
-    max_trials = kwargs.pop("max_trials", orion.core.config.experiment.max_trials)
-    max_broken = kwargs.pop("max_broken", orion.core.config.experiment.max_broken)
-    working_dir = kwargs.pop("working_dir", orion.core.config.experiment.working_dir)
-    algo_config = kwargs.pop("algorithms", None)
-    algorithms = _instantiate_algo(
+
+    T = TypeVar("T")
+    V = TypeVar("V")
+
+    def _default(v: T | None, default: V) -> T | V:
+        return v if v is not None else default
+
+    default_metadata = dict(user=_default(user, getpass.getuser()))
+    default_refers = dict(parent_id=None, root_id=None, adapter=[])
+
+    max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
+    max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
+    working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
+    metadata = _default(metadata, default_metadata)
+    refers = _default(refers, default_refers)
+    refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))  # type: ignore
+
+    instantiated_algorithm = _instantiate_algo(
         space=space,
         max_trials=max_trials,
-        config=algo_config,
+        config=algorithms,
         ignore_unavailable=mode != "x",
     )
-    metadata = kwargs.pop("metadata", {"user": kwargs.pop("user", getpass.getuser())})
-    refers: dict = kwargs.pop(
-        "refers", {"parent_id": None, "root_id": None, "adapter": []}
-    )
-    refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))
+
     # TODO: Remove for v0.4
-    strategy_config: dict | None = kwargs.pop("producer", {}).get("strategy")
+    strategy_config: dict | None = (producer or {}).get("strategy")
     _instantiate_strategy(strategy_config)
+
     experiment = Experiment(
         name=name,
         version=version,
@@ -412,7 +440,7 @@ def create_experiment(
         _id=_id,
         max_trials=max_trials,
         max_broken=max_broken,
-        algorithms=algorithms,
+        algorithms=instantiated_algorithm,
         working_dir=working_dir,
         metadata=metadata,
         refers=refers,
@@ -420,6 +448,12 @@ def create_experiment(
     log.debug(
         "Created experiment with config:\n%s", pprint.pformat(experiment.configuration)
     )
+    if kwargs:
+        warnings.warn(
+            UserWarning(
+                f"create_experiment received some extra unused arguments: {kwargs}"
+            )
+        )
 
     return experiment
 
@@ -573,7 +607,7 @@ def _register_experiment(experiment):
         )
 
 
-def _update_experiment(experiment):
+def _update_experiment(experiment: Experiment) -> None:
     """Update experiment configuration in database"""
     log.debug("Updating experiment (name: %s)", experiment.name)
     config = experiment.configuration
