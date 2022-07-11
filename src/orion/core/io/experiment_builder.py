@@ -427,7 +427,6 @@ def create_experiment(
     experiment.max_broken = kwargs.get(
         "max_broken", orion.core.config.experiment.max_broken
     )
-    knowledge_base = kwargs.get("knowledge_base")
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(
         experiment.space,
