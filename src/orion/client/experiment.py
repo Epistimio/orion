@@ -13,6 +13,7 @@ import typing
 from contextlib import contextmanager
 
 import orion.core
+from orion.algo.space import Space
 from orion.client.runner import Runner
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
@@ -160,9 +161,11 @@ class ExperimentClient:
         return self._experiment.metadata
 
     @property
-    def space(self):
+    def space(self) -> Space:
         """Return problem's parameter `orion.algo.space.Space`."""
-        return self._experiment.space
+        space = self._experiment.space
+        assert space is not None
+        return space
 
     @property
     def algorithms(self):
