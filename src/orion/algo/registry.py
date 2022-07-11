@@ -4,7 +4,7 @@ from __future__ import annotations
 import copy
 from collections import defaultdict
 from logging import getLogger as get_logger
-from typing import Any, Container, Iterator, Mapping
+from typing import Any, Container, Iterable, Iterator, Mapping
 
 from orion.core.worker.trial import Trial, TrialCM
 
@@ -12,10 +12,19 @@ logger = get_logger(__name__)
 
 
 class Registry(Container[Trial]):
-    """In-memory container for the trials that the algorithm suggests/observes/etc."""
+    """In-memory container for the trials that the algorithm suggests/observes/etc.
 
-    def __init__(self):
+    This behaves a bit like a managed dictionary, but the "keys" are trials ids, which
+    (at the time of writing) can vary depending on how we chose to compute them.
+    """
+
+    def __init__(self, trials: Iterable[Trial] = ()):
         self._trials: dict[str, Trial] = {}
+        for trial in trials:
+            self.register(trial)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}({list(iter(self))})"
 
     def __contains__(self, trial_or_id: str | Trial | Any) -> bool:
         if isinstance(trial_or_id, TrialCM):
@@ -167,4 +176,4 @@ def _get_id(trial: Trial) -> str:
     Only to be used internally in this module. This ignores the `experiment`
     attribute of the trial.
     """
-    return Trial.compute_trial_hash(trial, ignore_experiment=True)
+    return Trial.compute_trial_hash(trial)
