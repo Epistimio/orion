@@ -38,7 +38,8 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         algorithm: AlgoT,
     ):
         super().__init__(space=space, algorithm=algorithm)
-        self.current_task_id: int = 0
+        self.target_task_id: int = 0
+        self.current_task_id: int = self.target_task_id
 
     def transform(self, trial: Trial) -> Trial:
         return self._add_task_id(trial, self.current_task_id)
@@ -107,7 +108,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         compatible_trials: dict[int, list[Trial]] = defaultdict(list)
         task_ids_to_experiments: dict[int, ExperimentInfo] = {}
 
-        for i, (experiment_info, trials) in enumerate(warm_start_trials.items()):
+        for i, (experiment_info, trials) in enumerate(warm_start_trials):
             # Start the task ids at 1, so the current experiment has task id 0.
             task_id = i + 1
             for trial in trials:
@@ -175,22 +176,30 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
 
     @property
     def _trials_from_target_task(self) -> Iterable[Trial]:
-        return (trial for trial in self.algorithm.registry if get_task_id(trial) == 0)
+        return (
+            trial
+            for trial in self.algorithm.registry
+            if get_task_id(trial) == self.target_task_id
+        )
 
     @property
     def _trials_from_other_tasks(self) -> Iterable[Trial]:
-        return (trial for trial in self.algorithm.registry if get_task_id(trial) != 0)
+        return (
+            trial
+            for trial in self.algorithm.registry
+            if get_task_id(trial) != self.target_task_id
+        )
 
     @property
-    def is_done(self):
-        """Return True, if an algorithm holds that there can be no further improvement.
-        By default, the cardinality of the specified search space will be used to check
-        if all possible sets of parameters has been tried.
-        """
-        # NOTE: DEBUGGING:
+    def is_done(self) -> bool:
+        # TODO: Adjust this a bit, so the wrapped algo doesn't count the trials from other tasks in
+        # its 'has_completed_max_trials'.
+        # IDEA: Temporarily bump up the value of `max_trials` if set?
+
         total_trials = len(self.unwrapped.registry)
         trials_from_target_task = sum(
-            get_task_id(trial) == 0 for trial in self.unwrapped.registry
+            get_task_id(trial) == self.target_task_id
+            for trial in self.unwrapped.registry
         )
         trials_from_other_tasks = total_trials - trials_from_target_task
         logger.debug(
@@ -201,15 +210,19 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         logger.debug(f"self.n_suggested: {self.n_suggested}")
         logger.debug(f"wrapped algo.is_done: {self.algorithm.is_done}")
 
+        return (
+            self.has_completed_max_trials
+            or self.has_suggested_all_possible_values()
+            # IDEA: Just ignore the `is_done` from the wrapped algo?
+            or self.algorithm.is_done
+        )
+
         # FIXME: Do the same logic as in the BaseAlgorithm.is_done, but only consider trials
         # from the target task.
-        if trials_from_target_task >= self.space.cardinality:
-            return True
+        return super().is_done
 
-        max_trials = getattr(self, "max_trials", float("inf"))
-        if trials_from_target_task >= max_trials:
-            return True
-
+    @property
+    def has_completed_max_trials(self) -> bool:
         return False
 
     @contextmanager

@@ -34,8 +34,11 @@ class DummyKnowledgeBase(KnowledgeBase):
     (similar spaces)
     """
 
-    def __init__(self, previous_experiments: list[ExperimentInfo]):
-        self.previous_experiments = previous_experiments
+    def __init__(
+        self,
+        related_trials: list[tuple[ExperimentInfo, list[Trial]]] | None = None,
+    ):
+        self.related_trials = related_trials or []
 
     def get_related_trials(
         self,
@@ -43,31 +46,24 @@ class DummyKnowledgeBase(KnowledgeBase):
         max_trials: int | None = None,
     ) -> list[tuple[ExperimentInfo, list[Trial]]]:
         """Returns"""
-        related_things = []
-        for i, experiment_info in enumerate(self.previous_experiments):
-            exp_space = space(experiment_info.space)
-            previous_trials = exp_space.sample(10)
-            previous_trials_with_results = [
-                add_result(trial, i * 100 + j)
-                for j, trial in enumerate(previous_trials)
-            ]
-            related_things.append((experiment_info, previous_trials_with_results))
-        return related_things
+        return copy.deepcopy(self.related_trials)
 
     def add_experiment(self, experiment: Experiment | ExperimentClient) -> None:
-        self.previous_experiments.append(
-            ExperimentInfo.from_dict(experiment.configuration)
+        self.related_trials.append(
+            (
+                ExperimentInfo.from_dict(experiment.configuration),
+                experiment.fetch_trials(),
+            )
         )
 
     @property
     def n_stored_experiments(self) -> int:
-        return len(self.previous_experiments)
+        return len(self.related_trials)
 
     def __contains__(self, obj: object) -> bool:
-        return obj in self.previous_experiments
+        return obj in self.related_trials
 
 
 @pytest.fixture()
 def knowledge_base():
-    previous_experiments = []
-    return DummyKnowledgeBase(previous_experiments)
+    return DummyKnowledgeBase()
