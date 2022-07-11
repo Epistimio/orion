@@ -666,6 +666,7 @@ read_only_methods = [
     "to_pandas",
     "version",
     "working_dir",
+    "storage",
 ]
 read_write_only_methods = [
     "fix_lost_trials",
