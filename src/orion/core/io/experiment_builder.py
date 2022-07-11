@@ -99,7 +99,7 @@ from orion.core.utils.exceptions import (
     NoNameError,
     RaceCondition,
 )
-from orion.core.worker.experiment import Experiment
+from orion.core.worker.experiment import Experiment, Mode
 from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import get_storage, setup_storage
 
@@ -312,7 +312,7 @@ def build_view(name, version=None):
     return load(name, version=version, mode="r")
 
 
-def load(name, version=None, mode="r"):
+def load(name: str, version: int | None = None, mode: Mode = "r"):
     """Load experiment from database
 
     An experiment view provides all reading operations of standard experiment but prevents the
@@ -351,7 +351,9 @@ def load(name, version=None, mode="r"):
     return create_experiment(mode=mode, **db_config)
 
 
-def create_experiment(name, version, mode, space, **kwargs):
+def create_experiment(
+    name: str, version: int, mode: Mode, space: Space | dict[str, str], **kwargs
+) -> Experiment:
     """Instantiate the experiment and its attribute objects
 
     All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
@@ -382,36 +384,39 @@ def create_experiment(name, version, mode, space, **kwargs):
         Configuration of the storage backend.
 
     """
-    experiment = Experiment(name=name, version=version, mode=mode)
-    experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
-    experiment.max_trials = kwargs.get(
-        "max_trials", orion.core.config.experiment.max_trials
-    )
-    experiment.max_broken = kwargs.get(
-        "max_broken", orion.core.config.experiment.max_broken
-    )
-    experiment.space = _instantiate_space(space)
-    experiment.algorithms = _instantiate_algo(
-        experiment.space,
-        experiment.max_trials,
-        kwargs.get("algorithms"),
+    space = _instantiate_space(space)
+    _id = kwargs.get("_id", None)
+    max_trials = kwargs.pop("max_trials", orion.core.config.experiment.max_trials)
+    max_broken = kwargs.pop("max_broken", orion.core.config.experiment.max_broken)
+    working_dir = kwargs.pop("working_dir", orion.core.config.experiment.working_dir)
+    algo_config = kwargs.pop("algorithms", None)
+    algorithms = _instantiate_algo(
+        space=space,
+        max_trials=max_trials,
+        config=algo_config,
         ignore_unavailable=mode != "x",
     )
-    # TODO: Remove for v0.4
-    _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
-    experiment.working_dir = kwargs.get(
-        "working_dir", orion.core.config.experiment.working_dir
-    )
-    experiment.metadata = kwargs.get(
-        "metadata", {"user": kwargs.get("user", getpass.getuser())}
-    )
-    experiment.refers = kwargs.get(
+    metadata = kwargs.pop("metadata", {"user": kwargs.pop("user", getpass.getuser())})
+    refers: dict = kwargs.pop(
         "refers", {"parent_id": None, "root_id": None, "adapter": []}
     )
-    experiment.refers["adapter"] = _instantiate_adapters(
-        experiment.refers.get("adapter", [])
+    refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))
+    # TODO: Remove for v0.4
+    strategy_config: dict | None = kwargs.pop("producer", {}).get("strategy")
+    _instantiate_strategy(strategy_config)
+    experiment = Experiment(
+        name=name,
+        version=version,
+        mode=mode,
+        space=space,
+        _id=_id,
+        max_trials=max_trials,
+        max_broken=max_broken,
+        algorithms=algorithms,
+        working_dir=working_dir,
+        metadata=metadata,
+        refers=refers,
     )
-
     log.debug(
         "Created experiment with config:\n%s", pprint.pformat(experiment.configuration)
     )
