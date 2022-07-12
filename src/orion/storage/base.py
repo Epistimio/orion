@@ -561,16 +561,6 @@ class BaseStorageProtocol:
 storage_factory = GenericFactory(BaseStorageProtocol)
 
 
-@contextlib.contextmanager
-def with_storage(config):
-    """Update the storage configuration"""
-    old = copy.deepcopy(orion.core.config.storage)
-    orion.core.config.storage.from_dict(config)
-
-    yield
-    orion.core.config.storage = old
-
-
 def setup_storage(storage=None, debug=False):
     """Create the storage instance from a configuration.
 

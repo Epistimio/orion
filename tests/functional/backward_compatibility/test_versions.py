@@ -10,7 +10,7 @@ from pymongo import MongoClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
 from orion.core.io.database import database_factory
-from orion.storage.base import setup_storage, storage_factory
+from orion.storage.base import storage_factory
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
