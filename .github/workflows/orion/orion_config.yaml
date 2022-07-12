@@ -8,5 +8,6 @@ gunicorn:
    workers: 1
    threads: 1
    timeout: 600
+   loglevel: 'debug'
 
 frontends_uri: ["http://localhost:3000", "http://127.0.0.1:3000"]
