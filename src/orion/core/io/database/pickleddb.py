@@ -302,7 +302,7 @@ def _create_lock(path):
     file_system = _get_fs(path)
 
     if _fs_support_globalflock(file_system):
-        # log.debug("Using flock.")
+        log.debug("Using flock.")
         return FileLock(path)
     else:
         # log.debug("Cluster does not support flock. Falling back to softfilelock.")
