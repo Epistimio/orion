@@ -49,63 +49,34 @@ def test_interrupt(monkeypatch, capsys):
         assert trials[0].status == "interrupted"
 
 
-def test_interrupt_diff_code(monkeypatch, capsys):
+def test_interrupt_diff_code(monkeypatch, capsys, storage):
     """Test interruption from within user script with custom int code"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    with OrionState() as cfg:
-        storage = cfg.storage
-        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-        user_args = ["-x~uniform(-50, 50, precision=5)"]
+    # Set local to 200
+    orion.core.config.worker.interrupt_signal_code = 200
 
-        # Set local to 200
-        orion.core.config.worker.interrupt_signal_code = 200
+    # But child won't be passed ORION_INTERRUPT_CODE and therefore will send default code 130
+    def empty_env(self, trial, results_file=None):
+        return os.environ
 
-        # But child won't be passed ORION_INTERRUPT_CODE and therefore will send default code 130
-        def empty_env(self, trial, results_file=None):
-            return os.environ
+    with monkeypatch.context() as m:
+        m.setattr(Consumer, "get_execution_environment", empty_env)
 
-        with monkeypatch.context() as m:
-            m.setattr(Consumer, "get_execution_environment", empty_env)
-
-            # Interrupt won't be interpreted properly and trials will be marked as broken
-            error_code = orion.core.cli.main(
-                [
-                    "hunt",
-                    "--config",
-                    "./orion_config.yaml",
-                    "--worker-max-broken",
-                    "2",
-                    "--exp-max-trials",
-                    "2",
-                    "--worker-trials",
-                    "2",
-                    "python",
-                    "black_box.py",
-                    "interrupt_trial",
-                ]
-                + user_args
-            )
-
-            assert error_code == 0
-
-            exp = list(storage.fetch_experiments({"name": "voila_voici"}))
-            exp = exp[0]
-            exp_id = exp["_id"]
-            trials = list(storage.fetch_trials(uid=exp_id))
-            assert len(trials) == 2
-            assert trials[0].status == "broken"
-
-        # This time we use true `get_execution_environment which pass properly int code to child.
+        # Interrupt won't be interpreted properly and trials will be marked as broken
         error_code = orion.core.cli.main(
             [
                 "hunt",
                 "--config",
                 "./orion_config.yaml",
-                "--exp-max-trial",
-                "1",
+                "--worker-max-broken",
+                "2",
+                "--exp-max-trials",
+                "2",
                 "--worker-trials",
-                "1",
+                "2",
                 "python",
                 "black_box.py",
                 "interrupt_trial",
@@ -113,18 +84,44 @@ def test_interrupt_diff_code(monkeypatch, capsys):
             + user_args
         )
 
-        assert error_code == 130
-
-        captured = capsys.readouterr()
-        assert "Orion is interrupted.\n" in captured.out
-        assert captured.err == ""
+        assert error_code == 0
 
         exp = list(storage.fetch_experiments({"name": "voila_voici"}))
         exp = exp[0]
         exp_id = exp["_id"]
         trials = list(storage.fetch_trials(uid=exp_id))
-        assert len(trials) == 3
-        assert trials[-1].status == "interrupted"
+        assert len(trials) == 2
+        assert trials[0].status == "broken"
+
+    # This time we use true `get_execution_environment which pass properly int code to child.
+    error_code = orion.core.cli.main(
+        [
+            "hunt",
+            "--config",
+            "./orion_config.yaml",
+            "--exp-max-trial",
+            "1",
+            "--worker-trials",
+            "1",
+            "python",
+            "black_box.py",
+            "interrupt_trial",
+        ]
+        + user_args
+    )
+
+    assert error_code == 130
+
+    captured = capsys.readouterr()
+    assert "Orion is interrupted.\n" in captured.out
+    assert captured.err == ""
+
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
+    exp = exp[0]
+    exp_id = exp["_id"]
+    trials = list(storage.fetch_trials(uid=exp_id))
+    assert len(trials) == 3
+    assert trials[-1].status == "interrupted"
 
 
 # TODO:
