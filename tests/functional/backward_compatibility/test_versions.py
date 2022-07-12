@@ -235,9 +235,7 @@ def null_db_instances():
 def build_storage():
     """Build storage from scratch"""
     null_db_instances()
-    experiment_builder.setup_storage()
-
-    return setup_storage()
+    return experiment_builder.setup_storage()
 
 
 @pytest.mark.usefixtures("fill_db")
