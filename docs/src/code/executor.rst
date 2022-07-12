@@ -11,4 +11,6 @@ Executor modules
 
    executor/base
    executor/dask
+   executor/multiprocess
+   executor/single
    executor/joblib

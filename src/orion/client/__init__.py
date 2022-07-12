@@ -338,9 +338,7 @@ def workon(
             max_broken=max_broken,
         )
 
-        producer = Producer(experiment)
-
-        experiment_client = ExperimentClient(experiment, producer)
+        experiment_client = ExperimentClient(experiment)
         with experiment_client.tmp_executor("singleexecutor", n_workers=1):
             experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 
