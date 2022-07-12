@@ -21,9 +21,9 @@ def get_or_create_benchmark(
     algorithms=None,
     targets=None,
     storage=None,
+    storage_instance=None,
     executor=None,
     debug=False,
-    storage_instance=None,
 ):
     """
     Create or get a benchmark object.
@@ -43,6 +43,8 @@ def get_or_create_benchmark(
             Task objects
     storage: dict, optional
         Configuration of the storage backend.
+    storage_instance: BaseStorageProtocol, optional
+        An instance of a storage. This argument has precedence over `storage` argument. 
     executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     debug: bool, optional
