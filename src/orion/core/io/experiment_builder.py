@@ -414,7 +414,16 @@ def load(name, version=None, mode="r", storage=None):
 
 
 class ExperimentBuilder:
-    """Utility to make new experiments without relying on the storage singleton"""
+   """Utility to make new experiments using the same storage object.
+    
+    Parameters
+    ----------
+    storage: dict or BaseStorageProtocol, optional
+        Storage object or storage configuration.
+    debug: bool, optional.
+        If True, force using EphemeralDB for the storage. Default: False
+    
+    """
 
     def __init__(self, storage=None, debug=False) -> None:
         singleton = None
