@@ -172,10 +172,6 @@ def test_setup_storage_bad_override():
     )
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
-    # with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
-    #     setup_storage({"type": "track"})
-
-    # assert exc.match(r"A singleton instance of \(type: BaseStorageProtocol\)")
 
 
 def test_setup_storage_stateless():

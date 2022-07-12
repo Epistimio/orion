@@ -15,16 +15,16 @@ import yaml
 
 import orion
 from orion.core.io import experiment_builder as experiment_builder
-from orion.core.utils.singleton import SingletonAlreadyInstantiatedError
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage, storage_factory
 
 
 # pylint: disable=no-self-use,protected-access
 class BaseOrionState:
-    """Setup global variables and singleton for tests.
+    """Setup global variables and storage for tests.
 
-    It swaps the singleton with `None` at startup and restores them after the tests.
+    It generates a new storage configuration and swaps it,
+    the previous configuration is restored after the test.
     It also initializes PickleDB as the storage for testing.
     We use PickledDB as our storage mock
 
@@ -202,8 +202,6 @@ class BaseOrionState:
             self.storage_config = copy.deepcopy(config)
             config["of_type"] = config.pop("type")
             self.storage = storage_factory.create(**config)
-        except SingletonAlreadyInstantiatedError:
-            self.storage = setup_storage()
 
         except KeyError:
             print(self.storage_config)

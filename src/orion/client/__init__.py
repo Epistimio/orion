@@ -183,9 +183,6 @@ def build_experiment(
 
     Raises
     ------
-    :class:`orion.core.utils.singleton.SingletonAlreadyInstantiatedError`
-        If the storage is already instantiated and given configuration is different.
-        Storage is a singleton, you may only use one instance per process.
     :class:`orion.core.utils.exceptions.NoConfigurationError`
         The experiment is not in database and no space is provided by the user.
     :class:`orion.core.utils.exceptions.RaceCondition`
