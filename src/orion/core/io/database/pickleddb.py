@@ -305,5 +305,5 @@ def _create_lock(path):
         log.debug("Using flock.")
         return FileLock(path)
     else:
-        # log.debug("Cluster does not support flock. Falling back to softfilelock.")
+        log.debug("Cluster does not support flock. Falling back to softfilelock.")
         return SoftFileLock(path)
