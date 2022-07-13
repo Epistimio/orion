@@ -247,7 +247,7 @@ def define_worker_config(config):
     worker_config.add_option(
         "executor",
         option_type=str,
-        default="joblib",
+        default="PoolExecutor",
         env_var="ORION_EXECUTOR",
         help="The executor backend used to parallelize orion workers.",
     )
