@@ -23,7 +23,6 @@ from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
-from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
@@ -144,7 +143,7 @@ class Experiment:
     def __init__(
         self,
         name: str,
-        space: Space | dict[str, str],
+        space: Space,
         version: int | None = 1,
         mode: Mode = "r",
         _id: str | int | None = None,
@@ -157,9 +156,7 @@ class Experiment:
     ):
         self._id = _id
         self.name = name
-        self.space: Space = (
-            space if isinstance(space, Space) else SpaceBuilder().build(space)
-        )
+        self.space: Space = space
         self.version = version if version else 1
         self._mode = mode
         self.refers = refers or {}
