@@ -209,6 +209,7 @@ class BaseAlgoTests:
             params=cls.phases,
             ids=[phase.name for phase in cls.phases],
         )
+        @classmethod
         def phase(cls, request: pytest.FixtureRequest):
             """Fixture to parametrize tests with different phases."""
             test_phase: TestPhase = request.param  # type: ignore
