@@ -30,7 +30,7 @@ export class ExperimentNavBar extends React.Component {
       search: '',
     };
     this.onSearch = this.onSearch.bind(this);
-    this.onUnselect = this.onUnselect.bind(this);
+    this.onSwitchSelect = this.onSwitchSelect.bind(this);
   }
   render() {
     return (
@@ -82,7 +82,22 @@ export class ExperimentNavBar extends React.Component {
       experiments = this.state.experiments;
     }
     return experiments.map(experiment => (
-      <StructuredListRow label key={`row-${experiment}`}>
+      <StructuredListRow
+        label
+        key={`row-${experiment}`}
+        onClick={event =>
+          this.onSwitchSelect(
+            event,
+            experiment,
+            `select-experiment-${experiment}`
+          )
+        }
+        {...(this.context.experiment === experiment
+          ? {
+              className: 'selected-experiment-row',
+              title: `unselect experiment '${experiment}'`,
+            }
+          : {})}>
         <StructuredListInput
           id={`select-experiment-${experiment}`}
           value={`row-${experiment}`}
@@ -91,25 +106,6 @@ export class ExperimentNavBar extends React.Component {
           onChange={() => this.props.onSelectExperiment(experiment)}
         />
         <StructuredListCell className="experiment-cell">
-          <span
-            title={`unselect experiment '${experiment}'`}
-            style={{
-              visibility:
-                this.context.experiment === experiment ? 'visible' : 'hidden',
-            }}
-            onClick={event =>
-              this.onUnselect(
-                event,
-                experiment,
-                `select-experiment-${experiment}`
-              )
-            }>
-            <CloseFilled16
-              className={`${prefix}--structured-list-svg`}
-              aria-label="unselect experiment">
-              <title>unselect experiment</title>
-            </CloseFilled16>
-          </span>{' '}
           <span title={experiment}>{experiment}</span>
         </StructuredListCell>
         <StructuredListCell>
@@ -156,27 +152,12 @@ export class ExperimentNavBar extends React.Component {
   onSearch(event) {
     this.setState({ search: (event.target.value || '').toLowerCase() });
   }
-  onUnselect(event, experiment, inputID) {
-    /*
-     * By default, a click anywhere in experiment line (including on cross icon)
-     * will select the experiment.
-     * Here, we want to click on cross icon to deselect experiment.
-     * So, we must prevent click on cross icon to act like click on experiment
-     * line.
-     * To do that, we call event's preventDefault() method to cancel default
-     * behavior.
-     * */
+  onSwitchSelect(event, experiment, inputID) {
+    // Prevent default behavior, as we entirely handle click here.
     event.preventDefault();
-    /*
-     * Uncheck hidden radiobutton input associated to selected experiment.
-     * This is necessary to allow to immediately click again to experiment
-     * line to re-select experiment.
-     * */
-    document.getElementById(inputID).checked = false;
-    /*
-     * Tell global interface to unselect experiment
-     * */
-    this.props.onSelectExperiment(null);
+    const toBeSelected = this.context.experiment !== experiment;
+    document.getElementById(inputID).checked = toBeSelected;
+    this.props.onSelectExperiment(toBeSelected ? experiment : null);
   }
 }
 
