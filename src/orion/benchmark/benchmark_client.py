@@ -169,11 +169,7 @@ def _create_study(benchmark, algorithms, assess, task):
 
 
 def _fetch_benchmark(storage, name):
-
-    if name:
-        configs = storage.fetch_benchmark({"name": name})
-    else:
-        configs = storage.fetch_benchmark({})
+    configs = storage.fetch_benchmark({"name": name})
 
     if not configs:
         return {}
