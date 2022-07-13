@@ -14,7 +14,6 @@ from threading import Thread
 from typing import Callable
 from wsgiref.simple_server import sys_version
 
-
 import pytest
 from typing_extensions import Literal
 
