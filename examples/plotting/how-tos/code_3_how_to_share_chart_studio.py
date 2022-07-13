@@ -19,6 +19,8 @@ set Chart Studio's credentials.
 """
 import chart_studio
 
+# flake8: noqa
+
 username = "<your username>"
 api_key = "<your api_key>"
 
@@ -29,7 +31,6 @@ chart_studio.tools.set_credentials_file(username=username, api_key=api_key)
 # Next you can create a ``figure`` and save it to Chart Studio.
 
 # # Push your visualiztion to your account using the following lines of code:
-from orion.client import get_experiment
 
 # Specify the database where the experiments are stored. We use a local PickleDB here.
 storage = dict(type="legacy", database=dict(type="pickleddb", host="../../db.pkl"))
@@ -55,7 +56,7 @@ py.plot(fig, filename="regret")
 #
 # Saving HTML version of plots
 # does not work well with WordPress because it includes JavaScript.
-# Using Chart Studio makes it possible to embed extarnal URL in WordPress posts.
+# Using Chart Studio makes it possible to embed external URL in WordPress posts.
 #
 # With Chart Studio,
 # you can get an sharing URL for an embedded plot. In the Viewer page of Chart Studio,

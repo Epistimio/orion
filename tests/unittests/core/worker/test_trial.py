@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
 import copy
 import os
@@ -69,7 +68,7 @@ def trial_config(params):
     )
 
 
-class TestTrial(object):
+class TestTrial:
     """Test Trial object and class."""
 
     def test_init_empty(self):

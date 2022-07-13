@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of functional tests for :mod:`orion.core.worker.experiment`."""
 import logging
 
@@ -9,7 +8,6 @@ from orion.core.worker.trial import Trial
 from orion.testing import mocked_datetime
 from orion.testing.evc import (
     build_child_experiment,
-    build_grand_child_experiment,
     build_root_experiment,
     disable_duplication,
 )
@@ -18,10 +16,10 @@ SPACE = {"x": "uniform(0, 100)"}
 N_PENDING = 3  # new, interrupted and suspended
 
 
-def generate_trials_list(level, stati=Trial.allowed_stati):
+def generate_trials_list(level, statuses=Trial.allowed_stati):
     return [
-        {"status": trial_status, "x": i + len(stati) * level}
-        for i, trial_status in enumerate(stati)
+        {"status": trial_status, "x": i + len(statuses) * level}
+        for i, trial_status in enumerate(statuses)
     ]
 
 

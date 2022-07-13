@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Creation stage for database checks
 ==================================
@@ -16,7 +15,7 @@ class CreationStage:
     """The creation stage of the checks."""
 
     def __init__(self, presence_stage):
-        """Create an intance of the stage.
+        """Create an instance of the stage.
 
         Parameters
         ----------

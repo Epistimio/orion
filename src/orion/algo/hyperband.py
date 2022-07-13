@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 A Novel Bandit-Based Approach to Hyperparameter Optimization
 ============================================================
@@ -11,10 +10,9 @@ from __future__ import annotations
 import copy
 import logging
 from collections import OrderedDict
-from typing import Any, Generic, NamedTuple, Optional, Sequence, TypeVar
+from typing import Any, Generic, NamedTuple, Sequence, TypeVar
 
 import numpy
-import numpy as np
 from tabulate import tabulate
 
 from orion.algo.base import BaseAlgorithm
@@ -108,7 +106,7 @@ def tabulate_status(brackets: list[HyperbandBracket]) -> None:
             in_i = len(bracket.rungs[rung_id]["results"])
             n_i = bracket.rungs[rung_id]["n_trials"]
             r_i = bracket.rungs[rung_id]["resources"]
-            row.append("{:>3}/{:>3}".format(in_i, n_i))
+            row.append(f"{in_i:>3}/{n_i:>3}")
             row.append(r_i)
         data.append(row)
     table = tabulate(data, header, tablefmt="github")
@@ -130,11 +128,11 @@ def display_budgets(
 
     total_trials = 0
     for key, values in sorted(budgets_tab.items()):
-        table_row = "{:<4} ".format(key)
+        table_row = f"{key:<4} "
         for value in values:
             n_i, r_i = value
             total_trials += n_i
-            st = "{:<5} {:<7}".format(n_i, r_i)
+            st = f"{n_i:<5} {r_i:<7}"
             table_row += st
         table_str += table_row + "\n"
     table_str += col_format_str.format(*col_sub_list)

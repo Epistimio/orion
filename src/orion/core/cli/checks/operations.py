@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Operations stage for database checks
 ====================================
@@ -15,7 +14,7 @@ class OperationsStage:
     """The operations stage of the checks."""
 
     def __init__(self, creation_stage):
-        """Create an intance of the stage.
+        """Create an instance of the stage.
 
         Parameters
         ----------
@@ -64,7 +63,7 @@ class OperationsStage:
         count = database.count("test", {"index": "value"})
 
         if count != 1:
-            raise CheckError("Expected 1 hit, received {}.".format(count))
+            raise CheckError(f"Expected 1 hit, received {count}.")
 
         return "Success", ""
 
@@ -76,10 +75,9 @@ class OperationsStage:
         remaining = database.count("test", {"index": "value"})
 
         if remaining:
-            raise CheckError("{} items remaining.".format(remaining))
+            raise CheckError(f"{remaining} items remaining.")
 
         return "Success", ""
 
     def post_stage(self):
         """Do nothing."""
-        pass

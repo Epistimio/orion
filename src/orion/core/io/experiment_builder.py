@@ -9,7 +9,7 @@ configuration.
 The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
 when the user request an experiment with specific options. One can easily create a new experiment
 with ``Experiment('some_experiment_name')``, but the configuration of a _writable_ experiment is
-less straighforward. This is because there is many sources of configuration and they have a strict
+less straightforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
@@ -633,7 +633,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
         name_conflict = conflicts.get([ExperimentNameConflict])[0]
         if not name_conflict.is_resolved and not version:
             log.debug(
-                "A race condition likely occured during conflicts resolutions. "
+                "A race condition likely occurred during conflicts resolutions. "
                 "Now rolling back and attempting re-building the branched experiment."
             )
             raise RaceCondition(

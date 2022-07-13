@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 from logging import getLogger as get_logger
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.registry import Registry, RegistryMapping
@@ -350,7 +350,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
         """
         return self.algorithm.fidelity_index
 
-    def _verify_trial(self, trial: Trial, space: Optional[Space] = None) -> None:
+    def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
         if space is None:
             space = self.space
 

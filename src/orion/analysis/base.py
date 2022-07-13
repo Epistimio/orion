@@ -219,7 +219,7 @@ def train_regressor(regressor_name, data, **kwargs):
     if regressor_name not in _regressors_:
         raise ValueError(
             f"{regressor_name} is not a supported regressor. "
-            f"Did you mean any of theses: list(_regressors_.keys())"
+            f"Did you mean any of thesis: list(_regressors_.keys())"
         )
 
     regressor = _regressors_[regressor_name](**kwargs)

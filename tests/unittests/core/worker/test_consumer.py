@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.consumer`."""
 import logging
 import os
@@ -7,7 +6,6 @@ import shutil
 import signal
 import subprocess
 import tempfile
-import time
 
 import pytest
 

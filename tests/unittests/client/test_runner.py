@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
 from __future__ import annotations
 
@@ -14,6 +13,7 @@ from multiprocessing import Process, Queue
 from threading import Thread
 from typing import Callable
 from wsgiref.simple_server import sys_version
+
 
 import pytest
 from typing_extensions import Literal
@@ -109,7 +109,7 @@ class InvalidResultClient(FakeClient):
     """Fake client that raise InvalidResult on observe"""
 
     def __init__(self, n_workers):
-        super(InvalidResultClient, self).__init__(n_workers)
+        super().__init__(n_workers)
         self.trials.append(new_trial(1))
 
     def observe(self, trial, value):
@@ -647,8 +647,7 @@ def test_runner_inside_subprocess():
     result = subprocess.run(
         ["python", f"{dir}/runner_subprocess.py", "--backend", "joblib"],
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
 
     assert result.stderr.decode("utf-8") == ""

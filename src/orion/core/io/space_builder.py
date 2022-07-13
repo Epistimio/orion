@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=eval-used,protected-access
 """
 Create Space objects from configuration
@@ -86,7 +85,7 @@ def _remove_marker(expression, marker="+"):
     )
 
 
-class DimensionBuilder(object):
+class DimensionBuilder:
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
 
@@ -267,7 +266,7 @@ class DimensionBuilder(object):
         return dimension
 
 
-class SpaceBuilder(object):
+class SpaceBuilder:
     """Build a :class:`orion.algo.space.Space` object form user's configuration."""
 
     def __init__(self):

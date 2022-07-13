@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform functional tests to verify backward compatibility."""
 import os
 import shutil
@@ -20,7 +19,7 @@ SCRIPT_PATH = os.path.join(DIRNAME, "black_box.py")
 CONFIG_FILE = os.path.join(DIRNAME, "random.yaml")
 
 # Ignore pre-0.1.6 because was on orion.core and pypi project was deleted.
-with open(os.path.join(DIRNAME, "versions.txt"), "r") as f:
+with open(os.path.join(DIRNAME, "versions.txt")) as f:
     VERSIONS = [version.strip() for version in f.read().split("\n") if version.strip()]
 
 
@@ -50,7 +49,7 @@ def get_evc_argument(version):
 
 def has_python_api(version):
     """Whether the python api exist in given version"""
-    return not version in ["0.1.6", "0.1.7"]
+    return version not in ["0.1.6", "0.1.7"]
 
 
 def clean_mongodb():
@@ -96,7 +95,7 @@ def setup_virtualenv(version):
     virtualenv_dir = get_virtualenv_dir(version)
     if os.path.exists(virtualenv_dir):
         shutil.rmtree(virtualenv_dir)
-    execute("virtualenv {}".format(virtualenv_dir))
+    execute(f"virtualenv {virtualenv_dir}")
     command = "{}/bin/pip install --ignore-installed orion=={}".format(
         virtualenv_dir, version
     )
@@ -105,7 +104,7 @@ def setup_virtualenv(version):
 
 def get_version(orion_script):
     """Get Oríon version for given Oríon executer's path."""
-    command = "{} --version".format(orion_script)
+    command = f"{orion_script} --version"
     stdout = subprocess.check_output(command, shell=True)
 
     return stdout.decode("utf-8").strip("\n")
@@ -113,7 +112,7 @@ def get_version(orion_script):
 
 def get_virtualenv_dir(version):
     """Get virtualenv directory for given version."""
-    return "version-{}".format(version)
+    return f"version-{version}"
 
 
 def fill_from_cmdline_api(orion_script, version):
@@ -213,14 +212,14 @@ def fill_db(request):
     python_script = os.path.join(get_virtualenv_dir(version), "bin", "python")
 
     orion_version = get_version(orion_script)
-    assert orion_version == "orion {}".format(version)
+    assert orion_version == f"orion {version}"
 
     fill_from_cmdline_api(orion_script, version)
     if has_python_api(version):
         fill_from_python_api(python_script, version)
 
     orion_version = get_version("orion")
-    assert orion_version != "orion {}".format(version)
+    assert orion_version != f"orion {version}"
 
     print(execute("orion -vv db upgrade -f"))
 
@@ -250,9 +249,10 @@ class TestBackwardCompatibility:
         storage = build_storage()
 
         index_info = storage._db.index_information("experiments")
-        assert set([key for key, is_unique in index_info.items() if is_unique]) == set(
-            ["_id_", "name_1_version_1"]
-        )
+        assert {key for key, is_unique in index_info.items() if is_unique} == {
+            "_id_",
+            "name_1_version_1",
+        }
 
         experiments = storage.fetch_experiments({})
         assert "version" in experiments[0]
@@ -303,7 +303,7 @@ class TestBackwardCompatibility:
         """Verify info command from python api"""
         version = fill_db
         if not has_python_api(version):
-            pytest.skip("Python API not supported by {}".format(version))
+            pytest.skip(f"Python API not supported by {version}")
 
         out = execute("orion info --name hunt-python")
         assert "name: hunt-python" in out
@@ -347,7 +347,7 @@ class TestBackwardCompatibility:
         """Verify hunt command from python api parent"""
         version = fill_db
         if not has_python_api(version):
-            pytest.skip("Python API not supported by {}".format(version))
+            pytest.skip(f"Python API not supported by {version}")
 
         exp = create_experiment(
             "hunt-python", branching={"branch-to": "hunt-python-branch"}

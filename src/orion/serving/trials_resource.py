@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Module responsible for the trials/ REST endpoint
 ================================================
@@ -19,7 +18,7 @@ from orion.storage.base import get_storage
 SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 
 
-class TrialsResource(object):
+class TrialsResource:
     """Serves all the requests made to trials/ REST endpoint"""
 
     def __init__(self):

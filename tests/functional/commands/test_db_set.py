@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform functional tests for db set."""
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder

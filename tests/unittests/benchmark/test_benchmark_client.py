@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.benchmark_client`."""
 import copy
 import logging
@@ -8,7 +7,7 @@ import pytest
 
 import orion.benchmark.benchmark_client as benchmark_client
 import orion.core
-from orion.benchmark.assessment import AverageResult, ParallelAssessment
+from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client import ExperimentClient
@@ -25,13 +24,9 @@ from orion.testing.state import OrionState
 class DummyTask:
     """Dummy invalid benchmark task"""
 
-    pass
-
 
 class DummyAssess:
     """Dummy invalid benchmark assessment"""
-
-    pass
 
 
 def count_benchmarks():
@@ -143,7 +138,7 @@ class TestCreateBenchmark:
             with pytest.raises(NoConfigurationError) as exc:
                 get_or_create_benchmark(name).close()
 
-            assert "Benchmark {} does not exist in DB".format(name) in str(exc.value)
+            assert f"Benchmark {name} does not exist in DB" in str(exc.value)
 
     def test_create_with_different_configure(self, benchmark_config_py, caplog):
         """Test creation with same name but different configure"""

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Helper function for returning results from script
 =================================================
@@ -81,7 +80,7 @@ def report_bad_trial(objective=1e10, name="objective", data=None):
     ----------
     objective: float
         Objective the return to Oríon for the current trial. The default objective is 1e10.
-        This may not be valid for some metrics and this value should be overrided accordingly. In
+        This may not be valid for some metrics and this value should be overridden accordingly. In
         the case of error rates for instance, the value should be 1.0.
     name: str, optional
         Name of the objective. Default is 'objective'.

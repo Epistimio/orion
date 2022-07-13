@@ -3,6 +3,7 @@ import { Backend, DEFAULT_BACKEND } from '../../../utils/queryServer';
 import TrialTable from './TrialTable';
 import { BackendContext } from '../../BackendContext';
 import { Grid, Row, Column } from 'carbon-components-react';
+import { flattenObject } from '../../../utils/flattenObject';
 
 /**
  * Component to pretty display an object (JSON dictionary) into data table.
@@ -52,15 +53,68 @@ class TrialsProvider {
       trialIndices.sort();
       const trials = [];
       for (let trialID of trialIndices) {
-        const trial = await this.backend.query(
+        const rawTrial = await this.backend.query(
           `trials/${experiment}/${trialID}`
         );
-        // Save parameters and statistics as already rendered components.
-        trial.parameters = <ObjectToGrid object={trial.parameters} />;
+        // Flatten parameters
+        const flattenedParameters = flattenObject(
+          rawTrial.parameters,
+          // Add prefix `params`
+          // to prevent collision with existing keys in trial object
+          'params'
+        );
+        // Prepare rendering for array parameters
+        for (let key of Object.keys(flattenedParameters)) {
+          if (Array.isArray(flattenedParameters[key])) {
+            flattenedParameters[key] = flattenedParameters[
+              key
+            ].map((value, i) => <div key={i}>{value.toString()}</div>);
+          }
+        }
+        // Save flattened keys in specific property `paramKeys` for later
+        rawTrial.paramKeys = Object.keys(flattenedParameters);
+        const trial = { ...rawTrial, ...flattenedParameters };
+        // Save statistics as already rendered components.
         trial.statistics = <ObjectToGrid object={trial.statistics} />;
         trials.push(trial);
       }
-      this.trials[experiment] = trials;
+      // Prepare headers for this experiment using `paramKeys` from first trial
+      // We assume paramKeys is the same for all trials
+      const paramKeys = trials[0].paramKeys.slice();
+      paramKeys.sort();
+      const paramHeaders = paramKeys.map(paramKey => ({
+        key: paramKey,
+        // Ignore prefix `params.`
+        header: `Parameter ${paramKey.substr(7)}`,
+      }));
+      const trialHeaders = [
+        {
+          key: 'id',
+          header: 'ID',
+        },
+        ...paramHeaders,
+        {
+          key: 'submitTime',
+          header: 'Submit time',
+        },
+        {
+          key: 'startTime',
+          header: 'Start time',
+        },
+        {
+          key: 'endTime',
+          header: 'End time',
+        },
+        {
+          key: 'objective',
+          header: 'Objective',
+        },
+        {
+          key: 'statistics',
+          header: 'Statistics',
+        },
+      ];
+      this.trials[experiment] = { headers: trialHeaders, trials: trials };
     }
     return this.trials[experiment];
   }
@@ -71,37 +125,6 @@ class TrialsProvider {
  * @type {TrialsProvider}
  */
 const TRIALS_PROVIDER = new TrialsProvider(DEFAULT_BACKEND);
-
-const headers = [
-  {
-    key: 'id',
-    header: 'ID',
-  },
-  {
-    key: 'submitTime',
-    header: 'Submit time',
-  },
-  {
-    key: 'startTime',
-    header: 'Start time',
-  },
-  {
-    key: 'endTime',
-    header: 'End time',
-  },
-  {
-    key: 'parameters',
-    header: 'Parameters',
-  },
-  {
-    key: 'objective',
-    header: 'Objective',
-  },
-  {
-    key: 'statistics',
-    header: 'Statistics',
-  },
-];
 
 class DatabasePage extends React.Component {
   // Control variable to avoid setting state if component was unmounted before an asynchronous API call finished.
@@ -123,8 +146,8 @@ class DatabasePage extends React.Component {
         <div className="bx--row database-page__r1">
           <div className="bx--col-lg-16">
             <TrialTable
-              headers={headers}
-              rows={this.state.trials}
+              headers={this.state.trials.headers}
+              rows={this.state.trials.trials}
               experiment={this.state.experiment}
             />
           </div>

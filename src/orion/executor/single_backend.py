@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Executor without parallelism for debugging
 ==========================================
@@ -76,7 +75,7 @@ class SingleExecutor(BaseExecutor):
     """
 
     def __init__(self, n_workers=1, **config):
-        super(SingleExecutor, self).__init__(n_workers=1)
+        super().__init__(n_workers=1)
         self.closed = False
         self.nested = 0
 

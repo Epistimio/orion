@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parse command line arguments for Orion
 ======================================
@@ -17,7 +16,7 @@ import os
 from collections import OrderedDict
 
 
-class CmdlineParser(object):
+class CmdlineParser:
     """Simple class for commandline arguments parsing.
 
     `CmdlineParser` provides a simple interface to interpret commandline arguments
@@ -84,7 +83,7 @@ class CmdlineParser(object):
         Returns
         -------
         list
-            A list ressembling the one given to the `parse` method but with values of
+            A list resembling the one given to the `parse` method but with values of
             `configuration`.
 
         """
@@ -122,7 +121,7 @@ class CmdlineParser(object):
         Parameters
         ----------
         commandline : list
-            List of string representing the commmandline arguments.
+            List of string representing the commandline arguments.
 
         Returns
         -------

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.cli.info`."""
 import itertools
+import textwrap
 
 import pytest
 
@@ -27,8 +27,6 @@ from orion.core.worker.trial import Trial
 
 class DummyExperiment:
     """Dummy container to mock experiments"""
-
-    pass
 
 
 @pytest.fixture
@@ -494,16 +492,16 @@ def test_format_refers_root():
     #     parent='user',
     #     datetime='now',
     #     orion_version='1.0.1')
-    assert (
-        format_refers(experiment)
-        == """\
-Parent experiment
-=================
-root: 
-parent: 
-adapter: 
-"""
-    )  # noqa: W291
+
+    assert format_refers(experiment) == textwrap.dedent(
+        """\
+        Parent experiment
+        =================
+        root:
+        parent:
+        adapter:
+        """
+    )
 
 
 def test_format_refers_child():
@@ -531,18 +529,17 @@ def test_format_refers_child():
     #     parent='user',
     #     datetime='now',
     #     orion_version='1.0.1')
-    assert (
-        format_refers(child)
-        == """\
-Parent experiment
-=================
-root: root-name
-parent: parent-name
-adapter: 
-  adummy: dict
-  foran: adapter
-"""
-    )  # noqa: W291
+    assert format_refers(child) == textwrap.dedent(
+        """\
+        Parent experiment
+        =================
+        root: root-name
+        parent: parent-name
+        adapter:
+          adummy: dict
+          foran: adapter
+        """
+    )
 
 
 def test_get_trial_params_empty():
@@ -575,24 +572,23 @@ def test_format_stats(dummy_trial):
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
-    assert (
-        format_stats(experiment)
-        == """\
-Stats
-=====
-completed: False
-trials completed: 10
-best trial:
-  id: dummy
-  evaluation: 0.1
-  params:
-    a: 0.0
-    b: 1
-    c: Some
-start time: yesterday
-finish time: now
-duration: way too long
-"""
+    assert format_stats(experiment) == textwrap.dedent(
+        """\
+        Stats
+        =====
+        completed: False
+        trials completed: 10
+        best trial:
+          id: dummy
+          evaluation: 0.1
+          params:
+            a: 0.0
+            b: 1
+            c: Some
+        start time: yesterday
+        finish time: now
+        duration: way too long
+        """
     )
 
 
@@ -659,80 +655,79 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
 
-    assert (
-        format_info(experiment)
-        == """\
-Identification
-==============
-name: test
-version: 1
-user: user
+    assert format_info(experiment) == textwrap.dedent(
+        """\
+        Identification
+        ==============
+        name: test
+        version: 1
+        user: user
 
 
-Commandline
-===========
-executing.sh --some~choices(["random", "or", "not"]) --command~uniform(0, 1)
+        Commandline
+        ===========
+        executing.sh --some~choices(["random", "or", "not"]) --command~uniform(0, 1)
 
 
-Config
-======
-max trials: 100
-max broken: 5
-working dir: working_dir
+        Config
+        ======
+        max trials: 100
+        max broken: 5
+        working dir: working_dir
 
 
-Algorithm
-=========
-bayesianoptimizer:
-    acq_func: gp_hedge
-    alpha: 1e-10
-    n_initial_points: 10
-    n_restarts_optimizer: 0
-    normalize_y: False
+        Algorithm
+        =========
+        bayesianoptimizer:
+            acq_func: gp_hedge
+            alpha: 1e-10
+            n_initial_points: 10
+            n_restarts_optimizer: 0
+            normalize_y: False
 
 
-Space
-=====
-command: uniform(0, 1)
-some: choices(['random', 'or', 'not'])
+        Space
+        =====
+        command: uniform(0, 1)
+        some: choices(['random', 'or', 'not'])
 
 
-Meta-data
-=========
-user: user
-datetime: now
-orion version: 1.0.1
-VCS:
-  HEAD_sha: sha
-  active_branch: branch
-  diff_sha: smt
-  is_dirty: True
-  type: git
+        Meta-data
+        =========
+        user: user
+        datetime: now
+        orion version: 1.0.1
+        VCS:
+          HEAD_sha: sha
+          active_branch: branch
+          diff_sha: smt
+          is_dirty: True
+          type: git
 
 
-Parent experiment
-=================
-root: root-name
-parent: parent-name
-adapter: 
-  adummy: dict
-  foran: adapter
+        Parent experiment
+        =================
+        root: root-name
+        parent: parent-name
+        adapter:
+          adummy: dict
+          foran: adapter
 
 
-Stats
-=====
-completed: False
-trials completed: 10
-best trial:
-  id: dummy
-  evaluation: 0.1
-  params:
-    a: 0.0
-    b: 1
-    c: Some
-start time: yesterday
-finish time: now
-duration: way too long
+        Stats
+        =====
+        completed: False
+        trials completed: 10
+        best trial:
+          id: dummy
+          evaluation: 0.1
+          params:
+            a: 0.0
+            b: 1
+            c: Some
+        start time: yesterday
+        finish time: now
+        duration: way too long
 
-"""
-    )  # noqa: W291
+        """
+    )

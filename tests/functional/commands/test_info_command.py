@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test of the info command."""
 import orion.core.cli
 import orion.core.io.resolve_config

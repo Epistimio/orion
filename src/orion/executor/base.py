@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Base Executor
 =============
@@ -57,15 +56,12 @@ class Future:
             if the remote called raised an exception
 
         """
-        pass
 
     def wait(self, timeout=None):
         """Wait until the result is available or until timeout seconds pass."""
-        pass
 
     def ready(self):
         """Return whether the call has completed."""
-        pass
 
     def successful(self):
         """Return whether the call completed without raising an exception.
@@ -77,7 +73,6 @@ class Future:
             if the result is not yet ready
 
         """
-        pass
 
 
 class BaseExecutor:
@@ -110,7 +105,6 @@ class BaseExecutor:
             The objects returned by ``submit()`` of the executor.
 
         """
-        pass
 
     def async_get(self, futures, timeout=None):
         """Retrieve futures that completed, removes them from the list of pending futures
@@ -129,7 +123,6 @@ class BaseExecutor:
         returns a list of results
 
         """
-        pass
 
     def submit(self, function, *args, **kwargs):
         """Submit work to the executor for asynchronous execution
@@ -142,7 +135,6 @@ class BaseExecutor:
             Arguments for the function. The arguments must be serializable.
 
         """
-        pass
 
     def __enter__(self):
         return self

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Module responsible for the experiments/ REST endpoint
 =====================================================
@@ -21,7 +20,7 @@ from orion.serving.responses import (
 from orion.storage.base import get_storage
 
 
-class ExperimentsResource(object):
+class ExperimentsResource:
     """Handle requests for the experiments/ REST endpoint"""
 
     def __init__(self):

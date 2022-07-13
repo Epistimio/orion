@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Package-wide useful routines
 ============================
@@ -29,8 +28,8 @@ def nesteddict():
 
 
 def float_to_digits_list(number):
-    """Convert a float into a list of digits, without conserving exponant"""
-    # Get rid of scientific-format exponant
+    """Convert a float into a list of digits, without conserving exponent"""
+    # Get rid of scientific-format exponent
     str_number = str(number)
     str_number = str_number.split("e", maxsplit=1)[0]
 
@@ -159,7 +158,7 @@ class Factory(ABCMeta):
     """Deprecated, will be removed in v0.3.0. See GenericFactory instead"""
 
     def __init__(cls, names, bases, dictionary):
-        super(Factory, cls).__init__(names, bases, dictionary)
+        super().__init__(names, bases, dictionary)
         cls.types = {}
         try:
             _import_modules(cls)
@@ -217,7 +216,7 @@ def _handler(signum, frame):
 @contextmanager
 def sigterm_as_interrupt():
     """Intercept ``SIGTERM`` signals and raise ``KeyboardInterrupt`` instead"""
-    ## Signal only works inside the main process
+    # Signal only works inside the main process
     previous = signal.signal(signal.SIGTERM, _handler)
 
     yield None

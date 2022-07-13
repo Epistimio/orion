@@ -1,7 +1,7 @@
 """Surrogate (simulated) tasks created using the Profet algorithm.
 
 For a detailed description of Profet, see original paper at https://arxiv.org/abs/1905.12982 or
-souce code at https://github.com/EmuKit/emukit/tree/main/emukit/examples/profet
+source code at https://github.com/EmuKit/emukit/tree/main/emukit/examples/profet
 
 Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate
 benchmarking for hyperparameter optimization." Advances in Neural Information Processing Systems 32
