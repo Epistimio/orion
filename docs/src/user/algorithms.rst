@@ -310,7 +310,7 @@ Population Based Training (PBT)
 
 .. warning::
 
-   PBT was broken in version v0.2.4. Make sure to use the lastest release.
+   PBT was broken in version v0.2.4. Make sure to use the latest release.
 
 Population based training is an evolutionary algorithm that evolve trials
 from low fidelity levels to high fidelity levels (ex: number of epochs), reusing
@@ -375,7 +375,7 @@ Population Based Bandits (PB2)
 
 .. warning::
 
-   PB2 was broken in version v0.2.4. Make sure to use the lastest release.
+   PB2 was broken in version v0.2.4. Make sure to use the latest release.
 
 Population Based Bandits is a variant of Population Based Training using probabilistic model to
 guide

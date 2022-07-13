@@ -122,9 +122,9 @@ def _optimize(trial, fct, trial_arg, **kwargs):
     return fct(**unflatten(kwargs))
 
 
-def delayed_exception(expection):
+def delayed_exception(exception):
     """Raise exception when called..."""
-    raise expection
+    raise exception
 
 
 @dataclass

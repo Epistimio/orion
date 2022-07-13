@@ -36,7 +36,7 @@ def load_modules_in_path(path, filter_function=None):
 class ImportOptional:
     """Context manager to handle optional dependencies
 
-    It will catch any import errors occuring inside the with-clause and
+    It will catch any import errors occurring inside the with-clause and
     keep a reference to the error so it can be reraised latter on.
 
     Use import_optional.ensure() to verify the extra dependency is correctly installed,
