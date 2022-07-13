@@ -103,6 +103,8 @@ class BaseAlgorithm:
     requires_shape = None
     requires_dist = None
 
+    max_trials: int | None = None
+
     def __init__(self, space, **kwargs):
         log.debug(
             "Creating Algorithm object of %s type with parameters:\n%s",
@@ -130,7 +132,7 @@ class BaseAlgorithm:
             self.seed_rng(self.seed)
 
         self.registry = Registry()
-        self.max_trials: int | None = None
+        # TODO: Should `max_trials` take the value of self.space.cardinality by default?
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -424,7 +426,6 @@ class BaseAlgorithm:
         state of the algo is affected by observing trials from other tasks than the
         current (target) task.
         """
-
         yield
 
 

@@ -1,8 +1,8 @@
 """ Interface for the Knowledge Base, which is not currently in the Orion codebase.
 """
 from __future__ import annotations
-import inspect
 
+import inspect
 import typing
 from abc import ABC, abstractmethod
 from logging import getLogger
@@ -74,12 +74,12 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
         constructor arguments.
         """
         init_signature = inspect.signature(type(self).__init__)
-        init_arguments_that_are_attributes = {
+        init_arguments_attributes = {
             name: getattr(self, name)
             for name in init_signature.parameters
             if name != "self" and hasattr(self, name)
         }
-        return {type(self).__qualname__: init_arguments_that_are_attributes}
+        return {type(self).__qualname__: init_arguments_attributes}
 
     # NOTE: Not making this an abstract method, since we might need to adapt this a bit.
     # @abstractmethod

@@ -149,6 +149,24 @@ class TestCreateAlgo:
 class TestMultiTaskWrapper:
     """Tests for the multi-task wrapper."""
 
+    def test_collisions(self):
+        """TODO: Write a test for the collisions:
+
+        The wrapped algo suggests 2 trials, with different task ids, but the same other parameters:
+        {"task_id": 0, "x": 1}, {"task_id": 1, "x": 1}
+        The wrapper should then suggest a single trial, since it removes the task id:
+        {"x": 1}
+        Then, when the wrapper observes a result for that trial:
+        {"x": 1} (objective = 123)
+        The wrapped algo should then have both the original trials set to have that new result:
+        {"task_id": 0, "x": 1} (objective=123), {"task_id": 1, "x": 1} (objective=123)
+        """
+        raise NotImplementedError
+
+    def test_wrapped_algo_suggests_task_id_0(self):
+        """Test that the wrapped algo space only produces trials with task_id of 0 when sampled."""
+        raise NotImplementedError
+
     def test_adds_task_id(self, knowledge_base: KnowledgeBase):
         """Test that when an algo is wrapped with the multi-task wrapper, the trials it returns
         with suggest() have an additional 'task-id' value.
@@ -237,7 +255,7 @@ class TestMultiTaskWrapper:
         """Test that the trials in the Knowledge base don't affect the 'is_done' of the algo."""
 
         algo = create_algo(Random, space=target_space, knowledge_base=knowledge_base)
-        algo.unwrapped.max_trials = 10
+        algo.max_trials = 10
         assert algo.n_suggested == 0
         assert algo.n_observed == 0
         assert not algo.is_done
@@ -385,11 +403,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     cold_objective = _get_best_trial_objective(cold_start)
     warm_objective = _get_best_trial_objective(warm_start)
     hot_objective = _get_best_trial_objective(hot_start)
-    assert (
-        pytest.approx(cold_objective)
-        < pytest.approx(warm_objective)
-        < pytest.approx(hot_objective)
-    )
+    assert cold_objective < warm_objective < hot_objective
 
 
 P = ParamSpec("P")

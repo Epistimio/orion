@@ -13,7 +13,6 @@ import copy
 from collections import defaultdict
 from contextlib import contextmanager
 from logging import getLogger
-from typing import Iterable
 
 from orion.algo.space import Categorical, Space
 from orion.core.utils.format_trials import dict_to_trial
@@ -28,6 +27,8 @@ from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 
 logger = getLogger(__file__)
 
+TARGET_TASK_ID = 0
+
 
 class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
     """Wrapper that makes the algo "multi-task" by adding a task id to the inputs."""
@@ -38,8 +39,9 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         algorithm: AlgoT,
     ):
         super().__init__(space=space, algorithm=algorithm)
-        self.target_task_id: int = 0
-        self.current_task_id: int = self.target_task_id
+        self.current_task_id: int = TARGET_TASK_ID
+        self._total_warm_start_trials = 0
+        self._max_trials: int | None = None
 
     def transform(self, trial: Trial) -> Trial:
         return self._add_task_id(trial, self.current_task_id)
@@ -50,24 +52,30 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
     # pylint: disable=arguments-differ
     @classmethod
     def transform_space(cls, space: Space, knowledge_base: KnowledgeBase) -> Space:
-        """Transform the space, so that the algorithm that is passed to the constructor is already
-        transformed.
+        """Transform an (outer) space, returning the (inner) space of the wrapped algorithm.
+
+        This returns what will become `self.algorithm.space` in an instance of this class.
         """
-        # TODO: Should we have this dimension be larger than the current number of
-        # experiments in the KB, in case some get added in the future?
-        # TODO: Should the number of tasks here only count the experiments where the spaces are
-        # compatible? (Currently only counts total number of experiments in the KB)
-        # TODO: Could we use a Categorical over the experiment IDS instead of a Categorical with
-        # ints? Would that help in some way?
-        max_task_id = knowledge_base.n_stored_experiments + 1
+        if "task_id" in space:
+            raise RuntimeError(f"Space already has a task_id dimension: {space}")
+        # NOTE: The task dimension here has the size of the total number of experiments in the KB,
+        # not the number of compatible experiments.
+        # This is because we don't yet know how many of them are directly compatible.
+        # Note: The +1 here represents the current experiment.
+        max_task_id = 1 + knowledge_base.n_stored_experiments
+        # NOTE: We set a non-zero probability only on the task_id==target dimension, since:
+        # 1. It also doesn't really make sense for the algo to try to optimize the other tasks, and
+        # 2. this makes the algorithm only suggest trials with task_id==target, to reduce the risk
+        #    of collisions if it were to suggest the same trials with different task ids.
         task_label_dimension = Categorical(
             "task_id",
-            list(range(0, max_task_id)),
-            default_value=0,
+            {
+                task_id: (1 if task_id == TARGET_TASK_ID else 0)
+                for task_id in range(0, max_task_id)
+            },
+            default_value=TARGET_TASK_ID,
         )
         new_space = copy.deepcopy(space)
-        if "task_id" in new_space:
-            raise RuntimeError(f"Space already has a task_id dimension: {new_space}")
         new_space.register(task_label_dimension)
         return new_space
 
@@ -79,19 +87,21 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         NOTE: this assumes that the trial from the other experiment comes from the knowledge base,
         and that it therefore doesn't already have a task ID.
         """
-        # TODO: Do we need to do something smarter here?
+        # TODO: Should we also consider the trial compatible if it has extra dimensions compared to
+        # the current space? Or when the current space has an extra dimension, with a default
+        # value? Aren't I just replicating the EVC stuff at this point? Does this whole thing even
+        # make sense? ARGH! I'M CONFUSED!
         return trial_from_other_experiment in self.space
 
     def warm_start(
         self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
     ) -> None:
-        """Use the given trials to warm-start the algorithm.
+        """Observe some of the given trials to warm-start the HPO algorithm.
 
-        These experiments and their trials were fetched from some knowledge base, and
+        These experiments and their trials were fetched from some storage, and
         are believed to be somewhat similar to the current on-going experiment.
-
-        It is the responsibility of the Algorithm to implement this method in order to
-        take advantage of these points.
+        By default, this wrapper only considers the trials which are compatible
+        with the current space.
 
         Parameters
         ----------
@@ -99,21 +109,21 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             Dictionary mapping from ExperimentInfo objects (containing the experiment config) to
             the list of Trials associated with that experiment.
         """
-        # Perform warm-starting using only the supported trials.
         logger.info(
-            "Will warm-start using contextual information, since the algo isn't warm-starteable."
+            "Warm-starting using only multi-task training with compatible trials, since the algo "
+            "isn't warm-starteable."
         )
 
         # Dict mapping from task ID to list of compatible trials.
         compatible_trials: dict[int, list[Trial]] = defaultdict(list)
         task_ids_to_experiments: dict[int, ExperimentInfo] = {}
-
         for i, (experiment_info, trials) in enumerate(warm_start_trials):
             # Start the task ids at 1, so the current experiment has task id 0.
             task_id = i + 1
             for trial in trials:
                 # Drop the point if it doesn't fit inside the current space.
-                # TODO: Add an optional 'translation' logic in the Knowledge Base implementation.
+                # IDEA: Possibly add some 'translation' logic in an eventual Knowledge Base
+                # implementation.
                 if self._is_compatible(trial):
                     compatible_trials[task_id].append(trial)
                     task_ids_to_experiments[task_id] = experiment_info
@@ -126,34 +136,41 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             )
 
         if not compatible_trials:
-            logger.info("No compatible trials detected.")
+            logger.info("No compatible trials found!")
             return
 
-        # Only keep trials that are new.
-        new_compatible_trials = {
-            task_id: [trial for trial in trials if trial not in self.algorithm.registry]
-            for task_id, trials in compatible_trials.items()
-        }
+        if self._total_warm_start_trials:
+            raise RuntimeError("The algorithm can only be warm-started once!")
 
-        if not new_compatible_trials:
-            logger.info("No new new warm-starting trials detected.")
-            return
-
-        total_trials = sum(map(len, new_compatible_trials.values()))
+        self._total_warm_start_trials = sum(map(len, compatible_trials.values()))
         logger.info(
             "Algo will observe a total of %s trials from other experiments.",
-            total_trials,
+            self._total_warm_start_trials,
         )
+
         with self.algorithm.warm_start_mode():
-            for task_id, trials in new_compatible_trials.items():
+            for task_id, trials in compatible_trials.items():
                 logger.debug(
                     "Observing %s new trials from task %s", len(trials), task_id
                 )
-
                 with self.in_task(task_id):
-                    # NOTE: self.observe adds the task ids to the trials (via the base class) that
-                    # calls `self.transform`.
+                    # NOTE: self.observe saves those trials in our registry, and adds the task ids
+                    # to the trials and passes that calls `self.transform`.
                     self.observe(trials)
+
+        if self._max_trials is not None:
+            wrapped_algo_max_trials = self._max_trials + self._total_warm_start_trials
+            logger.debug(
+                "Setting the max_trials of the wrapped algo to %s rather than %s, to account for "
+                "the trials observed during warm-starting.",
+                wrapped_algo_max_trials,
+                self._max_trials,
+            )
+            self.algorithm.max_trials = wrapped_algo_max_trials
+
+    def observe(self, trials: list[Trial]) -> None:
+        # TODO: Make sure that the collision handling of the TransformWrapper is also good here.
+        return super().observe(trials)
 
     @property
     def n_suggested(self):
@@ -175,41 +192,22 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         super().set_state(state_dict)
 
     @property
-    def _trials_from_target_task(self) -> Iterable[Trial]:
-        return (
-            trial
-            for trial in self.algorithm.registry
-            if get_task_id(trial) == self.target_task_id
-        )
+    def max_trials(self) -> int | None:
+        """Maximum number of trials to run, or `None` when there is no limit."""
+        return self._max_trials
 
-    @property
-    def _trials_from_other_tasks(self) -> Iterable[Trial]:
-        return (
-            trial
-            for trial in self.algorithm.registry
-            if get_task_id(trial) != self.target_task_id
-        )
+    @max_trials.setter
+    def max_trials(self, value: int | None) -> None:
+        # TODO: Delay setting the max_trials property until we know how many trials we will pass to
+        # the algo during warm-starting.
+        self._max_trials = value
 
     @property
     def is_done(self) -> bool:
+        return super().is_done
         # TODO: Adjust this a bit, so the wrapped algo doesn't count the trials from other tasks in
         # its 'has_completed_max_trials'.
         # IDEA: Temporarily bump up the value of `max_trials` if set?
-
-        total_trials = len(self.unwrapped.registry)
-        trials_from_target_task = sum(
-            get_task_id(trial) == self.target_task_id
-            for trial in self.unwrapped.registry
-        )
-        trials_from_other_tasks = total_trials - trials_from_target_task
-        logger.debug(
-            f"Trials from target task: {trials_from_target_task}, "
-            f"trials from other tasks: {trials_from_other_tasks} "
-        )
-        logger.debug(f"self.n_observed: {self.n_observed}")
-        logger.debug(f"self.n_suggested: {self.n_suggested}")
-        logger.debug(f"wrapped algo.is_done: {self.algorithm.is_done}")
-
         return (
             self.has_completed_max_trials
             or self.has_suggested_all_possible_values()

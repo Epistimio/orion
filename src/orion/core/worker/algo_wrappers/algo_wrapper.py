@@ -34,7 +34,11 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
 
     @classmethod
     def transform_space(cls, space: Space) -> Space:
-        """Transform the given space, before it is used to instantiate the wrapped algorithm."""
+        """Transform an (outer) space, returning the (inner) space of the wrapped algorithm.
+
+        The output of this classmethod will be used as `self.algorithm.space`, when we create an
+        instance of `cls`.
+        """
         return space
 
     @property
@@ -46,6 +50,20 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     def unwrapped(self):
         """Returns the unwrapped algorithm."""
         return self.algorithm.unwrapped
+
+    @property
+    def max_trials(self) -> int | None:
+        """Maximum number of trials to run, or `None` when there is no limit."""
+        return self._algorithm.max_trials
+
+    @max_trials.setter
+    def max_trials(self, value: int | None) -> None:
+        """Sets the maximum number of trials to run on the algo wrapper.
+
+        NOTE: This may or may not be propagated to the wrapped algorithm, depending on the type of
+        wrapper.
+        """
+        self._algorithm.max_trials = value
 
     def seed_rng(self, seed: int | Sequence[int] | None) -> None:
         self.algorithm.seed_rng(seed)
