@@ -343,7 +343,7 @@ class BaseAlgoTests:
 
     @classmethod
     def observe_trials(
-        cls, trials: list[Trial], algo: BaseAlgorithm, objective: float = 0
+        cls, trials: list[Trial], algo: BaseAlgorithm, rng: numpy.random.RandomState
     ):
         """Make the algorithm observe trials
 
@@ -353,12 +353,13 @@ class BaseAlgoTests:
             Trials formatted as tuples of values
         algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm used to observe trials.
-        objective: int, optional
-            The base objective for the trials. All objectives
-            will have value ``objective + i``. Defaults to 0.
+        rng: ``numpy.random.RandomState``
+            Random number generator to generate random objectives.
         """
         backward.algo_observe(
-            algo, trials, [dict(objective=objective + i) for i in range(len(trials))]
+            algo,
+            trials,
+            [dict(objective=rng.normal()) for i in range(len(trials))],
         )
 
     @classmethod
@@ -373,7 +374,7 @@ class BaseAlgoTests:
         return num
 
     @classmethod
-    def force_observe(cls, num: int, algo: BaseAlgorithm):
+    def force_observe(cls, num: int, algo: BaseAlgorithm, seed: int = 1):
         """Force observe ``num`` trials.
 
         Parameters
@@ -382,6 +383,8 @@ class BaseAlgoTests:
             Number of trials to suggest and observe.
         algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm that must suggest and observe.
+        seed: int, optional
+            The seed used to generate random objectives
 
         Raises
         ------
@@ -390,7 +393,8 @@ class BaseAlgoTests:
               but in sequential scenarios as here, it should not happen.
             - If the algorithm fails to sample any trial at least 5 times.
         """
-        objective = 0
+        rng = numpy.random.RandomState(seed)
+
         failed = 0
         MAX_FAILED = 5
         ids = set()
@@ -404,8 +408,7 @@ class BaseAlgoTests:
                 if trial.hash_name in ids:
                     raise RuntimeError(f"algo suggested a duplicate: {trial}")
                 ids.add(trial.hash_name)
-            cls.observe_trials(trials, algo, objective)
-            objective += len(trials)
+            cls.observe_trials(trials, algo, rng)
 
         if failed >= MAX_FAILED:
             raise RuntimeError(
@@ -428,7 +431,7 @@ class BaseAlgoTests:
         trials = algo.suggest(1)
         assert len(trials) > 0
         assert trials[0] in space
-        self.observe_trials(trials, algo, 1)
+        self.observe_trials(trials, algo, numpy.random.RandomState(1))
 
     @first_phase_only
     def test_configuration(self):
@@ -484,15 +487,17 @@ class BaseAlgoTests:
         # Experiment id is ignored
         assert get_id([1, 1, 1], exp_id=1) == get_id([1, 1, 1], exp_id=2)
 
-    @pytest.mark.parametrize("seed", [123])
+    @pytest.mark.parametrize("seed", [123, 456])
     def test_seed_rng(self, seed: int):
         """Test that the seeding gives reproducible results."""
+        numpy.random.seed(seed)
         algo = self.create_algo(seed=seed)
 
         trial_a = algo.suggest(1)[0]
         trial_b = algo.suggest(1)[0]
         assert trial_a != trial_b
 
+        numpy.random.seed(seed)
         new_algo = self.create_algo(seed=seed)
         assert new_algo.n_observed == algo.n_observed
         trial_c = new_algo.suggest(1)[0]
@@ -660,7 +665,7 @@ class BaseAlgoTests:
         trials = algo.suggest(1)
         assert algo.n_observed == initial
         assert len(trials) == 1
-        self.observe_trials(trials, algo)
+        self.observe_trials(trials, algo, numpy.random.RandomState(1))
         assert algo.n_observed == initial + 1
 
     def test_real_data(self):

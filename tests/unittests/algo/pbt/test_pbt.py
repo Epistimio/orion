@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import ClassVar
 
+import numpy as np
 import pytest
 from base import ExploitStub, ExploreStub, no_shutil_copytree, sample_trials, space
 from pytest_mock import MockerFixture
@@ -640,13 +641,14 @@ class TestGenericPBT(BaseAlgoTests):
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = MAX_TRIALS
 
+        rng = np.random.RandomState(123456)
+
         objective = 0
         while not algo.is_done:
             trials = algo.suggest(num)
             assert trials is not None
             if trials:
-                self.observe_trials(trials, algo, objective)
-                objective += len(trials)
+                self.observe_trials(trials, algo, rng)
 
         # BPT should ignore max trials.
         assert algo.n_observed > MAX_TRIALS
