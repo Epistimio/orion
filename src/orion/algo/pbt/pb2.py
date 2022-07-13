@@ -3,9 +3,12 @@
 ========================
 
 """
+from __future__ import annotations
+
 import copy
 import logging
 import time
+from typing import Any, ClassVar, Sequence
 
 import numpy as np
 import pandas
@@ -13,6 +16,7 @@ import pandas
 from orion.algo.pbt.pb2_utils import import_optional, select_config
 from orion.algo.pbt.pbt import PBT
 from orion.core.utils.flatten import flatten
+from orion.core.utils.random_state import RandomState, control_randomness
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -66,9 +70,9 @@ class PB2(PBT):
 
     """
 
-    requires_type = "real"
-    requires_dist = "linear"
-    requires_shape = "flattened"
+    requires_type: ClassVar[str | None] = "real"
+    requires_dist: ClassVar[str | None] = "linear"
+    requires_shape: ClassVar[str | None] = "flattened"
 
     def __init__(
         self,
@@ -80,6 +84,8 @@ class PB2(PBT):
         fork_timeout=60,
     ):
         import_optional.ensure()
+
+        self.random_state: RandomState | None = None
 
         super().__init__(
             space,
@@ -99,6 +105,29 @@ class PB2(PBT):
         config = copy.deepcopy(super().configuration)
         config["pb2"].pop("explore", None)
         return config
+
+    def seed_rng(self, seed: int | Sequence[int] | None) -> None:
+        """Seed the state of the random number generator.
+
+        Parameters
+        ----------
+        seed: int
+            Integer seed for the random number generator.
+        """
+        super().seed_rng(seed)
+        self.random_state = RandomState.seed(self.rng.randint(0, 2**32 - 1))
+
+    @property
+    def state_dict(self) -> dict:
+        """Return a state dict that can be used to reset the state of the algorithm."""
+        state_dict: dict[str, Any] = super().state_dict
+        state_dict["random_state"] = self.random_state or RandomState.current()
+        return state_dict
+
+    def set_state(self, state_dict: dict) -> None:
+        """Reset the state of the algorithm based on the given state_dict"""
+        super().set_state(state_dict)
+        self.random_state = state_dict["random_state"]
 
     def _generate_offspring(self, trial):
         """Try to promote or fork a given trial."""
@@ -202,9 +231,15 @@ class PB2(PBT):
                 .iloc[-1, :][["Budget", "R_before"]]
                 .values
             )
-            new = select_config(
-                x_raw, y_raw, current, newpoint, bounds, num_f=len(t_r.columns)
-            )
+            with control_randomness(self.random_state):
+                new = select_config(
+                    x_raw,
+                    y_raw,
+                    current,
+                    newpoint,
+                    bounds,
+                    num_f=len(t_r.columns),
+                )
 
             new_config = base.params.copy()
             for i, col in enumerate(hparams.columns):

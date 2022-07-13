@@ -19,10 +19,10 @@ import pandas as pd
 from typing_extensions import Literal, TypedDict  # type: ignore
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.hebo.random_state import RandomState
 from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.module_import import ImportOptional
+from orion.core.utils.random_state import RandomState, control_randomness
 from orion.core.worker.trial import Trial
 
 with ImportOptional("HEBO") as import_optional:
@@ -35,7 +35,7 @@ with ImportOptional("HEBO") as import_optional:
 if import_optional.failed:
     MACE = object
 
-if typing.TYPE_CHECKING and _HEBO_REQUIRED_ERROR:
+if typing.TYPE_CHECKING and import_optional.failed:
     Acquisition = object  # noqa
     DesignSpace = object  # noqa
     Parameter = object  # noqa
@@ -163,7 +163,7 @@ class HEBO(BaseAlgorithm):
 
         self.hebo_space: DesignSpace = orion_space_to_hebo_space(self.space)
 
-        with self._control_randomness():
+        with control_randomness(self.random_state):
             self.model = hebo.optimizers.hebo.HEBO(
                 space=self.hebo_space,
                 model_name=self.parameters.model_name,
@@ -234,7 +234,7 @@ class HEBO(BaseAlgorithm):
         A list of trials representing values suggested by the algorithm.
         """
         trials: list[Trial] = []
-        with self._control_randomness():
+        with control_randomness(self.random_state):
             v: pd.DataFrame = self.model.suggest(n_suggestions=num)
         point_dicts: dict[int, dict] = v.to_dict(orient="index")  # type: ignore
 
@@ -276,7 +276,7 @@ class HEBO(BaseAlgorithm):
 
         x_df = pd.DataFrame(new_xs)
         y_array = np.array(new_ys).reshape([-1, 1])
-        with self._control_randomness():
+        with control_randomness(self.random_state):
             self.model.observe(X=x_df, y=y_array)
 
     def _hebo_params_to_orion_params(self, hebo_params: dict) -> dict:
@@ -353,28 +353,6 @@ class HEBO(BaseAlgorithm):
             orion_params[self.fidelity_index] = fidelity_dim.high
         trial: Trial = dict_to_trial(orion_params, space=self.space)
         return trial
-
-    @contextlib.contextmanager
-    def _control_randomness(self):
-        """Seeds the randomness inside the indented block of code using `self.random_state`.
-
-        NOTE: This only has an effect if `seed_rng` was called previously, i.e. if
-        `self.random_state` is not None.
-        """
-        if self.random_state is None:
-            yield
-            return
-
-        # Save the initial random state.
-        initial_rng_state = RandomState.current()
-        # Set the random state.
-        self.random_state.set()
-        yield
-        # Update the random state stored on `self`, so that the changes inside the block are
-        # reflected in the RandomState object.
-        self.random_state = RandomState.current()
-        # Reset the initial state.
-        initial_rng_state.set()
 
 
 def orion_space_to_hebo_space(space: Space) -> DesignSpace:

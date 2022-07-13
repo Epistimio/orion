@@ -32,7 +32,7 @@ class TestPB2(BaseAlgoTests):
     """Test suite for algorithm PB2"""
 
     algo_name = "pb2"
-    max_trials = population_size * generations
+    max_trials = population_size * (generations + 1)
     config = {
         "seed": 123456,
         "population_size": population_size,
@@ -56,10 +56,15 @@ class TestPB2(BaseAlgoTests):
         },
         "fork_timeout": 5,
     }
-    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
+    space = {
+        "x": "uniform(0, 1, precision=15)",
+        "y": "uniform(0, 1, precision=15)",
+        "f": "fidelity(1, 10, base=1)",
+    }
 
     phases: ClassVar[list[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
+        TestPhase("generation_1", 1 * population_size, "_generate_offspring"),
         TestPhase("generation_2", 2 * population_size, "_generate_offspring"),
         TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
     ]
