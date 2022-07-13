@@ -215,9 +215,7 @@ class ASHA(Hyperband):
     def suggest(self, num: int) -> list[Trial]:
         return super().suggest(num)
 
-    def create_bracket(
-        self, i: Any, budgets: list[BudgetTuple], iteration: int
-    ) -> ASHABracket:
+    def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> ASHABracket:
         return ASHABracket(self, budgets, iteration)
 
 
