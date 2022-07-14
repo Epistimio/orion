@@ -52,7 +52,7 @@ class TestImportOptional:
 
         error_message = (
             "The package `PacK` is not installed. "
-            "Install it with `pip install orion\[age\]`."
+            r"Install it with `pip install orion\[age\]`."
         )
         with pytest.raises(ImportError, match=error_message):
             import_optional.ensure()

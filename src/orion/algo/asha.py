@@ -7,7 +7,7 @@ from __future__ import annotations
 import copy
 import logging
 from collections import defaultdict
-from typing import Any, Sequence
+from typing import Sequence
 
 import numpy
 import numpy as np

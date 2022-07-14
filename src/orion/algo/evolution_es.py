@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 import importlib
 import logging
-from typing import Any, Callable, ClassVar, Sequence, TypeVar
+from typing import Callable, ClassVar, Sequence, TypeVar
 
 import numpy as np
 

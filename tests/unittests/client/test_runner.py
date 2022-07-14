@@ -2,7 +2,6 @@
 """Example usage and tests for :mod:`orion.client.experiment`."""
 from __future__ import annotations
 
-import copy
 import os
 import signal
 import sys
@@ -10,9 +9,9 @@ import time
 import traceback
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
+from pathlib import Path
 from threading import Thread
 from typing import Callable
-from wsgiref.simple_server import sys_version
 
 import pytest
 from typing_extensions import Literal
@@ -722,9 +721,9 @@ def test_prepare_trial_working_dir(tmp_path: Path):
     runner.max_trials_per_worker = 4
 
     client = runner.client
-    base_trial, parent_trial, child_trial, orphan_trial, resumed_trial = [
+    base_trial, parent_trial, child_trial, orphan_trial, resumed_trial = (
         new_trial(i, sleep=0.75) for i in range(5)
-    ]
+    )
     trials = [base_trial, parent_trial, child_trial, orphan_trial, resumed_trial]
     for trial in trials:
         trial.experiment = 0
@@ -761,5 +760,5 @@ def test_prepare_trial_working_dir(tmp_path: Path):
     # Folder was copied as expected
     assert child_trial.working_dir != parent_trial.working_dir
     for working_dir in [child_trial.working_dir, parent_trial.working_dir]:
-        with open(os.path.join(working_dir, "id.txt"), "r") as f:
+        with open(os.path.join(working_dir, "id.txt")) as f:
             assert f.read() == parent_trial.id

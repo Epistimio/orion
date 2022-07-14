@@ -6,7 +6,6 @@ The HEBO algorithm implementation can be found at https://github.com/huawei-noah
 """
 from __future__ import annotations
 
-import contextlib
 import copy
 import typing
 import warnings
@@ -33,7 +32,7 @@ with ImportOptional("HEBO") as import_optional:
     from torch.quasirandom import SobolEngine
 
 if import_optional.failed:
-    MACE = object
+    MACE = object  # noqa: F811
 
 if typing.TYPE_CHECKING and import_optional.failed:
     Acquisition = object  # noqa

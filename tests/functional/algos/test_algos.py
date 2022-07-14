@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import os
 import random
-import shutil
 from pathlib import Path
 
 import numpy
@@ -519,5 +518,5 @@ def test_branching_algos(
             len(params)
             == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
         )
-        with open(os.path.join(trial.working_dir, "hist.txt"), "r") as f:
+        with open(os.path.join(trial.working_dir, "hist.txt")) as f:
             assert "\n".join(params) == f.read().strip("\n")
