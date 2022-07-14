@@ -216,7 +216,7 @@ class Hyperband(Generic[BracketT], BaseAlgorithm):
     def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> BracketT:
         return HyperbandBracket(self, budgets, iteration)
 
-    def sample_from_bracket(self, bracket: T, num: int) -> list[Trial]:
+    def sample_from_bracket(self, bracket: BracketT, num: int) -> list[Trial]:
         """Sample new trials from bracket"""
         trials: list[Trial] = []
         while len(trials) < num:

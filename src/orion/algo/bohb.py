@@ -20,8 +20,8 @@ with ImportOptional("BOHB") as import_optional:
     from sspace.convert import convert_space, reverse, transform
 
 if import_optional.failed:
-    CG_BOHB = None
-    SuccessiveHalving = None
+    CG_BOHB = None  # noqa: F811
+    SuccessiveHalving = None  # noqa: F811
 
 
 SPACE_ERROR = """

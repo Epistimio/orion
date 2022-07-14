@@ -27,7 +27,7 @@ with ImportOptional("DEHB") as import_optional:
 
 if import_optional.failed:
 
-    class DEHBImpl:
+    class DEHBImpl:  # noqa: F811
         pass
 
 

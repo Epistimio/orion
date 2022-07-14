@@ -17,8 +17,8 @@ with ImportOptional("Ax") as import_optional:
     from ax.service.utils.instantiation import ObjectiveProperties
 
 if import_optional.failed:
-    AxClient = None
-    ObjectiveProperties = None
+    AxClient = None  # noqa: F811
+    ObjectiveProperties = None  # noqa: F811
 
 
 class AxOptimizer(BaseAlgorithm):

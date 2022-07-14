@@ -18,10 +18,10 @@ with ImportOptional("PB2") as import_optional:
     from GPy.kern import Kern
 
 if import_optional.failed:
-    GPy = None
-    Param = None
+    GPy = None  # noqa: F811
+    Param = None  # noqa: F811
 
-    class Kern:  # noqa
+    class Kern:  # noqa: F811
         def __init__(self, *args, **kwargs):
             pass
 
