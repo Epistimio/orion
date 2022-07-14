@@ -108,7 +108,8 @@ class TestAxOptimizer(BaseAlgoTests):
         new_algo = self.create_algo(seed=seed)
         assert new_algo.n_observed == algo.n_observed
         trial_c = new_algo.suggest(1)[0]
-        assert trial_c == trial_a
+        if self._current_phase.name == "Sobol":
+            assert trial_c == trial_a
         numpy.testing.assert_allclose(
             numpy.array(list(trial_a.params.values())).astype(float),
             numpy.array(list(trial_c.params.values())).astype(float),
