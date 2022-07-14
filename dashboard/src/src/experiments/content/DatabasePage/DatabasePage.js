@@ -52,6 +52,12 @@ class TrialsProvider {
       const trialIndices = queryTrials.map(trial => trial.id);
       trialIndices.sort();
       const trials = [];
+      /**
+       * Map to check whether each param column is sortable.
+       * Array params are not considered sortable,
+       * except if they contains only 1 element.
+       */
+      const sortableParamCols = {};
       for (let trialID of trialIndices) {
         const rawTrial = await this.backend.query(
           `trials/${experiment}/${trialID}`
@@ -65,10 +71,26 @@ class TrialsProvider {
         );
         // Prepare rendering for array parameters
         for (let key of Object.keys(flattenedParameters)) {
+          let sortableCell = true;
           if (Array.isArray(flattenedParameters[key])) {
-            flattenedParameters[key] = flattenedParameters[
-              key
-            ].map((value, i) => <div key={i}>{value.toString()}</div>);
+            if (flattenedParameters[key].length === 1) {
+              // Array contains only 1 element.
+              // Flatten it and assume element is displayable as-is.
+              flattenedParameters[key] = flattenedParameters[key][0];
+            } else {
+              // Real array with many values.
+              // Render it immediately and mark cell as not sortable.
+              flattenedParameters[key] = flattenedParameters[
+                key
+              ].map((value, i) => <div key={i}>{value.toString()}</div>);
+              sortableCell = false;
+            }
+          }
+          // Param column is sortable if all its cells are sortable.
+          if (sortableParamCols.hasOwnProperty(key)) {
+            sortableParamCols[key] = sortableParamCols[key] && sortableCell;
+          } else {
+            sortableParamCols[key] = sortableCell;
           }
         }
         // Save flattened keys in specific property `paramKeys` for later
@@ -114,7 +136,23 @@ class TrialsProvider {
           header: 'Statistics',
         },
       ];
-      this.trials[experiment] = { headers: trialHeaders, trials: trials };
+      // Map to specify sortable columns.
+      const sortableCols = {
+        ...sortableParamCols,
+        id: true,
+        submitTime: true,
+        startTime: true,
+        endTime: true,
+        objective: true,
+        statistics: false,
+      };
+      // Array to specify sortable columns by index.
+      const sortable = trialHeaders.map(header => sortableCols[header.key]);
+      this.trials[experiment] = {
+        headers: trialHeaders,
+        trials: trials,
+        sortable: sortable,
+      };
     }
     return this.trials[experiment];
   }
@@ -148,6 +186,7 @@ class DatabasePage extends React.Component {
             <TrialTable
               headers={this.state.trials.headers}
               rows={this.state.trials.trials}
+              sortable={this.state.trials.sortable}
               experiment={this.state.experiment}
             />
           </div>

@@ -10,7 +10,7 @@ import {
   TableCell,
 } from 'carbon-components-react';
 
-const TrialTable = ({ rows, headers, experiment }) => {
+const TrialTable = ({ rows, headers, sortable, experiment }) => {
   return (
     <DataTable
       rows={rows}
@@ -28,8 +28,12 @@ const TrialTable = ({ rows, headers, experiment }) => {
           <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
-                {headers.map(header => (
-                  <TableHeader {...getHeaderProps({ header })}>
+                {headers.map((header, indexHeader) => (
+                  <TableHeader
+                    {...getHeaderProps({
+                      header,
+                      isSortable: sortable[indexHeader],
+                    })}>
                     {header.header}
                   </TableHeader>
                 ))}
