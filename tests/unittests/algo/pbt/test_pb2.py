@@ -16,13 +16,6 @@ population_size = 10
 generations = 5
 
 
-@pytest.fixture
-def no_shutil_copytree(monkeypatch):
-    """Pytest fixture copied from orion"""
-    monkeypatch.setattr("shutil.copytree", lambda dir_a, dir_b: None)
-    yield
-
-
 # Test suite for algorithms. You may reimplement some of the tests to adapt them to your algorithm
 # Full documentation is available at https://orion.readthedocs.io/en/stable/code/testing/algo.html
 # Look for algorithms tests in https://github.com/Epistimio/orion/blob/master/tests/unittests/algo
