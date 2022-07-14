@@ -81,7 +81,6 @@ import getpass
 import logging
 import pprint
 import sys
-import warnings
 from typing import TypeVar
 
 import orion.core
@@ -445,11 +444,8 @@ def create_experiment(
         "Created experiment with config:\n%s", pprint.pformat(experiment.configuration)
     )
     if kwargs:
-        warnings.warn(
-            UserWarning(
-                f"create_experiment received some extra unused arguments: {kwargs}"
-            )
-        )
+        # TODO: https://github.com/Epistimio/orion/issues/972
+        log.debug("create_experiment received some extra unused arguments: %s", kwargs)
 
     return experiment
 
