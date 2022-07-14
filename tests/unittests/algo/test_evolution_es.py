@@ -425,6 +425,12 @@ class TestGenericEvolutionES(BaseAlgoTests):
         TestPhase("rep2-rung1", sum(BUDGETS) * 2, "suggest"),
     ]
 
+    def test_cat_data(self):
+        """Test that algorithm supports categorical dimensions"""
+        if self._current_phase.name == "rep2-rung1":
+            pytest.mark.skip(reason="EVES can hardly sample all possible values")
+        super().test_cat_data()
+
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
         space = self.update_space(

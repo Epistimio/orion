@@ -178,7 +178,7 @@ class EvolutionES(Hyperband[BracketT]):
     def create_bracket(
         self, bracket_budgets: list[BudgetTuple], iteration: int
     ) -> BracketT:
-        return BracketEVES(self, bracket_budgets, 1)
+        return BracketEVES(self, bracket_budgets, iteration)
 
     @property
     def state_dict(self) -> dict:
