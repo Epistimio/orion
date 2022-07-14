@@ -558,23 +558,14 @@ class HyperbandBracket(Generic[Owner]):
         self._samples = None
 
     def get_sample(self) -> Trial | None:
-        if self._samples is None:
+        if not self._samples:
+            was = self._samples
             n_samples = int(self.rungs[0]["n_trials"] * self.buffer)
             self._samples = self.owner.space.sample(n_samples, seed=self.seed)
+            if was is not None:
+                return None
 
-        return self._samples.pop(0) if self._samples else None
-
-    def sample(self, num: int) -> list[Trial]:
-        """Sample a new trial with lowest fidelity"""
-        should_have_n_trials = self.rungs[0]["n_trials"]
-        n_trials = len(self.rungs[0]["results"])
-        request = max(min(should_have_n_trials - n_trials, num), 0)
-        if request == 0:
-            return []
-        # BUG: Shouldn't this be `sample_from_bracket`?
-        return self.owner.sample_for_bracket(
-            request, self, buffer=should_have_n_trials * 10 / request
-        )
+        return self._samples.pop(0)
 
     def register(self, trial: Trial) -> None:
         """Register a trial in the corresponding rung"""
