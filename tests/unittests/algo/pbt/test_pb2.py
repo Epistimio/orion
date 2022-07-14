@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import numpy
 import pytest
 
 from orion.algo.pbt.pb2_utils import import_optional
@@ -62,6 +63,11 @@ class TestPB2(BaseAlgoTests):
         TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
     ]
 
+    def test_cat_data(self):
+        if self._current_phase.name == "generation_3":
+            pytest.xfail("PB2 does not explore well categorical dimensions")
+        super().test_cat_data()
+
     @pytest.mark.skip(
         reason="There are no good reasons to use PBT if search space is so small"
     )
@@ -77,13 +83,13 @@ class TestPB2(BaseAlgoTests):
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = local_max_trials
 
-        objective = 0
+        rng = numpy.random.RandomState(123456)
+
         while not algo.is_done:
             trials = algo.suggest(num)
             assert trials is not None
             if trials:
-                self.observe_trials(trials, algo, objective)
-                objective += len(trials)
+                self.observe_trials(trials, algo, rng)
 
         # BPT should ignore max trials.
         assert algo.n_observed > local_max_trials
