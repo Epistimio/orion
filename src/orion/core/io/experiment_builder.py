@@ -441,9 +441,6 @@ class ExperimentBuilder:
         else:
             self.storage = singleton
 
-        if self.storage is None:
-            self.storage = setup_storage(debug=debug)
-
     def build(self, name, version=None, branching=None, **config):
         """Build an experiment object
 

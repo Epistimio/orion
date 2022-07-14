@@ -284,9 +284,6 @@ class Conflicts:
             resolution = conflict.try_resolve(*args, **kwargs)
         except KeyboardInterrupt:
             raise
-        except AssertionError:
-            # something terribly wrong happened
-            raise
         except Exception:  # pylint:disable=broad-except
             conflict.resolution = None
             conflict._is_resolved = None  # pylint:disable=protected-access
@@ -1704,8 +1701,6 @@ class ExperimentNameConflict(Conflict):
 
         def _validate(self, storage=None):
             """Validate new_name is not in database with a direct child for current version"""
-            assert storage is not None
-
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?

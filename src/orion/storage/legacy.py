@@ -27,26 +27,6 @@ from orion.storage.base import (
 log = logging.getLogger(__name__)
 
 
-def get_database():
-    """Return current database
-
-    This is a wrapper around the Database Singleton object to provide
-    better error message when it is used without being initialized.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying database was not initialized prior to calling this function
-
-    Notes
-    -----
-    To initialize the underlying database you must first call `Database(...)`
-    with the appropriate arguments for the chosen backend
-
-    """
-    return setup_database()
-
-
 def setup_database(config=None):
     """Create the Database instance from a configuration.
 

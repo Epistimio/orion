@@ -452,26 +452,11 @@ class Configuration:
 
         return config
 
-    def reset(self):
-        """Reset config to default"""
-        logger.debug("Resetting Config")
-
-        with _disable_logger():
-            for value in self._config.values():
-                value.pop("value", None)
-
-            for value in self._subconfigs.values():
-                value.reset()
-
     def from_dict(self, config):
         """Set the configuration from a dictionary"""
 
         logger.debug("Setting config to %s", config)
         logger.debug("Config was %s", repr(self))
-
-        if config is None:
-            self.reset()
-            return
 
         with _disable_logger():
             for key in self._config:  # pylint: disable=consider-using-dict-items
