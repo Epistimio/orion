@@ -801,6 +801,7 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode="x", **config)
 
+    # pylint: disable=too-many-arguments
     def create_experiment(
         self,
         name: str,
