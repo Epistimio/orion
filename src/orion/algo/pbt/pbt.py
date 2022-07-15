@@ -473,7 +473,9 @@ class PBT(BaseAlgorithm):
             self.has_suggested(new_trial)
             and time.perf_counter() - start > self.fork_timeout
         ):
-            raise RuntimeError(
+            trial_to_branch = None
+            new_trial = None
+            logger.info(
                 f"Could not generate unique new parameters for trial {trial.id} in "
                 f"less than {self.fork_timeout} seconds. Attempted {attempts} times."
             )
