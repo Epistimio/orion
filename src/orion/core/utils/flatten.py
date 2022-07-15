@@ -13,8 +13,6 @@ import copy
 def flatten(dictionary):
     """Turn all nested dict keys into a {key}.{subkey} format"""
 
-    circle_ref_guard = set()
-
     def _flatten(dictionary):
         if dictionary == {}:
             return dictionary
