@@ -12,6 +12,7 @@ from tabulate import tabulate
 import orion.core
 from orion.client import create_experiment
 from orion.executor.base import executor_factory
+from orion.storage.base import BaseStorageProtocol
 
 
 class Benchmark:
@@ -65,6 +66,8 @@ class Benchmark:
         targets,
         executor=None,
     ):
+        assert isinstance(storage, BaseStorageProtocol)
+
         self._id = None
         self.name = name
         self.algorithms = algorithms

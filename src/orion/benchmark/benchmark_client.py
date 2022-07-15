@@ -56,7 +56,7 @@ def get_or_create_benchmark(
 
     if db_config:
         if algorithms or targets:
-            input_benchmark = Benchmark(name, algorithms, targets)
+            input_benchmark = Benchmark(storage, name, algorithms, targets)
             input_configure = input_benchmark.configuration
 
         benchmark_id, algorithms, targets = _resolve_db_config(db_config)

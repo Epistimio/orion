@@ -25,7 +25,7 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.storage.base import FailedUpdate, setup_storage
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, setup_storage
 
 log = logging.getLogger(__name__)
 Mode = Literal["r", "w", "x"]
@@ -154,6 +154,8 @@ class Experiment:
         refers: dict | None = None,
         storage=None,
     ):
+        assert isinstance(storage, BaseStorageProtocol)
+
         self._id = None
         self.name = name
         self.space: Space = space
