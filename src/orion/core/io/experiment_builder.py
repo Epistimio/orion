@@ -477,9 +477,6 @@ class ExperimentBuilder:
             Maximum number of trials before the experiment is considered done.
         max_broken: int, optional
             Number of broken trials for the experiment to be considered broken.
-        storage: dict, optional
-            Configuration of the storage backend.
-
         branching: dict, optional
             Arguments to control the branching.
 
@@ -874,6 +871,7 @@ class ExperimentBuilder:
         _instantiate_strategy((producer or {}).get("strategy"))
 
         experiment = Experiment(
+            storage=self.storage,
             name=name,
             version=version,
             mode=mode,
