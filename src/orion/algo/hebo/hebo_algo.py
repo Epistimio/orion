@@ -22,6 +22,7 @@ from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.module_import import ImportOptional
 from orion.core.utils.random_state import RandomState, control_randomness
+from orion.core.worker.transformer import TransformedDimension
 from orion.core.worker.trial import Trial
 
 with ImportOptional("HEBO") as import_optional:
@@ -325,11 +326,11 @@ class HEBO(BaseAlgorithm):
         params = {}
         for name, value in orion_params.items():
             orion_dim: Dimension = self.space[name]
-            hebo_dim: Parameter = self.hebo_space.paras[name]
-
             if orion_dim.type == "fidelity":
                 continue
             from hebo.design_space.categorical_param import CategoricalPara
+
+            hebo_dim: Parameter = self.hebo_space.paras[name]
 
             if isinstance(hebo_dim, CategoricalPara):
                 if (
@@ -348,8 +349,12 @@ class HEBO(BaseAlgorithm):
         # Need to convert the {name: value} of point_dict into this format for Orion's Trial.
         # Add the max value for the Fidelity dimensions, if any.
         if self.fidelity_index is not None:
-            fidelity_dim: Fidelity = self.space[self.fidelity_index]
-            orion_params[self.fidelity_index] = fidelity_dim.high
+            fidelity_dim = self.space[self.fidelity_index]
+            assert isinstance(fidelity_dim, TransformedDimension)
+            while isinstance(fidelity_dim, TransformedDimension):
+                fidelity_dim = fidelity_dim.original_dimension
+            assert isinstance(fidelity_dim, Fidelity)
+            orion_params[self.fidelity_index] = float(fidelity_dim.high)
         trial: Trial = dict_to_trial(orion_params, space=self.space)
         return trial
 
