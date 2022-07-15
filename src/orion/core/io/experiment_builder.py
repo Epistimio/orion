@@ -81,7 +81,6 @@ import getpass
 import logging
 import pprint
 import sys
-from typing import TypeVar
 
 import orion.core
 import orion.core.utils.backward as backward  # pylint:disable=consider-using-from-import
@@ -100,7 +99,7 @@ from orion.core.utils.exceptions import (
     NoNameError,
     RaceCondition,
 )
-from orion.core.worker.experiment import Experiment, Mode
+from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import setup_storage
 

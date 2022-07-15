@@ -19,7 +19,7 @@ import orion.core.worker.experiment
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.exceptions import UnsupportedOperation
-from orion.core.worker.experiment import Experiment, Mode
+from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 from orion.storage.base import LockedAlgorithmState, setup_storage

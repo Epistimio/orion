@@ -138,7 +138,21 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
-    def __init__(self, name, version=None, mode="r", storage=None):
+    def __init__(
+        self,
+        name: str,
+        space: Space,
+        version: int | None = 1,
+        mode: Mode = "r",
+        _id: str | int | None = None,
+        max_trials: int | None = None,
+        max_broken: int | None = None,
+        algorithms: BaseAlgorithm | None = None,
+        working_dir: str | None = None,
+        metadata: dict | None = None,
+        refers: dict | None = None,
+        storage=None,
+    ):
         self._id = None
         self.name = name
         self.space: Space = space
@@ -146,8 +160,8 @@ class Experiment:
         self._mode = mode
         self.refers = refers or {}
         self.metadata = metadata or {}
-        self.max_trials = max_trials
-        self.max_broken = max_broken
+        self.max_trials = None
+        self.max_broken = None
 
         self._storage = storage or setup_storage()
 
