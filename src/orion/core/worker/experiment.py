@@ -156,7 +156,7 @@ class Experiment:
     ):
         assert isinstance(storage, BaseStorageProtocol)
 
-        self._id = None
+        self._id = _id
         self.name = name
         self.space: Space = space
         self.version = version if version else 1
