@@ -428,7 +428,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
     def test_cat_data(self):
         """Test that algorithm supports categorical dimensions"""
         if self._current_phase.name == "rep2-rung1":
-            pytest.mark.skip(reason="EVES can hardly sample all possible values")
+            pytest.xfail(reason="EVES can hardly sample all possible values")
         super().test_cat_data()
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")

@@ -64,7 +64,7 @@ class TestPB2(BaseAlgoTests):
     ]
 
     def test_cat_data(self):
-        if self._current_phase.name == "generation_3":
+        if self._current_phase.name in ["generation_2", "generation_3"]:
             pytest.xfail("PB2 does not explore well categorical dimensions")
         super().test_cat_data()
 
