@@ -442,7 +442,13 @@ class ExperimentBuilder:
         else:
             self.storage = singleton
 
-    def build(self, name: str, version: int | None = None, branching: dict | None = None, **config) -> Experiment:
+    def build(
+        self,
+        name: str,
+        version: int | None = None,
+        branching: dict | None = None,
+        **config,
+    ) -> Experiment:
         """Build an experiment object
 
         If new, ``space`` argument must be provided, else all arguments are fetched from the
@@ -795,7 +801,8 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode="x", **config)
 
-    def create_experiment(self,
+    def create_experiment(
+        self,
         name: str,
         version: int,
         mode: Mode,
@@ -880,6 +887,8 @@ class ExperimentBuilder:
 
         if kwargs:
             # TODO: https://github.com/Epistimio/orion/issues/972
-            log.debug("create_experiment received some extra unused arguments: %s", kwargs)
+            log.debug(
+                "create_experiment received some extra unused arguments: %s", kwargs
+            )
 
         return experiment
