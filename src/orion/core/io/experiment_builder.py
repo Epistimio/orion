@@ -398,6 +398,7 @@ def build(name, version=None, branching=None, storage=None, **config):
     """
     if storage is None:
         storage = setup_storage()
+
     return ExperimentBuilder(storage).build(name, version, branching, **config)
 
 
