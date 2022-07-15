@@ -344,7 +344,7 @@ def workon(
 
     try:
         setup_storage(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
-
+        # TODO: A bit weird that we pass the kb to both the experiment and exp client...
         experiment = experiment_builder.build(
             name,
             version=1,
@@ -355,12 +355,7 @@ def workon(
             knowledge_base=knowledge_base,
         )
 
-        producer = Producer(experiment)
-        # TODO: Potential bug here, the second argument to ExperimentClient should be a
-        # BaseExecutor, not a Producer!
-        experiment_client = ExperimentClient(
-            experiment, producer, knowledge_base=knowledge_base
-        )
+        experiment_client = ExperimentClient(experiment, knowledge_base=knowledge_base)
         with experiment_client.tmp_executor("singleexecutor", n_workers=1):
             experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 

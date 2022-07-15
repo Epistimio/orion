@@ -15,10 +15,12 @@ import inspect
 import logging
 import typing
 from dataclasses import dataclass, field
-from typing import Generator, Generic, TypeVar
+from typing import Generic, TypeVar
 
 import pandas
+from typing_extensions import Literal
 
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
@@ -29,12 +31,12 @@ from orion.core.utils.singleton import update_singletons
 from orion.storage.base import FailedUpdate, get_storage
 
 if typing.TYPE_CHECKING:
-    from orion.algo.base import BaseAlgorithm
     from orion.core.worker.trial import Trial
     from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 log = logging.getLogger(__name__)
 AlgoT = TypeVar("AlgoT", bound="BaseAlgorithm")
+Mode = Literal["r", "w", "x"]
 
 
 @dataclass
@@ -145,25 +147,37 @@ class Experiment(Generic[AlgoT]):
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
+    # pylint: disable=too-many-arguments
     def __init__(
-        self, name, version=None, mode="r", knowledge_base: KnowledgeBase | None = None
+        self,
+        name: str,
+        space: Space,
+        version: int | None = 1,
+        mode: Mode = "r",
+        _id: str | int | None = None,
+        max_trials: int | None = None,
+        max_broken: int | None = None,
+        algorithms: BaseAlgorithm | None = None,
+        working_dir: str | None = None,
+        metadata: dict | None = None,
+        refers: dict | None = None,
+        knowledge_base: KnowledgeBase | None = None,
     ):
-        self._id = None
+        self._id = _id
         self.name = name
+        self.space: Space = space
         self.version = version if version else 1
         self._mode = mode
+        self.refers = refers or {}
+        self.metadata = metadata or {}
+        self.max_trials = max_trials
+        self.max_broken = max_broken
+
         self.knowledge_base = knowledge_base
-        self._node = None
-        self.refers = {}
-        self.metadata = {}
-        self.max_trials = None
-        self.max_broken = None
-        self.space: Space | None = None
-        self.algorithms: AlgoT | None = None
-        self.working_dir = None
+        self.algorithms = algorithms
+        self.working_dir = working_dir
 
         self._storage = get_storage()
-
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 
     def _check_if_writable(self):
@@ -402,8 +416,8 @@ class Experiment(Generic[AlgoT]):
 
     @contextlib.contextmanager
     def acquire_algorithm_lock(
-        self, timeout=60, retry_interval=1
-    ) -> Generator[AlgoT, None, None]:
+        self, timeout: int | float = 60, retry_interval: int | float = 1
+    ):
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
@@ -439,6 +453,7 @@ class Experiment(Generic[AlgoT]):
         with self._storage.acquire_algorithm_lock(
             experiment=self, timeout=timeout, retry_interval=retry_interval
         ) as locked_algorithm_state:
+            assert self.algorithms is not None
             if locked_algorithm_state.configuration != self.algorithms.configuration:
                 log.warning(
                     "Saved configuration: %s", locked_algorithm_state.configuration

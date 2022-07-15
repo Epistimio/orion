@@ -643,13 +643,13 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def _mock_producer(self, monkeypatch):
         self.producer = None
-        old_init = orion.core.cli.hunt.Producer.__init__
+        old_init = orion.core.worker.producer.Producer.__init__
 
         def init(p_self, *args, **kwargs):
             old_init(p_self, *args, **kwargs)
             self.producer = p_self
 
-        monkeypatch.setattr(orion.core.cli.hunt.Producer, "__init__", init)
+        monkeypatch.setattr(orion.core.worker.producer.Producer, "__init__", init)
 
     def _mock_workon(self, monkeypatch):
         workon = orion.core.cli.hunt.workon
