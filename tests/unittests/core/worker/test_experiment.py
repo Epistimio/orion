@@ -183,13 +183,8 @@ class TestReserveTrial:
     @pytest.mark.usefixtures("setup_pickleddb_database")
     def test_reserve_none(self, space: Space):
         """Find nothing, return None."""
-<<<<<<< HEAD
         with OrionState(experiments=[], trials=[]) as cfg:
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        with OrionState(experiments=[], trials=[]):
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             trial = exp.reserve_trial()
             assert trial is None
 
@@ -199,11 +194,7 @@ class TestReserveTrial:
         with OrionState(
             trials=generate_trials(["new", "reserved"]), storage=storage_config
         ) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
 
             trial = exp.reserve_trial()
@@ -219,11 +210,7 @@ class TestReserveTrial:
         """Return None once all the trials have been allocated"""
         statuses = ["new", "reserved", "interrupted", "completed", "broken"]
         with OrionState(trials=generate_trials(statuses)) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
             assert exp.reserve_trial() is not None
             assert exp.reserve_trial() is not None
@@ -237,11 +224,7 @@ class TestReserveTrial:
             seconds=60 * 10
         )
         with OrionState(trials=[trial]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
 
             assert len(exp.fetch_trials_by_status("reserved")) == 1
@@ -257,11 +240,7 @@ class TestReserveTrial:
         running_trial["heartbeat"] = datetime.datetime.utcnow()
 
         with OrionState(trials=[lost_trial, running_trial]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
 
             assert len(exp.fetch_trials_by_status("reserved")) == 2
@@ -284,11 +263,7 @@ class TestReserveTrial:
             seconds=60 * 10
         )
         with OrionState(trials=[trial]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
 
             assert len(exp.fetch_trials_by_status("interrupted")) == 1
@@ -325,11 +300,7 @@ class TestReserveTrial:
             seconds=60 * 2
         )
         with OrionState(trials=[trial]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
 
             assert len(exp.fetch_trials_by_status("reserved")) == 1
@@ -352,11 +323,7 @@ class TestAcquireAlgorithmLock:
         self, new_config, algorithm, space: Space
     ):
         with OrionState(experiments=[new_config]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = 0
             exp.algorithms = algorithm
 
@@ -383,11 +350,7 @@ class TestAcquireAlgorithmLock:
         self, new_config, algorithm, space: Space
     ):
         with OrionState(experiments=[new_config]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = 0
             algorithm_original_config = algorithm.configuration
             exp.algorithms = algorithm
@@ -406,11 +369,7 @@ class TestAcquireAlgorithmLock:
         self, new_config, algorithm, mocker, space: Space
     ):
         with OrionState(experiments=[new_config]) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = 0
             exp.algorithms = algorithm
 
@@ -427,11 +386,7 @@ class TestAcquireAlgorithmLock:
 def test_update_completed_trial(random_dt, space: Space):
     """Successfully push a completed trial into database."""
     with OrionState(trials=generate_trials(["new"])) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         trial = exp.reserve_trial()
@@ -460,13 +415,8 @@ def test_update_completed_trial(random_dt, space: Space):
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_register_trials(tmp_path, random_dt, space: Space):
     """Register a list of newly proposed trials/parameters."""
-<<<<<<< HEAD
     with OrionState() as cfg:
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-    with OrionState():
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = 0
         exp.working_dir = tmp_path
 
@@ -494,14 +444,9 @@ class TestToPandas:
 
     def test_empty(self, space: Space):
         """Test panda frame creation when there is no trials"""
-<<<<<<< HEAD
         with OrionState() as cfg:
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
             exp.space = space
-=======
-        with OrionState():
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             assert exp.to_pandas().shape == (0, 8)
             assert list(exp.to_pandas().columns) == [
                 "id",
@@ -519,11 +464,7 @@ class TestToPandas:
         with OrionState(
             trials=generate_trials(["new", "reserved", "completed"])
         ) as cfg:
-<<<<<<< HEAD
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-            exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
             exp._id = cfg.trials[0]["experiment"]
             df = exp.to_pandas()
             assert df.shape == (3, 8)
@@ -546,11 +487,7 @@ class TestToPandas:
 def test_fetch_all_trials(space: Space):
     """Fetch a list of all trials"""
     with OrionState(trials=generate_trials(["new", "reserved", "completed"])) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         trials = list(map(lambda trial: trial.to_dict(), exp.fetch_trials({})))
@@ -565,11 +502,7 @@ def test_fetch_pending_trials(space: Space):
     pending_stati = ["new", "interrupted", "suspended"]
     statuses = pending_stati + ["completed", "broken", "reserved"]
     with OrionState(trials=generate_trials(statuses)) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         trials = exp.fetch_pending_trials()
@@ -585,11 +518,7 @@ def test_fetch_non_completed_trials(space: Space):
     non_completed_stati = ["new", "interrupted", "suspended", "reserved"]
     statuses = non_completed_stati + ["completed"]
     with OrionState(trials=generate_trials(statuses)) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         trials = exp.fetch_noncompleted_trials()
@@ -602,11 +531,7 @@ def test_is_done_property_with_pending(algorithm, space: Space):
     completed = ["completed"] * 10
     reserved = ["reserved"] * 5
     with OrionState(trials=generate_trials(completed + reserved)) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         exp.algorithms = algorithm
@@ -630,11 +555,7 @@ def test_is_done_property_no_pending(algorithm, space: Space):
     completed = ["completed"] * 10
     broken = ["broken"] * 5
     with OrionState(trials=generate_trials(completed + broken)) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         exp.algorithms = algorithm
@@ -656,11 +577,7 @@ def test_broken_property(space: Space):
 
     statuses = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN - 1))
     with OrionState(trials=generate_trials(statuses)) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         exp.max_broken = MAX_BROKEN
@@ -669,11 +586,7 @@ def test_broken_property(space: Space):
 
     statuses = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN))
     with OrionState(trials=generate_trials(statuses)) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         exp.max_broken = MAX_BROKEN
@@ -720,11 +633,7 @@ def test_experiment_pickleable(space: Space):
     """Test experiment instance is pickleable"""
 
     with OrionState(trials=generate_trials(["new"])) as cfg:
-<<<<<<< HEAD
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage)
-=======
-        exp = Experiment("supernaekei", mode="x", space=space)
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
         exp._id = cfg.trials[0]["experiment"]
 
         exp_trials = exp.fetch_trials()
@@ -841,7 +750,6 @@ def compare_unsupported(attr_name, restricted_exp, execution_exp):
             restricted_attr(**kwargs.get(attr_name, {}))
 
 
-<<<<<<< HEAD
 def create_experiment(mode, space, algorithm, storage):
     experiment = Experiment("supernaekei", mode=mode, storage=storage)
     experiment.space = space
@@ -849,18 +757,6 @@ def create_experiment(mode, space, algorithm, storage):
     experiment.max_broken = 5
     experiment.max_trials = 5
     experiment._id = 1
-=======
-def create_experiment(mode: Mode, space: Space, algorithm):
-    experiment = Experiment(
-        "supernaekei",
-        mode=mode,
-        space=space,
-        algorithms=algorithm,
-        max_broken=5,
-        max_trials=5,
-        _id=1,
-    )
->>>>>>> 9ba6b2948aa399f10143359856f0177fd860667f
     return experiment
 
 
