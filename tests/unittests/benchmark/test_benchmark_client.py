@@ -11,12 +11,9 @@ from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client import ExperimentClient
-from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import setup_storage
-from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
 
 
@@ -39,101 +36,16 @@ storage_instance = ""
 class TestCreateBenchmark:
     """Test Benchmark creation"""
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
-    def test_create_benchmark_no_storage(self, benchmark_config_py):
-        """Test creation if storage is not configured"""
-        name = "oopsie_forgot_a_storage"
-        host = orion.core.config.storage.database.host
-
-        with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
-            # Reset the Storage and drop instances so that setup_storage() would fail.
-            cfg.cleanup()
-
-            # Make sure storage must be instantiated during `get_or_create_benchmark()`
-            # with pytest.raises(SingletonNotInstantiatedError):
-            #    setup_storage()
-
-            get_or_create_benchmark(**benchmark_config_py).close()
-
-            storage = setup_storage()
-
-            assert isinstance(storage, Legacy)
-            assert isinstance(storage._db, PickledDB)
-            assert storage._db.host == host
-
-    def test_create_benchmark_with_storage(self, benchmark_config_py):
-        """Test benchmark instance has the storage configurations"""
-
-        config = copy.deepcopy(benchmark_config_py)
-        storage = {"type": "legacy", "database": {"type": "EphemeralDB"}}
-        with OrionState(storage=storage):
-            config["storage"] = storage
-            bm = get_or_create_benchmark(**config)
-            bm.close()
-
-            assert bm.storage_config == config["storage"]
-
-    def test_create_benchmark_bad_storage(self, benchmark_config_py):
-        """Test error message if storage is not configured properly"""
-        name = "oopsie_bad_storage"
-        # Make sure there is no existing storage singleton
-
-        with pytest.raises(NotImplementedError) as exc:
-            benchmark_config_py["storage"] = {
-                "type": "legacy",
-                "database": {"type": "idontexist"},
-            }
-            get_or_create_benchmark(**benchmark_config_py).close()
-
-        assert "Could not find implementation of Database, type = 'idontexist'" in str(
-            exc.value
-        )
-
-    def test_create_experiment_debug_mode(
-        self, monkeypatch, tmp_path, benchmark_config_py
-    ):
-        """Test that EphemeralDB is used in debug mode whatever the storage config given"""
-
-        conf_file = str(tmp_path / "db.pkl")
-
-        config = copy.deepcopy(benchmark_config_py)
-        config["storage"] = {
-            "type": "legacy",
-            "database": {"type": "pickleddb", "host": conf_file},
-        }
-
-        old_setup = benchmark_client.setup_storage
-
-        def retrieve_storage(*args, **kwargs):
-            global storage_instance
-
-            storage_instance = old_setup(*args, **kwargs)
-            return storage_instance
-
-        monkeypatch.setattr(benchmark_client, "setup_storage", retrieve_storage)
-        benchmark = get_or_create_benchmark(**config).close()
-
-        storage = storage_instance
-        assert isinstance(storage, Legacy)
-        assert isinstance(storage._db, PickledDB)
-
-        config["storage"] = {"type": "legacy", "database": {"type": "pickleddb"}}
-        config["debug"] = True
-        get_or_create_benchmark(**config).close()
-
-        storage = storage_instance
-        assert isinstance(storage, Legacy)
-        assert isinstance(storage._db, EphemeralDB)
-
     def test_create_benchmark(self, benchmark_config, benchmark_config_py):
         """Test creation with valid configuration"""
         with OrionState() as cfg:
             bm1 = get_or_create_benchmark(
-                **benchmark_config_py, storage=cfg.storage_config
+                cfg.storage,
+                **benchmark_config_py,
             )
             bm1.close()
 
-            bm2 = get_or_create_benchmark("bm00001", storage=cfg.storage_config)
+            bm2 = get_or_create_benchmark(cfg.storage, "bm00001")
             bm2.close()
 
             assert bm1.configuration == benchmark_config
@@ -145,7 +57,7 @@ class TestCreateBenchmark:
         with OrionState() as cfg:
             name = "bm00001"
             with pytest.raises(NoConfigurationError) as exc:
-                get_or_create_benchmark(name, storage=cfg.storage_config).close()
+                get_or_create_benchmark(cfg.storage, name).close()
 
             assert f"Benchmark {name} does not exist in DB" in str(exc.value)
 
@@ -153,7 +65,9 @@ class TestCreateBenchmark:
         """Test creation with same name but different configure"""
         with OrionState() as cfg:
             config = copy.deepcopy(benchmark_config_py)
-            bm1 = get_or_create_benchmark(**config, storage=cfg.storage_config)
+            bm1 = get_or_create_benchmark(
+                cfg.storage, **config, storage=cfg.storage_config
+            )
             bm1.close()
 
             config = copy.deepcopy(benchmark_config_py)
@@ -162,7 +76,7 @@ class TestCreateBenchmark:
             with caplog.at_level(
                 logging.WARNING, logger="orion.benchmark.benchmark_client"
             ):
-                bm2 = get_or_create_benchmark(**config)
+                bm2 = get_or_create_benchmark(cfg.storage, **config)
                 bm2.close()
 
             assert bm2.configuration == bm1.configuration
@@ -177,7 +91,7 @@ class TestCreateBenchmark:
             with caplog.at_level(
                 logging.WARNING, logger="orion.benchmark.benchmark_client"
             ):
-                bm3 = get_or_create_benchmark(**config)
+                bm3 = get_or_create_benchmark(cfg.storage, **config)
                 bm3.close()
 
             assert bm3.configuration == bm1.configuration
@@ -197,9 +111,7 @@ class TestCreateBenchmark:
                 # Pass executor to close it properly
                 with Joblib(n_workers=2, backend="threading") as executor:
                     get_or_create_benchmark(
-                        **benchmark_config_py,
-                        executor=executor,
-                        storage=cfg.storage_config,
+                        cfg.storage, **benchmark_config_py, executor=executor
                     )
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
 
@@ -211,7 +123,7 @@ class TestCreateBenchmark:
         with OrionState() as cfg:
             config = copy.deepcopy(benchmark_config_py)
             config["algorithms"] = algorithms
-            bm = get_or_create_benchmark(**config, storage=cfg.storage_config)
+            bm = get_or_create_benchmark(cfg.storage, **config)
             bm.close()
 
             for study in bm.studies:
@@ -231,7 +143,7 @@ class TestCreateBenchmark:
                 config["targets"] = [
                     {"assess": [AverageResult(2)], "task": [DummyTask]}
                 ]
-                get_or_create_benchmark(**config, storage=cfg.storage_config).close()
+                get_or_create_benchmark(cfg.storage, **config).close()
 
             assert "type object '{}' has no attribute ".format("DummyTask") in str(
                 exc.value
@@ -242,7 +154,7 @@ class TestCreateBenchmark:
                 config["targets"] = [
                     {"assess": [DummyAssess], "task": [RosenBrock(25, dim=3)]}
                 ]
-                get_or_create_benchmark(**config, storage=cfg.storage_config).close()
+                get_or_create_benchmark(cfg.storage, **config).close()
 
             assert "type object '{}' has no attribute ".format("DummyAssess") in str(
                 exc.value
@@ -257,7 +169,8 @@ class TestCreateBenchmark:
         with OrionState(benchmarks=cfg_invalid_assess) as cfg:
             with pytest.raises(NotImplementedError) as exc:
                 get_or_create_benchmark(
-                    benchmark_config["name"], storage=cfg.storage_config
+                    cfg.storage,
+                    benchmark_config["name"],
                 ).close()
             assert "Could not find implementation of BenchmarkAssessment" in str(
                 exc.value
@@ -269,7 +182,8 @@ class TestCreateBenchmark:
         with OrionState(benchmarks=cfg_invalid_task) as cfg:
             with pytest.raises(NotImplementedError) as exc:
                 get_or_create_benchmark(
-                    benchmark_config["name"], storage=cfg.storage_config
+                    cfg.storage,
+                    benchmark_config["name"],
                 )
             assert "Could not find implementation of BenchmarkTask" in str(exc.value)
 
@@ -283,9 +197,7 @@ class TestCreateBenchmark:
 
         with OrionState(benchmarks=benchmark_config) as cfg:
             with pytest.raises(TypeError) as exc:
-                get_or_create_benchmark(
-                    benchmark_config["name"], storage=cfg.storage_config
-                )
+                get_or_create_benchmark(cfg.storage, benchmark_config["name"])
             assert "__init__() got an unexpected keyword argument 'idontexist'" in str(
                 exc.value
             )
@@ -293,9 +205,7 @@ class TestCreateBenchmark:
     def test_create_from_db_config(self, benchmark_config):
         """Test creation from existing db configubenchmark_configre"""
         with OrionState(benchmarks=copy.deepcopy(benchmark_config)) as cfg:
-            bm = get_or_create_benchmark(
-                benchmark_config["name"], storage=cfg.storage_config
-            )
+            bm = get_or_create_benchmark(cfg.storage, benchmark_config["name"])
             bm.close()
             assert bm.configuration == benchmark_config
 
@@ -324,7 +234,7 @@ class TestCreateBenchmark:
                 logging.INFO, logger="orion.benchmark.benchmark_client"
             ):
                 bm = benchmark_client.get_or_create_benchmark(
-                    **benchmark_config_py, storage=cfg.storage_config
+                    cfg.storage, **benchmark_config_py
                 )
                 bm.close()
 
@@ -343,7 +253,7 @@ class TestCreateBenchmark:
 
         with OrionState() as cfg:
             config = copy.deepcopy(benchmark_config_py)
-            bm1 = get_or_create_benchmark(**config, storage=cfg.storage_config)
+            bm1 = get_or_create_benchmark(cfg.storage, **config)
             bm1.close()
 
             assert bm1.configuration == benchmark_config
@@ -351,7 +261,7 @@ class TestCreateBenchmark:
 
             with Joblib(n_workers=2, backend="threading") as executor:
                 config["executor"] = executor
-                bm2 = get_or_create_benchmark(**config)
+                bm2 = get_or_create_benchmark(cfg.storage, **config)
 
                 assert bm2.configuration == benchmark_config
                 assert bm2.executor.n_workers == executor.n_workers
@@ -397,7 +307,7 @@ class TestCreateBenchmark:
                 monkeypatch.setattr(executor, "submit", submit)
 
                 config["executor"] = executor
-                bm1 = get_or_create_benchmark(**config, storage=cfg.storage_config)
+                bm1 = get_or_create_benchmark(cfg.storage, **config)
                 client = bm1.studies[0].experiments_info[0][1]
 
                 count.value = 0

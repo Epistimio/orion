@@ -707,13 +707,6 @@ class ExperimentBuilder:
 
         return branched_experiment
 
-    def build_view(self, name, version=None):
-        """Load experiment from database
-
-        This function is deprecated and will be remove in v0.3.0. Use `load()` instead.
-        """
-        return self.load(name, version=version, mode="r")
-
     def consolidate_config(self, name, version, config):
         """Merge together given configuration with db configuration matching
         for experiment (``name``, ``version``)

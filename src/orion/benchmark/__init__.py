@@ -20,8 +20,12 @@ class Benchmark:
 
     Parameters
     ----------
+    storage: Storage
+        Instance of the storage to use
+
     name: str
         Name of the benchmark
+
     algorithms: list, optional
         Algorithms used for benchmark, and for each algorithm, it can be formats as below:
 
@@ -49,28 +53,24 @@ class Benchmark:
         task: list
             Task objects
 
-    storage: dict, optional
-        Configuration of the storage backend.
     executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     """
 
     def __init__(
         self,
+        storage,
         name,
         algorithms,
         targets,
-        storage=None,
         executor=None,
-        storage_instance=None,
     ):
         self._id = None
         self.name = name
         self.algorithms = algorithms
         self.targets = targets
         self.metadata = {}
-        self.storage_config = storage
-        self.storage = storage_instance
+        self.storage = storage
         self._executor = executor
         self._executor_owner = False
 

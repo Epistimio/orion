@@ -11,25 +11,24 @@ from orion.benchmark.assessment.base import bench_assessment_factory
 from orion.benchmark.task.base import bench_task_factory
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
 
 
 def get_or_create_benchmark(
+    storage,
     name,
     algorithms=None,
     targets=None,
-    storage=None,
     executor=None,
-    debug=False,
-    storage_instance=None,
 ):
     """
     Create or get a benchmark object.
 
     Parameters
     ----------
+    storage: Storage
+        Instance of the storage to use
     name: str
         Name of the benchmark
     algorithms: list, optional
@@ -41,20 +40,13 @@ def get_or_create_benchmark(
             Assessment objects
         task: list
             Task objects
-    storage: dict, optional
-        Configuration of the storage backend.
     executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
-    debug: bool, optional
-        If using in debug mode, the storage config is overridden with legacy:EphemeralDB.
-        Defaults to False.
 
     Returns
     -------
     An instance of `orion.benchmark.Benchmark`
     """
-    storage_config = storage
-    storage = storage_instance or setup_storage(storage=storage_config, debug=debug)
 
     # fetch benchmark from db
     db_config = _fetch_benchmark(storage, name)
@@ -76,12 +68,11 @@ def get_or_create_benchmark(
         )
 
     benchmark = _create_benchmark(
+        storage,
         name,
         algorithms,
         targets,
-        storage=storage_config,
         executor=executor,
-        storage_instance=storage,
     )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
@@ -102,13 +93,11 @@ def get_or_create_benchmark(
             )
             benchmark.close()
             benchmark = get_or_create_benchmark(
+                storage,
                 name,
                 algorithms,
                 targets,
-                storage_config,
                 executor,
-                debug,
-                storage_instance=storage_instance,
             )
 
     return benchmark
@@ -151,11 +140,9 @@ def _resolve_db_config(db_config):
     return benchmark_id, algorithms, targets
 
 
-def _create_benchmark(name, algorithms, targets, storage, executor, storage_instance):
+def _create_benchmark(storage, name, algorithms, targets, executor):
 
-    benchmark = Benchmark(
-        name, algorithms, targets, storage, executor, storage_instance=storage_instance
-    )
+    benchmark = Benchmark(storage, name, algorithms, targets, executor)
     benchmark.setup_studies()
 
     return benchmark
