@@ -126,6 +126,7 @@ def _(dim: Fidelity):
 
 
 NOT_WORKING = {
+    "ASCMADEthird",
     "BO",
     "BOSplit",
     "BayesOptimBO",

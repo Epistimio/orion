@@ -74,7 +74,6 @@ def merge_dicts(*dicts: dict) -> dict:
 
 WORKING: dict[_AlgoName, dict[_TestName, MarkDecorator]] = {
     "cGA": {},
-    "ASCMADEthird": {},
     "AdaptiveDiscreteOnePlusOne": _deterministic_first_point,
     "AlmostRotationInvariantDE": {},
     "AvgMetaRecenteringNoHull": _deterministic_points,
@@ -115,7 +114,8 @@ WORKING: dict[_AlgoName, dict[_TestName, MarkDecorator]] = {
         # wouldn't be nice either.
         "test_state_dict": pytest.mark.xfail(
             reason="BUG: seems unable to generate the required number of trials",
-        )
+        ),
+        "test_seed_rng": pytest.mark.skip(reason="Sometimes fail to suggest twice"),
     },
     "MutDE": {},
     "NaiveIsoEMNA": _no_tell_without_ask,
@@ -195,6 +195,7 @@ BRANIN_FAILURES = {
 }
 
 NOT_WORKING = {
+    "ASCMADEthird": {},
     "BO": {},
     "BOSplit": {},
     "BayesOptimBO": {},
@@ -267,8 +268,12 @@ def _config(request: FixtureRequest):
 
     if mark == "skip":
         pytest.skip(reason="Skipping test")
-    elif mark:
-        request.node.add_marker(mark)
+    else:
+        assert isinstance(mark, pytest.MarkDecorator)
+        if mark.name == "skip":
+            pytest.skip(reason=mark.kwargs["reason"])
+        else:
+            request.node.add_marker(mark)
 
     start = TestNevergradOptimizer.max_trials
     if model_name == "MultiScaleCMA" and test_name == "test_state_dict":
