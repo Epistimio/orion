@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toxenv: [pylint, doc8]
+        toxenv: [pylint, doc8, docs]
 
     steps:
     - uses: actions/checkout@v2
