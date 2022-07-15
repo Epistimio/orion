@@ -138,14 +138,16 @@ def xfail_if_unseeded_model_chosen(request: SubRequest):
     if "num" not in request.fixturenames:
         return  # One of the tests that doesn't involve the phase.
 
-    in_random_phase: bool = request.getfixturevalue("num") == 0
-    if in_random_phase:
+    phase: TestPhase = request.getfixturevalue("phase")
+    if phase.n_trials == 0:
         return
 
     # NOTE: Also can't use `request.function` because of `parametrize_this`, since it points
     # to the local closure inside `parametrize_this`.
     # if request.function in test_that_check_seeding:
-    if any(func == request.function for func in tests_that_check_seeding):
+    if any(
+        func.__name__ == request.function.__name__ for func in tests_that_check_seeding
+    ):
         request.node.add_marker(
             pytest.mark.xfail(
                 reason=f"This model name {model_name} is not properly seeded.",

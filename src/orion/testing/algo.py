@@ -494,14 +494,12 @@ class BaseAlgoTests:
         algo = self.create_algo(seed=seed)
 
         trial_a = algo.suggest(1)[0]
-        trial_b = algo.suggest(1)[0]
-        assert trial_a != trial_b
 
         numpy.random.seed(seed)
         new_algo = self.create_algo(seed=seed)
         assert new_algo.n_observed == algo.n_observed
-        trial_c = new_algo.suggest(1)[0]
-        assert trial_c == trial_a
+        trial_b = new_algo.suggest(1)[0]
+        assert trial_b == trial_a
 
     @first_phase_only
     def test_seed_rng_init(self):
