@@ -268,8 +268,7 @@ def _config(request: FixtureRequest):
 
     if mark == "skip":
         pytest.skip(reason="Skipping test")
-    else:
-        assert isinstance(mark, pytest.MarkDecorator)
+    elif isinstance(mark, pytest.MarkDecorator):
         if mark.name == "skip":
             pytest.skip(reason=mark.kwargs["reason"])
         else:
