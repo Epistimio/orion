@@ -6,6 +6,8 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
+from __future__ import annotations
+
 import contextlib
 import copy
 import datetime
@@ -14,7 +16,10 @@ import logging
 from dataclasses import dataclass, field
 
 import pandas
+from typing_extensions import Literal
 
+from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
@@ -23,6 +28,7 @@ from orion.core.utils.flatten import flatten
 from orion.storage.base import FailedUpdate, setup_storage
 
 log = logging.getLogger(__name__)
+Mode = Literal["r", "w", "x"]
 
 
 @dataclass
@@ -135,16 +141,13 @@ class Experiment:
     def __init__(self, name, version=None, mode="r", storage=None):
         self._id = None
         self.name = name
+        self.space: Space = space
         self.version = version if version else 1
         self._mode = mode
-        self._node = None
-        self.refers = {}
-        self.metadata = {}
-        self.max_trials = None
-        self.max_broken = None
-        self.space = None
-        self.algorithms = None
-        self.working_dir = None
+        self.refers = refers or {}
+        self.metadata = metadata or {}
+        self.max_trials = max_trials
+        self.max_broken = max_broken
 
         self._storage = storage or setup_storage()
 
@@ -384,7 +387,9 @@ class Experiment:
         self._storage.register_trial(trial)
 
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, timeout=60, retry_interval=1):
+    def acquire_algorithm_lock(
+        self, timeout: int | float = 60, retry_interval: int | float = 1
+    ):
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
