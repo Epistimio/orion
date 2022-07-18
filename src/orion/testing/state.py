@@ -120,6 +120,18 @@ class BaseOrionState:
             os.close(self.tempfile)
         _remove(self.tempfile_path)
 
+    def add_experiments(self, *experiments):
+        """Add experiments to the database"""
+        for exp in experiments:
+            self.storage.create_experiment(exp)
+            self._experiments.append(exp)
+
+    def add_trials(self, *trials):
+        """Add trials to the database"""
+        for trial in trials:
+            nt = self.storage.register_trial(Trial(**trial))
+            self.trials.append(nt)
+
     def _set_tables(self):
         self.trials = []
         self.lies = []

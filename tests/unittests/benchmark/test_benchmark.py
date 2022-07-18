@@ -13,7 +13,7 @@ from orion.testing import OrionState, create_study_experiments
 
 
 @pytest.fixture
-def benchmark(benchmark_algorithms, storage):
+def benchmark(storage, benchmark_algorithms):
     """Return a benchmark instance"""
     return Benchmark(
         storage,
@@ -95,9 +95,12 @@ class TestBenchmark:
         study_experiments_config,
         task_number,
         max_trial,
+        orionstate,
     ):
         """Test to get the status of a benchmark"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
 
             study.experiments_info = experiments
 
@@ -123,9 +126,11 @@ class TestBenchmark:
             ]
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_analysis(self, benchmark, study, study_experiments_config):
+    def test_analysis(self, orionstate, benchmark, study, study_experiments_config):
         """Test to analysis benchmark result"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
 
             study.experiments_info = experiments
 
@@ -142,13 +147,16 @@ class TestBenchmark:
     @pytest.mark.usefixtures("version_XYZ")
     def test_experiments(
         self,
+        orionstate,
         benchmark,
         study,
         study_experiments_config,
         max_trial,
     ):
         """Test to get experiments list of a benchmark"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
 
             study.experiments_info = experiments
 
@@ -243,13 +251,16 @@ class TestStudy:
     @pytest.mark.usefixtures("version_XYZ")
     def test_status(
         self,
+        orionstate,
         study,
         study_experiments_config,
         task_number,
         max_trial,
     ):
         """Test to get status of a study"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
 
             study.experiments_info = experiments
 
@@ -275,11 +286,14 @@ class TestStudy:
     @pytest.mark.usefixtures("version_XYZ")
     def test_analysis(
         self,
+        orionstate,
         study,
         study_experiments_config,
     ):
         """Test to get the ploty figure of a study"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
 
             study.experiments_info = experiments
 
@@ -290,10 +304,14 @@ class TestStudy:
                 is plotly.graph_objects.Figure
             )
 
-    def test_experiments(self, study, study_experiments_config, task_number):
+    def test_experiments(
+        self, orionstate, study, study_experiments_config, task_number
+    ):
         """Test to get experiments of a study"""
         algo_num = len(study_experiments_config["algorithms"])
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
 
             study.experiments_info = experiments
 

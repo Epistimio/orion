@@ -382,3 +382,8 @@ def setup_pickleddb_database():
 @pytest.fixture(scope="function")
 def storage(setup_pickleddb_database):
     yield setup_pickleddb_database.storage
+
+
+@pytest.fixture(scope="function")
+def orionstate(setup_pickleddb_database):
+    yield setup_pickleddb_database

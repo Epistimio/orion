@@ -65,9 +65,7 @@ class TestCreateBenchmark:
         """Test creation with same name but different configure"""
         with OrionState() as cfg:
             config = copy.deepcopy(benchmark_config_py)
-            bm1 = get_or_create_benchmark(
-                cfg.storage, **config
-            )
+            bm1 = get_or_create_benchmark(cfg.storage, **config)
             bm1.close()
 
             config = copy.deepcopy(benchmark_config_py)

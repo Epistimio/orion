@@ -150,7 +150,7 @@ def generate_benchmark_experiments_trials(
 
 @contextmanager
 def create_study_experiments(
-    exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
+    state, exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
 ):
     gen_exps, gen_trials = generate_benchmark_experiments_trials(
         algorithms, exp_config, trial_config, task_number * len(n_workers), max_trial
@@ -164,22 +164,25 @@ def create_study_experiments(
         for worker in n_workers:
             for _ in range(len(algorithms)):
                 workers.append(worker)
-    with OrionState(experiments=gen_exps, trials=gen_trials) as cfg:
-        experiments = []
-        experiments_info = []
-        for i in range(task_number * len(n_workers) * len(algorithms)):
-            experiment = experiment_builder.build(
-                f"experiment-name-{i}", storage=cfg.storage_config
-            )
 
-            executor = Joblib(n_workers=workers[i], backend="threading")
-            client = ExperimentClient(experiment, executor=executor)
-            experiments.append(client)
+    state.add_trials(*gen_trials)
+    state.add_experiments(*gen_exps)
 
-        for index, exp in enumerate(experiments):
-            experiments_info.append((int(index / task_number), exp))
+    experiments = []
+    experiments_info = []
+    for i in range(task_number * len(n_workers) * len(algorithms)):
+        experiment = experiment_builder.build(
+            f"experiment-name-{i}", storage=state.storage_config
+        )
 
-        yield experiments_info
+        executor = Joblib(n_workers=workers[i], backend="threading")
+        client = ExperimentClient(experiment, executor=executor)
+        experiments.append(client)
+
+    for index, exp in enumerate(experiments):
+        experiments_info.append((int(index / task_number), exp))
+
+    yield experiments_info
 
 
 def mock_space_iterate(monkeypatch):
