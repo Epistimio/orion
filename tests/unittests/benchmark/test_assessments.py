@@ -45,11 +45,13 @@ class TestAverageRank:
         )
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_figure_layout(self, study_experiments_config):
+    def test_figure_layout(self, orionstate, study_experiments_config):
         """Test assessment plot format"""
         ar1 = AverageRank()
 
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
             figure = ar1.analysis("task_name", experiments)
 
             assert_rankings_plot(
@@ -93,11 +95,13 @@ class TestAverageResult:
         )
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_figure_layout(self, study_experiments_config):
+    def test_figure_layout(self, orionstate, study_experiments_config):
         """Test assessment plot format"""
         ar1 = AverageResult()
 
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
             figure = ar1.analysis("task_name", experiments)
 
             assert_regrets_plot(
@@ -132,7 +136,7 @@ class TestParallelAssessment:
         assert pa3.get_executor(2).n_workers == 4
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_analysis(self, study_experiments_config):
+    def test_analysis(self, orionstate, study_experiments_config):
         """Test assessment plot format"""
         task_num = 2
         n_workers = [1, 2, 4]
@@ -140,7 +144,9 @@ class TestParallelAssessment:
 
         study_experiments_config["task_number"] = task_num
         study_experiments_config["n_workers"] = n_workers
-        with create_study_experiments(**study_experiments_config) as experiments:
+        with create_study_experiments(
+            orionstate, **study_experiments_config
+        ) as experiments:
             figure = pa1.analysis("task_name", experiments)
 
             names = []

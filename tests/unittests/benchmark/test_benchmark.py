@@ -78,14 +78,12 @@ class TestBenchmark:
 
     def test_process(self, benchmark, study):
         """Test to process a benchmark"""
-        with OrionState():
-            study.setup_experiments()
-            benchmark.studies = [study]
-            benchmark.process()
-            name = "benchmark007_AverageResult_RosenBrock_0_0"
-            experiment = experiment_builder.build(name)
-
-            assert experiment is not None
+        study.setup_experiments()
+        benchmark.studies = [study]
+        benchmark.process()
+        name = "benchmark007_AverageResult_RosenBrock_0_0"
+        experiment = experiment_builder.build(name)
+        assert experiment is not None
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_status(
@@ -230,23 +228,21 @@ class TestStudy:
 
     def test_setup_experiments(self, study):
         """Test to setup experiments for study"""
-        with OrionState():
-            study.setup_experiments()
+        study.setup_experiments()
 
-            assert len(study.experiments_info) == 4
-            assert isinstance(study.experiments_info[0][1], ExperimentClient)
+        assert len(study.experiments_info) == 4
+        assert isinstance(study.experiments_info[0][1], ExperimentClient)
 
     def test_execute(self, study):
         """Test to execute a study"""
-        with OrionState():
-            study.setup_experiments()
-            study.execute()
-            name = "benchmark007_AverageResult_RosenBrock_0_0"
-            experiment = experiment_builder.build(name)
+        study.setup_experiments()
+        study.execute()
+        name = "benchmark007_AverageResult_RosenBrock_0_0"
+        experiment = experiment_builder.build(name)
 
-            assert len(experiment.fetch_trials()) == study.task.max_trials
+        assert len(experiment.fetch_trials()) == study.task.max_trials
 
-            assert experiment is not None
+        assert experiment is not None
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_status(
