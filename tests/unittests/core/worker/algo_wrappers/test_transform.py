@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import copy
 import typing
-from typing import Any, ClassVar
+from typing import Any
 
 import numpy
 import pytest
 
-from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
@@ -17,6 +16,7 @@ from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
+from orion.testing.dummy_algo import FixedSuggestionAlgo
 
 if typing.TYPE_CHECKING:
     from tests.conftest import DumbAlgo
@@ -144,32 +144,6 @@ class TestSpaceTransformAlgoWrapperWraps:
             palgo.judge(fixed_suggestion, 8)
 
 
-class StupidAlgo(BaseAlgorithm):
-    """A dumb algo that always returns the same trial."""
-
-    requires_type: ClassVar[str | None] = "real"
-    requires_shape: ClassVar[str | None] = "flattened"
-    requires_dist: ClassVar[str | None] = "linear"
-
-    def __init__(
-        self,
-        space: Space,
-        fixed_suggestion: Trial | None = None,
-    ):
-        super().__init__(space)
-        self.fixed_suggestion = fixed_suggestion or space.sample(1)[0]
-        assert self.fixed_suggestion in space
-
-    def suggest(self, num):
-        # NOTE: can't register the trial if it's already here. The fixed suggestion is always "new",
-        # but the algorithm actually observes it at some point. Therefore, we don't overwrite what's
-        # already in the registry.
-        if not self.has_suggested(self.fixed_suggestion):
-            self.register(self.fixed_suggestion)
-            return [self.fixed_suggestion]
-        return []
-
-
 @pytest.fixture()
 def algo_wrapper():
     """Fixture that creates the setup for the registration tests below."""
@@ -177,15 +151,17 @@ def algo_wrapper():
 
     transformed_space = build_required_space(
         original_space=original_space,
-        type_requirement=StupidAlgo.requires_type,
-        shape_requirement=StupidAlgo.requires_shape,
-        dist_requirement=StupidAlgo.requires_dist,
+        type_requirement=FixedSuggestionAlgo.requires_type,
+        shape_requirement=FixedSuggestionAlgo.requires_shape,
+        dist_requirement=FixedSuggestionAlgo.requires_dist,
     )
 
     fixed_original = original_space.sample(1)[0]
     fixed_transformed = transformed_space.transform(fixed_original)
 
-    algo = StupidAlgo(space=transformed_space, fixed_suggestion=fixed_transformed)
+    algo = FixedSuggestionAlgo(
+        space=transformed_space, fixed_suggestion=fixed_transformed
+    )
 
     algo_wrapper = SpaceTransform(algorithm=algo, space=original_space)
     assert algo_wrapper.algorithm is algo
@@ -197,7 +173,7 @@ class TestRegistration:
 
     @pytest.mark.parametrize("original_status", ["completed", "broken", "pending"])
     def test_suggest_equivalent_to_existing(
-        self, algo_wrapper: SpaceTransform[StupidAlgo], original_status: str
+        self, algo_wrapper: SpaceTransform[FixedSuggestionAlgo], original_status: str
     ):
         """Test the case where the underlying algo suggests a transformed trial that is equivalent
         to a previously-suggested trial in the original space.
@@ -301,7 +277,7 @@ class TestRegistration:
         assert algo_wrapper.algorithm.has_suggested(equivalent_transformed)
 
     def test_observe_trial_not_suggested(
-        self, algo_wrapper: SpaceTransform[StupidAlgo]
+        self, algo_wrapper: SpaceTransform[FixedSuggestionAlgo]
     ):
         """Test the case where the wrapper observes a trial that hasn't been suggested by the
         wrapped algorithm.

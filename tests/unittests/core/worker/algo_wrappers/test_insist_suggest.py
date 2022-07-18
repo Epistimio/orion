@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 from pytest import MonkeyPatch
-from test_transform import StupidAlgo
+from test_transform import FixedSuggestionAlgo
 
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
@@ -37,7 +37,7 @@ def algo_wrapper():
     # NOTE: important, the transformed space will be the same as the original space in this case,
     # so the fixed suggestion will fit.
     return create_algo(
-        algo_type=StupidAlgo,
+        algo_type=FixedSuggestionAlgo,
         space=space,
         fixed_suggestion=dict_to_trial({"x": 1}, space=space),
     )
@@ -48,13 +48,15 @@ class TestInsistSuggestWrapper:
 
     def test_doesnt_insists_without_wrapper(
         self,
-        algo_wrapper: InsistSuggest[SpaceTransform[StupidAlgo]],
+        algo_wrapper: InsistSuggest[SpaceTransform[FixedSuggestionAlgo]],
         monkeypatch: MonkeyPatch,
     ):
         """Test that when the algo can't produce a new trial, and there is no InsistWrapper, the
         SpaceTransform wrapper fails to sample a new trial.
         """
-        algo_without_wrapper: SpaceTransform[StupidAlgo] = algo_wrapper.algorithm
+        algo_without_wrapper: SpaceTransform[
+            FixedSuggestionAlgo
+        ] = algo_wrapper.algorithm
         calls: int = 0
         # Make the wrapper insist enough so that it actually
         # gets a trial after asking enough times:
@@ -74,7 +76,7 @@ class TestInsistSuggestWrapper:
 
     def test_insists_when_algo_doesnt_suggest_new_trials(
         self,
-        algo_wrapper: InsistSuggest[SpaceTransform[StupidAlgo]],
+        algo_wrapper: InsistSuggest[SpaceTransform[FixedSuggestionAlgo]],
         monkeypatch: MonkeyPatch,
     ):
         """Test that when the algo can't produce a new trial, the wrapper insists and asks again."""
@@ -98,7 +100,7 @@ class TestInsistSuggestWrapper:
 
     def test_warns_when_unable_to_sample_new_trial(
         self,
-        algo_wrapper: InsistSuggest[SpaceTransform[StupidAlgo]],
+        algo_wrapper: InsistSuggest[SpaceTransform[FixedSuggestionAlgo]],
         caplog: pytest.LogCaptureFixture,
         monkeypatch: MonkeyPatch,
     ):
