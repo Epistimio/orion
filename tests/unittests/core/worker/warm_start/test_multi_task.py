@@ -225,9 +225,27 @@ class TestMultiTaskWrapper:
 
         assert {t.params["task_id"] for t in equivalent_trials} == {0, 1}
 
-    def test_wrapped_algo_suggests_task0(self):
+    @pytest.mark.parametrize("n_previous_experiments", [1, 2])
+    def test_wrapped_algo_suggests_task0(self, n_previous_experiments: int):
         """Test that the wrapped algo space only produces trials with task_id of 0 when sampled."""
-        raise NotImplementedError
+        # NOTE: When n_previous_experiments is 1, the `task_id` dimension is a binary logit
+        # But when n_previous_experiments is >=2, the `task_id` dimension becomes categorical and
+        # is split into task_id[0], task_id[1], ..., task_id[n_previous_experiments].
+        kb = create_dummy_kb(
+            previous_spaces=previous_spaces[:n_previous_experiments],
+            n_trials_per_space=1,  # doesn't matter for this test.
+        )
+        wrapper = create_algo(
+            Random,
+            space=target_space,
+            knowledge_base=kb,
+            seed=123,
+        )
+        wrapper.suggest(10)
+        # NOTE: It doesn't really matter what type of wrapper `wrapper.algorithm` is here.
+        # It is the first wrapper in the chain that sees the task ids.
+        assert len(wrapper.algorithm.registry) >= 10
+        assert all(_get_task_id(trial) == 0 for trial in wrapper.algorithm.registry)
 
     def test_adds_task_id(self, knowledge_base: KnowledgeBase):
         """Test that when an algo is wrapped with the multi-task wrapper, the trials it returns
@@ -531,3 +549,13 @@ def _set_params(trial: Trial, params: dict[str, Any]) -> None:
     for name, value in params.items():
         param_object_index = [p.name == name for p in trial._params].index(True)
         trial._params[param_object_index].value = value
+
+
+def _get_task_id(trial: Trial) -> int:
+    if "task_id" in trial.params:
+        return trial.params["task_id"]
+    n_tasks = sum(
+        "task_id[" in dimension_name for dimension_name in trial.params.keys()
+    )
+    values = [trial.params[f"task_id[{i}]"] for i in range(n_tasks)]
+    return values.index(max(values))
