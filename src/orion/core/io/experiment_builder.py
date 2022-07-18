@@ -82,6 +82,7 @@ import inspect
 import logging
 import pprint
 import sys
+import warnings
 from typing import Any, Type, TypeVar, cast
 
 import orion.core
@@ -119,7 +120,7 @@ def build(
     name: str,
     version: int | None = None,
     branching: dict | None = None,
-    knowledge_base: KnowledgeBase | None = None,
+    knowledge_base: KnowledgeBase | dict | None = None,
     **config,
 ) -> Experiment:
     """Build an experiment object
@@ -177,6 +178,9 @@ def build(
             How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
             'break'.  Defaults to 'break'.
 
+    knowledge_base: KnowledgeBase | dict, optional
+        Knowledge base instance, or configuration of the knowledge base. Will be used to warm-start
+        the HPO algorithm, if possible.
     """
     log.debug(f"Building experiment {name} with {version}")
     log.debug("    Passed experiment config:\n%s", pprint.pformat(config))
@@ -185,6 +189,24 @@ def build(
     name, config, branching = clean_config(name, config, branching)
 
     config = consolidate_config(name, version, config)
+    if "knowledge_base" in config:
+        existing_kb_config = config.pop("knowledge_base")
+        if knowledge_base is None:
+            knowledge_base = existing_kb_config
+        else:
+            passed_kb_config = (
+                knowledge_base
+                if isinstance(knowledge_base, dict)
+                else knowledge_base.configuration
+            )
+            if passed_kb_config != existing_kb_config:
+                warnings.warn(
+                    UserWarning(
+                        f"Passed knowledge base configuration ({passed_kb_config}) does not match "
+                        f"the one in the experiment configuration ({existing_kb_config}). "
+                        f"Ignoring the existing config."
+                    )
+                )
 
     if "space" not in config:
         raise NoConfigurationError(
@@ -194,7 +216,6 @@ def build(
     if len(config["space"]) == 0:
         raise NoConfigurationError("No prior found. Please include at least one.")
 
-    knowledge_base = knowledge_base or config.pop("knowledge_base", None)
     experiment = create_experiment(
         mode="x",
         knowledge_base=knowledge_base,
@@ -427,8 +448,13 @@ def create_experiment(
     def _default(v: T | None, default: V) -> T | V:
         return v if v is not None else default
 
+    if knowledge_base is not None and isinstance(knowledge_base, dict):
+        knowledge_base = _instantiate_knowledge_base(knowledge_base)
+
     space = _instantiate_space(space)
     max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
+    # TODO: The return type of _instantiate_algo is incompatible with the `algorithms` arg/attr of
+    # Experiment in the case where the algorithm isn't instantiated.
     instantiated_algorithm = _instantiate_algo(
         space=space,
         max_trials=max_trials,
@@ -454,6 +480,7 @@ def create_experiment(
         _id=_id,
         max_trials=max_trials,
         algorithms=instantiated_algorithm,
+        knowledge_base=knowledge_base,
         max_broken=max_broken,
         working_dir=working_dir,
         metadata=metadata,
@@ -521,7 +548,7 @@ def _instantiate_adapters(config):
     return BaseAdapter.build(config)
 
 
-def _instantiate_space(config: Space | dict[str, str | dict[str, str]]) -> Space:
+def _instantiate_space(config: Space | dict[str, Any]) -> Space:
     """Instantiate the space object
 
     Build the Space object if argument is a dictionary, else return the Space object as is.

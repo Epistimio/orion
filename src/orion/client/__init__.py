@@ -8,7 +8,7 @@ Provides functions for communicating with `orion.core`.
 from __future__ import annotations
 
 import logging
-from typing import Callable
+from typing import Any, Callable
 
 # pylint: disable=consider-using-from-import
 import orion.core.io.experiment_builder as experiment_builder
@@ -24,6 +24,7 @@ from orion.core.utils.exceptions import RaceCondition
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
 from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+from orion.executor.base import BaseExecutor
 from orion.storage.base import setup_storage
 
 __all__ = [
@@ -51,22 +52,22 @@ def create_experiment(name, **config):
 
 # pylint: disable=too-many-arguments
 def build_experiment(
-    name,
-    version=None,
-    space=None,
+    name: str,
+    version: int | None = None,
+    space: dict[str, Any] | None = None,
     algorithms: type[BaseAlgorithm] | dict | None = None,
-    strategy=None,
-    max_trials=None,
-    max_broken=None,
-    storage=None,
-    branching=None,
-    max_idle_time=None,
-    heartbeat=None,
-    working_dir=None,
-    debug=False,
-    knowledge_base=None,
-    executor=None,
-):
+    strategy: str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    storage: dict | None = None,
+    branching: dict | None = None,
+    max_idle_time: int | None = None,
+    heartbeat: int | None = None,
+    working_dir: str | None = None,
+    debug: bool = False,
+    knowledge_base: KnowledgeBase | dict | None = None,
+    executor: BaseExecutor | None = None,
+) -> ExperimentClient:
     """Build an experiment to be executable
 
     Building the experiment can result in branching if there are any changes in the environment.
@@ -255,10 +256,7 @@ def build_experiment(
                 "experiment creation. Make sure your script is not generating files within your "
                 "code repository."
             ) from e
-
-    return ExperimentClient(
-        experiment, executor, heartbeat, knowledge_base=knowledge_base
-    )
+    return ExperimentClient(experiment, executor, heartbeat)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
@@ -355,7 +353,7 @@ def workon(
             knowledge_base=knowledge_base,
         )
 
-        experiment_client = ExperimentClient(experiment, knowledge_base=knowledge_base)
+        experiment_client = ExperimentClient(experiment)
         with experiment_client.tmp_executor("singleexecutor", n_workers=1):
             experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 

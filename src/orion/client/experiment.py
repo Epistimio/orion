@@ -28,7 +28,6 @@ from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.executor.base import BaseExecutor, executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
@@ -99,10 +98,9 @@ class ExperimentClient:
         experiment: Experiment,
         executor: BaseExecutor | None = None,
         heartbeat: int | None = None,
-        knowledge_base: KnowledgeBase | None = None,
     ):
         self._experiment = experiment
-        self._producer = Producer(experiment, knowledge_base=knowledge_base)
+        self._producer = Producer(experiment)
         self._pacemakers = {}
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat

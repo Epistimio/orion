@@ -16,7 +16,6 @@ from orion.core.worker.warm_start.warm_starteable import is_warmstarteable
 
 if typing.TYPE_CHECKING:
     from orion.core.worker.experiment import Experiment
-    from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 
 log = logging.getLogger(__name__)
@@ -31,9 +30,7 @@ class Producer:
 
     """
 
-    def __init__(
-        self, experiment: Experiment[AlgoT], knowledge_base: KnowledgeBase | None = None
-    ):
+    def __init__(self, experiment: Experiment[AlgoT]):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -41,7 +38,6 @@ class Producer:
         """
         log.debug("Creating Producer object.")
         self.experiment = experiment
-        self.knowledge_base: KnowledgeBase | None = knowledge_base
         # Indicates whether the algo has been warm-started with the knowledge base.
         self.warm_started = False
 
@@ -61,11 +57,14 @@ class Producer:
             timeout=timeout, retry_interval=retry_interval
         ) as algorithm:
             if (
-                self.knowledge_base
+                self.experiment.knowledge_base
                 and not self.warm_started
                 and is_warmstarteable(algorithm)
             ):
-                similar_trials = self.knowledge_base.get_related_trials(self.experiment)
+                # TODO: Ugly.
+                similar_trials = self.experiment.knowledge_base.get_related_trials(
+                    self.experiment
+                )
                 log.debug(
                     "### Warm Starting with up to %s experiments and a total of %s trials.",
                     len(similar_trials),
