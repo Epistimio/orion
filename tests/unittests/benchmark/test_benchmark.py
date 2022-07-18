@@ -13,9 +13,10 @@ from orion.testing import OrionState, create_study_experiments
 
 
 @pytest.fixture
-def benchmark(benchmark_algorithms):
+def benchmark(benchmark_algorithms, storage):
     """Return a benchmark instance"""
     return Benchmark(
+        storage,
         name="benchmark007",
         algorithms=benchmark_algorithms,
         targets=[

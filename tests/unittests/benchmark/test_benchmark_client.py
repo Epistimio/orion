@@ -66,7 +66,7 @@ class TestCreateBenchmark:
         with OrionState() as cfg:
             config = copy.deepcopy(benchmark_config_py)
             bm1 = get_or_create_benchmark(
-                cfg.storage, **config, storage=cfg.storage_config
+                cfg.storage, **config
             )
             bm1.close()
 
