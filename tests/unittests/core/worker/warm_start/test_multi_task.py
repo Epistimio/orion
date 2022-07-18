@@ -2,10 +2,11 @@
 # pylint: disable=protected-access
 from __future__ import annotations
 
+import copy
 import functools
 import inspect
 import random
-from typing import Callable, Sequence, TypeVar
+from typing import Any, Callable, Sequence, TypeVar
 
 import pytest
 from typing_extensions import ParamSpec
@@ -21,6 +22,7 @@ from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.core.worker.warm_start.multi_task_wrapper import MultiTaskWrapper
+from orion.testing.dummy_algo import FixedSuggestionAlgo
 
 from .test_knowledge_base import DummyKnowledgeBase, add_result
 
@@ -149,8 +151,9 @@ class TestCreateAlgo:
 class TestMultiTaskWrapper:
     """Tests for the multi-task wrapper."""
 
-    def test_collisions(self):
-        """TODO: Write a test for the collisions:
+    @pytest.mark.parametrize("n_previous_experiments", [1, 2])
+    def test_collisions(self, n_previous_experiments: int):
+        """Test for the collisions:
 
         The wrapped algo suggests 2 trials, with different task ids, but the same other parameters:
         {"task_id": 0, "x": 1}, {"task_id": 1, "x": 1}
@@ -161,9 +164,68 @@ class TestMultiTaskWrapper:
         The wrapped algo should then have both the original trials set to have that new result:
         {"task_id": 0, "x": 1} (objective=123), {"task_id": 1, "x": 1} (objective=123)
         """
-        raise NotImplementedError
+        # NOTE: When n_previous_experiments is 1, the `task_id` dimension is a binary logit
+        # But when n_previous_experiments is >=2, the `task_id` dimension becomes categorical and
+        # is split into task_id[0], task_id[1], ..., task_id[n_previous_experiments].
+        kb = create_dummy_kb(
+            previous_spaces=previous_spaces[:n_previous_experiments],
+            n_trials_per_space=1,  # doesn't matter for this test.
+        )
+        wrapper = create_algo(
+            FixedSuggestionAlgo,
+            space=target_space,
+            knowledge_base=kb,
+            seed=123,
+        )
+        algo = wrapper.unwrapped
+        assert isinstance(wrapper, MultiTaskWrapper)
+        assert isinstance(algo, FixedSuggestionAlgo)
 
-    def test_wrapped_algo_suggests_task_id_0(self):
+        assert algo.fixed_suggestion in algo.space
+
+        # Create two trials with same params but different task id.
+        t1 = algo.fixed_suggestion
+        t2 = copy.deepcopy(algo.fixed_suggestion)
+        if n_previous_experiments == 1:
+            assert "task_id" in t1.params
+            # The task_id should be set to 0, since we set the prior of the space to only allow
+            # sampling trials with task_id of 0 (see other test).
+            assert t1.params["task_id"] == 0
+
+            # Set t2 to have the other task id.
+            # TODO:: Can't change a trial's params like this. The `params` property is just a view.
+            # t2.params["task_id"] = 1.0
+            _set_params(t2, {"task_id": 1})
+        else:
+            # Same here, only the task_id[0] should have a non-zero value (of 1).
+            assert t1.params["task_id[0]"] == 1
+            assert all(
+                t1.params[f"task_id[{i}]"] == 0
+                for i in range(1, n_previous_experiments + 1)
+            )
+            _set_params(t2, {"task_id[0]": 0.0, "task_id[1]": 1.0})
+
+        assert t1.params != t2.params
+        assert t1.id != t2.id
+
+        # Get the transformed version of t1 from the Wrapper.
+        wrapper_t = wrapper.suggest(1)[0]
+
+        algo.fixed_suggestion = t2
+        new_wrapper_suggestions = wrapper.suggest(1)
+        # The wrapper can't suggest anything, because the trial is a duplicate of the previous when
+        # the task ids are removed.
+        assert not new_wrapper_suggestions
+
+        # NOTE: The collision should be recorded in this MultiTask wrapper, not in the
+        # SpaceTransform wrapper!
+        assert wrapper_t in wrapper.registry_mapping
+        equivalent_trials = wrapper.registry_mapping[wrapper_t]
+        assert len(equivalent_trials) == 2
+
+        assert {t.params["task_id"] for t in equivalent_trials} == {0, 1}
+
+    def test_wrapped_algo_suggests_task0(self):
         """Test that the wrapped algo space only produces trials with task_id of 0 when sampled."""
         raise NotImplementedError
 
@@ -462,3 +524,10 @@ def _get_best_trial_objective(experiment: ExperimentClient) -> float:
     best_trial = _get_best_trial(experiment)
     assert best_trial.objective is not None
     return best_trial.objective.value
+
+
+def _set_params(trial: Trial, params: dict[str, Any]) -> None:
+    # TODO: It's really hard to set a new value for a hyperparameter in a trial object.
+    for name, value in params.items():
+        param_object_index = [p.name == name for p in trial._params].index(True)
+        trial._params[param_object_index].value = value
