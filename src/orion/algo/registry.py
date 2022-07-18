@@ -132,10 +132,15 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         self._mapping = copy.deepcopy(statedict["_mapping"])
 
     def __iter__(self) -> Iterator[Trial]:
+        """Iterate over the trials in the original registry."""
         for trial_id in self._mapping:
             yield self.original_registry[trial_id]
 
     def __len__(self) -> int:
+        """Give the number of trials in the mapping.
+
+        This should be the same as the number of trials in the original registry.
+        """
         return len(self._mapping)
 
     def __contains__(self, trial: Trial):
@@ -168,6 +173,9 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         transformed_trial_id = _get_id(transformed_trial)
         self._mapping[original_trial_id].add(transformed_trial_id)
         return original_trial_id
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}({list((trial, self.get_trials(trial)) for trial in self)})"
 
 
 def _get_id(trial: Trial) -> str:
