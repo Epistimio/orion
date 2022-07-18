@@ -599,7 +599,7 @@ def test_configurable_broken_property(space: Space):
 
     statuses = (["reserved"] * 10) + (["broken"] * (MAX_BROKEN))
     with OrionState(trials=generate_trials(statuses)) as cfg:
-        exp = Experiment("supernaekei", mode="x", space=space)
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
         exp._id = cfg.trials[0]["experiment"]
 
         exp.max_broken = MAX_BROKEN
@@ -616,7 +616,7 @@ def test_experiment_stats(space: Space):
     NUM_COMPLETED = 3
     statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
     with OrionState(trials=generate_trials(statuses)) as cfg:
-        exp = Experiment("supernaekei", mode="x", space=space)
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
         exp._id = cfg.trials[0]["experiment"]
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
         stats = exp.stats
