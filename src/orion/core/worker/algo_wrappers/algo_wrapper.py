@@ -27,10 +27,15 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
         self._algorithm = algorithm
 
     def suggest(self, num: int) -> list[Trial]:
-        return self.algorithm.suggest(num)
+        trials = self.algorithm.suggest(num)
+        for trial in trials:
+            self.register(trial)
+        return trials
 
     def observe(self, trials: list[Trial]) -> None:
-        return self.algorithm.observe(trials)
+        for trial in trials:
+            self.register(trial)
+        self.algorithm.observe(trials)
 
     @classmethod
     def transform_space(cls, space: Space) -> Space:
