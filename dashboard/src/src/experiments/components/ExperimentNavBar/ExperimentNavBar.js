@@ -1,6 +1,5 @@
 import React from 'react';
 import ProgressBar from 'react-bootstrap/ProgressBar';
-import { CloseFilled16 } from '@carbon/icons-react';
 import { Backend } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
 
@@ -14,10 +13,6 @@ import {
   StructuredListCell,
   Search,
 } from 'carbon-components-react';
-
-import { settings } from 'carbon-components';
-
-const { prefix } = settings;
 
 export class ExperimentNavBar extends React.Component {
   _isMounted = false;
