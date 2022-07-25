@@ -195,3 +195,11 @@ class TestHEBO(BaseAlgoTests):
         same_trials = new_algo.suggest(1)
         assert same_trials is not None
         assert same_trials[0].id == trials[0].id
+
+    def test_suggest_n(self):
+        """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
+        algo = self.create_algo()
+        trials = algo.suggest(5)
+        assert trials is not None
+        # HEBO sometimes returns fewer than 5 trials.
+        assert 3 <= len(trials) <= 5
