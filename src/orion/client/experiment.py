@@ -34,6 +34,7 @@ from orion.storage.base import FailedUpdate
 
 if typing.TYPE_CHECKING:
     from orion.core.worker.experiment import Experiment
+    from orion.core.worker.experiment_config import ExperimentConfig
 
 log = logging.getLogger(__name__)
 
@@ -194,7 +195,7 @@ class ExperimentClient:
         return self._experiment.is_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> ExperimentConfig:
         """Return a copy of an `Experiment` configuration as a dictionary."""
         return self._experiment.configuration
 

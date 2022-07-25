@@ -17,10 +17,10 @@ if typing.TYPE_CHECKING:
 
 log = getLogger(__file__)
 
-from .experiment_config import ExperimentInfo
+from ..experiment_config import ExperimentConfig
 
 
-class KnowledgeBase(ABC, Container[ExperimentInfo]):
+class KnowledgeBase(ABC, Container[ExperimentConfig]):
     """Abstract Base Class for the KnowledgeBase, which currently isn't part of the
     Orion codebase.
     """
@@ -30,7 +30,7 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
         self,
         target_experiment: Experiment | ExperimentClient,
         max_trials: int | None = None,
-    ) -> list[tuple[ExperimentInfo, list[Trial]]]:
+    ) -> list[tuple[ExperimentConfig, list[Trial]]]:
         """Retrieve experiments 'similar' to `target_experiment` and their trials.
 
         When `max_trials` is given, only up to `max_trials` are returned in total for
@@ -46,7 +46,7 @@ class KnowledgeBase(ABC, Container[ExperimentInfo]):
 
         Returns
         -------
-        list[tuple[ExperimentInfo, list[Trial]]]
+        list[tuple[ExperimentConfig, list[Trial]]]
             A list of tuples of experiments and the similar trials from that experiment.
         """
         raise NotImplementedError

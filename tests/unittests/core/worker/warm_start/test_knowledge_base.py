@@ -9,9 +9,9 @@ from orion.algo.space import Space
 from orion.client import ExperimentClient
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.experiment import Experiment
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start import KnowledgeBase
-from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 
 # Function to create a space.
 space: Callable[[dict], Space] = SpaceBuilder().build
@@ -36,7 +36,7 @@ class DummyKnowledgeBase(KnowledgeBase):
 
     def __init__(
         self,
-        related_trials: list[tuple[ExperimentInfo, list[Trial]]] | None = None,
+        related_trials: list[tuple[ExperimentConfig, list[Trial]]] | None = None,
     ):
         self.related_trials = related_trials or []
 
@@ -44,14 +44,14 @@ class DummyKnowledgeBase(KnowledgeBase):
         self,
         target_experiment: Experiment | ExperimentClient,
         max_trials: int | None = None,
-    ) -> list[tuple[ExperimentInfo, list[Trial]]]:
+    ) -> list[tuple[ExperimentConfig, list[Trial]]]:
         """Returns"""
         return copy.deepcopy(self.related_trials)
 
     def add_experiment(self, experiment: Experiment | ExperimentClient) -> None:
         self.related_trials.append(
             (
-                ExperimentInfo.from_dict(experiment.configuration),
+                experiment.configuration,
                 experiment.fetch_trials(),
             )
         )

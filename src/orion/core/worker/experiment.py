@@ -28,6 +28,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.storage.base import FailedUpdate, get_storage
 
 if typing.TYPE_CHECKING:
@@ -583,8 +584,9 @@ class Experiment(Generic[AlgoT]):
         return num_broken_trials >= self.max_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> ExperimentConfig:
         """Return a copy of an `Experiment` configuration as a dictionary."""
+        # TODO: Actually enforce this typeddict.
         config = {}
         for attribute in self.__slots__:
             if attribute.startswith("_"):

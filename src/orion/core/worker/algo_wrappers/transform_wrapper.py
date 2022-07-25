@@ -13,7 +13,7 @@ from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT, AlgoWrapper
 from orion.core.worker.trial import Trial
 
 if typing.TYPE_CHECKING:
-    from orion.core.worker.warm_start.experiment_config import ExperimentInfo
+    from orion.core.worker.experiment_config import ExperimentConfig
 
 logger = get_logger(__name__)
 
@@ -199,7 +199,7 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
         return self.algorithm.judge(self.transform(trial), measurements)
 
     def warm_start(
-        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+        self, warm_start_trials: list[tuple[ExperimentConfig, list[Trial]]]
     ) -> None:
         super().warm_start(
             [

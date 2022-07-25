@@ -22,7 +22,7 @@ from orion.core.worker.algo_wrappers.transform_wrapper import (
     _copy_status_and_results,
 )
 from orion.core.worker.trial import Trial
-from orion.core.worker.warm_start.knowledge_base import ExperimentInfo, KnowledgeBase
+from orion.core.worker.warm_start.knowledge_base import ExperimentConfig, KnowledgeBase
 from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 
 logger = getLogger(__file__)
@@ -94,7 +94,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         return trial_from_other_experiment in self.space
 
     def warm_start(
-        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+        self, warm_start_trials: list[tuple[ExperimentConfig, list[Trial]]]
     ) -> None:
         """Observe some of the given trials to warm-start the HPO algorithm.
 
@@ -106,7 +106,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         Parameters
         ----------
         warm_start_trials:
-            Dictionary mapping from ExperimentInfo objects (containing the experiment config) to
+            Dictionary mapping from ExperimentConfig objects (containing the experiment config) to
             the list of Trials associated with that experiment.
         """
         logger.info(
@@ -116,7 +116,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
 
         # Dict mapping from task ID to list of compatible trials.
         compatible_trials: dict[int, list[Trial]] = defaultdict(list)
-        task_ids_to_experiments: dict[int, ExperimentInfo] = {}
+        task_ids_to_experiments: dict[int, ExperimentConfig] = {}
         for i, (experiment_info, trials) in enumerate(warm_start_trials):
             # Start the task ids at 1, so the current experiment has task id 0.
             task_id = i + 1

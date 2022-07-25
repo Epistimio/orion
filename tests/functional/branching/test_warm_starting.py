@@ -20,7 +20,6 @@ from orion.client import build_experiment, workon
 from orion.client.experiment import ExperimentClient
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
-from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 
 # Function to create a space.
 _space: Callable[[dict], Space] = SpaceBuilder().build
@@ -72,11 +71,9 @@ def test_warm_starting_helps(algo: type[BaseAlgorithm]):
     knowledge_base = DummyKnowledgeBase(
         [
             (
-                ExperimentInfo.from_dict(
-                    build_experiment(
-                        "source", space=source_space, debug=True
-                    ).configuration
-                ),
+                build_experiment(
+                    "source", space=source_space, debug=True
+                ).configuration,
                 previous_trials,
             )
         ]

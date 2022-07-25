@@ -10,7 +10,7 @@ from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
 if TYPE_CHECKING:
-    from orion.core.worker.warm_start.experiment_config import ExperimentInfo
+    from orion.core.worker.experiment_config import ExperimentConfig
 
 logger = get_logger(__name__)
 
@@ -137,7 +137,7 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     def should_suspend(self, trial: Trial) -> bool:
         return self.algorithm.should_suspend(trial)
 
-    def warm_start(self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]):
+    def warm_start(self, warm_start_trials: list[tuple[ExperimentConfig, list[Trial]]]):
         """Warm start the HPO algorithm by observing the given _related_ trials from other tasks."""
         from orion.core.worker.warm_start.warm_starteable import is_warmstarteable
 

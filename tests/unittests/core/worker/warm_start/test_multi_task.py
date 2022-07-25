@@ -16,9 +16,9 @@ from orion.client import build_experiment
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.algo_wrappers.insist_suggest import InsistSuggest
 from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
-from orion.core.worker.warm_start.experiment_config import ExperimentInfo
 from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.core.worker.warm_start.multi_task_wrapper import MultiTaskWrapper
 from orion.testing.dummy_algo import FixedSuggestionAlgo
@@ -48,7 +48,7 @@ def knowledge_base() -> KnowledgeBase:
     ]
     previous_trials = [
         (
-            ExperimentInfo.from_dict(experiment.configuration),
+            experiment.configuration,
             [add_result(t, i) for i, t in enumerate(experiment.space.sample(10))],
         )
         for experiment in experiments
@@ -73,7 +73,7 @@ def create_dummy_kb(
     ]
     previous_trials = [
         (
-            ExperimentInfo.from_dict(experiment.configuration),
+            experiment.configuration,
             [
                 add_result(trial, (task(**trial.params) if task else j))
                 for j, trial in enumerate(experiment.space.sample(n_trials))
@@ -96,9 +96,9 @@ class DummyWarmStarteableAlgo(Random, WarmStarteable):
 
     def __init__(self, space: Space, seed: int | Sequence[int] | None = None):
         super().__init__(space, seed)
-        self.warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]] = []
+        self.warm_start_trials: list[tuple[ExperimentConfig, list[Trial]]] = []
 
-    def warm_start(self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]):
+    def warm_start(self, warm_start_trials: list[tuple[ExperimentConfig, list[Trial]]]):
         self.warm_start_trials = warm_start_trials
 
     def observe(self, trials: list[Trial]) -> None:

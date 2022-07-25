@@ -10,7 +10,7 @@ from typing_extensions import TypeGuard
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
 from orion.core.worker.trial import Trial
-from orion.core.worker.warm_start.knowledge_base import ExperimentInfo
+from orion.core.worker.warm_start.knowledge_base import ExperimentConfig
 
 
 class WarmStarteable(BaseAlgorithm, ABC):
@@ -20,7 +20,7 @@ class WarmStarteable(BaseAlgorithm, ABC):
 
     @abstractmethod
     def warm_start(
-        self, warm_start_trials: list[tuple[ExperimentInfo, list[Trial]]]
+        self, warm_start_trials: list[tuple[ExperimentConfig, list[Trial]]]
     ) -> None:
         """Use the given trials to warm-start the algorithm.
 
@@ -33,7 +33,7 @@ class WarmStarteable(BaseAlgorithm, ABC):
         Parameters
         ----------
         warm_start_trials : Dict[Mapping, List[Trial]]
-            Dictionary mapping from ExperimentInfo objects (dataclasses containing the
+            Dictionary mapping from ExperimentConfig objects (dataclasses containing the
             experiment config) to the list of Trials associated with that experiment.
         """
         raise NotImplementedError(
