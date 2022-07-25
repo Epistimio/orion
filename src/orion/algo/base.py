@@ -18,7 +18,6 @@ from __future__ import annotations
 import inspect
 import logging
 from abc import abstractmethod
-from contextlib import contextmanager
 
 from orion.algo.registry import Registry
 from orion.algo.space import Space
@@ -412,21 +411,6 @@ class BaseAlgorithm:
     @property
     def unwrapped(self):
         return self
-
-    @contextmanager
-    def warm_start_mode(self):
-        """Context manager that is used while using points from similar experiments to
-        bootstrap (warm-start) the algorithm.
-
-        The idea behind this is that we don't want the algorithm to modify its state the
-        same way it would if it were observing regular points. For example, the number
-        of "used" trials shouldn't increase, etc.
-
-        New Algorithms or Algo wrappers can implement this method to control how the
-        state of the algo is affected by observing trials from other tasks than the
-        current (target) task.
-        """
-        yield
 
 
 algo_factory = GenericFactory(BaseAlgorithm)

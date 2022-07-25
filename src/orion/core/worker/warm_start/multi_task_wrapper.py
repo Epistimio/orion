@@ -148,15 +148,12 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             self._total_warm_start_trials,
         )
 
-        with self.algorithm.warm_start_mode():
-            for task_id, trials in compatible_trials.items():
-                logger.debug(
-                    "Observing %s new trials from task %s", len(trials), task_id
-                )
-                with self.in_task(task_id):
-                    # NOTE: self.observe saves those trials in our registry, and adds the task ids
-                    # to the trials and passes that calls `self.transform`.
-                    self.observe(trials)
+        for task_id, trials in compatible_trials.items():
+            logger.debug("Observing %s new trials from task %s", len(trials), task_id)
+            with self.in_task(task_id):
+                # NOTE: self.observe saves those trials in our registry, and adds the task ids
+                # to the trials and passes that calls `self.transform`.
+                self.observe(trials)
 
         if self._max_trials is not None:
             wrapped_algo_max_trials = self._max_trials + self._total_warm_start_trials

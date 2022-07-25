@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import copy
-from contextlib import contextmanager
 from logging import getLogger as get_logger
 from typing import TYPE_CHECKING, Generic, Sequence, TypeVar
 
@@ -148,19 +147,3 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
                 f"trials from prior experiments."
             )
         self.algorithm.warm_start(warm_start_trials)
-
-    @contextmanager
-    def warm_start_mode(self):
-        """Context manager that is used while observing trials from similar experiments to
-        bootstrap (warm-start) the algorithm.
-
-        The idea behind this is that we might not want the algorithm to modify its state the
-        same way it would if it were observing regular trials. For example, the number
-        of "used" trials shouldn't increase, etc.
-
-        New algorithms or algo wrappers can implement this method to control how the
-        state of the algo is affected by observing trials from other tasks than the
-        current (target) task.
-        """
-        with self.algorithm.warm_start_mode():
-            yield
