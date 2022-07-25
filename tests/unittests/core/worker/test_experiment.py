@@ -686,7 +686,7 @@ execute_only_methods = [
     "reserve_trial",
 ]
 
-ignore = ["non_branching_attrs", "mode", "node"]
+ignore = ["non_branching_attrs", "mode", "node", "knowledge_base"]
 
 dummy_trial = Trial(**_generate(base_trial, "status", value="reserved"))
 
