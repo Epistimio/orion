@@ -350,6 +350,36 @@ class TestMultiTaskWrapper:
         assert not algo.is_done
         assert not algo.unwrapped.is_done
 
+    def test_setting_max_trials(self):
+        """Test that the value of the max_trials property is increased by the MultiTaskWrapper by
+        the number of trials observed in warm-starting before it is passed down to the algo.
+        """
+        max_trials = 5
+        previous_trials = 10
+        knowledge_base = create_dummy_kb(
+            previous_spaces=[target_space], n_trials_per_space=previous_trials
+        )
+        algo = create_algo(Random, space=target_space, knowledge_base=knowledge_base)
+        algo.max_trials = max_trials
+        assert algo.unwrapped.max_trials is None
+        assert algo.max_trials == max_trials
+        algo.warm_start(knowledge_base.related_trials)
+        assert algo.unwrapped.max_trials == previous_trials + max_trials
+        assert algo.max_trials == max_trials
+
+    def test_n_observed_n_suggested(self):
+        """Test that the n_observed and n_suggested aren't affected by the warm-starting."""
+        previous_trials = 10
+        knowledge_base = create_dummy_kb(
+            previous_spaces=[target_space], n_trials_per_space=previous_trials
+        )
+        algo = create_algo(Random, space=target_space, knowledge_base=knowledge_base)
+        assert algo.n_observed == 0
+        assert algo.n_suggested == 0
+        algo.warm_start(knowledge_base.related_trials)
+        assert algo.n_observed == 0
+        assert algo.n_suggested == 0
+
 
 def _set_params(trial: Trial, params: dict[str, Any]) -> None:
     # TODO: It's really hard to set a new value for a hyperparameter in a trial object.
