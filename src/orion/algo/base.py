@@ -227,7 +227,7 @@ class BaseAlgorithm:
             if not self.has_observed(trial):
                 self.register(trial)
 
-    def register(self, trial):
+    def register(self, trial: Trial) -> None:
         """Save the trial as one suggested or observed by the algorithm.
 
         Parameters

@@ -123,7 +123,7 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
         for trial in trials:
             # Update the status of this trial in the registry (if it was suggested), otherwise set
             # it in the registry (for example in testing when we force the algo to observe a trial).
-            self.registry.register(trial)
+            self.register(trial)
 
             # Get the known transformed trials that correspond to this original.
             transformed_trials = self.registry_mapping.get_trials(trial)
@@ -155,7 +155,7 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 # logic that the algo did in `suggest` (e.g. store it in a bracket for HyperBand).
                 # Therefore we only register it in the wrapper, and store the equivalence between
                 # these two trials in the registry mapping.
-                self.registry.register(trial)
+                self.register(trial)
                 self.registry_mapping.register(trial, transformed_trial)
 
             self.algorithm.observe(transformed_trials)

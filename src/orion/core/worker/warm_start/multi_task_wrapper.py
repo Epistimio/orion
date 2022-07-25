@@ -29,7 +29,7 @@ logger = getLogger(__file__)
 
 TARGET_TASK_ID = 0
 
-
+# pylint: disable=too-many-public-methods
 class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
     """Wrapper that makes the algo "multi-task" by adding a task id to the inputs."""
 
@@ -139,10 +139,12 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             logger.info("No compatible trials found!")
             return
 
+        # Note: If there are no compatible trials found, this would allow multiple attempts at
+        # warm-starting. This isn't used though.
         if self._total_warm_start_trials:
             raise RuntimeError("The algorithm can only be warm-started once!")
-
         self._total_warm_start_trials = sum(map(len, compatible_trials.values()))
+
         logger.info(
             "Algo will observe a total of %s trials from other experiments.",
             self._total_warm_start_trials,
@@ -150,9 +152,11 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
 
         for task_id, trials in compatible_trials.items():
             logger.debug("Observing %s new trials from task %s", len(trials), task_id)
+            assert task_id != TARGET_TASK_ID
             with self.in_task(task_id):
                 # NOTE: self.observe saves those trials in our registry, and adds the task ids
                 # to the trials and passes that calls `self.transform`.
+                # This also reuses the collision handling logic from the Transform wrapper.
                 self.observe(trials)
 
         if self._max_trials is not None:
@@ -166,8 +170,18 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             self.algorithm.max_trials = wrapped_algo_max_trials
 
     def observe(self, trials: list[Trial]) -> None:
-        # TODO: Make sure that the collision handling of the TransformWrapper is also good here.
+        # NOTE: This uses the same collision-handling logic as the Transform wrapper.
         return super().observe(trials)
+
+    def register(self, trial: Trial) -> None:
+        if self.current_task_id != TARGET_TASK_ID:
+            # Don't register it. We're in warm-start mode, and this trial comes from a different
+            # task.
+            # TODO: There's perhaps a problem with this: The base class register stuff in the
+            # registry mapping, so even if we don't register the trial here, it will still be
+            # registered in the registry mapping!
+            return
+        super().register(trial)
 
     @property
     def n_suggested(self):

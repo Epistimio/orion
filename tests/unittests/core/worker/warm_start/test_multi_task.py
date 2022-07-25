@@ -345,8 +345,7 @@ class TestMultiTaskWrapper:
 
         algo.warm_start(knowledge_base.related_trials)
         trials_in_kb = sum(len(trials) for _, trials in knowledge_base.related_trials)
-        assert algo.n_suggested == trials_in_kb
-        assert algo.n_observed == trials_in_kb
+        assert algo.unwrapped.n_observed == trials_in_kb
         assert not algo.is_done
         assert not algo.unwrapped.is_done
 
@@ -379,6 +378,7 @@ class TestMultiTaskWrapper:
         algo.warm_start(knowledge_base.related_trials)
         assert algo.n_observed == 0
         assert algo.n_suggested == 0
+        assert algo.unwrapped.n_observed == previous_trials
 
 
 def _set_params(trial: Trial, params: dict[str, Any]) -> None:
