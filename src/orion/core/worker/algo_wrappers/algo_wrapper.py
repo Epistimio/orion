@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
-
+WrappedT = TypeVar("WrappedT", bound=BaseAlgorithm)
 
 # pylint: disable=too-many-public-methods
 class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
@@ -55,6 +55,26 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     def unwrapped(self):
         """Returns the unwrapped algorithm."""
         return self.algorithm.unwrapped
+
+    def unwrap(self, target_type: type[WrappedT]) -> WrappedT:
+        """Unwrap until the given type of wrapper or algorithm is encountered.
+
+        If it isn't, raises a RuntimeError.
+        """
+        if isinstance(self, target_type):
+            return self
+        if isinstance(self.algorithm, target_type):
+            return self.algorithm
+        node = self
+        while node is not node.unwrapped:
+            if isinstance(node, target_type):
+                return node
+            if not isinstance(node, AlgoWrapper):
+                break
+            node = node.algorithm
+        raise RuntimeError(
+            f"Unable to find a wrapper or algorithm of type {target_type} in {self}"
+        )
 
     @property
     def max_trials(self) -> int | None:
