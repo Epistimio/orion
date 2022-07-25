@@ -1,16 +1,16 @@
 """ ABC for a warm-starteable algorithm. """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from functools import singledispatch
 import inspect
-from typing import Any, overload
+from abc import ABC, abstractmethod
+from typing import overload
+
+from typing_extensions import TypeGuard
 
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start.knowledge_base import ExperimentInfo
-from typing_extensions import TypeGuard
 
 
 class WarmStarteable(BaseAlgorithm, ABC):
@@ -87,8 +87,8 @@ def is_warmstarteable(
     if isinstance(algo, BaseAlgorithm):
         return isinstance(algo, WarmStarteable)
     if isinstance(algo, str):
-        # NOTE: I don't think the algorithm should ever be a string, since now we pass the algo class
-        # in create_algo. Adding this here in case it comes in handy at some point.
+        # NOTE: I don't think the algorithm should ever be a string, since now we pass the algo
+        # class in create_algo. Adding this here in case it comes in handy at some point.
         algo_type = algo_factory.get_class(algo)
         return is_warmstarteable(algo_type)
     if inspect.isclass(algo):

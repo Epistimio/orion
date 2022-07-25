@@ -3,22 +3,18 @@
 from __future__ import annotations
 
 from logging import getLogger as get_logger
-from typing import TypeVar
 
-from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
-from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
+from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT, AlgoWrapper
 from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
 
-
-class InsistSuggest(AlgoWrapper[AlgoType]):
+class InsistSuggest(AlgoWrapper[AlgoT]):
     """Wrapper that calls `suggest` a few times until the wrapped algo produces a new trial."""
 
-    def __init__(self, space: Space, algorithm: AlgoType):
+    def __init__(self, space: Space, algorithm: AlgoT):
         super().__init__(space=space, algorithm=algorithm)
         self.max_suggest_attempts = 100
 

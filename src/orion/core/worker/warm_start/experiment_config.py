@@ -135,7 +135,7 @@ class ExperimentInfo(Config):
     # _storage: Optional[StorageConfig] = field(default=None, hash=False, repr=False)
 
     @property
-    def id(self) -> Optional[int]:
+    def id(self) -> Optional[int]:  # pylint: disable=invalid-name
         """id of the experiment in the database if experiment is configured, or `None` if the
         experiment is not configured.
         """

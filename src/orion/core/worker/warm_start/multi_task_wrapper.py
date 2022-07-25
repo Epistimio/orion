@@ -204,24 +204,9 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
 
     @property
     def is_done(self) -> bool:
-        return super().is_done
-        # TODO: Adjust this a bit, so the wrapped algo doesn't count the trials from other tasks in
-        # its 'has_completed_max_trials'.
-        # IDEA: Temporarily bump up the value of `max_trials` if set?
-        return (
-            self.has_completed_max_trials
-            or self.has_suggested_all_possible_values()
-            # IDEA: Just ignore the `is_done` from the wrapped algo?
-            or self.algorithm.is_done
-        )
-
-        # FIXME: Do the same logic as in the BaseAlgorithm.is_done, but only consider trials
+        # NOTE: Uses the same logic as in BaseAlgorithm.is_done, but only consider trials
         # from the target task.
         return super().is_done
-
-    @property
-    def has_completed_max_trials(self) -> bool:
-        return False
 
     @contextmanager
     def in_task(self, task_id: int):
