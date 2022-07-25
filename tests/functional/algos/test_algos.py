@@ -10,7 +10,7 @@ import pytest
 
 from orion.client import create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransform
 from orion.testing.state import OrionState
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
@@ -201,7 +201,7 @@ def test_cardinality_stop_loguniform(algorithm: dict):
     exp = workon(
         rosenbrock, space=discrete_space, algorithms=algorithm, max_trials=max_trials
     )
-    algo_wrapper: SpaceTransformAlgoWrapper = exp.algorithms
+    algo_wrapper: SpaceTransform = exp.algorithms
     assert algo_wrapper.space == discrete_space
     assert algo_wrapper.algorithm.is_done
     assert algo_wrapper.is_done

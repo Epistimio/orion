@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
 def palgo(
     dumbalgo: type[DumbAlgo], space: Space, fixed_suggestion_value: Any
 ) -> InsistSuggest[SpaceTransform[DumbAlgo]]:
-    """Set up a SpaceTransformAlgoWrapper with dumb configuration."""
+    """Set up a SpaceTransform with dumb configuration."""
     return create_algo(algo_type=dumbalgo, space=space, value=fixed_suggestion_value)
 
 

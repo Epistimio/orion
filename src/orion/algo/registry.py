@@ -103,7 +103,7 @@ class Registry(Container[Trial]):
 class RegistryMapping(Mapping[Trial, "list[Trial]"]):
     """A map between the original and transformed registries.
 
-    This object is used in the `SpaceTransformAlgoWrapper` to check if a trial in the original space
+    This object is used in the `SpaceTransform` to check if a trial in the original space
     has equivalent trials in the transformed space.
 
     The goal is to make it so the algorithms don't have to care about the transforms/etc.

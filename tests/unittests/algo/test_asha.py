@@ -17,7 +17,7 @@ from test_hyperband import (
 from orion.algo.asha import ASHA, ASHABracket, compute_budgets
 from orion.algo.hyperband import RungDict
 from orion.algo.space import Fidelity, Integer, Real, Space
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransform
 from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import create_trial
 
@@ -766,7 +766,7 @@ class TestGenericASHA(BaseAlgoTests):
 
         return 1, budgets.index(num)
 
-    def assert_callbacks(self, spy, num: int, algo: SpaceTransformAlgoWrapper[ASHA]):
+    def assert_callbacks(self, spy, num: int, algo: SpaceTransform[ASHA]):
 
         if num == 0:
             return

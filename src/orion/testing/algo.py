@@ -18,7 +18,7 @@ from orion.algo.space import Space
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.primary_algo import SpaceTransform, create_algo
 from orion.core.worker.trial import Trial
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
@@ -107,7 +107,7 @@ class BaseAlgoTests:
     This test-suite covers all typical cases for HPO algorithms. To use it for a new algorithm,
     the class inheriting from this one must redefine the attributes ``algo_name`` with
     the name of the algorithm used to create it with the algorithm factory
-    ``orion.core.worker.primary_algo.SpaceTransformAlgoWrapper`` and ``config`` with a base
+    ``orion.core.worker.primary_algo.SpaceTransform`` and ``config`` with a base
     configuration for the algorithm that contains all its arguments. The base space can be redefine
     if needed with the attribute ``space``.
 
@@ -266,7 +266,7 @@ class BaseAlgoTests:
         seed: int | Sequence[int] | None = None,
         n_observed_trials: int | None = None,
         **kwargs,
-    ) -> SpaceTransformAlgoWrapper[AlgoType]:
+    ) -> SpaceTransform[AlgoType]:
         """Create the algorithm based on config.
 
         Also initializes the algorithm with the required number of random trials from the previous

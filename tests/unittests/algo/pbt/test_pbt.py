@@ -8,7 +8,7 @@ from base import ExploitStub, ExploreStub, sample_trials
 
 from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.algo.space import Space
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransform
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase, create_algo
 
@@ -23,7 +23,7 @@ class TestComputeFidelities:
         assert compute_fidelities(9, 2, 2**10, 2) == [2**i for i in range(1, 11)]
 
 
-def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransformAlgoWrapper[PBT]:
+def _create_algo(space: Space, **pbt_kwargs) -> SpaceTransform[PBT]:
     return create_algo(PBT, space=space, **pbt_kwargs)
 
 
@@ -644,7 +644,7 @@ class TestGenericPBT(BaseAlgoTests):
     def test_optimize_branin(self):
         pass
 
-    def assert_callbacks(self, spy, num: int, algo: SpaceTransformAlgoWrapper[PBT]):
+    def assert_callbacks(self, spy, num: int, algo: SpaceTransform[PBT]):
         def check_population_size(gen_population_size, depth, expected):
             assert (
                 gen_population_size == expected

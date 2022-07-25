@@ -26,13 +26,13 @@ if typing.TYPE_CHECKING:
 def palgo(
     dumbalgo: type[DumbAlgo], space: Space, fixed_suggestion_value: Any
 ) -> SpaceTransform[DumbAlgo]:
-    """Set up a SpaceTransformAlgoWrapper with dumb configuration."""
+    """Set up a SpaceTransform with dumb configuration."""
     return create_algo(
         algo_type=dumbalgo, space=space, value=fixed_suggestion_value
     ).algorithm
 
 
-class TestSpaceTransformAlgoWrapperWraps:
+class TestSpaceTransformWraps:
     """Test if the SpaceTransform wrapper is actually wrapping the configured algorithm.
 
     Does not test for transformations.
