@@ -1,5 +1,5 @@
 """ Tests for the multi-task wrapper that is applied to regular algorithms when using a KB."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access,invalid-name
 from __future__ import annotations
 
 import copy
@@ -61,7 +61,7 @@ def create_dummy_kb(
     n_trials_per_space: int | Sequence[int] = 10,
     task: Callable[..., float] | None = None,
     prefix: str = "foo",
-) -> KnowledgeBase:
+) -> DummyKnowledgeBase:
     """Create a KB with the experiments/trials that we want."""
     if isinstance(n_trials_per_space, int):
         n_trials_per_space = [n_trials_per_space for _ in previous_spaces]
@@ -336,7 +336,9 @@ class TestMultiTaskWrapper:
     ):
         """Test that the trials in the Knowledge base don't affect the 'is_done' of the algo."""
 
-        algo = create_algo(Random, space=target_space, knowledge_base=knowledge_base)
+        algo = create_algo(
+            Random, space=target_space, knowledge_base=knowledge_base, seed=123
+        )
         algo.max_trials = 10
         assert algo.n_suggested == 0
         assert algo.n_observed == 0
