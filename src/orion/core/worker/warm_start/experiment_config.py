@@ -82,7 +82,7 @@ class ExperimentInfo(Config):
     experiment is not configured.
     """
 
-    refers: dict[int, "ExperimentInfo"]
+    refers: Dict[int, "ExperimentInfo"]
     """ A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
     trials we want to add in the history of completed trials we want to re-use.
     For convenience and database efficiency purpose, all experiments of a common tree shares
