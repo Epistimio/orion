@@ -195,8 +195,8 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
 
     @max_trials.setter
     def max_trials(self, value: int | None) -> None:
-        # TODO: Delay setting the max_trials property until we know how many trials we will pass to
-        # the algo during warm-starting.
+        # NOTE: We delay setting the max_trials property until we know how many trials we will pass
+        # to the algo during warm-starting.
         self._max_trials = value
 
     @property

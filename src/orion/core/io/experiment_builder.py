@@ -652,7 +652,7 @@ def _instantiate_algo(
             **algo_config,
         )
         if max_trials is not None:
-            wrapped_algo.unwrapped.max_trials = max_trials
+            wrapped_algo.max_trials = max_trials
 
     except NotImplementedError as e:
         if not ignore_unavailable:
