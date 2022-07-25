@@ -231,6 +231,9 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         params = trial.params.copy()
         _ = params.pop("task_id")
         trial_without_task_id = dict_to_trial(params, self.space)
+        trial_without_task_id = _copy_status_and_results(
+            trial_with_status=trial, trial_with_params=trial_without_task_id
+        )
         return trial_without_task_id
 
 

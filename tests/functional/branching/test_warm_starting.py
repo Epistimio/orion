@@ -118,7 +118,6 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     """
     source_space: Space = _space({"x": "uniform(0, 10)"})
     source_task = simple_quadratic(a=1, b=-2, c=1)
-    source_exp = build_experiment(name="source-2", space=source_space, debug=True)
 
     target_space: Space = _space({"x": "uniform(0, 10)"})
     target_task = simple_quadratic(a=1, b=-2, c=1)
@@ -126,12 +125,11 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     n_source_trials = 20  # Number of trials from the source task
     max_trials = 40  # Number of trials in the target task
 
-    cold_start_kb = None
     warm_start_kb = create_dummy_kb(
         [source_space], [n_source_trials], task=source_task, prefix="warm"
     )
     hot_start_kb = create_dummy_kb(
-        [source_space], [n_source_trials], task=target_task, prefix="warm"
+        [source_space], [n_source_trials], task=target_task, prefix="hot"
     )
 
     # Populate the knowledge base.
@@ -166,7 +164,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     cold_objective = _get_best_trial_objective(cold_start)
     warm_objective = _get_best_trial_objective(warm_start)
     hot_objective = _get_best_trial_objective(hot_start)
-    assert cold_objective < warm_objective < hot_objective
+    assert hot_objective < warm_objective < cold_objective
 
 
 P = ParamSpec("P")
