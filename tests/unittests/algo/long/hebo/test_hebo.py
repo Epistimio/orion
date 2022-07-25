@@ -135,9 +135,6 @@ def xfail_if_unseeded_model_chosen(request: SubRequest):
 
     # NOTE: We need to detect the phase. The reason for this is so we can avoid having a
     # bunch of tests XPASS when the test is ran in the random phase (where some do work).
-    if "num" not in request.fixturenames:
-        return  # One of the tests that doesn't involve the phase.
-
     phase: TestPhase = request.getfixturevalue("phase")
     if phase.n_trials == 0:
         return
