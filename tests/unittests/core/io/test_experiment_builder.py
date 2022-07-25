@@ -711,6 +711,7 @@ class TestBuild:
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
         new_config.pop("something_to_be_ignored")
+        new_config["knowledge_base"] = None
         assert exp.configuration == new_config
 
     @pytest.mark.usefixtures("mock_infer_versioning_metadata")
@@ -740,6 +741,7 @@ class TestBuild:
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
         new_config["refers"] = {"adapter": [], "parent_id": None, "root_id": _id}
+        new_config["knowledge_base"] = None
         assert found_config[0] == new_config
         assert exp.name == new_config["name"]
         assert exp.configuration["refers"] == new_config["refers"]
@@ -748,6 +750,7 @@ class TestBuild:
         assert exp.max_broken == new_config["max_broken"]
         assert exp.working_dir == new_config["working_dir"]
         assert exp.version == new_config["version"]
+        assert exp.algorithms
         assert exp.algorithms.configuration == new_config["algorithms"]
 
     def test_working_dir_is_correctly_set(self, new_config):
@@ -900,7 +903,7 @@ class TestBuild:
                 "judgement": None,
                 "scoring": 0,
                 "suspend": False,
-                "value": (5,),
+                "value": 5,
                 "seed": None,
             }
         }

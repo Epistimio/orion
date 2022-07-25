@@ -630,21 +630,22 @@ def _instantiate_algo(
 
     """
     config = config or orion.core.config.experiment.algorithms
-    if isinstance(config, str):
-        algo_type = algo_factory.get_class(config)
-        algo_config = {}
-    elif inspect.isclass(config) and issubclass(config, BaseAlgorithm):
-        algo_type: type[BaseAlgorithm] = config
-        algo_config = {}
-    elif isinstance(config, dict):
-        backported_config = backward.port_algo_config(config)
-        algo_name = backported_config.pop("of_type")
-        algo_type = algo_factory.get_class(algo_name)
-        algo_config = {}
-    else:
-        raise ValueError(f"Invalid algorithm configuration: {config}")
 
     try:
+        if isinstance(config, str):
+            algo_type = algo_factory.get_class(config)
+            algo_config = {}
+        elif inspect.isclass(config) and issubclass(config, BaseAlgorithm):
+            algo_type: type[BaseAlgorithm] = config
+            algo_config = {}
+        elif isinstance(config, dict):
+            backported_config = backward.port_algo_config(config)
+            algo_name = backported_config.pop("of_type")
+            algo_type = algo_factory.get_class(algo_name)
+            algo_config = {}
+        else:
+            raise ValueError(f"Invalid algorithm configuration: {config}")
+
         wrapped_algo = create_algo(
             space=space,
             algo_type=algo_type,
