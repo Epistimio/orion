@@ -1,6 +1,7 @@
 """Example usage and tests for :mod:`orion.algo.random`."""
 from __future__ import annotations
 
+import logging
 from typing import ClassVar
 
 import numpy as np
@@ -261,7 +262,9 @@ class TestPBTSuggest:
         assert new_trial.params["f"] == new_params_expected["f"]
         assert new_trial.params == new_params_expected
 
-    def test_generate_offspring_timeout(self, space: Space):
+    def test_generate_offspring_timeout(
+        self, space: Space, caplog: pytest.LogCaptureFixture
+    ):
 
         pbt = _create_algo(
             space,
@@ -276,10 +279,18 @@ class TestPBTSuggest:
         parent = trial.branch(params={"f": pbt.fidelities[space["f"].low]})
         pbt.register(parent)
 
-        with pytest.raises(RuntimeError):
-            pbt._generate_offspring(trial)
+        with caplog.at_level(logging.INFO):
+            trial_to_branch, new_trial = pbt._generate_offspring(trial)
 
-    def test_generate_offspring_retry_using_same_trial(self, space: Space, monkeypatch):
+        assert "Could not generate unique new parameters" in caplog.records[-1].message
+        assert trial_to_branch is None
+        assert new_trial is None
+
+    def test_generate_offspring_retry_using_same_trial(
+        self,
+        space: Space,
+        caplog: pytest.LogCaptureFixture,
+    ):
         """Test that when exploit returns another trial, the base one is reused and case of
         duplicate samples
         """
@@ -311,8 +322,12 @@ class TestPBTSuggest:
         # a duplite, since child is already registered. ExploitStub.should_receive will
         # test that base_trial is passed as expected to exploit when attempting more attempts
         # of exploit and explore.
-        with pytest.raises(RuntimeError):
-            pbt._generate_offspring(base_trial)
+        with caplog.at_level(logging.INFO):
+            trial_to_branch, new_trial = pbt._generate_offspring(base_trial)
+
+        assert "Could not generate unique new parameters" in caplog.records[-1].message
+        assert trial_to_branch is None
+        assert new_trial is None
 
     def test_fork_lineages_empty_queue(self, space: Space):
         pbt = _create_algo(space).algorithm
@@ -397,7 +412,9 @@ class TestPBTSuggest:
             assert branched_trial.params != should_not_be_params
 
     @pytest.mark.usefixtures("no_shutil_copytree")
-    def test_fork_lineages_branch_duplicates(self, space: Space):
+    def test_fork_lineages_branch_duplicates(
+        self, space: Space, caplog: pytest.LogCaptureFixture
+    ):
         num = 10
         pbt = _create_algo(
             space,
@@ -415,11 +432,19 @@ class TestPBTSuggest:
 
         pbt._queue = trials[:-1]
 
-        with pytest.raises(RuntimeError):
-            pbt._fork_lineages(num)
+        with caplog.at_level(logging.INFO):
+            branched_trials = pbt._fork_lineages(num)
 
-        # First queue.pop is fine, fails on second queue.pop.
-        assert len(pbt._queue) == num - 2
+        assert "Could not generate unique new parameters" in caplog.records[-1].message
+        assert len(branched_trials) == 1
+        assert branched_trials[0].params == {**trials[-1].params, **{"f": 10.9}}
+
+        # First queue.pop is fine, fails on second queue.pop, trial is reinserted at beginning
+        assert len(pbt._queue) == num - 1
+        assert (
+            len(trials) == num + 1
+        )  # make sure trials list was not modified during execution.
+        assert pbt._queue[0].params == trials[1].params
 
     @pytest.mark.usefixtures("no_shutil_copytree")
     def test_fork_lineages_num_larger_than_queue(self, space: Space):
