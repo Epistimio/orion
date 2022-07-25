@@ -262,6 +262,7 @@ def test_get_from_args_hit(config_file, random_dt, new_config):
     assert exp_view.metadata == new_config["metadata"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
+    assert exp_view.algorithms
     assert exp_view.algorithms.configuration == new_config["algorithms"]
 
 
@@ -285,6 +286,7 @@ def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
     assert exp_view.metadata == new_config["metadata"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
+    assert exp_view.algorithms
     assert exp_view.algorithms.configuration == new_config["algorithms"]
 
 
@@ -318,6 +320,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
         assert exp.metadata["user_args"] == cmdargs["user_args"]
         assert exp.max_trials == 100
         assert exp.max_broken == 5
+        assert exp.algorithms
         assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
@@ -345,6 +348,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
     assert exp.metadata == new_config["metadata"]
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
@@ -451,6 +455,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
         assert exp.max_trials == max_trials
         assert exp.max_broken == max_broken
         assert not exp.is_done
+        assert exp.algorithms
         assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
@@ -481,6 +486,7 @@ def test_build_hit(python_api_config):
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == python_api_config["algorithms"]
 
 
@@ -502,6 +508,7 @@ def test_build_without_config_hit(python_api_config):
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == python_api_config["algorithms"]
 
 
@@ -526,6 +533,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.metadata == new_config["metadata"]
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
@@ -793,6 +801,7 @@ class TestBuild:
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
         new_config.pop("something_to_be_ignored")
+        new_config["knowledge_base"] = None
         assert exp.configuration == new_config
 
     def test_instantiation_after_init(self, new_config):
@@ -1154,9 +1163,10 @@ def test_load_unavailable_algo(algo_unavailable_config, capsys):
             == algo_unavailable_config["algorithms"]
         )
 
-        with pytest.raises(NotImplementedError) as exc:
+        with pytest.raises(
+            NotImplementedError, match="Could not find implementation of BaseAlgorithm"
+        ):
             experiment_builder.build("supernaekei")
-        exc.match("Could not find implementation of BaseAlgorithm")
 
 
 class TestInitExperimentReadWrite:

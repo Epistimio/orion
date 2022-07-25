@@ -72,7 +72,7 @@ class DumbAlgo(BaseAlgorithm):
     def __init__(
         self,
         space,
-        value=(5,),
+        value=5,
         scoring=0,
         judgement=None,
         suspend=False,
@@ -92,18 +92,17 @@ class DumbAlgo(BaseAlgorithm):
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
-        super().__init__(
-            space,
-            value=value,
-            scoring=scoring,
-            judgement=judgement,
-            suspend=suspend,
-            done=done,
-            seed=seed,
-            **nested_algo
-        )
+        super().__init__(space, **nested_algo)
+        self.value = value
+        self.scoring = scoring
+        self.judgement = judgement
+        self.suspend = suspend
+        self.done = done
+        self.seed = seed
+        if self.seed is not None:
+            self.seed_rng(self.seed)
 
-    def seed(self, seed):
+    def seed_rng(self, seed):
         """Set the index to seed.
 
         Setting the seed as an index so that unit-tests can force the algorithm to suggest the same
