@@ -9,6 +9,7 @@ import pytest
 import orion.client
 import orion.client.cli as cli
 import orion.core
+from orion.algo.random import Random
 from orion.client import get_experiment
 from orion.client.experiment import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -206,6 +207,7 @@ class TestCreateExperiment:
             assert experiment.max_trials == orion.core.config.experiment.max_trials
             assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
+            assert experiment.algorithms
             assert experiment.algorithms.configuration == {"random": {"seed": None}}
 
     def test_create_experiment_new_full_config(self, user_config):
@@ -240,10 +242,10 @@ class TestCreateExperiment:
         """Test creating an existing experiment by specifying the name only."""
         with OrionState(experiments=[config]):
             experiment = create_experiment(config["name"])
-
             assert experiment.name == config["name"]
             assert experiment.version == 1
             assert experiment.space.configuration == config["space"]
+            assert experiment.algorithms
             assert experiment.algorithms.configuration == config["algorithms"]
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
@@ -260,7 +262,7 @@ class TestCreateExperiment:
 
             assert experiment.name == config["name"]
             assert experiment.version == 2
-
+            assert experiment.algorithms
             assert experiment.algorithms.configuration == config["algorithms"]
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
@@ -436,8 +438,10 @@ class TestWorkon:
             max_trials=5,
             algorithms={"random": {"seed": 5}},
         )
-
-        assert experiment.algorithms.algorithm.seed == 5
+        assert experiment.algorithms
+        algo = experiment.algorithms.unwrapped
+        assert isinstance(algo, Random)
+        assert algo.seed == 5
 
     def test_workon_name(self):
         """Verify setting the name with workon"""
