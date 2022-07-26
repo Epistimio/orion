@@ -342,7 +342,6 @@ def workon(
 
     try:
         setup_storage(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
-        # TODO: A bit weird that we pass the kb to both the experiment and exp client...
         experiment = experiment_builder.build(
             name,
             version=1,
