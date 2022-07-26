@@ -13,17 +13,20 @@ from orion.algo.gridsearch import GridSearch
 from orion.algo.space import Space
 from orion.algo.tpe import TPE
 from orion.client import build_experiment
+from orion.client.experiment import ExperimentClient
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.algo_wrappers.insist_suggest import InsistSuggest
 from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
+from orion.core.worker.experiment import Experiment
 from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.core.worker.warm_start.multi_task_wrapper import MultiTaskWrapper
+from orion.storage.base import BaseStorageProtocol
 from orion.testing.dummy_algo import FixedSuggestionAlgo
 
-from .test_knowledge_base import DummyKnowledgeBase, add_result
+from .test_knowledge_base import add_result
 
 # Function to create a space.
 _space: Callable[[dict], Space] = SpaceBuilder().build
@@ -38,8 +41,38 @@ previous_spaces: list[Space] = [
 target_space = _space({"x": "uniform(0, 10)"})
 
 
+class DummyKnowledgeBase(KnowledgeBase):
+    """Knowledge base that returns fake trials from fake "similar" experiments.
+
+    For the moment, we define "similarity" between experiments purely based on their search space.
+    (similar spaces)
+    """
+
+    def __init__(
+        self,
+        storage: BaseStorageProtocol,
+        similarity_metric: Callable[[ExperimentConfig, ExperimentConfig], float]
+        | None = None,
+        related_trials: list[tuple[ExperimentConfig, list[Trial]]] | None = None,
+    ):
+        super().__init__(storage, similarity_metric)
+        self.related_trials = related_trials or []
+
+    def get_related_trials(
+        self,
+        target_experiment: Experiment | ExperimentClient | ExperimentConfig,
+        max_trials: int | None = None,
+    ) -> list[tuple[ExperimentConfig, list[Trial]]]:
+        """Dummy implementation."""
+        return copy.deepcopy(self.related_trials)
+
+    @property
+    def n_stored_experiments(self) -> int:
+        return len(self.related_trials)
+
+
 @pytest.fixture()
-def knowledge_base() -> KnowledgeBase:
+def knowledge_base() -> DummyKnowledgeBase:
     """Dummy knowledge base fixture used for testing."""
     # The KB gets populated with the previous experiments.
     experiments = [
@@ -53,7 +86,8 @@ def knowledge_base() -> KnowledgeBase:
         )
         for experiment in experiments
     ]
-    return DummyKnowledgeBase(previous_trials)
+    # TODO: Voluntarily overriding the type of the `storage` arg for now.
+    return DummyKnowledgeBase(storage=None, similarity_metric=None, related_trials=previous_trials)  # type: ignore
 
 
 def create_dummy_kb(
