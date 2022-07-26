@@ -9,23 +9,6 @@ if typing.TYPE_CHECKING:
     from orion.core.evc.adapters import CompositeAdapter
 
 
-class EmptyDict(TypedDict):
-    """Empty dictionary."""
-
-
-class DatabaseConfig(TypedDict):
-    """Database configuration."""
-
-    type: str
-
-
-class StorageConfig(TypedDict):
-    """Storage configuration."""
-
-    type: str
-    database: DatabaseConfig
-
-
 class Refers(TypedDict):
     """Value of the 'refers' property of the Experiment."""
 
