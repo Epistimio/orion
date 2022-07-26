@@ -1,6 +1,7 @@
 """ Immutable dataclass containing the experiment configuration. """
 from __future__ import annotations
 
+import datetime  # noqa
 import typing
 from typing import Any, TypedDict
 
@@ -54,15 +55,14 @@ class BasicMetaData(TypedDict):
     """ Version of **Oríon** which suggested this experiment. `user`'s current **Oríon** version.
     """
 
-    datetime: datetime
+    datetime: datetime.datetime
     """ When was this particular configuration submitted to the database. """
 
 
 class MetaData(BasicMetaData, total=False):
     """Metadata of the experiment. Also contains some optional keys."""
 
-    # NOTE: Fields that don't appear to be set in the metadata, but that are mentioned in the
-    # docstring:
+    # NOTE: Fields that are set in resolve_config when using the commandline interface:
 
     user_script: str
     """ Full absolute path to `user`'s executable. """
