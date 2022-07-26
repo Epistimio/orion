@@ -257,7 +257,7 @@ class Runner:
         return self.worker_broken_trials >= self.max_broken
 
     @property
-    def has_remaining(self):
+    def has_remaining(self) -> bool:
         """Returns true if the worker can still pick up work"""
         return self.max_trials_per_worker - self.trials > 0
 
