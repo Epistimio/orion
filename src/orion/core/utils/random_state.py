@@ -84,8 +84,6 @@ class RandomState:
 def control_randomness(random_state: RandomState | None):
     """Seeds the randomness inside the indented block of code using `self.random_state`.
 
-    NOTE: This only has an effect if `seed_rng` was called previously, i.e. if
-    `self.random_state` is not None.
     """
     if random_state is None:
         yield
