@@ -1,7 +1,13 @@
 import React from 'react';
 import { Backend, DEFAULT_BACKEND } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
-import { Grid, Row, Column, MultiSelect } from 'carbon-components-react';
+import {
+  Grid,
+  Row,
+  Column,
+  MultiSelect,
+  Pagination,
+} from 'carbon-components-react';
 import { flattenObject } from '../../../utils/flattenObject';
 import { ArrowUp20, ArrowDown20, ArrowsVertical20 } from '@carbon/icons-react';
 import {
@@ -9,6 +15,8 @@ import {
   flexRender,
   getSortedRowModel,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
 } from '@tanstack/react-table';
 
 /**
@@ -237,6 +245,8 @@ function MyTable({ columns, data, experiment }) {
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
   const selectableColumns = table.getAllLeafColumns().map((col, index) => ({
     id: col.id,
@@ -250,6 +260,10 @@ function MyTable({ columns, data, experiment }) {
       .forEach(column => (def[column.id] = colSet.has(column.id)));
     table.setColumnVisibility(def);
   };
+  const setPagination = ({ page, pageSize }) => {
+    table.setPageIndex(page - 1);
+    table.setPageSize(pageSize);
+  };
   return (
     <div className="bx--data-table-container">
       <div className="bx--data-table-header">
@@ -262,6 +276,14 @@ function MyTable({ columns, data, experiment }) {
               <p className="bx--data-table-header__description">
                 {data.length} trial(s) for experiment "{experiment}"
               </p>
+            </Column>
+            <Column>
+              <Pagination
+                pageSize={10}
+                pageSizes={[5, 10, 20, 50, 100]}
+                totalItems={data.length}
+                onChange={setPagination}
+              />
             </Column>
             <Column>
               <MultiSelect
