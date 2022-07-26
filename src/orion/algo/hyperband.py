@@ -145,7 +145,7 @@ def display_budgets(
 BracketT = TypeVar("BracketT", bound="HyperbandBracket")
 
 
-class Hyperband(Generic[BracketT], BaseAlgorithm):
+class Hyperband(BaseAlgorithm, Generic[BracketT]):
     """Hyperband formulates hyperparameter optimization as a pure-exploration non-stochastic
     infinite-armed bandit problem where a predefined resource like iterations, data samples,
     or features is allocated to randomly sampled configurations.`
