@@ -23,7 +23,6 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
-from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Conducts hyperparameter optimization"
@@ -137,7 +136,6 @@ def workon(
     executor=None,
     executor_configuration=None,
     idle_timeout=None,
-    knowledge_base: KnowledgeBase | None = None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
 
