@@ -3,9 +3,11 @@ Singleton helpers and boilerplate
 =================================
 
 """
+from __future__ import annotations
+
 from abc import ABCMeta
 
-from orion.core.utils import Factory, GenericFactory
+from orion.core.utils import Factory, GenericFactory, T
 
 
 class SingletonAlreadyInstantiatedError(ValueError):
@@ -81,7 +83,7 @@ def update_singletons(values=None):
     return updated_singletons
 
 
-class GenericSingletonFactory(GenericFactory):
+class GenericSingletonFactory(GenericFactory[T]):
     """Factory to create singleton instances of classes inheriting a given ``base`` class.
 
     .. seealso::
@@ -90,11 +92,11 @@ class GenericSingletonFactory(GenericFactory):
 
     """
 
-    def __init__(self, base):
+    def __init__(self, base: type[T]):
         super().__init__(base=base)
         self.instance = None
 
-    def create(self, of_type=None, *args, **kwargs):
+    def create(self, of_type: str | None = None, *args, **kwargs) -> T:
         """Create an object, instance of ``self.base``
 
         If the instance is already created, ``self.create`` can only be called without arguments
@@ -108,10 +110,10 @@ class GenericSingletonFactory(GenericFactory):
             Name of class, subclass of ``self.base``. Capitalization insensitive.
 
         args: *
-            Positional arguments to construct the givin class.
+            Positional arguments to construct the given class.
 
         kwargs: **
-            Keyword arguments to construct the givin class.
+            Keyword arguments to construct the given class.
 
         Raises
         ------

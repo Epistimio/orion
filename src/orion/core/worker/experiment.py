@@ -15,7 +15,7 @@ import inspect
 import logging
 import typing
 from dataclasses import dataclass, field
-from typing import Generic, TypeVar
+from typing import Generator, Generic, TypeVar
 
 import pandas
 from typing_extensions import Literal
@@ -158,7 +158,7 @@ class Experiment(Generic[AlgoT]):
         _id: str | int | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
-        algorithms: BaseAlgorithm | None = None,
+        algorithms: AlgoT | None = None,
         working_dir: str | None = None,
         metadata: dict | None = None,
         refers: dict | None = None,
@@ -418,7 +418,7 @@ class Experiment(Generic[AlgoT]):
     @contextlib.contextmanager
     def acquire_algorithm_lock(
         self, timeout: int | float = 60, retry_interval: int | float = 1
-    ):
+    ) -> Generator[AlgoT, None, None]:
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
