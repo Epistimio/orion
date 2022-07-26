@@ -83,7 +83,7 @@ import logging
 import pprint
 import sys
 import warnings
-from typing import Any, Type, TypeVar, cast
+from typing import Any, Type, TypeVar
 
 import orion.core
 from orion.algo.base import BaseAlgorithm, algo_factory
@@ -565,31 +565,14 @@ def _instantiate_space(config: Space | dict[str, Any]) -> Space:
     return SpaceBuilder().build(config)
 
 
-KnowledgeBaseT = TypeVar("KnowledgeBaseT", bound=KnowledgeBase)
-
-
-def _instantiate_knowledge_base(
-    type_or_config: type[KnowledgeBaseT] | dict[str, Any]
-) -> KnowledgeBaseT:
-    """Instantiate the Knowledge base.
-
-    Parameters
-    ----------
-    type_or_config:
-        Type of Knowledge base to instantiate or configuration dictionary.
-
-    """
-    if not isinstance(type_or_config, dict):
-        kb_type = type_or_config
-        return kb_type()
-
-    config = type_or_config
-    if len(config) != 1:
+def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
+    """Instantiate the Knowledge base from its configuration."""
+    if len(kb_config) != 1:
         raise ConfigurationError(
             f"The configuration for the KB should only have one key (the name of the KB "
-            f"class) and the dict of kwargs. (got {config})"
+            f"class) and the dict of kwargs. (got {kb_config})"
         )
-    kb_type_name = list(config.keys())[0]
+    kb_type_name = list(kb_config.keys())[0]
     kb_types_with_name = [
         subclass
         for subclass in KnowledgeBase.__subclasses__()
@@ -604,10 +587,8 @@ def _instantiate_knowledge_base(
             f"Multiple subclasses of KnowledgeBase with the given name: {kb_type_name}"
         )
     kb_type = kb_types_with_name[0]
-    # Note: Type checker incorrectly narrows `kb_type` to `Type[KnowledgeBase]`
-    kb_type = cast(Type[KnowledgeBaseT], kb_type)
-    kb_kwargs = config[kb_type_name]
-    return kb_type(**kb_kwargs)  # type: ignore
+    kb_kwargs = kb_config[kb_type_name]
+    return kb_type(**kb_kwargs)
 
 
 def _instantiate_algo(
