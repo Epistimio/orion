@@ -1,12 +1,11 @@
-""" Interface for the Knowledge Base, which is not currently in the Orion codebase.
-"""
+""" Knowledge-Base, containing previous trials, which are used to warm-start the HPO algorithm. """
 from __future__ import annotations
 
 import inspect
 import typing
-from abc import ABC, abstractmethod
+from functools import partial
 from logging import getLogger
-from typing import Any, Container
+from typing import Any, Callable, Iterable
 
 if typing.TYPE_CHECKING:
     from orion.client import ExperimentClient
@@ -20,51 +19,94 @@ log = getLogger(__file__)
 from ..experiment_config import ExperimentConfig
 
 
-class KnowledgeBase(ABC, Container[ExperimentConfig]):
-    """Abstract Base Class for the KnowledgeBase, which currently isn't part of the
-    Orion codebase.
+class KnowledgeBase:
+    """Combination of a Storage containing previous experiments and an optional similarity metric.
+
+    The Knowledge base is used to fetch previous experiments and their trials, which are then used
+    to initialize (a.k.a. "warm-start" the hyper-parameter optimization algorithm.
+
+    By default, the HPO algorithms of Orion are unable to reuse trials if they are not compatible
+    with the space of the current (a.k.a. "target") experiment. Therefore, when warm-starting, a
+    `MultiTaskWrapper` is added, which enables a limited form of warm-starting for all algorithms,
+    by only considering the trials which are compatible with the target experiment, and training
+    the algorithm in a multi-task fashion.
+
+    When passed, the similarity function will be used to order the experiments such that the most
+    related experiments are given first.
     """
 
-    @abstractmethod
+    def __init__(
+        self,
+        storage: BaseStorageProtocol,
+        similarity_metric: Callable[[ExperimentConfig, ExperimentConfig], float]
+        | None = None,
+    ):
+        self.storage = storage
+        self.similarity_metric = similarity_metric
+
     def get_related_trials(
         self,
-        target_experiment: Experiment | ExperimentClient,
+        target_experiment: Experiment | ExperimentClient | ExperimentConfig,
         max_trials: int | None = None,
     ) -> list[tuple[ExperimentConfig, list[Trial]]]:
-        """Retrieve experiments 'similar' to `target_experiment` and their trials.
+        """Retrieve the trials from experiments 'similar' to `target_experiment`.
 
-        When `max_trials` is given, only up to `max_trials` are returned in total for
-        all experiments.
+        When `max_trials` is given, only up to `max_trials` are returned in total.
 
         Parameters
         ----------
-        target_experiment : Union[Experiment, ExperimentClient]
-            The target experiment, or experiment client.
+        target_experiment : Union[Experiment, ExperimentClient, ExperimentConfig]
+            The target experiment, or experiment client, or experiment configuration.
         max_trials : int, optional
             Maximum total number of trials to fetch. By default `None`, in which case
-            all trials from all 'related' experiments are returned.
+            all trials are returned.
 
         Returns
         -------
         list[tuple[ExperimentConfig, list[Trial]]]
             A list of tuples of experiments and the similar trials from that experiment.
         """
-        raise NotImplementedError
+        if not isinstance(target_experiment, dict):
+            target_experiment = target_experiment.configuration
+
+        experiment_configs = self.storage.fetch_experiments({})
+        if self.similarity_metric:
+            # Order the experiments with decreasing similarity w.r.t the target experiment.
+            sorting_function = partial(self.similarity_metric, target_experiment)
+            experiment_configs.sort(key=sorting_function, reverse=True)
+
+        return self._get_trials(experiment_configs, max_trials=max_trials)
 
     @property
-    @abstractmethod
     def n_stored_experiments(self) -> int:
         """Returns the current number of experiments registered the Knowledge base."""
+        return len(self.storage.fetch_experiments({}))
 
-    @abstractmethod
-    def add_experiment(self, experiment: Experiment | ExperimentClient) -> None:
-        """Adds trials from the given experiment to the knowledge base.
+    def _get_trials(
+        self, experiment_configs: Iterable[ExperimentConfig], max_trials: int | None
+    ) -> list[tuple[ExperimentConfig, list[Trial]]]:
+        """Takes at most `max_trials` trials from the given experiments.
 
-        Parameters
-        ----------
-        experiment : Union[Experiment, ExperimentClient]
-            Experiment or experiment client to add to the KB.
+        If `max_trials` is None, returns all trials from all given experiments.
         """
+        related_trials: list[tuple[ExperimentConfig, list[Trial]]] = []
+        total_trials_so_far = 0
+        for experiment_config in experiment_configs:
+            experiment_id = experiment_config["_id"]
+            # TODO: Is the experiment id always a string? or can it also be an integer?
+            if experiment_id is None:
+                continue
+            trials = self.storage.fetch_trials(uid=str(experiment_id))
+
+            if max_trials is not None:
+                remaining = max_trials - total_trials_so_far
+                if len(trials) >= remaining:
+                    # Can only add some of the trials.
+                    trials = trials[:remaining]
+
+            related_trials.append((experiment_config, trials))
+            total_trials_so_far += len(trials)
+        return related_trials
 
     @property
     def configuration(self) -> dict[str, Any]:
@@ -73,22 +115,16 @@ class KnowledgeBase(ABC, Container[ExperimentConfig]):
         By default, returns a dictionary containing the attributes of `self` which are also
         constructor arguments.
         """
+        # Note: This is a bit extra, but it will also work for subclasses of KnowledgeBase.
         init_signature = inspect.signature(type(self).__init__)
         init_arguments_attributes = {
             name: getattr(self, name)
             for name in init_signature.parameters
-            if name != "self" and hasattr(self, name)
+            if hasattr(self, name)
         }
-        return {type(self).__qualname__: init_arguments_attributes}
-
-    # NOTE: Not making this an abstract method, since we might need to adapt this a bit.
-    # @abstractmethod
-    def add_storage(self, storage: BaseStorageProtocol) -> None:
-        """Adds the experiments from the given `storage`.
-
-        Parameters
-        ----------
-        storage : Storage
-            Storage object.
-        """
-        raise NotImplementedError
+        # Get the configuration of attributes if needed.
+        init_argument_configurations = {
+            name: value.configuration if hasattr(value, "configuration") else value
+            for name, value in init_arguments_attributes.items()
+        }
+        return {type(self).__qualname__: init_argument_configurations}
