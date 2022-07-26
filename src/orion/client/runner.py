@@ -122,7 +122,7 @@ def _optimize(trial, fct, trial_arg, **kwargs):
     return fct(**unflatten(kwargs))
 
 
-def delayed_exception(exception):
+def delayed_exception(exception: Exception):
     """Raise exception when called..."""
     raise exception
 
