@@ -114,7 +114,7 @@ algorithm_configs = {
 }
 
 
-def xfail_if_not_installed(value, import_optional):
+def xfail_if_not_installed(value: dict, import_optional: ImportOptional):
     name = next(iter(value.keys()))
     return pytest.param(
         value,
