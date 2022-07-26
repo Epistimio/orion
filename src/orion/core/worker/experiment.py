@@ -63,8 +63,8 @@ class ExperimentStats:
     trials_completed: int
     best_trials_id: int
     best_evaluation: float
-    start_time: datetime.datetime = field(default_factory=datetime.datetime)
-    finish_time: datetime.datetime = field(default_factory=datetime.datetime)
+    start_time: datetime.datetime
+    finish_time: datetime.datetime
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
 
 
