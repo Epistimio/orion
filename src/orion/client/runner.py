@@ -153,7 +153,7 @@ class _Stat:
         return "\n".join(lines)
 
 
-def prepare_trial_working_dir(experiment_client, trial):
+def prepare_trial_working_dir(experiment_client: ExperimentClient, trial: Trial) -> None:
     """Prepare working directory of a trial.
 
     This will create a working directory based on ``trial.working_dir`` if not already existing. If
