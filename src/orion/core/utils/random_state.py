@@ -82,9 +82,7 @@ class RandomState:
 
 @contextmanager
 def control_randomness(random_state: RandomState | None):
-    """Seeds the randomness inside the indented block of code using `self.random_state`.
-
-    """
+    """Seeds the randomness inside the indented block of code using `self.random_state`."""
     if random_state is None:
         yield
         return
