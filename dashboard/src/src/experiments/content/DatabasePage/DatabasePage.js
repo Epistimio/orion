@@ -1,23 +1,9 @@
 import React from 'react';
 import { Backend, DEFAULT_BACKEND } from '../../../utils/queryServer';
+import { FeaturedTable } from './FeaturedTable';
 import { BackendContext } from '../../BackendContext';
-import {
-  Grid,
-  Row,
-  Column,
-  MultiSelect,
-  Pagination,
-} from 'carbon-components-react';
+import { Column, Grid, Row } from 'carbon-components-react';
 import { flattenObject } from '../../../utils/flattenObject';
-import { ArrowUp20, ArrowDown20, ArrowsVertical20 } from '@carbon/icons-react';
-import {
-  useReactTable,
-  flexRender,
-  getSortedRowModel,
-  getCoreRowModel,
-  // getFilteredRowModel,
-  getPaginationRowModel,
-} from '@tanstack/react-table';
 
 /**
  * Component to pretty display an object (JSON dictionary) into data table.
@@ -118,39 +104,7 @@ class TrialsProvider {
       // We assume paramKeys is the same for all trials
       const paramKeys = trials[0].paramKeys.slice();
       paramKeys.sort();
-      const paramHeaders = paramKeys.map(paramKey => ({
-        key: paramKey,
-        // Ignore prefix `params.`
-        header: `Parameter ${paramKey.substr(7)}`,
-      }));
-      const trialHeaders = [
-        {
-          key: 'id',
-          header: 'ID',
-        },
-        ...paramHeaders,
-        {
-          key: 'submitTime',
-          header: 'Submit time',
-        },
-        {
-          key: 'startTime',
-          header: 'Start time',
-        },
-        {
-          key: 'endTime',
-          header: 'End time',
-        },
-        {
-          key: 'objective',
-          header: 'Objective',
-        },
-        {
-          key: 'statistics',
-          header: 'Statistics',
-        },
-      ];
-      const altHeaders = [
+      const headers = [
         {
           accessorKey: 'id',
           header: 'ID',
@@ -200,23 +154,9 @@ class TrialsProvider {
           cell: props => props.getValue(),
         },
       ];
-      // Map to specify sortable columns.
-      const sortableCols = {
-        ...sortableParamCols,
-        id: true,
-        submitTime: true,
-        startTime: true,
-        endTime: true,
-        objective: true,
-        statistics: false,
-      };
-      // Array to specify sortable columns by index.
-      const sortable = trialHeaders.map(header => sortableCols[header.key]);
       this.trials[experiment] = {
-        headers: trialHeaders,
+        headers: headers,
         trials: trials,
-        sortable: sortable,
-        newHeaders: altHeaders,
       };
     }
     return this.trials[experiment];
@@ -228,152 +168,6 @@ class TrialsProvider {
  * @type {TrialsProvider}
  */
 const TRIALS_PROVIDER = new TrialsProvider(DEFAULT_BACKEND);
-
-const sortingIcons = {
-  asc: <ArrowUp20 className="bx--table-sort__icon" />,
-  desc: <ArrowDown20 className="bx--table-sort__icon" />,
-};
-
-function MyTable({ columns, data, experiment }) {
-  const [sorting, setSorting] = React.useState([]);
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [{ pageIndex, pageSize }, setPagination] = React.useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-  const pagination = React.useMemo(() => ({ pageIndex, pageSize }), [
-    pageIndex,
-    pageSize,
-  ]);
-  const pageCount =
-    Math.round(data.length / pageSize) + (data.length % pageSize);
-  const table = useReactTable({
-    columns,
-    data,
-    pageCount,
-    state: { sorting, columnVisibility, pagination },
-    getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    // getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onPaginationChange: setPagination,
-    // manualPagination: true
-  });
-  const selectableColumns = table.getAllLeafColumns().map((col, index) => ({
-    id: col.id,
-    label: col.columnDef.header,
-  }));
-  const columnVisibilitySetter = selectedColumns => {
-    const colSet = new Set(selectedColumns.selectedItems.map(item => item.id));
-    const def = {};
-    table
-      .getAllLeafColumns()
-      .forEach(column => (def[column.id] = colSet.has(column.id)));
-    table.setColumnVisibility(def);
-  };
-  const setCarbonPagination = ({ page, pageSize }) => {
-    // table.setPageIndex(page - 1);
-    // table.setPageSize(pageSize);
-    setPagination({ pageIndex: page - 1, pageSize: pageSize });
-  };
-  return (
-    <div className="bx--data-table-container">
-      <div className="bx--data-table-header">
-        <Grid>
-          <Row>
-            <Column>
-              <h4 className="bx--data-table-header__title">
-                Experiment Trials for "{experiment}"
-              </h4>
-              <p className="bx--data-table-header__description">
-                {data.length} trial(s) for experiment "{experiment}"
-              </p>
-            </Column>
-            <Column>
-              <Pagination
-                page={pageIndex + 1}
-                pageSize={pageSize}
-                pageSizes={[5, 10, 20, 50, 100]}
-                totalItems={data.length}
-                onChange={setCarbonPagination}
-              />
-            </Column>
-            <Column>
-              <MultiSelect
-                id="multiselect-columns"
-                label="Columns to display"
-                items={selectableColumns}
-                initialSelectedItems={selectableColumns}
-                onChange={columnVisibilitySetter}
-                sortItems={items => items}
-              />
-            </Column>
-          </Row>
-        </Grid>
-      </div>
-      <div className="bx--data-table-content">
-        <table className="bx--data-table bx--data-table--normal bx--data-table--no-border">
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    {...(header.column.getCanSort()
-                      ? { 'aria-sort': false }
-                      : {})}>
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
-                        className={
-                          'bx--table-sort' +
-                          (header.column.getIsSorted()
-                            ? ' bx--table-sort--active'
-                            : '')
-                        }
-                        onClick={header.column.getToggleSortingHandler()}>
-                        <span className="bx--table-sort__flex">
-                          <div className="bx--table-header-label">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                          </div>
-                          {header.column.getIsSorted()
-                            ? sortingIcons[header.column.getIsSorted()]
-                            : null}
-                          <ArrowsVertical20 className="bx--table-sort__icon-unsorted" />
-                        </span>
-                      </button>
-                    ) : (
-                      flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 class DatabasePage extends React.Component {
   // Control variable to avoid setting state if component was unmounted before an asynchronous API call finished.
@@ -394,9 +188,9 @@ class DatabasePage extends React.Component {
       <div className="bx--grid bx--grid--full-width bx--grid--no-gutter database-page">
         <div className="bx--row database-page__r1">
           <div className="bx--col-lg-16">
-            <MyTable
+            <FeaturedTable
+              columns={this.state.trials.headers}
               data={this.state.trials.trials}
-              columns={this.state.trials.newHeaders}
               experiment={this.state.experiment}
             />
           </div>
