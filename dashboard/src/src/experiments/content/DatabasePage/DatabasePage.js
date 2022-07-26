@@ -15,7 +15,7 @@ import {
   flexRender,
   getSortedRowModel,
   getCoreRowModel,
-  getFilteredRowModel,
+  // getFilteredRowModel,
   getPaginationRowModel,
 } from '@tanstack/react-table';
 
@@ -237,16 +237,29 @@ const sortingIcons = {
 function MyTable({ columns, data, experiment }) {
   const [sorting, setSorting] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
+  const [{ pageIndex, pageSize }, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const pagination = React.useMemo(() => ({ pageIndex, pageSize }), [
+    pageIndex,
+    pageSize,
+  ]);
+  const pageCount =
+    Math.round(data.length / pageSize) + (data.length % pageSize);
   const table = useReactTable({
     columns,
     data,
-    state: { sorting, columnVisibility },
+    pageCount,
+    state: { sorting, columnVisibility, pagination },
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    getFilteredRowModel: getFilteredRowModel(),
+    // getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    onPaginationChange: setPagination,
+    // manualPagination: true
   });
   const selectableColumns = table.getAllLeafColumns().map((col, index) => ({
     id: col.id,
@@ -260,9 +273,10 @@ function MyTable({ columns, data, experiment }) {
       .forEach(column => (def[column.id] = colSet.has(column.id)));
     table.setColumnVisibility(def);
   };
-  const setPagination = ({ page, pageSize }) => {
-    table.setPageIndex(page - 1);
-    table.setPageSize(pageSize);
+  const setCarbonPagination = ({ page, pageSize }) => {
+    // table.setPageIndex(page - 1);
+    // table.setPageSize(pageSize);
+    setPagination({ pageIndex: page - 1, pageSize: pageSize });
   };
   return (
     <div className="bx--data-table-container">
@@ -279,10 +293,11 @@ function MyTable({ columns, data, experiment }) {
             </Column>
             <Column>
               <Pagination
-                pageSize={10}
+                page={pageIndex + 1}
+                pageSize={pageSize}
                 pageSizes={[5, 10, 20, 50, 100]}
                 totalItems={data.length}
-                onChange={setPagination}
+                onChange={setCarbonPagination}
               />
             </Column>
             <Column>
