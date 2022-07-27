@@ -70,6 +70,11 @@ class KnowledgeBase:
             target_experiment = target_experiment.configuration
 
         experiment_configs = self.storage.fetch_experiments({})
+        # NOTE: Here we remove the target experiment from the list of experiments.
+        # This occurs because we use a singleton for the storage.
+        if target_experiment in experiment_configs:
+            experiment_configs.remove(target_experiment)
+
         if self.similarity_metric:
             # Order the experiments with decreasing similarity w.r.t the target experiment.
             sorting_function = partial(self.similarity_metric, target_experiment)
@@ -96,7 +101,7 @@ class KnowledgeBase:
             # TODO: Is the experiment id always a string? or can it also be an integer?
             if experiment_id is None:
                 continue
-            trials = self.storage.fetch_trials(uid=str(experiment_id))
+            trials = self.storage.fetch_trials(uid=experiment_id)
 
             if max_trials is not None:
                 remaining = max_trials - total_trials_so_far

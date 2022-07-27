@@ -312,7 +312,7 @@ class BaseStorageProtocol:
     def fetch_trials(
         self,
         experiment: Experiment | None = None,
-        uid: str | None = None,
+        uid: str | int | None = None,
         where: dict | None = None,
     ) -> list[Trial] | None:
         """Fetch all the trials of an experiment in the database
@@ -380,7 +380,7 @@ class BaseStorageProtocol:
     def update_trial(
         self,
         trial: Trial | None = None,
-        uid: str | None = None,
+        uid: str | int | None = None,
         experiment_uid: str | None = None,
         where: dict | None = None,
         **kwargs,

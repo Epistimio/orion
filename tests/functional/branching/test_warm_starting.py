@@ -7,11 +7,11 @@ from typing import Callable, TypeVar
 
 import pytest
 from typing_extensions import ParamSpec
-from unittests.core.worker.warm_start.test_knowledge_base import (
+from unittests.core.worker.warm_start.test_multi_task import (
     DummyKnowledgeBase,
-    add_result,
+    _add_result,
+    create_dummy_kb,
 )
-from unittests.core.worker.warm_start.test_multi_task import create_dummy_kb
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
@@ -65,18 +65,19 @@ def test_warm_starting_helps(algo: type[BaseAlgorithm]):
 
     previous_trials = source_space.sample(n_source_trials)
     previous_trials = [
-        add_result(trial, source_task(trial.params["x"])) for trial in previous_trials
+        _add_result(trial, source_task(trial.params["x"])) for trial in previous_trials
     ]
     # Populate the knowledge base.
     knowledge_base = DummyKnowledgeBase(
-        [
+        storage=None,  # type: ignore
+        related_trials=[
             (
                 build_experiment(
                     "source", space=source_space, debug=True
                 ).configuration,
                 previous_trials,
             )
-        ]
+        ],
     )
 
     without_warm_starting = workon(

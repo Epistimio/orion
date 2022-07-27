@@ -26,8 +26,6 @@ from orion.core.worker.warm_start.multi_task_wrapper import MultiTaskWrapper
 from orion.storage.base import BaseStorageProtocol
 from orion.testing.dummy_algo import FixedSuggestionAlgo
 
-from .test_knowledge_base import add_result
-
 # Function to create a space.
 _space: Callable[[dict], Space] = SpaceBuilder().build
 
@@ -39,6 +37,16 @@ previous_spaces: list[Space] = [
     _space({"x": "uniform(4, 9)"}),
 ]
 target_space = _space({"x": "uniform(0, 10)"})
+
+
+def _add_result(trial: Trial, objective: float) -> Trial:
+    """Add `objective` as the result of `trial`. Returns a new Trial object."""
+    new_trial = copy.deepcopy(trial)
+    new_trial.status = "completed"
+    new_trial.results.append(
+        Trial.Result(name="objective", type="objective", value=objective)
+    )
+    return new_trial
 
 
 class DummyKnowledgeBase(KnowledgeBase):
@@ -82,7 +90,7 @@ def knowledge_base() -> DummyKnowledgeBase:
     previous_trials = [
         (
             experiment.configuration,
-            [add_result(t, i) for i, t in enumerate(experiment.space.sample(10))],
+            [_add_result(t, i) for i, t in enumerate(experiment.space.sample(10))],
         )
         for experiment in experiments
     ]
@@ -109,7 +117,7 @@ def create_dummy_kb(
         (
             experiment.configuration,
             [
-                add_result(trial, (task(**trial.params) if task else j))
+                _add_result(trial, (task(**trial.params) if task else j))
                 for j, trial in enumerate(experiment.space.sample(n_trials))
             ],
         )
@@ -313,7 +321,7 @@ class TestMultiTaskWrapper:
         assert len(algo.unwrapped.registry) >= 1
         assert all("task_id" in trial.params for trial in algo.unwrapped.registry)
 
-        trial_with_result = add_result(trial, 0)
+        trial_with_result = _add_result(trial, 0)
         algo.observe([trial_with_result])
         assert all("task_id" in trial.params for trial in algo.unwrapped.registry)
 
@@ -338,7 +346,7 @@ class TestMultiTaskWrapper:
         while not experiment.is_done:
             trial = experiment.suggest()
             objective = random.random()
-            trial_with_result = add_result(trial, objective)
+            trial_with_result = _add_result(trial, objective)
             experiment.observe(trial_with_result, [])
 
         algo = experiment.algorithms
