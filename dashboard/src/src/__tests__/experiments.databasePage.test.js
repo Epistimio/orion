@@ -53,14 +53,14 @@ test('Test if experiment trials are loaded', async () => {
     )
   ).toBeInTheDocument();
   expect(
-    screen.queryByText(/0915da146c84975df9bdf4c3ee9376dc/)
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
   ).toBeInTheDocument();
 
   // Unselect experiment
-  const span = screen.queryByTitle(/unselect experiment '2-dim-shape-exp'/);
-  expect(span).toBeInTheDocument();
-  expect(span.tagName.toLowerCase()).toBe('span');
-  fireEvent.click(span);
+  const row = screen.queryByTitle(/unselect experiment '2-dim-shape-exp'/);
+  expect(row).toBeInTheDocument();
+  expect(row.tagName.toLowerCase()).toBe('label');
+  fireEvent.click(row);
   expect(
     await screen.findByText(
       /No trials to display, please select an experiment\./
@@ -73,7 +73,7 @@ test('Test if experiment trials are loaded', async () => {
       { interval: 1000, timeout: 120000 }
     )
   ).toBeNull();
-  expect(screen.queryByText(/0915da146c84975df9bdf4c3ee9376dc/)).toBeNull();
+  expect(screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)).toBeNull();
 
   // re-select experiment and check if trials are loaded
   fireEvent.click(experiment);
@@ -85,7 +85,7 @@ test('Test if experiment trials are loaded', async () => {
     )
   ).toBeInTheDocument();
   expect(
-    screen.queryByText(/0915da146c84975df9bdf4c3ee9376dc/)
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
   ).toBeInTheDocument();
 
   // Select another experiment and check if trials are loaded
@@ -103,6 +103,6 @@ test('Test if experiment trials are loaded', async () => {
     screen.queryByText(/20 trial\(s\) for experiment "tpe-rosenbrock"/)
   ).toBeInTheDocument();
   expect(
-    screen.queryByText(/081134e84076d4c4aba210e88d0dce81/)
+    screen.queryByTitle(/15f4ed436861d25de9be04db9837a70c/)
   ).toBeInTheDocument();
 });
