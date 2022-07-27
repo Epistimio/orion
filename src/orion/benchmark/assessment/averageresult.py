@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Average Rank Assessment
 ========================
@@ -18,7 +17,7 @@ class AverageResult(BenchmarkAssessment):
     """
 
     def __init__(self, task_num=1):
-        super(AverageResult, self).__init__(task_num=task_num)
+        super().__init__(task_num=task_num)
 
     def analysis(self, task, experiments):
         """

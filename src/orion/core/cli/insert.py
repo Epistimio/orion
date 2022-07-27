@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # pylint: disable=eval-used,protected-access
 """
 Module to insert new trials
@@ -13,8 +12,8 @@ import logging
 import os
 import re
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
+from orion.core.io import experiment_builder
 from orion.core.io.convert import infer_converter_from_file_type
 from orion.core.utils.format_trials import tuple_to_trial
 
@@ -65,27 +64,22 @@ def _validate_dimensions(transformed_args, exp_space):
             exp_n not in transformed_args.keys()
             and exp_space[exp_n].default_value is None
         ):
-            error_msg = "Dimension {} is unspecified and has no default value".format(
-                exp_n
+            raise ValueError(
+                f"Dimension {exp_n} is unspecified and has no default value"
             )
-            raise ValueError(error_msg)
 
     # Find any namespace that is not in the space of the experiment,
     # or values that lie outside the prior's interval
     for namespace, value in transformed_args.items():
         if namespace not in exp_space:
-            error_msg = "Found namespace outside of experiment space : {}".format(
-                namespace
+            raise ValueError(
+                f"Found namespace outside of experiment space : {namespace}"
             )
-            raise ValueError(error_msg)
 
         valid, value = _validate_input_value(value, exp_space, namespace)
 
         if not valid:
-            error_msg = "Value {} is outside of dimension's prior interval".format(
-                value
-            )
-            raise ValueError(error_msg)
+            raise ValueError(f"Value {value} is outside of dimension's prior interval")
 
         values[namespace] = value
 
@@ -109,11 +103,11 @@ def _create_tuple_from_values(transformed_args, exp_space):
     values_dict = _validate_dimensions(transformed_args, exp_space)
     values = []
 
-    for namespace in exp_space:
-        if namespace in values_dict.keys():
+    for namespace, dim in exp_space.items():
+        if namespace in values_dict:
             values.append(values_dict[namespace])
         else:
-            values.append(exp_space[namespace].default_value)
+            values.append(dim.default_value)
 
     return values
 
@@ -149,11 +143,9 @@ def _build_from_config(config_path):
         elif isinstance(stuff, str):
             if stuff.startswith(userconfig_keyword):
                 if namespace in transformed_args:
-                    error_msg = (
-                        "Conflict for name '{}' in script configuration "
-                        "and arguments.".format(namespace)
+                    raise ValueError(
+                        f"Conflict for name '{namespace}' in script configuration and arguments."
                     )
-                    raise ValueError(error_msg)
 
                 transformed_args[namespace] = stuff[len(userconfig_keyword) :]
 
@@ -181,7 +173,7 @@ def _build_from_args(cmd_args):
                     is_userconfig_an_option = True
                 else:
                     raise ValueError(
-                        "Already found one configuration file in: %s" % userconfig
+                        f"Already found one configuration file in: {userconfig}"
                     )
             else:
                 userargs_tmpl[None].append(arg)
@@ -191,11 +183,9 @@ def _build_from_args(cmd_args):
         namespace = "/" + name
 
         if namespace in transformed_args:
-            error_msg = (
-                "Conflict for name '{}' in script configuration "
-                "and arguments.".format(namespace)
+            raise ValueError(
+                f"Conflict for name '{namespace}' in script configuration and arguments."
             )
-            raise ValueError(error_msg)
 
         transformed_args[namespace] = value
 

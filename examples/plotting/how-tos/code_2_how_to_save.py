@@ -14,6 +14,8 @@ Plots can be saved to multiple image formats using ``plotly``'s
 
 from orion.client import get_experiment
 
+# flake8: noqa
+
 # Specify the database where the experiments are stored. We use a local PickleDB here.
 storage = dict(type="legacy", database=dict(type="pickleddb", host="../../db.pkl"))
 

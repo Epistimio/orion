@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to status experiments
 ============================
@@ -12,8 +11,8 @@ import logging
 
 import tabulate
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
+from orion.core.io import experiment_builder
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
@@ -99,7 +98,7 @@ def print_evc(
     all_trials=False,
     collapse=False,
     expand_versions=False,
-    **kwargs
+    **kwargs,
 ):
     """Print each EVC tree
 
@@ -220,7 +219,7 @@ def print_summary(trials, offset=0):
         line = [status, len(c_trials)]
 
         if c_trials[0].objective:
-            headers.append("min {}".format(c_trials[0].objective.name))
+            headers.append(f"min {c_trials[0].objective.name}")
             line.append(
                 min(trial.objective.value for trial in c_trials if trial.objective)
             )
@@ -255,7 +254,7 @@ def print_all_trials(trials, offset=0):
         line = [trial.id, trial.status]
 
         if trial.objective:
-            headers[-1] = "min {}".format(trial.objective.name)
+            headers[-1] = f"min {trial.objective.name}"
             line.append(trial.objective.value)
 
         lines.append(line)

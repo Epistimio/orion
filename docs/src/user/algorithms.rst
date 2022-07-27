@@ -303,11 +303,15 @@ Configuration
    :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
                      configuration
 
-
 .. _PBT:
 
 Population Based Training (PBT)
 -------------------------------
+
+.. warning::
+
+   PBT is broken in current version v0.2.4. We are working on a fix to be released in v0.2.5,
+   ETA July 2022.
 
 Population based training is an evolutionary algorithm that evolve trials
 from low fidelity levels to high fidelity levels (ex: number of epochs), reusing
@@ -369,6 +373,11 @@ Configuration
 
 Population Based Bandits (PB2)
 ------------------------------
+
+.. warning::
+
+   PBT is broken in current version v0.2.4. We are working on a fix to be released in v0.2.5,
+   ETA July 2022.
 
 Population Based Bandits is a variant of Population Based Training using probabilistic model to
 guide
@@ -476,6 +485,46 @@ Configuration
                      configuration, sample_one_dimension, split_trials, requires_type
 
 
+.. _ax-algorithm:
+
+Ax
+--
+
+`Ax`_ is a platform for optimizing any kind of experiment, including machine
+learning experiments, A/B tests, and simulations. Ax can optimize discrete
+configurations (e.g., variants of an A/B test) using multi-armed bandit
+optimization, and continuous (e.g., integer or floating point)-valued
+configurations using Bayesian optimization.
+
+.. _ax: https://ax.dev/
+
+Configuration
+~~~~~~~~~~~~~
+
+
+.. code-block:: yaml
+
+  experiment:
+    algorithms:
+      ax:
+        seed: 1234
+        n_initial_trials: 5,
+        parallel_strategy:
+          of_type: StatusBasedParallelStrategy
+          strategy_configs:
+             broken:
+                of_type: MaxParallelStrategy
+
+
+.. autoclass:: orion.algo.axoptimizer.AxOptimizer
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration
+
+
+
+
+
 
 .. _evolution-es algorithm:
 
@@ -543,6 +592,56 @@ Configuration
                      requires_dist, requires_type
 
 
+.. _mofa algorithm:
+
+MOFA
+-----
+
+The MOdular FActorial Design (`MOFA`_) algorithm is based on factorial design and factorial
+analysis methods to optmimize hyperparameters. It performs multiple iterations each of which
+starts with sampling hyperparameter trial values from an orthogonal latin hypercube to cover
+the search space well while de-correlating hyperparameters. Once all trials in an iteration
+are returned, MOFA performs factorial analysis to determine which hyperparameters should be
+fixed in value and which hyperparameters require further exploration. As the hyperparameters
+become fixed, the number of trials are reduced in subsequent iterations.
+
+.. _MOFA: https://arxiv.org/abs/2011.09545
+
+.. note::
+
+   MOFA requires Python v3.8 or greater and scipy v1.8 or greater.
+
+.. note::
+
+   Default values for the ``index``, ``n_levels``, and ``strength`` parameters are set
+   to the empirically obtained optimal values described in section 5.2 of the paper.
+   The ``strength`` parameter must be set to either ``1`` or ``2``.
+
+.. note::
+
+   The number of trials N for a single MOFA iteration is set to ``N = index * n_levels^strength``.
+   The ``--exp-max-trials`` should at least be a multiple of ``N``.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            MOFA:
+               seed: null
+               index: 1
+               n_levels: 5
+               strength: 2
+               threshold: 0.1
+
+.. autoclass:: orion.algo.mofa.mofa.MOFA
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
+
+
 .. _nevergrad-algorithm:
 
 
@@ -553,7 +652,6 @@ Nevergrad
 a library of algorithms for hyperparameter search.
 
 .. _nevergrad: https://facebookresearch.github.io/nevergrad/
-
 
 .. code-block:: yaml
 

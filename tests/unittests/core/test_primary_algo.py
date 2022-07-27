@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
 from __future__ import annotations
 
 import copy
 import logging
 import typing
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar
 
+import numpy
 import pytest
 from pytest import MonkeyPatch
 
-from orion.algo.base import BaseAlgorithm, algo_factory
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
@@ -273,7 +273,7 @@ class TestRegistration:
             {"x": 10}, space=algo_wrapper.space
         )
         fixed_transformed = algo_wrapper.transformed_space.transform(fixed_original)
-        assert fixed_transformed.params == {"x": 2.302585092994046}
+        assert fixed_transformed.params == {"x": numpy.log(10)}
         transformed_space = algo_wrapper.transformed_space
 
         algo_wrapper.algorithm.fixed_suggestion = fixed_transformed

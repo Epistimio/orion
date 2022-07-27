@@ -9,7 +9,7 @@ from a given forrester function.
 """
 import typing
 from dataclasses import dataclass
-from typing import Any, Callable, ClassVar, Dict, List, Tuple
+from typing import Callable, ClassVar, Dict, List, Tuple
 
 from orion.benchmark.task.profet.model_utils import get_architecture_forrester
 from orion.benchmark.task.profet.profet_task import ProfetTask

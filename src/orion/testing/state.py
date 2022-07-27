@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Mocks Oríon's runtime
 =====================
@@ -33,7 +32,7 @@ class BaseOrionState:
     Parameters
     ----------
     benchmarks: List, optional
-       List of benchmarks ot insert into the database
+       List of benchmarks to insert into the database
     experiments: list, optional
         List of experiments to insert into the database
     trials: list, optional
@@ -142,7 +141,7 @@ class BaseOrionState:
         for i, t_dict in enumerate(self._lies):
             self._lies[i] = Trial(**t_dict).to_dict()
 
-        self._trials.sort(key=lambda obj: int(obj["_id"], 16), reverse=True)
+        self._trials.sort(key=lambda obj: int(obj["id"], 16), reverse=True)
 
         for i, experiment in enumerate(self._experiments):
             if "user_script" in experiment["metadata"]:
@@ -213,7 +212,7 @@ class LegacyOrionState(BaseOrionState):
     """See :func:`~orion.testing.state.BaseOrionState`"""
 
     def __init__(self, *args, **kwargs):
-        super(LegacyOrionState, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.initialized = False
 
     @property

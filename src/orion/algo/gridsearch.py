@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Grid Search
 ===========
@@ -7,7 +6,6 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Sequence
 
 import numpy
 

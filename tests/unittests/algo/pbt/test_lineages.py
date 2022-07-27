@@ -9,10 +9,11 @@ from base import (
     build_full_tree,
     build_population,
     compare_generations,
-    no_shutil_copytree,
 )
 
 from orion.algo.pbt.pbt import LineageNode, Lineages
+
+pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
 
 
 class TestLineageNode:

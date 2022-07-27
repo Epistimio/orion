@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
 Description of an optimization attempt
@@ -7,6 +6,8 @@ Description of an optimization attempt
 Manage history of trials corresponding to a black box process.
 
 """
+from __future__ import annotations
+
 import contextlib
 import copy
 import datetime
@@ -15,7 +16,10 @@ import logging
 from dataclasses import dataclass, field
 
 import pandas
+from typing_extensions import Literal
 
+from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
@@ -25,6 +29,7 @@ from orion.core.utils.singleton import update_singletons
 from orion.storage.base import FailedUpdate, get_storage
 
 log = logging.getLogger(__name__)
+Mode = Literal["r", "w", "x"]
 
 
 @dataclass
@@ -32,18 +37,18 @@ class ExperimentStats:
     """
     Parameters
     ----------
-    trials_completed : int
+    trials_completed: int
        Number of completed trials
-    best_trials_id : int
+    best_trials_id: int
        Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
        which achieved the best known objective result.
-    best_evaluation : float
+    best_evaluation: float
        Evaluation score of the best trial
-    start_time : `datetime.datetime`
+    start_time: `datetime.datetime`
        When Experiment was first dispatched and started running.
-    finish_time : `datetime.datetime`
+    finish_time: `datetime.datetime`
        When Experiment reached terminating condition and stopped running.
-    duration : `datetime.timedelta`
+    duration: `datetime.timedelta`
        Elapsed time.
     """
 
@@ -61,21 +66,21 @@ class Experiment:
 
     Attributes
     ----------
-    name : str
+    name: str
        Unique identifier for this experiment per ``user``.
     id: object
        id of the experiment in the database if experiment is configured. Value is ``None``
        if the experiment is not configured.
-    refers : dict or list of `Experiment` objects, after initialization is done.
+    refers: dict or list of `Experiment` objects, after initialization is done.
        A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
        trials we want to add in the history of completed trials we want to re-use.
-       For convenience and database effiency purpose, all experiments of a common tree shares
-       ``refers[root_id]``, with the root experiment refering to itself.
+       For the purpose of convenience and database efficiency, all experiments of a common tree
+       share a ``refers[root_id]``, with the root experiment referring to itself.
     version: int
         Current version of this experiment.
-    metadata : dict
+    metadata: dict
        Contains managerial information about this `Experiment`.
-    max_trials : int
+    max_trials: int
        How many trials must be evaluated, before considering this `Experiment` done.
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
@@ -87,29 +92,32 @@ class Experiment:
        it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
-    algorithms : `BaseAlgorithm` object or a wrapper.
+    algorithms: `BaseAlgorithm` object or a wrapper.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
-    Metadata
-    --------
-    user : str
+    Notes
+    -----
+
+    The following list represents possible entries in the metadata dict.
+
+    user: str
        System user currently owning this running process, the one who invoked **Oríon**.
-    datetime : `datetime.datetime`
+    datetime: `datetime.datetime`
        When was this particular configuration submitted to the database.
-    orion_version : str
+    orion_version: str
        Version of **Oríon** which suggested this experiment. `user`'s current
        **Oríon** version.
-    user_script : str
+    user_script: str
        Full absolute path to `user`'s executable.
-    user_args : list of str
+    user_args: list of str
        Contains separate arguments to be passed when invoking `user_script`,
        possibly templated for **Oríon**.
-    user_vcs : str, optional
+    user_vcs: str, optional
        User's version control system for this executable's code repository.
-    user_version : str, optional
+    user_version: str, optional
        Current user's repository version.
-    user_commit_hash : str, optional
+    user_commit_hash: str, optional
        Current `Experiment`'s commit hash for **Oríon**'s invocation.
 
     """
@@ -131,24 +139,35 @@ class Experiment:
     )
     non_branching_attrs = ("max_trials", "max_broken")
 
-    def __init__(self, name, version=None, mode="r", storage_instance=None):
-        self._id = None
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        name: str,
+        space: Space,
+        version: int | None = 1,
+        mode: Mode = "r",
+        _id: str | int | None = None,
+        max_trials: int | None = None,
+        max_broken: int | None = None,
+        algorithms: BaseAlgorithm | None = None,
+        working_dir: str | None = None,
+        metadata: dict | None = None,
+        refers: dict | None = None,
+    ):
+        self._id = _id
         self.name = name
+        self.space: Space = space
         self.version = version if version else 1
         self._mode = mode
-        self._node = None
-        self.refers = {}
-        self.metadata = {}
-        self.max_trials = None
-        self.max_broken = None
-        self.space = None
-        self.algorithms = None
-        self.working_dir = None
+        self.refers = refers or {}
+        self.metadata = metadata or {}
+        self.max_trials = max_trials
+        self.max_broken = max_broken
 
-        self._storage = storage_instance
-        if self._storage is None:
-            self._storage = get_storage()
+        self.algorithms = algorithms
+        self.working_dir = working_dir
 
+        self._storage = get_storage()
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 
     def _check_if_writable(self):
@@ -167,7 +186,7 @@ class Experiment:
 
     def __getstate__(self):
         """Remove storage instance during experiment serialization"""
-        state = dict()
+        state = {}
         for entry in self.__slots__:
             state[entry] = getattr(self, entry)
 
@@ -235,7 +254,7 @@ class Experiment:
 
     def get_trial(self, trial=None, uid=None):
         """Fetch a single Trial, see :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
-        return self._storage.get_trial(trial, uid)
+        return self._storage.get_trial(trial, uid, experiment_uid=self.id)
 
     def retrieve_result(self, trial, *args, **kwargs):
         """See :meth:`orion.storage.base.BaseStorageProtocol.retrieve_result`"""
@@ -324,19 +343,14 @@ class Experiment:
             with_evc_tree=False, function="fetch_pending_trials"
         )
 
-        exp_trials_ids = set(
-            trial.compute_trial_hash(trial, ignore_experiment=True)
-            for trial in exp_pending_trials
-        )
+        exp_trials_ids = {trial.id for trial in exp_pending_trials}
 
         for trial in evc_pending_trials:
-            if (
-                trial.compute_trial_hash(trial, ignore_experiment=True)
-                in exp_trials_ids
-            ):
+            if trial.id in exp_trials_ids:
                 continue
 
             trial.experiment = self.id
+            trial.id_override = None
             # Danger danger, race conditions!
             try:
                 self._storage.register_trial(trial)
@@ -392,7 +406,9 @@ class Experiment:
         self._storage.register_trial(trial)
 
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, timeout=60, retry_interval=1):
+    def acquire_algorithm_lock(
+        self, timeout: int | float = 60, retry_interval: int | float = 1
+    ):
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
@@ -559,7 +575,7 @@ class Experiment:
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
-        config = dict()
+        config = {}
         for attrname in self.__slots__:
             if attrname.startswith("_"):
                 continue
@@ -587,7 +603,7 @@ class Experiment:
         completed_trials = self.fetch_trials_by_status("completed")
 
         if not completed_trials:
-            return dict()
+            return {}
         trials_completed = len(completed_trials)
         best_trials_id = None
         trial = completed_trials[0]
@@ -617,8 +633,7 @@ class Experiment:
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "Experiment(name=%s, metadata.user=%s, version=%s)" % (
-            self.name,
-            self.metadata.get("user", "n/a"),
-            self.version,
+        return (
+            f"Experiment(name={self.name}, metadata.user={self.metadata.get('user', 'n/a')}, "
+            f"version={self.version})"
         )

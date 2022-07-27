@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Installation script for Oríon."""
 import os
 
 from setuptools import setup
 
 import versioneer
-
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -15,6 +13,7 @@ with open("tests/requirements.txt") as f:
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
+    "orion.algo.mofa",
     "orion.algo.dehb",
     "orion.algo.pbt",
     "orion.analysis",
@@ -40,17 +39,21 @@ extras_require = {
         "sphinx_gallery",
     ],
     "dask": ["dask[complete]"],
-    "track": ["track @ git+https://github.com/Delaunay/track"],
+    "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "ax": [
+        "ax-platform",
+        "numpy",
+    ],
     "dehb": [
         "ConfigSpace",
-        "dehb @ git+https://github.com/automl/DEHB.git@development",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
         "hpbandster",
         "ConfigSpace",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git",
+        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "pb2": ["GPy"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
@@ -61,13 +64,20 @@ extras_require = {
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
+dashboard_files = []
+for root, sub_directories, files in os.walk("dashboard/build"):
+    for file in files:
+        # Install dashboard build in a folder `orion-dashboard`
+        install_root = os.path.join("orion-dashboard", *root.split(os.sep)[1:])
+        dashboard_files.append((install_root, [os.path.join(root, file)]))
+
 setup_args = dict(
     name="orion",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="Asynchronous [black-box] Optimization",
     long_description=open(
-        os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
+        os.path.join(repo_root, "README.rst"), encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
     author="Epistímio",
@@ -75,6 +85,7 @@ setup_args = dict(
     url="https://github.com/epistimio/orion",
     packages=packages,
     package_dir={"": "src"},
+    data_files=dashboard_files,
     include_package_data=True,
     python_requires=">=3.7",
     entry_points={
@@ -89,7 +100,9 @@ setup_args = dict(
             "dehb = orion.algo.dehb.dehb:DEHB",
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
-            "pbt = orion.algo.pbt.pbt:PBT",
+            # "pbt = orion.algo.pbt.pbt:PBT",
+            "ax = orion.algo.axoptimizer:AxOptimizer",
+            "mofa = orion.algo.mofa.mofa:MOFA",
             "pb2 = orion.algo.pbt.pb2:PB2",
             "bohb = orion.algo.bohb:BOHB",
             "nevergrad = orion.algo.nevergradoptimizer:NevergradOptimizer",
@@ -130,6 +143,7 @@ setup_args = dict(
         "psutil",
         "joblib",
         "pytest>=3.0.0",
+        "scikit-optimize",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
@@ -159,7 +173,7 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.7 3.8 3.9".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.8 3.9".split()]
 
 if __name__ == "__main__":
     setup(**setup_args)

@@ -10,11 +10,17 @@ from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import List, Type
-from orion.algo.base import OptimizationAlgorithm
 
+from orion.algo.base import algo_factory
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-from orion.benchmark.task.profet import ProfetFcNetTask, ProfetForresterTask, ProfetSvmTask, ProfetXgBoostTask
+from orion.benchmark.task.base import BenchmarkTask
+from orion.benchmark.task.profet import (
+    ProfetFcNetTask,
+    ProfetForresterTask,
+    ProfetSvmTask,
+    ProfetXgBoostTask,
+)
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 try:
@@ -28,18 +34,22 @@ except ImportError as exc:
 logger = get_logger("orion")
 logger.setLevel(logging.DEBUG)
 
-from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
 
-algos_available = set(OptimizationAlgorithm.types.keys()) - {"primaryalgo"}
+algos_available = set(algo_factory.get_classes().keys())
 
 
 @dataclass
 class ProfetExperimentConfig:
-    """ Configuration option for the demo of the Profet tasks. """
+    """Configuration option for the demo of the Profet tasks."""
 
     # The type of Profet task to create.
     task_type: Type[BenchmarkTask] = choice(  # type: ignore
-        {"svm": ProfetSvmTask, "fcnet": ProfetFcNetTask, "xgboost": ProfetXgBoostTask, "forrester": ProfetForresterTask}
+        {
+            "svm": ProfetSvmTask,
+            "fcnet": ProfetFcNetTask,
+            "xgboost": ProfetXgBoostTask,
+            "forrester": ProfetForresterTask,
+        }
     )
 
     # Name of the experiment.
@@ -47,14 +57,16 @@ class ProfetExperimentConfig:
     # Configuration options for the training of the meta-model used in the Profet tasks.
     profet_train_config: MetaModelConfig = MetaModelConfig()
 
-    algorithms: List[str] = choice(*algos_available, default_factory=["random", "tpe"].copy)
+    algorithms: List[str] = choice(
+        *algos_available, default_factory=["random", "tpe"].copy
+    )
 
     # Number of repetitions for each experiment
     n_repetitions: int = 10
     # Optimization budget (max number of trials) for optimizing the task.
     max_trials: int = 50
     # Run in debug mode:
-    # - No presistent storage
+    # - No persistent storage
     # - More verbose logging
     # (@TODO: This isn't technically correct: Benchmarks don't support the `debug` flag in
     # `develop` but that feature is to be added by the long-standing warm-start PR.
@@ -94,7 +106,14 @@ def main(config: ProfetExperimentConfig):
     benchmark = get_or_create_benchmark(
         name=config.name,
         algorithms=config.algorithms,
-        targets=[{"assess": [AverageResult(config.n_repetitions)], "task": [task,],}],
+        targets=[
+            {
+                "assess": [AverageResult(config.n_repetitions)],
+                "task": [
+                    task,
+                ],
+            }
+        ],
         storage={
             "type": "legacy",
             "database": {"type": "pickleddb", "host": str(config.storage_pickle_path)},

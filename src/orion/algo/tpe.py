@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tree-structured Parzen Estimator Approach
 =========================================
@@ -9,15 +8,13 @@ import logging
 from typing import Any, Callable, ClassVar, Iterable, Sequence, TypeVar
 
 import numpy
-import numpy as np
 from scipy.stats import norm
 from scipy.stats.distributions import rv_frozen
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.parallel_strategy import ParallelStrategy, strategy_factory
-from orion.algo.space import Dimension, Integer, Real, Space
+from orion.algo.space import Integer, Real, Space
 from orion.core.utils import format_trials
-from orion.core.worker.transformer import TransformedSpace
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -172,7 +169,7 @@ class TPE(BaseAlgorithm):
         Default: ``20``
     n_ei_candidates: int, optional
         Number of candidates points sampled for ei compute. Larger numbers will lead to more
-        exploitation and lower numbers will lead to more exploration. Be carefull with categorical
+        exploitation and lower numbers will lead to more exploration. Be careful with categorical
         dimension as TPE tend to severily exploit these if n_ei_candidates is larger than 1.
         Default: ``24``
     gamma: real, optional

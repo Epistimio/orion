@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Installation script for `orion.algo.gradient_descent`."""
 from setuptools import setup
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Legacy storage
 ==============
@@ -8,24 +7,20 @@ Old Storage implementation.
 """
 import contextlib
 import datetime
-import json
 import logging
 import pickle
 import time
 
-import bson
-
 import orion.core
 import orion.core.utils.backward as backward
 from orion.core.io.database import Database, OutdatedDatabaseError, database_factory
-from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
     BaseStorageProtocol,
     FailedUpdate,
     LockAcquisitionTimeout,
     LockedAlgorithmState,
-    MissingArguments,
+    get_trial_uid_and_exp,
     get_uid,
 )
 
@@ -107,7 +102,8 @@ class Legacy(BaseStorageProtocol):
                 "command `orion db upgrade`."
             )
 
-        self._db.index_information("experiment")
+        # TODO: What is that used for?
+        # self._db.index_information("experiment")
         self._db.ensure_index(
             "experiments",
             [("name", Database.ASCENDING), ("version", Database.ASCENDING)],
@@ -118,6 +114,11 @@ class Legacy(BaseStorageProtocol):
 
         self._db.ensure_index("benchmarks", "name", unique=True)
 
+        self._db.ensure_index(
+            "trials",
+            [("experiment", Database.ASCENDING), ("id", Database.ASCENDING)],
+            unique=True,
+        )
         self._db.ensure_index("trials", "experiment")
         self._db.ensure_index("trials", "status")
         self._db.ensure_index("trials", "results")
@@ -189,7 +190,16 @@ class Legacy(BaseStorageProtocol):
 
     def register_trial(self, trial):
         """See :func:`orion.storage.base.BaseStorageProtocol.register_trial`"""
-        self._db.write("trials", trial.to_dict())
+        config = trial.to_dict()
+        self._db.write("trials", config)
+        if trial.id_override is not None and trial.id_override != config["_id"]:
+            raise FailedUpdate(
+                f"Trial id override not set properly.\n"
+                f"override id: {trial.id_override}\n"
+                f"document id: {config['_id']}"
+            )
+        trial.id_override = config["_id"]
+
         return trial
 
     def delete_trials(self, experiment=None, uid=None, where=None):
@@ -224,18 +234,14 @@ class Legacy(BaseStorageProtocol):
         """
         return trial
 
-    def get_trial(self, trial=None, uid=None):
+    def get_trial(self, trial=None, uid=None, experiment_uid=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.get_trial`"""
-        if trial is not None and uid is not None:
-            assert trial._id == uid
 
-        if uid is None:
-            if trial is None:
-                raise MissingArguments("Either `trial` or `uid` should be set")
+        trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
 
-            uid = trial.id
-
-        result = self._db.read("trials", {"_id": uid})
+        result = self._db.read(
+            "trials", {"id": trial_uid, "experiment": experiment_uid}
+        )
         if not result:
             return None
 
@@ -250,14 +256,16 @@ class Legacy(BaseStorageProtocol):
         where["experiment"] = uid
         return self._db.write("trials", data=kwargs, query=where)
 
-    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+    def update_trial(
+        self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
+    ):
         """See :func:`orion.storage.base.BaseStorageProtocol.update_trial`"""
-        uid = get_uid(trial, uid)
-
         if where is None:
             where = dict()
 
-        where["_id"] = uid
+        trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
+        where["id"] = trial_uid
+        where["experiment"] = experiment_uid
         return self._db.write("trials", data=kwargs, query=where)
 
     def fetch_lost_trials(self, experiment):
@@ -278,7 +286,13 @@ class Legacy(BaseStorageProtocol):
     def push_trial_results(self, trial):
         """See :func:`orion.storage.base.BaseStorageProtocol.push_trial_results`"""
         rc = self.update_trial(
-            trial, **trial.to_dict(), where={"_id": trial.id, "status": "reserved"}
+            trial,
+            **trial.to_dict(),
+            where={
+                "id": trial.id,
+                "experiment": trial.experiment,
+                "status": "reserved",
+            },
         )
         if not rc:
             raise FailedUpdate()
@@ -295,7 +309,13 @@ class Legacy(BaseStorageProtocol):
 
         update = dict(status=status, heartbeat=heartbeat, experiment=trial.experiment)
 
-        rc = self.update_trial(trial, **update, where={"status": was, "_id": trial.id})
+        rc = self.update_trial(
+            trial,
+            uid=None,
+            experiment_uid=None,
+            **update,
+            where={"status": was},
+        )
 
         if not rc:
             raise FailedUpdate()

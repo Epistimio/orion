@@ -56,7 +56,7 @@ Create a new project directly from the template on `GitHub`_:
 +-----------------------+--------------------------------------------+--+
 | ``algo_name``         | Name for the algorithm class               |  |
 +-----------------------+--------------------------------------------+--+
-| ``algo_module_name``  | Name of the algorihtm module               |  |
+| ``algo_module_name``  | Name of the algorithm module               |  |
 +-----------------------+--------------------------------------------+--+
 
 This will create the following package structure.

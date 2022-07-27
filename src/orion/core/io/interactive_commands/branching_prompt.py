@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 CLI for conflict solving
 ========================
@@ -102,7 +101,7 @@ class BranchingPrompt(cmd.Cmd):
         self.parser = argparse.ArgumentParser(prog="(orion)", add_help=False)
         subparsers = self.parser.add_subparsers(title="commands")
         for command in self.get_commands():
-            subparser_builder = getattr(self, "_add_{}_parser".format(command), None)
+            subparser_builder = getattr(self, f"_add_{command}_parser", None)
             if subparser_builder:
                 subparser_builder(subparsers)
             else:
@@ -112,7 +111,7 @@ class BranchingPrompt(cmd.Cmd):
         return subparsers.add_parser(name, **kwargs)
 
     def _add_default_subparser(self, name, subparsers):
-        method = getattr(self, "do_{}".format(name))
+        method = getattr(self, f"do_{name}")
         subparser = self._build_argument_parser(
             subparsers,
             name,
@@ -198,7 +197,7 @@ class BranchingPrompt(cmd.Cmd):
     def cmdloop(self):
         """Start cmdloop of the prompt"""
         intro = self.intro % self.get_status()
-        super(BranchingPrompt, self).cmdloop(intro)
+        super().cmdloop(intro)
 
     def get_status(self, options=None):
         """Return a string representing the status"""
@@ -207,9 +206,9 @@ class BranchingPrompt(cmd.Cmd):
 
         output = io.StringIO()
         if resolved_conflicts:
-            resolution_strings = set(
+            resolution_strings = {
                 str(conflict.resolution) for conflict in resolved_conflicts
-            )
+            }
             print("Resolutions:", file=output)
             print(file=output)
             for resolution_string in resolution_strings:
@@ -556,6 +555,6 @@ class BranchingPrompt(cmd.Cmd):
             return False
 
         new_name = self.branch_builder.conflicting_config["name"]
-        print("Registering experiment branch '{0}'.".format(new_name))
+        print(f"Registering experiment branch '{new_name}'.")
 
         return True

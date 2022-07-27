@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Custom exceptions for Oríon
 ===========================
@@ -31,13 +30,9 @@ class NoNameError(Exception):
 class CheckError(Exception):
     """Raise when a check has failed."""
 
-    pass
-
 
 class RaceCondition(Exception):
-    """Raise when a race condition occured."""
-
-    pass
+    """Raise when a race condition occurred."""
 
 
 class ReservationRaceCondition(Exception):
@@ -46,13 +41,9 @@ class ReservationRaceCondition(Exception):
 
     """
 
-    pass
-
 
 class LazyWorkers(Exception):
     """Raised when all the workers have been idle for a given amount of time"""
-
-    pass
 
 
 MISSING_RESULT_FILE = """
@@ -112,27 +103,19 @@ class BranchingEvent(Exception):
 class ReservationTimeout(Exception):
     """Raised when the experiment client is not able to reserve a trial in time"""
 
-    pass
-
 
 class WaitingForTrials(Exception):
     """Raised when the algorithm needs to wait for some trials to complete before it can suggest new
     ones
     """
 
-    pass
-
 
 class CompletedExperiment(Exception):
     """Raised when attempting to suggest new trials for an experiment that is completed"""
 
-    pass
-
 
 class BrokenExperiment(Exception):
     """Raised when too many trials failed in an experiment and it is now considered broken"""
-
-    pass
 
 
 INEXECUTABLE_USER_SCRIPT_ERROR_MESSAGE = """\
