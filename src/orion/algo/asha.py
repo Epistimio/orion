@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Asynchronous Successive Halving Algorithm
 =========================================
@@ -6,7 +5,6 @@ Asynchronous Successive Halving Algorithm
 from __future__ import annotations
 
 import copy
-import hashlib
 import logging
 from collections import defaultdict
 from typing import Any, Sequence
@@ -14,15 +12,13 @@ from typing import Any, Sequence
 import numpy
 import numpy as np
 
-from orion.algo.base import BaseAlgorithm
 from orion.algo.hyperband import (
     BudgetTuple,
     Hyperband,
     HyperbandBracket,
-    RungDict,
     display_budgets,
 )
-from orion.algo.space import Fidelity, Space
+from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -80,10 +76,10 @@ def compute_budgets(
     if budgets[-1] > max_resources:
         raise ValueError(BUDGET_ERROR.format(min_resources, max_resources, num_rungs))
 
-    ressources = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
+    resources = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
     budgets_lists: list[list[BudgetTuple]] = []
     budgets_tab: dict[int, list[BudgetTuple]] = defaultdict(list)
-    for bracket_ressources in ressources:
+    for bracket_ressources in resources:
         bracket_budgets: list[BudgetTuple] = []
         for i, min_ressources in enumerate(bracket_ressources[::-1]):
             budget = BudgetTuple(reduction_factor**i, min_ressources)
@@ -212,7 +208,7 @@ class ASHA(Hyperband):
 
         return samples
 
-    def suggest(self, num: int) -> list[Trial] | None:
+    def suggest(self, num: int) -> list[Trial]:
         return super().suggest(num)
 
     def create_bracket(
@@ -221,7 +217,7 @@ class ASHA(Hyperband):
         return ASHABracket(self, budgets, iteration)
 
 
-class ASHABracket(HyperbandBracket):
+class ASHABracket(HyperbandBracket[ASHA]):
     """Bracket of rungs for the algorithm ASHA.
 
     Parameters
@@ -237,12 +233,11 @@ class ASHABracket(HyperbandBracket):
 
     def __init__(
         self,
-        asha: ASHA,
+        owner: ASHA,
         budgets: list[BudgetTuple],
         repetition_id: int,
     ):
-        super().__init__(hyperband=asha, budgets=budgets, repetition_id=repetition_id)
-        self.asha: ASHA = asha
+        super().__init__(owner=owner, budgets=budgets, repetition_id=repetition_id)
 
     def get_candidates(self, rung_id: int) -> list[Trial]:
         """Get a candidate for promotion
@@ -265,13 +260,13 @@ class ASHABracket(HyperbandBracket):
                 key=lambda item: item[0],
             )
         )
-        k = len(rung) // self.hyperband.reduction_factor
+        k = len(rung) // self.owner.reduction_factor
         k = min(k, len(rung))
 
         candidates: list[Trial] = []
         for i in range(k):
             trial = rung[i][1]
-            _id = self.hyperband.get_id(trial, ignore_fidelity=True)
+            _id = self.owner.get_id(trial, ignore_fidelity=True)
             if _id not in next_rung:
                 candidates.append(trial)
 
@@ -309,20 +304,18 @@ class ASHABracket(HyperbandBracket):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
                     f"Promoting {candidate} from rung {rung_id} with fidelity "
-                    f"{candidate.params[self.hyperband.fidelity_index]} to "
+                    f"{candidate.params[self.owner.fidelity_index]} to "
                     f"rung {rung_id + 1} with fidelity {self.rungs[rung_id + 1]['resources']}"
                 )
 
                 candidate = candidate.branch(
                     status="new",
                     params={
-                        self.hyperband.fidelity_index: self.rungs[rung_id + 1][
-                            "resources"
-                        ]
+                        self.owner.fidelity_index: self.rungs[rung_id + 1]["resources"]
                     },
                 )
 
-                if not self.hyperband.has_suggested(candidate):
+                if not self.owner.has_suggested(candidate):
                     candidates.append(candidate)
 
                 if len(candidates) >= num:

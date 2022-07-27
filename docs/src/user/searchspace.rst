@@ -86,7 +86,7 @@ to make them compatible with specific algorithms
 Real
 ----
 
-All continous priors are automatically casted to :class:`Real`.
+All continuous priors are automatically casted to :class:`Real`.
 
 .. _integer-dim:
 
@@ -99,7 +99,7 @@ distributions can be casted to :class:`Integer` by setting ``discrete=True``
 
 .. warning::
 
-   We recommend using continous priors with ``discrete=True``
+   We recommend using continuous priors with ``discrete=True``
    as there is an issue with scipy discrete distribution because of incorrect interval. Issue
    is documented
    `here <https://github.com/Epistimio/orion/issues/49>`_.
@@ -136,7 +136,7 @@ Argument to cast a continuous distribution into :ref:`integer-dim`. Defaults to 
 ex: ``uniform(0, 10, default_value=5)``
 
 Dimensions can be set to a default value so that commandline call `insert` can support insertion
-without specifing this hyperparameter, assigning it the default value. This is also usefull in when
+without specifying this hyperparameter, assigning it the default value. This is also useful in when
 using the :ref:`EVC system`, so that experiments where an hyperparameter is deleted or added can
 adapt trials from other experiments by using the default value.
 
@@ -191,6 +191,15 @@ represented with ``my_script_config.txt`` in the following example.
 .. code-block:: console
 
    orion hunt --config my_orion_config.yaml ./my_script --config my_script_config.txt
+
+During the execution of the optimization, Oríon will generate a new file for the configuration
+in which the priors `orion~<prior>(<args>)` will be replaced by the actual value of the current
+trial. The path of this configuration file will be passed to your script instead of the original
+path. For instance, this would lead to the script from previous example to be called like this:
+
+.. code-block:: console
+
+   ./my_script --config /path/to/exp/working/dir/trial_random_name.conf
 
 Here is an example of a configuration file with yaml
 
@@ -253,8 +262,8 @@ and the corresponding path is passed to the user script instead of the original 
 Notes
 ======
 
-Tranformations
---------------
+Transformations
+---------------
 
 Some algorithms only support limited types of dimensions. In such case, these algorithms define
 the type required, and then a wrapper transforms the space to make it compatible.

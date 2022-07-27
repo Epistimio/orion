@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
 import copy
 import os
+import warnings
 
 import bson
 import numpy
@@ -41,8 +41,8 @@ def params():
 @pytest.fixture
 def trial_config(params):
     return dict(
-        _id="ebcf6c6c8604f96444af1c3e519aea7f",
-        id_override=None,
+        _id="something-unique",
+        id="eebf174e46dae012521c12985b652cff",
         experiment="supernaedo2-dendi",
         exp_working_dir=None,
         status="completed",
@@ -68,7 +68,7 @@ def trial_config(params):
     )
 
 
-class TestTrial(object):
+class TestTrial:
     """Test Trial object and class."""
 
     def test_init_empty(self):
@@ -359,7 +359,7 @@ class TestTrial(object):
     def test_hash_name_property(self, trial_config):
         """Check property `Trial.hash_name`."""
         t = Trial(**trial_config)
-        assert t.hash_name == "ebcf6c6c8604f96444af1c3e519aea7f"
+        assert t.hash_name == "eebf174e46dae012521c12985b652cff"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:
@@ -377,19 +377,28 @@ class TestTrial(object):
         assert t1.hash_name != t2.hash_name
         assert t1.hash_params == t2.hash_params
 
-    def test_hash_ignore_experiment(self, trial_config):
-        """Check property `Trial.compute_trial_hash(ignore_experiment=True)`."""
+    def test_hash_ignore_experiment_is_deprecated(self, trial_config):
+        """Check property `Trial.compute_trial_hash(ignore_experiment=True)` is deprecated."""
         trial_config["params"].append(
             {"name": "/max_epoch", "type": "fidelity", "value": "1"}
         )
         t1 = Trial(**trial_config)
         trial_config["experiment"] = "test"  # changing the experiment name
         t2 = Trial(**trial_config)
-        assert t1.hash_name != t2.hash_name
-        assert t1.hash_params != t2.hash_params
-        assert Trial.compute_trial_hash(
-            t1, ignore_experiment=True
-        ) == Trial.compute_trial_hash(t2, ignore_experiment=True)
+        with warnings.catch_warnings(record=True) as w:
+            assert t1.hash_name == t2.hash_name
+            assert t1.hash_params == t2.hash_params
+            assert len(w) == 0
+
+        with pytest.deprecated_call():
+            assert Trial.compute_trial_hash(
+                t1, ignore_experiment=False
+            ) != Trial.compute_trial_hash(t2, ignore_experiment=False)
+
+        with pytest.deprecated_call():
+            assert Trial.compute_trial_hash(
+                t1, ignore_experiment=True
+            ) == Trial.compute_trial_hash(t2, ignore_experiment=True)
 
     def test_hash_ignore_lie(self, trial_config):
         """Check property `Trial.compute_trial_hash(ignore_lie=True)`."""

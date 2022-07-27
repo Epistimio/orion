@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple one dimensional example for a possible user's script."""
 import argparse
 
@@ -21,7 +20,7 @@ def execute():
     parser.add_argument("--config", required=True)
     inputs = parser.parse_args()
 
-    with open(inputs.config, "r") as f:
+    with open(inputs.config) as f:
         config = yaml.safe_load(f)
 
     # 2. Perform computations

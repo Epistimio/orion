@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Tests :func:`orion.analysis.regret`"""
 import pandas as pd
 import pytest

@@ -31,7 +31,7 @@ following template.
     orion hunt -n <exp name>
         ./your_script.sh --checkpoint '{experiment.working_dir}/{trial.hash_params}'
 
-Your script is reponsible to take this checkpoint path, resume from checkpoints or same
+Your script is responsible to take this checkpoint path, resume from checkpoints or same
 checkpoints.
 We will demonstrate below how this can be done with PyTorch, but using Oríon's Python API.
 
@@ -44,19 +44,18 @@ optimization.
 First things first, the imports.
 
 """
-import numpy
+# noqa
+import os
 
+# flake8: noqa
+import numpy
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import SubsetRandomSampler
-
 import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
-
-import os
-import argparse
+from torch.utils.data import SubsetRandomSampler
 
 #%%
 # We will use the data SubsetRandomSampler data loader from PyTorch to split

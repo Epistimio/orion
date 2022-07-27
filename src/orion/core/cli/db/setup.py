@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the setup command
 ================================
@@ -45,9 +44,7 @@ def main(*args):
         cancel = ""
         while cancel.strip().lower() not in ["y", "n"]:
             cancel = ask_question(
-                "This will overwrite {}, do you want to proceed? (y/n) ".format(
-                    default_file
-                ),
+                f"This will overwrite {default_file}, do you want to proceed? (y/n) ",
                 "n",
             )
 
@@ -67,7 +64,7 @@ def main(*args):
     arg_vals = {}
     for arg_name, default_value in sorted(db_args.items()):
         arg_vals[arg_name] = ask_question(
-            "Enter the database {}: ".format(arg_name), default_value
+            f"Enter the database {arg_name}: ", default_value
         )
 
     config = {"database": {"type": _type, **arg_vals}}
@@ -78,5 +75,5 @@ def main(*args):
     dirs = "/".join(default_file.split("/")[:-1])
     os.makedirs(dirs, exist_ok=True)
 
-    with open(default_file, "w") as output:
+    with open(default_file, "w", encoding="utf8") as output:
         yaml.dump(config, output, default_flow_style=False)

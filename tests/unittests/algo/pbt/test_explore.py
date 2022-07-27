@@ -1,10 +1,12 @@
 import numpy
 import pytest
-from base import ExploreStub, RNGStub, TrialStub, hspace, space
+from base import RNGStub, TrialStub
 
 from orion.algo.pbt.explore import PerturbExplore, PipelineExplore, ResampleExplore
 from orion.algo.space import Categorical, Dimension
 from orion.core.utils.flatten import flatten
+
+pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
 
 
 class TestPipelineExplore:

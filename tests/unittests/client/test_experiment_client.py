@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
 import copy
 import datetime
 import logging
 import time
 
-import joblib
 import pandas.testing
 import pytest
 
@@ -18,12 +16,10 @@ from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
     ReservationRaceCondition,
-    ReservationTimeout,
     WaitingForTrials,
 )
 from orion.core.worker.trial import AlreadyReleased, Trial
 from orion.executor.base import ExecutorClosed, executor_factory
-from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
 
@@ -73,7 +69,7 @@ def compare_trials(trials_a, trials_b):
 
 
 def compare_without_heartbeat(trial_a, trial_b):
-    """Compare trials configuration ommiting heartbeat"""
+    """Compare trials configuration omitting heartbeat"""
     trial_a_dict = trial_a.to_dict()
     trial_b_dict = trial_b.to_dict()
     trial_a_dict.pop("heartbeat")
@@ -222,7 +218,7 @@ class TestInsert:
             trial = client.insert(dict(x=100))
             assert trial.status == "interrupted"
             assert trial.params["x"] == 100
-            assert trial.id in set(trial.id for trial in experiment.fetch_trials())
+            assert trial.id in {trial.id for trial in experiment.fetch_trials()}
             compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
 
             assert client._pacemakers == {}
@@ -238,7 +234,7 @@ class TestInsert:
             assert trial.params["x"] == 100
             assert trial.objective.value == 101
             assert trial.end_time >= timestamp
-            assert trial.id in set(trial.id for trial in experiment.fetch_trials())
+            assert trial.id in {trial.id for trial in experiment.fetch_trials()}
             compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
             assert client.get_trial(uid=trial.id).objective.value == 101
 
@@ -286,7 +282,7 @@ class TestInsert:
             assert trial.status == "interrupted"
             assert trial.params["x"] == 100
             assert trial.params["y"] == 5
-            assert trial.id in set(trial.id for trial in experiment.fetch_trials())
+            assert trial.id in {trial.id for trial in experiment.fetch_trials()}
             compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
 
             assert client._pacemakers == {}
@@ -359,7 +355,7 @@ class TestReserve:
     def test_reserve(self):
         """Test reservation of registered trials"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
             client.reserve(trial)
             assert trial.status == "reserved"
@@ -374,23 +370,20 @@ class TestReserve:
             with pytest.raises(ValueError) as exc:
                 client.reserve(trial)
 
-            assert "Trial {} does not exist in database.".format(trial.id) == str(
-                exc.value
-            )
+            assert f"Trial {trial.id} does not exist in database." == str(exc.value)
             assert client._pacemakers == {}
 
     def test_reserve_reserved_locally(self, caplog):
         """Verify that a trial cannot be reserved twice locally (warning, no exception)"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
             client.reserve(trial)
             with caplog.at_level(logging.WARNING):
                 client.reserve(trial)
 
             assert (
-                "Trial {} is already reserved.".format(trial.id)
-                == caplog.records[-1].message
+                f"Trial {trial.id} is already reserved." == caplog.records[-1].message
             )
 
             assert client._pacemakers[trial.id].is_alive()
@@ -399,18 +392,18 @@ class TestReserve:
     def test_reserve_reserved_remotely(self):
         """Verify that a trial cannot be reserved if already reserved by another process"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = Trial(**cfg.trials[1])
+            trial = Trial(**cfg.trials[2])
             assert trial.status == "interrupted"
             client.reserve(trial)
             remote_pacemaker = client._pacemakers.pop(trial.id)
             assert experiment.get_trial(trial).status == "reserved"
 
-            trial = Trial(**cfg.trials[1])
+            trial = Trial(**cfg.trials[2])
             assert trial.status == "interrupted"
             with pytest.raises(RuntimeError) as exc:
                 client.reserve(trial)
 
-            assert "Could not reserve trial {}.".format(trial.id) == str(exc.value)
+            assert f"Could not reserve trial {trial.id}." == str(exc.value)
 
             assert trial.status == "interrupted"
             assert experiment.get_trial(trial).status == "reserved"
@@ -422,14 +415,14 @@ class TestReserve:
         error
         """
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[0]["_id"])
+            trial = client.get_trial(uid=cfg.trials[0]["id"])
             experiment.set_trial_status(trial, "reserved")
             trial.status = "new"  # Let's pretend it is still available
 
             with pytest.raises(RuntimeError) as exc:
                 client.reserve(trial)
 
-            assert "Could not reserve trial {}.".format(trial.id) == str(exc.value)
+            assert f"Could not reserve trial {trial.id}." == str(exc.value)
             assert client._pacemakers == {}
 
 
@@ -440,7 +433,7 @@ class TestRelease:
     def test_release(self):
         """Test releasing (to interrupted)"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             client.release(trial)
@@ -452,7 +445,7 @@ class TestRelease:
     def test_release_status(self):
         """Test releasing with a specific status"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             client.release(trial, "broken")
@@ -464,7 +457,7 @@ class TestRelease:
     def test_release_invalid_status(self):
         """Test releasing with a specific status"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["_id"])
+            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             with pytest.raises(ValueError) as exc:
                 client.release(trial, "mouf mouf")
@@ -485,9 +478,7 @@ class TestRelease:
             with pytest.raises(ValueError) as exc:
                 client.release(trial)
 
-            assert "Trial {} does not exist in database.".format(trial.id) == str(
-                exc.value
-            )
+            assert f"Trial {trial.id} does not exist in database." == str(exc.value)
             assert client._pacemakers == {}
 
     def test_release_race_condition(self):
@@ -495,7 +486,7 @@ class TestRelease:
         error
         """
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             # Woops! Trial got failed over from another process.
@@ -514,20 +505,18 @@ class TestRelease:
     def test_release_unreserved(self):
         """Verify that unreserved trials cannot be released"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
-            assert "Trial {} was already released locally.".format(trial.id) == str(
-                exc.value
-            )
+            assert f"Trial {trial.id} was already released locally." == str(exc.value)
 
             assert client._pacemakers == {}
 
     def test_release_already_released_but_incorrectly(self):
         """Verify that incorrectly released trials have its pacemaker stopped properly"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
             assert trial.status == "reserved"
@@ -537,9 +526,7 @@ class TestRelease:
             with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
-            assert "Trial {} was already released locally.".format(trial.id) == str(
-                exc.value
-            )
+            assert f"Trial {trial.id} was already released locally." == str(exc.value)
 
             assert client._pacemakers == {}
             assert not pacemaker.is_alive()
@@ -614,7 +601,7 @@ class TestSuggest:
     """Tests for ExperimentClient.suggest"""
 
     def test_suggest(self, monkeypatch):
-        """Verify that suggest reserved availabe trials."""
+        """Verify that suggest reserved available trials."""
         mock_space_iterate(monkeypatch)
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = client.suggest()
@@ -878,9 +865,7 @@ class TestObserve:
                     trial, [dict(name="objective", type="objective", value=101)]
                 )
 
-            assert "Trial {} does not exist in database.".format(trial.id) == str(
-                exc.value
-            )
+            assert f"Trial {trial.id} does not exist in database." == str(exc.value)
             assert client._pacemakers == {}
 
     def test_observe_bad_results(self):
@@ -900,7 +885,7 @@ class TestObserve:
     def test_observe_race_condition(self):
         """Verify that race condition during `observe()` is detected and raised"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             experiment.set_trial_status(trial, "interrupted")
             trial.status = "reserved"  # Let's pretend it is still reserved
@@ -910,9 +895,7 @@ class TestObserve:
                     trial, [dict(name="objective", type="objective", value=101)]
                 )
 
-            assert "Reservation for trial {} has been lost.".format(trial.id) == str(
-                exc.value
-            )
+            assert f"Reservation for trial {trial.id} has been lost." == str(exc.value)
             assert client._pacemakers == {}
 
     def test_observe_under_with(self):
@@ -931,7 +914,7 @@ class TestObserve:
 
 
 def test_executor_receives_correct_worker_count():
-    """Check that the client forwards the corrent number count to the executor"""
+    """Check that the client forwards the current number count to the executor"""
 
     with create_experiment(config, base_trial) as (cfg, experiment, client):
         assert client.executor.n_workers == orion.core.config.worker.n_workers

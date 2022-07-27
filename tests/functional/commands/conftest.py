@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
 import copy
 import os
@@ -7,7 +6,6 @@ import zlib
 
 import pytest
 import yaml
-from pymongo import MongoClient
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
@@ -226,13 +224,11 @@ def unrelated_with_trials(family_with_trials, single_with_trials):
 @pytest.fixture
 def three_experiments(two_experiments, one_experiment):
     """Create a single experiment and an experiment and its child."""
-    pass
 
 
 @pytest.fixture
 def three_experiments_with_trials(family_with_trials, single_with_trials):
     """Create three experiments, two unrelated, with all types of trials."""
-    pass
 
 
 @pytest.fixture

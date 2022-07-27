@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Helper function for returning results from script
 =================================================
@@ -81,7 +80,7 @@ def report_bad_trial(objective=1e10, name="objective", data=None):
     ----------
     objective: float
         Objective the return to Oríon for the current trial. The default objective is 1e10.
-        This may not be valid for some metrics and this value should be overrided accordingly. In
+        This may not be valid for some metrics and this value should be overridden accordingly. In
         the case of error rates for instance, the value should be 1.0.
     name: str, optional
         Name of the objective. Default is 'objective'.
@@ -126,7 +125,7 @@ def report_results(data):
     if _HAS_REPORTED_RESULTS:
         raise RuntimeWarning("Has already reported evaluation results once.")
     if IS_ORION_ON:
-        with open(RESULTS_FILENAME, "w") as results_file:
+        with open(RESULTS_FILENAME, "w", encoding="utf8") as results_file:
             json.dump(data, results_file)
     else:
         print(data)

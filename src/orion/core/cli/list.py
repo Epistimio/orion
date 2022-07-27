@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to list experiments
 ==========================
@@ -9,8 +8,8 @@ List experiments in terminal
 """
 import logging
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
+from orion.core.io import experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.storage.base import get_storage
 

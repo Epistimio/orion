@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 """Generic tests for Space"""
 from collections import OrderedDict
 
-from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
+from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 
 
 def dim1():

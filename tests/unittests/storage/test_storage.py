@@ -1,10 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.storage`."""
 
 import copy
 import datetime
-import inspect
 import logging
 import os
 import pickle
@@ -22,7 +20,6 @@ from orion.core.utils.singleton import (
 )
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
-    BaseStorageProtocol,
     FailedUpdate,
     LockAcquisitionTimeout,
     LockedAlgorithmState,
@@ -135,7 +132,7 @@ def test_setup_storage_default():
 
 
 def test_setup_storage_bad():
-    """Test how setup fails when configuring with non-existant backends"""
+    """Test how setup fails when configuring with non-existent backends"""
     update_singletons()
     with pytest.raises(NotImplementedError) as exc:
         setup_storage({"type": "idontexist"})
@@ -188,7 +185,7 @@ def test_setup_storage_bad_override():
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
         setup_storage({"type": "track"})
 
-    assert exc.match("A singleton instance of \(type: BaseStorageProtocol\)")
+    assert exc.match(r"A singleton instance of \(type: BaseStorageProtocol\)")
 
 
 @pytest.mark.xfail(reason="Fix this when introducing #135 in v0.2.0")
@@ -204,7 +201,7 @@ def test_setup_storage_bad_config_override():
 
 
 def test_setup_storage_stateless():
-    """Test that passed configuration dictionary is not modified by the fonction"""
+    """Test that passed configuration dictionary is not modified by the function"""
     update_singletons()
     config = {"database": {"type": "pickleddb", "host": "test.pkl"}}
     passed_config = copy.deepcopy(config)
@@ -219,7 +216,7 @@ def test_get_storage_uninitiated():
         get_storage()
 
     assert exc.match(
-        "No singleton instance of \(type: BaseStorageProtocol\) was created"
+        r"No singleton instance of \(type: BaseStorageProtocol\) was created"
     )
 
 
@@ -523,10 +520,13 @@ class TestStorage:
             trial_dict = cfg.trials[0]
 
             trial1 = storage.get_trial(trial=Trial(**trial_dict))
-            trial2 = storage.get_trial(uid=trial1.id)
+            trial2 = storage.get_trial(uid=trial1.id, experiment_uid=trial1.experiment)
 
             with pytest.raises(MissingArguments):
                 storage.get_trial()
+
+            with pytest.raises(MissingArguments):
+                storage.get_trial(uid=trial1.id)
 
             with pytest.raises(AssertionError):
                 storage.get_trial(trial=trial1, uid="123")
@@ -537,9 +537,9 @@ class TestStorage:
     def test_fetch_lost_trials(self, storage):
         """Test update heartbeat"""
         lost_trials = [
-            make_lost_trial(2),  # Is not lost for long enough to be catched
-            make_lost_trial(10),
-        ]  # Is lost for long enough to be catched
+            make_lost_trial(2),  # Is not lost for long enough to be caught
+            make_lost_trial(10),  # Is lost for long enough to be caught
+        ]
         # Force recent heartbeat to avoid mixing up with lost trials.
         trials = lost_trials + generate_trials(heartbeat=datetime.datetime.utcnow())
         with OrionState(
@@ -599,7 +599,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = get_storage().get_trial(cfg.get_trial(1))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -625,7 +625,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = get_storage().get_trial(cfg.get_trial(1))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 
@@ -655,7 +655,7 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = get_storage().get_trial(cfg.get_trial(0))
+                trial = get_storage().get_trial(cfg.get_trial(1))
                 assert trial is not None, "Was not able to retrieve trial for test"
                 assert trial.status != new_status
 

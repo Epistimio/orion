@@ -297,7 +297,7 @@ class TestFlattenParams:
         """Test that ValueError is raised if passing unexisting params"""
         with pytest.raises(ValueError) as exc:
             flatten_params(space, ["idoexistbelieveme!!!"])
-        assert exc.match(f"Parameter idoexistbelieveme!!! not contained in space: ")
+        assert exc.match("Parameter idoexistbelieveme!!! not contained in space: ")
 
     def test_no_flatten(self, space, hspace):
         """Test selection of params not involving flattening"""

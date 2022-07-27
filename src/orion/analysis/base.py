@@ -58,7 +58,7 @@ def average(trials, group_by="order", key="best", return_var=False):
         return trials
 
     group = trials.groupby(group_by)
-    means = list()
+    means = []
     keys = [v.strip() for v in key.split(",")]
     for k in keys:
         mean = group[k].mean().reset_index().rename(columns={k: f"{k}_mean"})
@@ -219,7 +219,7 @@ def train_regressor(regressor_name, data, **kwargs):
     if regressor_name not in _regressors_:
         raise ValueError(
             f"{regressor_name} is not a supported regressor. "
-            f"Did you mean any of theses: list(_regressors_.keys())"
+            f"Did you mean any of thesis: list(_regressors_.keys())"
         )
 
     regressor = _regressors_[regressor_name](**kwargs)

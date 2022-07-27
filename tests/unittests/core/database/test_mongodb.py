@@ -1,23 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import functools
-from datetime import datetime
 from timeit import timeit
 
 import pymongo
 import pytest
 from pymongo import MongoClient
-from test_database import (
-    clean_db,
-    db_test_data,
-    drop_collections,
-    get_db,
-    insert_collections,
-    insert_test_collection,
-    orion_db,
-    test_collection,
-)
 
 from orion.core.io.database import (
     Database,
@@ -26,6 +14,9 @@ from orion.core.io.database import (
     database_factory,
 )
 from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
+
+from .conftest import insert_test_collection
+from .test_database import get_db
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -46,7 +37,7 @@ def patch_mongo_client(monkeypatch, db_type):
     def mock_class(*args, **kwargs):
         # 1 sec, defaults to 20 secs otherwise
         kwargs["serverSelectionTimeoutMS"] = 1.0
-        # NOTE: Can't use pymongo.MongoClient otherwise there is an infinit
+        # NOTE: Can't use pymongo.MongoClient otherwise there is an infinite
         # recursion; mock(mock(mock(mock(...(MongoClient)...))))
         return MongoClient(*args, **kwargs)
 
@@ -58,7 +49,7 @@ def patch_mongo_client(monkeypatch, db_type):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.drop_collections(["new_collection"])
-class TestEnsureIndex(object):
+class TestEnsureIndex:
     """Calls to :meth:`orion.core.io.database.AbstractDB.ensure_index`."""
 
     def test_unique_index(self, orion_db):
@@ -79,7 +70,7 @@ class TestEnsureIndex(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestDropIndex(object):
+class TestDropIndex:
     """Calls :meth:`orion.core.io.database.AbstractDB.drop_index`."""
 
     @pytest.mark.parametrize(
@@ -147,7 +138,7 @@ class TestDropIndex(object):
 
 
 @pytest.mark.usefixtures("null_db_instances")
-class TestConnection(object):
+class TestConnection:
     """Create a :class:`orion.core.io.database.mongodb.MongoDB`, check connection cases."""
 
     @pytest.mark.usefixtures("patch_mongo_client")
@@ -268,7 +259,7 @@ class TestConnection(object):
 
 @pytest.mark.usefixtures("clean_db")
 @insert_test_collection
-class TestExceptionWrapper(object):
+class TestExceptionWrapper:
     """Call to methods wrapped with `mongodb_exception_wrapper()`."""
 
     def test_duplicate_key_error(self, monkeypatch, orion_db, test_collection):
@@ -332,3 +323,10 @@ class TestExceptionWrapper(object):
 
         with pytest.raises(pymongo.errors.OperationFailure):
             orion_db.read_and_write("test_collection", query, config_to_add)
+
+
+def test_repr(orion_db: MongoDB):
+    assert str(orion_db) == (
+        f"MongoDB(host=localhost, name=orion_test, port=27017, username=user, "
+        f"password=pass, options={orion_db.options})"
+    )

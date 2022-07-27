@@ -9,9 +9,7 @@ levels.
 """
 import argparse
 import contextlib
-import functools
 import multiprocessing
-import os
 import subprocess
 import sys
 import time
@@ -23,9 +21,7 @@ from ptera import probing
 
 from orion.client import build_experiment
 from orion.client.runner import Runner
-from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.worker.experiment import Experiment
 from orion.testing import OrionState
 
 
@@ -232,16 +228,18 @@ def save_caller(element):
 
 
 @contextlib.contextmanager
-def monitor_with_ptera(interval=1, db_backend="PickledDB"):
+def monitor_with_ptera(interval=1, db_backend_type=PickledDB, runner_type=Runner):
     """Monitor DB I/O and number of trials during optimization."""
-
+    # NOTE: Need to have these classes imported for them to be resolved by ptera by name.
+    db_backend = db_backend_type.__name__
+    runner_name = runner_type.__name__
     with contextlib.ExitStack() as stack:
         selectors = dict(
             write=f"{db_backend}.write(query) > data",
             read=f"{db_backend}.read(query) > #value",
             read_and_write=f"{db_backend}.read_and_write(data, query) > #value",
             count=f"{db_backend}.count(query) > #value",
-            n_trials="Runner.gather(trials) > #value",
+            n_trials=f"{runner_name}.gather(trials) > #value",
         )
         probes = dict()
         profiling = dict()

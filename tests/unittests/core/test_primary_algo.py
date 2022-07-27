@@ -1,15 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
 from __future__ import annotations
 
 import copy
+import logging
 import typing
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar
 
+import numpy
 import pytest
+from pytest import MonkeyPatch
 
-from orion.algo.base import BaseAlgorithm, algo_factory
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
@@ -147,6 +149,63 @@ class TestSpaceTransformAlgoWrapperWraps:
             del fixed_suggestion._params[-1]
             palgo.judge(fixed_suggestion, 8)
 
+    def test_insists_when_algo_doesnt_suggest_new_trials(
+        self,
+        algo_wrapper: SpaceTransformAlgoWrapper[StupidAlgo],
+        monkeypatch: MonkeyPatch,
+    ):
+        """Test that when the algo can't produce a new trial, the wrapper insists and asks again."""
+        calls: int = 0
+        algo_wrapper.max_suggest_attempts = 10
+
+        # Make the wrapper insist enough so that it actually
+        # gets a trial after asking enough times:
+
+        def _suggest(num: int) -> list[Trial]:
+            nonlocal calls
+            calls += 1
+            if calls < 5:
+                return []
+            return [algo_wrapper.algorithm.fixed_suggestion]
+
+        monkeypatch.setattr(algo_wrapper.algorithm, "suggest", _suggest)
+        trial = algo_wrapper.suggest(1)[0]
+        assert calls == 5
+        assert trial in algo_wrapper.space
+
+    def test_warns_when_unable_to_sample_new_trial(
+        self,
+        algo_wrapper: SpaceTransformAlgoWrapper[StupidAlgo],
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: MonkeyPatch,
+    ):
+        """Test that when the algo can't produce a new trial even after the max number of attempts,
+        a warning is logged and an empty list is returned.
+        """
+
+        calls: int = 0
+
+        def _suggest(num: int) -> list[Trial]:
+            nonlocal calls
+            calls += 1
+            if calls < 5:
+                return []
+            return [algo_wrapper.algorithm.fixed_suggestion]
+
+        monkeypatch.setattr(algo_wrapper.algorithm, "suggest", _suggest)
+
+        algo_wrapper.max_suggest_attempts = 3
+
+        with caplog.at_level(logging.WARNING):
+            out = algo_wrapper.suggest(1)
+            assert calls == 3
+            assert out == []
+            assert len(caplog.record_tuples) == 1
+            log_record = caplog.record_tuples[0]
+            assert log_record[1] == logging.WARNING and log_record[2].startswith(
+                "Unable to sample a new trial"
+            )
+
 
 class StupidAlgo(BaseAlgorithm):
     """A dumb algo that always returns the same trial."""
@@ -155,14 +214,23 @@ class StupidAlgo(BaseAlgorithm):
     requires_shape: ClassVar[str | None] = "flattened"
     requires_dist: ClassVar[str | None] = "linear"
 
-    def __init__(self, space: Space, fixed_suggestion: Trial):
+    def __init__(
+        self,
+        space: Space,
+        fixed_suggestion: Trial,
+    ):
         super().__init__(space)
         self.fixed_suggestion = fixed_suggestion
         assert fixed_suggestion in space
 
     def suggest(self, num):
-        self.register(self.fixed_suggestion)
-        return [self.fixed_suggestion]
+        # NOTE: can't register the trial if it's already here. The fixed suggestion is always "new",
+        # but the algorithm actually observes it at some point. Therefore, we don't overwrite what's
+        # already in the registry.
+        if not self.has_suggested(self.fixed_suggestion):
+            self.register(self.fixed_suggestion)
+            return [self.fixed_suggestion]
+        return []
 
 
 @pytest.fixture()
@@ -205,7 +273,7 @@ class TestRegistration:
             {"x": 10}, space=algo_wrapper.space
         )
         fixed_transformed = algo_wrapper.transformed_space.transform(fixed_original)
-        assert fixed_transformed.params == {"x": 2.302585092994046}
+        assert fixed_transformed.params == {"x": numpy.log(10)}
         transformed_space = algo_wrapper.transformed_space
 
         algo_wrapper.algorithm.fixed_suggestion = fixed_transformed

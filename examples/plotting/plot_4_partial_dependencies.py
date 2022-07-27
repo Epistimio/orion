@@ -34,6 +34,8 @@ The partial dependencies plot can be executed directly from the ``experiment`` w
 """
 from orion.client import get_experiment
 
+# flake8: noqa
+
 # Specify the database where the experiments are stored. We use a local PickleDB here.
 storage = dict(type="legacy", database=dict(type="pickleddb", host="../db.pkl"))
 
@@ -115,7 +117,7 @@ fig
 # Dependency approximation
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 # By default, the hyperparameters are marginalized over 50 points. This may be suitable
-# for a small 2-D search space but likely unsufficient for 5 dimensions or more.
+# for a small 2-D search space but likely insufficient for 5 dimensions or more.
 # Here is an example with only 5 samples.
 
 start = time.perf_counter()

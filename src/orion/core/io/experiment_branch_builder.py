@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module offering an API to solve conflicts
 =========================================
@@ -98,7 +97,7 @@ class ExperimentBranchBuilder:
                 silence_errors=silence_errors,
                 **conflict.get_marked_arguments(
                     self.conflicts, **self.branching_arguments
-                )
+                ),
             )
 
             if resolution and (self.manual_resolution and not resolution.is_marked):
@@ -321,9 +320,7 @@ class ExperimentBranchBuilder:
 
         assert (
             len(potential_conflicts) == 1
-        ), "Many missing dimensions with the same name: " "{}".format(
-            ", ".join(potential_conflicts)
-        )
+        ), f"Many missing dimensions with the same name: {', '.join(potential_conflicts)}"
 
         old_dim_conflict = potential_conflicts[0]
 
@@ -333,9 +330,7 @@ class ExperimentBranchBuilder:
 
         assert (
             len(potential_conflicts) == 1
-        ), "Many new dimensions with the same name: " "{}".format(
-            ", ".join(potential_conflicts)
-        )
+        ), f"Many new dimensions with the same name: {', '.join(potential_conflicts)}"
 
         new_dim_conflict = potential_conflicts[0]
 

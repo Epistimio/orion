@@ -9,7 +9,7 @@ configuration.
 The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
 when the user request an experiment with specific options. One can easily create a new experiment
 with ``Experiment('some_experiment_name')``, but the configuration of a _writable_ experiment is
-less straighforward. This is because there is many sources of configuration and they have a strict
+less straightforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
@@ -81,9 +81,10 @@ import getpass
 import logging
 import pprint
 import sys
+from typing import TypeVar
 
 import orion.core
-import orion.core.utils.backward as backward
+import orion.core.utils.backward as backward  # pylint:disable=consider-using-from-import
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
@@ -99,7 +100,7 @@ from orion.core.utils.exceptions import (
     NoNameError,
     RaceCondition,
 )
-from orion.core.worker.experiment import Experiment
+from orion.core.worker.experiment import Experiment, Mode
 from orion.core.worker.primary_algo import create_algo
 from orion.storage.base import get_storage, setup_storage
 
@@ -111,7 +112,9 @@ log = logging.getLogger(__name__)
 ##
 
 
-def build(name, version=None, branching=None, **config):
+def build(
+    name: str, version: int | None = None, branching: dict | None = None, **config
+) -> Experiment:
     """Build an experiment object
 
     If new, ``space`` argument must be provided, else all arguments are fetched from the database
@@ -178,7 +181,7 @@ def build(name, version=None, branching=None, **config):
 
     if "space" not in config:
         raise NoConfigurationError(
-            "Experiment {} does not exist in DB and space was not defined.".format(name)
+            f"Experiment {name} does not exist in DB and space was not defined."
         )
 
     if len(config["space"]) == 0:
@@ -202,6 +205,7 @@ def build(name, version=None, branching=None, **config):
     log.debug(f"Experiment {config['name']}-v{config['version']} already existed.")
 
     conflicts = _get_conflicts(experiment, branching)
+    assert branching is not None
     must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
 
     if must_branch and branching.get("enable", orion.core.config.evc.enable):
@@ -218,7 +222,7 @@ def build(name, version=None, branching=None, **config):
     return experiment
 
 
-def clean_config(name, config, branching):
+def clean_config(name: str, config: dict, branching: dict | None):
     """Clean configuration from hidden fields (ex: ``_id``) and update branching if necessary"""
     log.debug("Cleaning config")
 
@@ -246,7 +250,7 @@ def clean_config(name, config, branching):
     return name, config, branching
 
 
-def consolidate_config(name, version, config):
+def consolidate_config(name: str, version: int | None, config: dict):
     """Merge together given configuration with db configuration matching
     for experiment (``name``, ``version``)
     """
@@ -278,7 +282,7 @@ def consolidate_config(name, version, config):
     return config
 
 
-def merge_algorithm_config(config, new_config):
+def merge_algorithm_config(config: dict, new_config: dict) -> None:
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
     if isinstance(config.get("algorithms"), dict) and len(config["algorithms"]) > 1:
@@ -289,7 +293,7 @@ def merge_algorithm_config(config, new_config):
 
 
 # TODO: Remove for v0.4
-def merge_producer_config(config, new_config):
+def merge_producer_config(config: dict, new_config: dict) -> None:
     """Merge given producer configuration with db config"""
     if (
         isinstance(config.get("producer", {}).get("strategy"), dict)
@@ -312,7 +316,7 @@ def build_view(name, version=None):
     return load(name, version=version, mode="r")
 
 
-def load(name, version=None, mode="r"):
+def load(name: str, version: int | None = None, mode: Mode = "r") -> Experiment:
     """Load experiment from database
 
     An experiment view provides all reading operations of standard experiment but prevents the
@@ -340,18 +344,34 @@ def load(name, version=None, mode="r"):
     db_config = fetch_config_from_db(name, version)
 
     if not db_config:
-        message = (
-            "No experiment with given name '%s' and version '%s' inside database, "
-            "no view can be created." % (name, version if version else "*")
+        raise NoConfigurationError(
+            f"No experiment with given name '{name}' "
+            f"and version '{version if version else '*'}' inside database, "
+            "no view can be created."
         )
-        raise NoConfigurationError(message)
 
     db_config.setdefault("version", 1)
 
     return create_experiment(mode=mode, **db_config)
 
 
-def create_experiment(name, version, mode, space, **kwargs):
+# pylint: disable=too-many-arguments
+def create_experiment(
+    name: str,
+    version: int,
+    mode: Mode,
+    space: Space | dict[str, str],
+    algorithms: str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    working_dir: str | None = None,
+    metadata: dict | None = None,
+    refers: dict | None = None,
+    producer: dict | None = None,
+    user: str | None = None,
+    _id: int | str | None = None,
+    **kwargs,
+) -> Experiment:
     """Instantiate the experiment and its attribute objects
 
     All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
@@ -382,39 +402,50 @@ def create_experiment(name, version, mode, space, **kwargs):
         Configuration of the storage backend.
 
     """
-    experiment = Experiment(name=name, version=version, mode=mode)
-    experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
-    experiment.max_trials = kwargs.get(
-        "max_trials", orion.core.config.experiment.max_trials
-    )
-    experiment.max_broken = kwargs.get(
-        "max_broken", orion.core.config.experiment.max_broken
-    )
-    experiment.space = _instantiate_space(space)
-    experiment.algorithms = _instantiate_algo(
-        experiment.space,
-        experiment.max_trials,
-        kwargs.get("algorithms"),
+
+    T = TypeVar("T")
+    V = TypeVar("V")
+
+    def _default(v: T | None, default: V) -> T | V:
+        return v if v is not None else default
+
+    space = _instantiate_space(space)
+    max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
+    instantiated_algorithm = _instantiate_algo(
+        space=space,
+        max_trials=max_trials,
+        config=algorithms,
         ignore_unavailable=mode != "x",
     )
-    # TODO: Remove for v0.4
-    _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
-    experiment.working_dir = kwargs.get(
-        "working_dir", orion.core.config.experiment.working_dir
-    )
-    experiment.metadata = kwargs.get(
-        "metadata", {"user": kwargs.get("user", getpass.getuser())}
-    )
-    experiment.refers = kwargs.get(
-        "refers", {"parent_id": None, "root_id": None, "adapter": []}
-    )
-    experiment.refers["adapter"] = _instantiate_adapters(
-        experiment.refers.get("adapter", [])
-    )
 
+    max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
+    working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
+    metadata = _default(metadata, {"user": _default(user, getpass.getuser())})
+    refers = _default(refers, dict(parent_id=None, root_id=None, adapter=[]))
+    refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))  # type: ignore
+
+    # TODO: Remove for v0.4
+    _instantiate_strategy((producer or {}).get("strategy"))
+
+    experiment = Experiment(
+        name=name,
+        version=version,
+        mode=mode,
+        space=space,
+        _id=_id,
+        max_trials=max_trials,
+        algorithms=instantiated_algorithm,
+        max_broken=max_broken,
+        working_dir=working_dir,
+        metadata=metadata,
+        refers=refers,
+    )
     log.debug(
         "Created experiment with config:\n%s", pprint.pformat(experiment.configuration)
     )
+    if kwargs:
+        # TODO: https://github.com/Epistimio/orion/issues/972
+        log.debug("create_experiment received some extra unused arguments: %s", kwargs)
 
     return experiment
 
@@ -568,7 +599,7 @@ def _register_experiment(experiment):
         )
 
 
-def _update_experiment(experiment):
+def _update_experiment(experiment: Experiment) -> None:
     """Update experiment configuration in database"""
     log.debug("Updating experiment (name: %s)", experiment.name)
     config = experiment.configuration
@@ -633,7 +664,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
         name_conflict = conflicts.get([ExperimentNameConflict])[0]
         if not name_conflict.is_resolved and not version:
             log.debug(
-                "A race condition likely occured during conflicts resolutions. "
+                "A race condition likely occurred during conflicts resolutions. "
                 "Now rolling back and attempting re-building the branched experiment."
             )
             raise RaceCondition(
@@ -702,7 +733,7 @@ def _fetch_config_version(configs, version=None):
 
     if version > max_version:
         log.warning(
-            "Version %s was specified but most recent version is only %s. " "Using %s.",
+            "Version %s was specified but most recent version is only %s. Using %s.",
             version,
             max_version,
             max_version,

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Represent the '/' REST endpoint
 ===============================
@@ -9,7 +8,7 @@ import orion.core
 from orion.storage.base import get_storage
 
 
-class RuntimeResource(object):
+class RuntimeResource:
     """Handle requests for the '/' REST endpoint"""
 
     def __init__(self):

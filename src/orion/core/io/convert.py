@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parse and generate user script's configuration
 ==============================================
@@ -54,14 +53,12 @@ class BaseConverter(ABC):
 
     file_extensions = []
 
-    # pylint:disable=no-self-use
     def get_state_dict(self):
         """Give state dict that can be used to reconstruct the converter"""
         return {}
 
     def set_state_dict(self, state):
         """Reset the converter based on previous state"""
-        pass
 
     @abstractmethod
     def parse(self, filepath):
@@ -73,12 +70,10 @@ class BaseConverter(ABC):
            Full path to the original user script's configuration.
 
         """
-        pass
 
     @abstractmethod
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        pass
 
 
 class YAMLConverter(BaseConverter):
@@ -99,12 +94,12 @@ class YAMLConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath) as f:
+        with open(filepath, encoding="utf8") as f:
             return self.yaml.safe_load(stream=f)
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf8") as f:
             self.yaml.dump(data, stream=f)
 
 
@@ -126,12 +121,12 @@ class JSONConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath) as f:
+        with open(filepath, encoding="utf8") as f:
             return self.json.load(f)
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf8") as f:
             self.json.dump(data, f)
 
 
@@ -164,7 +159,7 @@ class GenericConverter(BaseConverter):
         self.regex = self.re_module.compile(regex)
         self.expression_prefix = expression_prefix
         self.template = None
-        self.has_leading = dict()
+        self.has_leading = {}
         self.conflict_msg = "Namespace conflict in configuration file '{}', under '{}'"
 
     def get_state_dict(self):
@@ -190,7 +185,7 @@ class GenericConverter(BaseConverter):
         r"""Read dictionary out of the configuration file.
 
         Create a template for Python 3 string format and save it as this
-        object's state, by substituing '{\1}' wherever the pattern
+        object's state, by substituting '{\1}' wherever the pattern
         was matched. By default, the first matched group (\1) corresponds
         with a dimension's namespace.
 
@@ -202,7 +197,7 @@ class GenericConverter(BaseConverter):
            Full path to the original user script's configuration.
 
         """
-        with open(filepath) as f:
+        with open(filepath, encoding="utf8") as f:
             self.template = f.read()
 
         # Search for Oríon semantic pattern
@@ -224,7 +219,7 @@ class GenericConverter(BaseConverter):
         substituted, num_subs = self.regex.subn(r"{\1!s}", subst)
         assert len(ret) == num_subs, (
             "This means an error in the regex. Report bug. Details::\n"
-            "original: {}\n, regex:{}".format(self.template, self.regex)
+            f"original: {self.template}\n, regex:{self.regex}"
         )
         self.template = substituted
 
@@ -256,7 +251,7 @@ class GenericConverter(BaseConverter):
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        unnested_data = dict()
+        unnested_data = {}
         stack = deque()
         stack.append(([], data))
         while True:
@@ -273,7 +268,7 @@ class GenericConverter(BaseConverter):
 
         document = self.template.format(**unnested_data)
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf8") as f:
             f.write(document)
 
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Produce and register samples to try
 ===================================
@@ -13,7 +12,7 @@ from orion.core.io.database import DuplicateKeyError
 log = logging.getLogger(__name__)
 
 
-class Producer(object):
+class Producer:
     """Produce suggested sets of problem's parameter space to try out.
 
     It uses an `Experiment`s `BaseAlgorithm` object to observe trial results

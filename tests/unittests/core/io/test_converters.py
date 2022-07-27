@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.converter`."""
 import os
 
@@ -39,7 +38,7 @@ def generic_converter():
     return GenericConverter(expression_prefix="o~")
 
 
-class TestGenericConverter(object):
+class TestGenericConverter:
     """Test functionality of generic converter of unknown configuration file type."""
 
     def test_parse(self, unknown_type_sample_path, generic_converter):
@@ -204,7 +203,7 @@ a_var = o~>a_serious_name
             "expression_prefix": "o~",
             "has_leading": {"/lala//iela": "/", "/lala/iela": "/", "lala/la": "/"},
             "regex": "([\\/]?[\\w|\\/|-]+)~([\\+]?.*\\)|\\-|\\>[A-Za-z_]\\w*)",
-            "template": open(unknown_type_template_path, "r").read(),
+            "template": open(unknown_type_template_path).read(),
         }
 
     def test_set_state_dict(self, tmpdir, generic_converter):

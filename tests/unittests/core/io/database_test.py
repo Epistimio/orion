@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.database`."""
 
 import pytest
@@ -14,8 +13,8 @@ from orion.storage.base import get_storage
 
 
 @pytest.mark.usefixtures("null_db_instances")
-class TestDatabaseFactory(object):
-    """Test the creation of a determinate `Database` type, by a complete spefication
+class TestDatabaseFactory:
+    """Test the creation of a determinate `Database` type, by a complete specification
     of a database by-itself (this on which every `Database` acts on as part
     of its being, attributes of an `Database`) and for-itself (what essentially
     differentiates one concrete `Database` from one other).
@@ -52,7 +51,7 @@ class TestDatabaseFactory(object):
 
 
 @pytest.mark.usefixtures("null_db_instances")
-class TestReadOnlyDatabase(object):
+class TestReadOnlyDatabase:
     """Test coherence of read-only database and its wrapped database."""
 
     def test_valid_attributes(self, storage):

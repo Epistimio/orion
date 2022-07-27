@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Provide tools to calculate regret
 =================================
