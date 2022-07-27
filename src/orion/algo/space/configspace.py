@@ -35,8 +35,6 @@ except ImportError as err:
     class DummyType:
         """Dummy type for type hints"""
 
-        pass
-
     IntegerHyperparameter = DummyType
     FloatHyperparameter = DummyType
     ConfigurationSpace = DummyType
