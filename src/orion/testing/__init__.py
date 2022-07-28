@@ -234,7 +234,11 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
 def falcon_client(exp_config=None, trial_config=None, statuses=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
 
-    with create_experiment(exp_config, trial_config, statuses) as (cfg, experiment, exp_client):
+    with create_experiment(exp_config, trial_config, statuses) as (
+        cfg,
+        experiment,
+        exp_client,
+    ):
         falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
 
         yield cfg, experiment, exp_client, falcon_client
