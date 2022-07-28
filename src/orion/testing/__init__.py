@@ -148,7 +148,6 @@ def generate_benchmark_experiments_trials(
     return gen_exps, gen_trials
 
 
-@contextmanager
 def create_study_experiments(
     state, exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
 ):
@@ -182,7 +181,7 @@ def create_study_experiments(
     for index, exp in enumerate(experiments):
         experiments_info.append((int(index / task_number), exp))
 
-    yield experiments_info
+    return experiments_info
 
 
 def mock_space_iterate(monkeypatch):

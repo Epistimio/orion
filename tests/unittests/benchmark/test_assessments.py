@@ -49,20 +49,18 @@ class TestAverageRank:
         """Test assessment plot format"""
         ar1 = AverageRank()
 
-        with create_study_experiments(
-            orionstate, **study_experiments_config
-        ) as experiments:
-            figure = ar1.analysis("task_name", experiments)
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
+        figure = ar1.analysis("task_name", experiments)
 
-            assert_rankings_plot(
-                figure["AverageRank"]["task_name"]["rankings"],
-                [
-                    list(algorithm["algorithm"].keys())[0]
-                    for algorithm in study_experiments_config["algorithms"]
-                ],
-                balanced=study_experiments_config["max_trial"],
-                with_avg=True,
-            )
+        assert_rankings_plot(
+            figure["AverageRank"]["task_name"]["rankings"],
+            [
+                list(algorithm["algorithm"].keys())[0]
+                for algorithm in study_experiments_config["algorithms"]
+            ],
+            balanced=study_experiments_config["max_trial"],
+            with_avg=True,
+        )
 
 
 class TestAverageResult:
@@ -99,20 +97,18 @@ class TestAverageResult:
         """Test assessment plot format"""
         ar1 = AverageResult()
 
-        with create_study_experiments(
-            orionstate, **study_experiments_config
-        ) as experiments:
-            figure = ar1.analysis("task_name", experiments)
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
+        figure = ar1.analysis("task_name", experiments)
 
-            assert_regrets_plot(
-                figure["AverageResult"]["task_name"]["regrets"],
-                [
-                    list(algorithm["algorithm"].keys())[0]
-                    for algorithm in study_experiments_config["algorithms"]
-                ],
-                balanced=study_experiments_config["max_trial"],
-                with_avg=True,
-            )
+        assert_regrets_plot(
+            figure["AverageResult"]["task_name"]["regrets"],
+            [
+                list(algorithm["algorithm"].keys())[0]
+                for algorithm in study_experiments_config["algorithms"]
+            ],
+            balanced=study_experiments_config["max_trial"],
+            with_avg=True,
+        )
 
 
 class TestParallelAssessment:
@@ -144,34 +140,32 @@ class TestParallelAssessment:
 
         study_experiments_config["task_number"] = task_num
         study_experiments_config["n_workers"] = n_workers
-        with create_study_experiments(
-            orionstate, **study_experiments_config
-        ) as experiments:
-            figure = pa1.analysis("task_name", experiments)
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
+        figure = pa1.analysis("task_name", experiments)
 
-            names = []
-            algorithms = []
-            for algorithm in study_experiments_config["algorithms"]:
-                algo = list(algorithm["algorithm"].keys())[0]
-                algorithms.append(algo)
+        names = []
+        algorithms = []
+        for algorithm in study_experiments_config["algorithms"]:
+            algo = list(algorithm["algorithm"].keys())[0]
+            algorithms.append(algo)
 
-                for worker in n_workers:
-                    names.append(algo + "_workers_" + str(worker))
+            for worker in n_workers:
+                names.append(algo + "_workers_" + str(worker))
 
-            assert len(figure["ParallelAssessment"]["task_name"]) == 3
-            assert_regrets_plot(
-                figure["ParallelAssessment"]["task_name"]["regrets"],
-                names,
-                balanced=study_experiments_config["max_trial"],
-                with_avg=True,
-            )
+        assert len(figure["ParallelAssessment"]["task_name"]) == 3
+        assert_regrets_plot(
+            figure["ParallelAssessment"]["task_name"]["regrets"],
+            names,
+            balanced=study_experiments_config["max_trial"],
+            with_avg=True,
+        )
 
-            asset_parallel_assessment_plot(
-                figure["ParallelAssessment"]["task_name"]["parallel_assessment"],
-                algorithms,
-                3,
-            )
+        asset_parallel_assessment_plot(
+            figure["ParallelAssessment"]["task_name"]["parallel_assessment"],
+            algorithms,
+            3,
+        )
 
-            assert_durations_plot(
-                figure["ParallelAssessment"]["task_name"]["durations"], names
-            )
+        assert_durations_plot(
+            figure["ParallelAssessment"]["task_name"]["durations"], names
+        )

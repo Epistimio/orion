@@ -5,7 +5,7 @@ import os
 import orion.core.cli
 
 
-def test_no_exp(monkeypatch, setup_pickleddb_database, capsys):
+def test_no_exp(monkeypatch, orionstate, capsys):
     """Test that nothing is printed when there are no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["list"])

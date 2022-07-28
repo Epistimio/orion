@@ -19,7 +19,7 @@ def execute(command, assert_code=0):
 
 
 @pytest.fixture
-def init_full_x(setup_pickleddb_database, monkeypatch):
+def init_full_x(orionstate, monkeypatch):
     """Init original experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = "full_x"
@@ -395,7 +395,7 @@ def test_init(init_full_x):
     assert pairs == ((("/x", 0),),)
 
 
-def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
+def test_no_evc_overwrite(orionstate, init_no_evc):
     """Test that the experiment config is overwritten if --enable-evc is not passed"""
     storage = setup_storage()
     assert len(storage.fetch_experiments({})) == 1
@@ -1172,9 +1172,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     ]
 
 
-def test_init_w_version_from_parent_w_children(
-    setup_pickleddb_database, monkeypatch, capsys
-):
+def test_init_w_version_from_parent_w_children(orionstate, monkeypatch, capsys):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1201,7 +1199,7 @@ def test_init_w_version_from_parent_w_children(
     assert "Experiment name" in captured.err
 
 
-def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatch):
+def test_init_w_version_from_exp_wout_child(orionstate, monkeypatch):
     """Test that init of experiment from version without child works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1225,7 +1223,7 @@ def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatc
     assert len(list(exp))
 
 
-def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
+def test_init_w_version_gt_max(orionstate, monkeypatch):
     """Test that init of experiment from version higher than max works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1249,7 +1247,7 @@ def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
     assert len(list(exp))
 
 
-def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
+def test_init_check_increment_w_children(orionstate, monkeypatch):
     """Test that incrementing version works with not same-named children."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1272,7 +1270,7 @@ def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
     assert len(list(exp))
 
 
-def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
+def test_branch_from_selected_version(orionstate, monkeypatch):
     """Test that branching from a version passed with `--version` works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(

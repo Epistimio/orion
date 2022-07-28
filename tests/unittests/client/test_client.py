@@ -146,7 +146,7 @@ class TestReportResults:
 class TestCreateExperiment:
     """Test creation of experiment with `client.create_experiment()`"""
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
+    @pytest.mark.usefixtures("orionstate")
     def test_create_experiment_no_storage(self, monkeypatch):
         """Test creation if storage is not configured"""
         name = "oopsie_forgot_a_storage"

@@ -49,7 +49,7 @@ class BirdLike(BenchmarkTask):
         return rspace
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
     task_num = 2

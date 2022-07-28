@@ -114,7 +114,7 @@ def generate_experiments():
     return [_generate(exp, "name", value=str(i)) for i, exp in enumerate(exps)]
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_setup_storage_default():
     """Test that storage is setup using default config"""
 
@@ -153,7 +153,7 @@ def test_setup_storage_custom_type_missing():
     assert storage._db.host == os.path.abspath("test.pkl")
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_setup_storage_custom_legacy_emtpy():
     """Test setup with local configuration with legacy but no config"""
 

@@ -180,7 +180,7 @@ def space():
 class TestReserveTrial:
     """Calls to interface `Experiment.reserve_trial`."""
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
+    @pytest.mark.usefixtures("orionstate")
     def test_reserve_none(self, space: Space):
         """Find nothing, return None."""
         with OrionState(experiments=[], trials=[]) as cfg:

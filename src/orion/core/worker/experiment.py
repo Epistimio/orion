@@ -25,7 +25,7 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.storage.base import FailedUpdate
+from orion.storage.base import BaseStorageProtocol, FailedUpdate
 
 log = logging.getLogger(__name__)
 Mode = Literal["r", "w", "x"]

@@ -242,9 +242,8 @@ def test_demo_inexecutable_script(storage, monkeypatch, capsys):
 
 
 @contextmanager
-def generate_config(template):
+def generate_config(template, tmp_path):
     """Generate a configuration file inside a temporary directory with the current storage config"""
-    tmp_path = tempfile.mkdtemp("orion_test")
 
     with open(template) as file:
         conf = yaml.safe_load(file)
@@ -259,18 +258,16 @@ def generate_config(template):
     with open(conf_file) as file:
         yield file
 
-    shutil.rmtree(tmp_path)
-
 
 def logging_directory():
+    """Default logging directory for testing `<reporoot>/logdir`.
+    The folder is deleted if it exists at the beginning of testing,
+    it will not be deleted at the end of the tests to help debugging.
+
+    """
     base_repo = os.path.dirname(os.path.abspath(orion.core.__file__))
     logdir = os.path.abspath(os.path.join(base_repo, "..", "..", "..", "logdir"))
-
-    try:
-        shutil.rmtree(logdir)
-    except:
-        pass
-
+    shutil.rmtree(logdir, ignore_errors=True)
     return logdir
 
 
@@ -281,7 +278,7 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
     logdir = logging_directory()
     print(logdir)
 
-    with generate_config("orion_config_random.yaml") as conf_file:
+    with generate_config("orion_config_random.yaml", tmp_path) as conf_file:
         processes = []
         for _ in range(4):
             process = subprocess.Popen(
@@ -723,14 +720,14 @@ def test_resilience(storage, monkeypatch):
     assert len(exp.fetch_trials_by_status("broken")) == MAX_BROKEN
 
 
-def test_demo_with_shutdown_quickly(storage, monkeypatch):
+def test_demo_with_shutdown_quickly(storage, monkeypatch, tmp_path):
     """Check simple pipeline with random search is reasonably fast."""
 
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     monkeypatch.setattr(orion.core.config.worker, "heartbeat", 120)
 
-    with generate_config("orion_config_random.yaml") as conf_file:
+    with generate_config("orion_config_random.yaml", tmp_path) as conf_file:
         process = subprocess.Popen(
             [
                 "orion",
@@ -833,13 +830,13 @@ def test_demo_precision(storage, monkeypatch):
     assert value == float(numpy.format_float_scientific(value, precision=4))
 
 
-def test_debug_mode(storage, monkeypatch):
+def test_debug_mode(storage, monkeypatch, tmp_path):
     """Test debug mode."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-    with generate_config("orion_config.yaml") as conf_file:
+    with generate_config("orion_config.yaml", tmp_path) as conf_file:
         orion.core.cli.main(
             [
                 "--debug",

@@ -18,7 +18,7 @@ def execute(command, assert_code=0):
     assert returncode == assert_code
 
 
-def test_no_exp(setup_pickleddb_database, capsys):
+def test_no_exp(orionstate, capsys):
     """Test that rm non-existing exp exits gracefully"""
     execute("db rm i-dont-exist", assert_code=1)
 

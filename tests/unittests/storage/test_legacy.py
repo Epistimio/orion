@@ -60,7 +60,7 @@ mongodb_config = {
 db_backends = [{"type": "legacy", "database": mongodb_config}]
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_setup_database_default(monkeypatch):
     """Test that database is setup using default config"""
 
