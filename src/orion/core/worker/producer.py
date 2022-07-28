@@ -61,9 +61,8 @@ class Producer:
                 and not self.warm_started
                 and is_warmstarteable(algorithm)
             ):
-                # TODO: Ugly.
                 similar_trials = self.experiment.knowledge_base.get_related_trials(
-                    self.experiment
+                    self.experiment.configuration
                 )
                 log.debug(
                     "### Warm Starting with up to %s experiments and a total of %s trials.",
