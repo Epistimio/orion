@@ -102,8 +102,6 @@ def test_setup_database_bad_config_override():
 
     database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
-    # with pytest.raises(SingletonAlreadyInstantiatedError):
-    #     setup_database({"type": "pickleddb", "host": "other.pkl"})
 
 
 def test_get_database():
