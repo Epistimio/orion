@@ -233,31 +233,12 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
 @contextmanager
 def falcon_client(exp_config=None, trial_config=None, statuses=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
-    if exp_config is None:
-        raise ValueError("Parameter 'exp_config' is missing")
-    if trial_config is None:
-        raise ValueError("Parameter 'trial_config' is missing")
-    if statuses is None:
-        statuses = ["new", "interrupted", "suspended", "reserved", "completed"]
 
-    from orion.client.experiment import ExperimentClient
+    cfg, experiment, exp_client = create_experiment(exp_config, trial_config, statuses)
 
-    with OrionState(
-        experiments=[exp_config],
-        trials=generate_trials(trial_config, statuses, exp_config),
-    ) as cfg:
+    falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
 
-        experiment = experiment_builder.build(
-            name=exp_config["name"], storage=cfg.storage_config
-        )
-
-        if cfg.trials:
-            experiment._id = cfg.trials[0]["experiment"]
-
-        exp_client = ExperimentClient(experiment)
-        falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
-
-        yield cfg, experiment, exp_client, falcon_client
+    yield cfg, experiment, exp_client, falcon_client
 
     exp_client.close()
 
