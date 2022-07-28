@@ -36,7 +36,7 @@ if typing.TYPE_CHECKING:
     from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 
 log = logging.getLogger(__name__)
-AlgoT = TypeVar("AlgoT", bound="BaseAlgorithm")
+AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
 Mode = Literal["r", "w", "x"]
 
 
