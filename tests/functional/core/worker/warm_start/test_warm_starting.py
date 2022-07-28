@@ -2,13 +2,16 @@
 from __future__ import annotations
 
 import functools
+import random
 from typing import Callable
 
+import numpy as np
 import pytest
 from typing_extensions import ParamSpec
 from unittests.core.worker.warm_start.test_multi_task import create_dummy_kb
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.random import Random
 from orion.algo.space import Space
 from orion.algo.tpe import TPE
 from orion.client import build_experiment, workon
@@ -49,17 +52,20 @@ def test_warm_starting_helps(
     source_task = simple_quadratic(a=1, b=-2, c=1)
     target_task = simple_quadratic(a=1, b=-2, c=1)
     # Note: minimum is at x = 1, with y = 0
-    # NOTE: Here we prime the source task with points that should be super useful, since they are
-    # really close to the minimum:
-    source_space: Space = _space({"x": "uniform(0, 2)"})
-    target_space: Space = _space({"x": "uniform(-5, 5)"})
+    # Here we could prime the source task with points that should be super useful, since they
+    # are really close to the minimum:
+    source_space: Space = _space({"x": "uniform(0, 10)"})
+    target_space: Space = _space({"x": "uniform(0, 10)"})
 
-    n_source_trials = 20  # Number of trials from the source task
-    max_trials = 20  # Number of trials in the target task
+    n_source_trials = 50  # Number of trials from the source task
+    max_trials = 30  # Number of trials in the target task
 
+    np.random.seed(42)
+    random.seed(42)
     source_experiment = build_experiment(
         name="source_exp",
         space=source_space,
+        algorithms=Random,
         # TODO: Uncomment once https://github.com/Epistimio/orion/pull/942 is merged.
         # storage=storage,
     )
@@ -68,6 +74,8 @@ def test_warm_starting_helps(
     knowledge_base = KnowledgeBase(storage=storage)
     assert knowledge_base.n_stored_experiments == 1
 
+    np.random.seed(123)
+    random.seed(123)
     without_warm_starting = workon(
         _wrap(target_task),
         name="default",
@@ -77,6 +85,9 @@ def test_warm_starting_helps(
         knowledge_base=None,
     )
     assert len(without_warm_starting.fetch_trials()) == max_trials
+
+    np.random.seed(123)
+    random.seed(123)
     with_warm_starting = workon(
         _wrap(target_task),
         name="warm_start",
@@ -87,11 +98,14 @@ def test_warm_starting_helps(
     )
     assert len(with_warm_starting.fetch_trials()) == max_trials
 
-    best_trial_without = _get_best_trial(without_warm_starting)
     best_trial_with = _get_best_trial(with_warm_starting)
-    assert best_trial_with.objective is not None
-    assert best_trial_without.objective is not None
-    assert best_trial_with.objective.value < best_trial_without.objective.value
+    best_trial_without = _get_best_trial(without_warm_starting)
+
+    objective_with = _get_objective(best_trial_with)
+    objective_without = _get_objective(best_trial_without)
+    # FIXME: This is still somehow not always true, weirdly enough. Perhaps the TPE algo has
+    # n_initial_trials which is too large for us to enter the optimization phase?
+    assert objective_with < objective_without
 
 
 @pytest.mark.parametrize("algo", [TPE])
@@ -129,10 +143,18 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], how_to_pass_algo: ty
     # After the PR is merged, we should create KnowledgeBase instances instead of this
     # DummyKnowledgeBase.
     warm_start_kb = create_dummy_kb(
-        [source_space], [n_source_trials], task=source_task, prefix="warm"
+        [source_space],
+        [n_source_trials],
+        task=source_task,
+        prefix="warm",
+        seed=123,
     )
     hot_start_kb = create_dummy_kb(
-        [target_space], [n_source_trials], task=target_task, prefix="hot"
+        [target_space],
+        [n_source_trials],
+        task=target_task,
+        prefix="hot",
+        seed=123,
     )
 
     # Populate the knowledge base.

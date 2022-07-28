@@ -6,6 +6,7 @@ import copy
 import random
 from typing import Any, Callable, Sequence
 
+import numpy as np
 import pytest
 
 from orion.algo.base import BaseAlgorithm
@@ -104,6 +105,7 @@ def create_dummy_kb(
     n_trials_per_space: int | Sequence[int] = 10,
     task: Callable[..., float] | None = None,
     prefix: str = "foo",
+    seed: int | None = None,
 ) -> DummyKnowledgeBase:
     """Create a KB with the experiments/trials that we want."""
     if isinstance(n_trials_per_space, int):
@@ -114,15 +116,16 @@ def create_dummy_kb(
         build_experiment(name=f"{prefix}-{i}", space=space_i, debug=True)
         for i, space_i in enumerate(previous_spaces)
     ]
+    rngs = [np.random.RandomState((seed or 0) + i) for i in range(len(previous_spaces))]
     previous_trials = [
         (
             experiment.configuration,
             [
                 _add_result(trial, (task(**trial.params) if task else j))
-                for j, trial in enumerate(experiment.space.sample(n_trials))
+                for j, trial in enumerate(experiment.space.sample(n_trials, seed=rng))
             ],
         )
-        for experiment, n_trials in zip(experiments, n_trials_per_space)
+        for experiment, n_trials, rng in zip(experiments, n_trials_per_space, rngs)
     ]
     return DummyKnowledgeBase(storage=None, related_trials=previous_trials)  # type: ignore
 
@@ -284,7 +287,6 @@ class TestMultiTaskWrapper:
             space=target_space,
             knowledge_base=kb,
         )
-        wrapper.max_trials = 100
         wrapper.suggest(10)
         # NOTE: It doesn't really matter what type of wrapper `wrapper.algorithm` is here.
         # It is the first wrapper in the chain that sees the task ids.
