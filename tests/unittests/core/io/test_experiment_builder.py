@@ -258,6 +258,8 @@ def test_get_from_args_hit(monkeypatch, raw_config, random_dt, new_config):
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
 
+        # This is necessary because storage is instantiated inside
+        # `get_from_args` with its own config not the global config set by OrionState
         def get_storage(*args, **kwargs):
             return cfg.storage
 
@@ -289,6 +291,8 @@ def test_get_from_args_hit_no_conf_file(
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
 
+        # This is necessary because storage is instantiated inside
+        # `get_from_args` with its own config not the global config set by OrionState
         def get_storage(*args, **kwargs):
             return cfg.storage
 
@@ -323,6 +327,8 @@ def test_build_from_args_no_hit(
             exc_info.value
         )
 
+        # This is necessary because storage is instantiated inside
+        # `get_from_args` with its own config not the global config set by OrionState
         def get_storage(*args, **kwargs):
             return cfg.storage
 
@@ -358,6 +364,8 @@ def test_build_from_args_hit(monkeypatch, old_config_file, script_path, new_conf
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
 
+        # This is necessary because storage is instantiated inside
+        # `get_from_args` with its own config not the global config set by OrionState
         def get_storage(*args, **kwargs):
             return cfg.storage
 
@@ -547,6 +555,8 @@ def test_build_from_args_without_cmd(
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
 
+        # This is necessary because storage is instantiated inside
+        # `get_from_args` with its own config not the global config set by OrionState
         def get_storage(*args, **kwargs):
             return cfg.storage
 
