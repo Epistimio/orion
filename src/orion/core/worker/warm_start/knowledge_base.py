@@ -66,25 +66,32 @@ class KnowledgeBase:
         list[tuple[ExperimentConfig, list[Trial]]]
             A list of tuples of experiments and the similar trials from that experiment.
         """
-        if not isinstance(target_experiment, dict):
-            target_experiment = target_experiment.configuration
+        target_config: ExperimentConfig
+        if isinstance(target_experiment, dict):
+            target_config = target_experiment
+        else:
+            target_config = target_experiment.configuration
 
         experiment_configs = self.storage.fetch_experiments({})
         # NOTE: Here we remove the target experiment from the list of experiments.
-        # This occurs because we use a singleton for the storage.
-        if target_experiment in experiment_configs:
-            experiment_configs.remove(target_experiment)
+        # This occurs because we use a singleton for the storage, so creating the target experiment
+        # implicitly adds it to the storage (and to the knowledge base).
+        experiment_configs = _remove_target_config(target_config, experiment_configs)
 
         if self.similarity_metric:
             # Order the experiments with decreasing similarity w.r.t the target experiment.
-            sorting_function = partial(self.similarity_metric, target_experiment)
-            experiment_configs.sort(key=sorting_function, reverse=True)
+            sort_fn = partial(self.similarity_metric, target_config)
+            experiment_configs = sorted(experiment_configs, key=sort_fn, reverse=True)
 
         return self._get_trials(experiment_configs, max_trials=max_trials)
 
     @property
     def n_stored_experiments(self) -> int:
-        """Returns the current number of experiments registered the Knowledge base."""
+        """Returns the current number of experiments registered in the Knowledge base.
+
+        NOTE: Until https://github.com/Epistimio/orion/pull/942 is merged, the target experiment
+        will probably also count, since all experiments are in the same storage.
+        """
         return len(self.storage.fetch_experiments({}))
 
     def _get_trials(
@@ -98,10 +105,12 @@ class KnowledgeBase:
         total_trials_so_far = 0
         for experiment_config in experiment_configs:
             experiment_id = experiment_config["_id"]
-            # TODO: Is the experiment id always a string? or can it also be an integer?
             if experiment_id is None:
                 continue
+
             trials = self.storage.fetch_trials(uid=experiment_id)
+            if trials is None:
+                continue
 
             if max_trials is not None:
                 remaining = max_trials - total_trials_so_far
@@ -120,7 +129,8 @@ class KnowledgeBase:
         By default, returns a dictionary containing the attributes of `self` which are also
         constructor arguments.
         """
-        # Note: This is a bit extra, but it will also work for subclasses of KnowledgeBase.
+        # Note: This is perhaps a bit too generic. But it works for any class or subclass.
+        # We could probably move this to a `Configured` mixin class eventually.
         init_signature = inspect.signature(type(self).__init__)
         init_arguments_attributes = {
             name: getattr(self, name)
@@ -133,3 +143,26 @@ class KnowledgeBase:
             for name, value in init_arguments_attributes.items()
         }
         return {type(self).__qualname__: init_argument_configurations}
+
+
+def _remove_target_config(
+    target_exp_config: ExperimentConfig, exp_configs: list[ExperimentConfig]
+) -> list[ExperimentConfig]:
+    """Removes the config matching the target experiment from `exp_configs`, if present.
+
+    NOTE: We unfortunately can't just use `exp_configs.remove(target_exp_config)` because the dicts
+    might not match exactly, due to small mutations that happen when going in and out of Storage.
+    For instance, the `working_dir` property changes type "" -> None, and other fields might also.
+
+    Therefore we do a simple check based on the name, id, and version number of the experiment to
+    determine if it is the same experiment as the target.
+    """
+    result: list[ExperimentConfig] = []
+    for exp_config in exp_configs:
+        if not (
+            exp_config["_id"] == target_exp_config["_id"]
+            and exp_config["name"] == target_exp_config["name"]
+            and exp_config["version"] == target_exp_config["version"]
+        ):
+            result.append(exp_config)
+    return result
