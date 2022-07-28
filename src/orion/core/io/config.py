@@ -11,6 +11,7 @@ Highly inspired from https://github.com/mila-iqia/blocks/blob/master/blocks/conf
 import contextlib
 import logging
 import os
+import pprint
 
 import yaml
 
@@ -460,9 +461,9 @@ class Configuration:
 
         with _disable_logger():
             for key in self._config:  # pylint: disable=consider-using-dict-items
-                value = config.get(key)
+                value = config.get(key, NOT_SET)
 
-                if value is not None:
+                if value is not NOT_SET:
                     self[key] = value
                 else:
                     self._config[key].pop("value", None)
@@ -474,12 +475,4 @@ class Configuration:
         logger.debug("Config is %s", repr(self))
 
     def __repr__(self) -> str:
-        confs = []
-        for k, v in self._config.items():
-            if "value" in v:
-                confs.append(f'{k}: {repr(v["value"])}')
-
-        for k, v in self._subconfigs.items():
-            confs.append(f"{k}: {repr(v)}")
-
-        return "{" + ", ".join(confs) + "}"
+        return pprint.pformat(self.to_dict())

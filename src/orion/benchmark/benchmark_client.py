@@ -27,7 +27,7 @@ def get_or_create_benchmark(
 
     Parameters
     ----------
-    storage: Storage
+    storage: BaseStorageProtocol
         Instance of the storage to use
     name: str
         Name of the benchmark
