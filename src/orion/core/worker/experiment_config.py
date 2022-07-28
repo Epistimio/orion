@@ -64,7 +64,12 @@ class MetaData(TypedDict, total=False):
 
 
 class ExperimentConfig(TypedDict):
-    """TypedDict for the configuration of an `Experiment`."""
+    """TypedDict for the configuration of an `Experiment`.
+
+    NOTE: The `Unpack` annotation can also be used to annotate the **kwargs of functions that
+    expect to receive items of the experiment config as keyword arguments.
+    For instance: `**exp_config: Unpack[ExperimentConfig]`.
+    """
 
     name: str
     """ Unique identifier for this experiment per ``user``. """
