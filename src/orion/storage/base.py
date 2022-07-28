@@ -34,8 +34,13 @@ from orion.core.io import resolve_config
 from orion.core.utils.singleton import GenericSingletonFactory
 
 if typing.TYPE_CHECKING:
+    from typing_extensions import Unpack
+
     from orion.core.worker.experiment import Experiment
-    from orion.core.worker.experiment_config import ExperimentConfig
+    from orion.core.worker.experiment_config import (
+        ExperimentConfig,
+        PartialExperimentConfig,
+    )
     from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -223,7 +228,7 @@ class BaseStorageProtocol:
         experiment: Experiment | None = None,
         uid: str | int | None = None,
         where: dict | None = None,
-        **kwargs,
+        **kwargs: Unpack[PartialExperimentConfig],
     ) -> bool:
         """Update the fields of a given experiment
 

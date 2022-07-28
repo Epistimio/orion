@@ -119,3 +119,31 @@ class ExperimentConfig(TypedDict):
 
     knowledge_base: dict[str, Any] | None
     """ Configuration of the `KnowledgeBase`, if any. """
+
+
+class PartialExperimentConfig(ExperimentConfig, total=False):
+    """TypedDict for a partial configuration of an `Experiment`.
+
+    NOTE: This can be used to annotate methods where only some of the keys of the Experiment's
+    config are passed. For example, in `BaseStorageProtocol.update_experiment(**kwargs)`, the
+    **kwargs can be annotated with Unpack[PartialExperimentConfig], so that we can typecheck the
+    values that are passed as **kwargs to match the entries of the ExperimentConfig dict.
+    Calls like update_experiment(foobar="bob") fail the type check.
+
+    If the **kwargs were annotated with **Unpack[ExperimentConfig], then the type checker would
+    expect every key of ExperimentConfig to be a required keyword argument of the function.
+
+    See https://peps.python.org/pep-0692/ for more info on the Unpack annotation.
+    """
+
+    name: str
+    _id: int | str | None  # pylint: disable=invalid-name
+    refers: RefersConfig
+    version: int
+    metadata: MetaData
+    max_trials: int | None
+    max_broken: int | None
+    space: dict[str, Any]
+    algorithms: dict[str, Any] | None
+    working_dir: str | None
+    knowledge_base: dict[str, Any] | None
