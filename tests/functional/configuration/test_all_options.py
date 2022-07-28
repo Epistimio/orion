@@ -41,7 +41,6 @@ def with_storage_fork(func):
             storage = setup_storage()
             old_path = storage._db.host
 
-            # storage._db.host = tmp_file.name
             orion.core.config.storage.database.host = tmp_file.name
             shutil.copyfile(old_path, tmp_file.name)
 
