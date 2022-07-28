@@ -2,16 +2,11 @@
 from __future__ import annotations
 
 import functools
-import inspect
-from typing import Callable, TypeVar
+from typing import Callable
 
 import pytest
 from typing_extensions import ParamSpec
-from unittests.core.worker.warm_start.test_multi_task import (
-    DummyKnowledgeBase,
-    _add_result,
-    create_dummy_kb,
-)
+from unittests.core.worker.warm_start.test_multi_task import create_dummy_kb
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
@@ -20,6 +15,8 @@ from orion.client import build_experiment, workon
 from orion.client.experiment import ExperimentClient
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+from orion.storage.base import BaseStorageProtocol
 
 # Function to create a space.
 _space: Callable[[dict], Space] = SpaceBuilder().build
@@ -42,61 +39,62 @@ def simple_quadratic(
 
 
 @pytest.mark.parametrize("algo", [TPE])
-def test_warm_starting_helps(algo: type[BaseAlgorithm]):
+@pytest.mark.parametrize("how_to_pass_algo", [type, str, dict])
+def test_warm_starting_helps(
+    algo: type[BaseAlgorithm], storage: BaseStorageProtocol, how_to_pass_algo: type
+):
     """Integration test. Shows that warm-starting helps in a simple task."""
-    source_space: Space = _space({"x": "uniform(0, 10)"})
+
+    if how_to_pass_algo is str:
+        # Pass the algo by name
+        algo_config = algo.__qualname__
+    elif how_to_pass_algo is dict:
+        # Pass the algo configuration.
+        algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
+    else:
+        # Pass the type of algo directly.
+        algo_config = algo
+
     source_task = simple_quadratic(a=1, b=-2, c=1)
-
-    target_space: Space = _space({"x": "uniform(0, 10)"})
     target_task = simple_quadratic(a=1, b=-2, c=1)
+    # Note: minimum is at x = 1, with y = 0
+    # NOTE: Here we prime the source task with points that should be super useful, since they are
+    # really close to the minimum:
+    source_space: Space = _space({"x": "uniform(0, 2)"})
+    target_space: Space = _space({"x": "uniform(-5, 5)"})
 
-    # TODO: Should this max_trials include the number trials from warm starting?
-    # My take (@lebrice): Probably not. Doesn't make sense, since the KB is independent from
-    # the target experiment, and we shouldn't expect users to know exactly how many trials
-    # there are in the KB.
-    # IDEA: The MultiTaskWrapper could overwrite the `max_trials` property's setter, so that it
-    # remains unset, until we know how many trials we have from other experiments (call it N).
-    # Then, once that number is known, the max_trials on the wrapped algorithm could be set to
-    # `max_trials + N`.
-    # TODO: For now, I'm setting this to a larger number, just to make sure that we get some
-    # new trials from the target experiment.
     n_source_trials = 20  # Number of trials from the source task
-    max_trials = 40  # Number of trials in the target task
+    max_trials = 20  # Number of trials in the target task
 
-    previous_trials = source_space.sample(n_source_trials)
-    previous_trials = [
-        _add_result(trial, source_task(trial.params["x"])) for trial in previous_trials
-    ]
-    # Populate the knowledge base.
-    knowledge_base = DummyKnowledgeBase(
-        storage=None,  # type: ignore
-        related_trials=[
-            (
-                build_experiment(
-                    "source", space=source_space, debug=True
-                ).configuration,
-                previous_trials,
-            )
-        ],
+    source_experiment = build_experiment(
+        name="source_exp",
+        space=source_space,
+        # TODO: Uncomment once https://github.com/Epistimio/orion/pull/942 is merged.
+        # storage=storage,
     )
+    source_experiment.workon(_wrap(source_task), max_trials=n_source_trials)
+    # Create the Knowledge base by passing the now-filled Storage.
+    knowledge_base = KnowledgeBase(storage=storage)
+    assert knowledge_base.n_stored_experiments == 1
 
     without_warm_starting = workon(
         _wrap(target_task),
         name="default",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo,
+        algorithms=algo_config,
         knowledge_base=None,
     )
-
+    assert len(without_warm_starting.fetch_trials()) == max_trials
     with_warm_starting = workon(
         _wrap(target_task),
         name="warm_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo,
+        algorithms=algo_config,
         knowledge_base=knowledge_base,
     )
+    assert len(with_warm_starting.fetch_trials()) == max_trials
 
     best_trial_without = _get_best_trial(without_warm_starting)
     best_trial_with = _get_best_trial(with_warm_starting)
@@ -106,7 +104,8 @@ def test_warm_starting_helps(algo: type[BaseAlgorithm]):
 
 
 @pytest.mark.parametrize("algo", [TPE])
-def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
+@pytest.mark.parametrize("how_to_pass_algo", [type, str, dict])
+def test_warm_start_benchmarking(algo: type[BaseAlgorithm], how_to_pass_algo: type):
     """Integration test. Compares the performance in the three cases (cold, warm, hot)-starting.
 
     - Cold-start: Optimize the target task with no prior knowledge (lower bound);
@@ -114,30 +113,44 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     - Hot-start:  Optimize the target task with some prior knowledge from the *same* task (upper
                   bound).
     """
-    source_space: Space = _space({"x": "uniform(0, 10)"})
-    source_task = simple_quadratic(a=1, b=-2, c=1)
 
-    target_space: Space = _space({"x": "uniform(0, 10)"})
+    if how_to_pass_algo is str:
+        # Pass the algo by name
+        algo_config = algo.__qualname__
+    elif how_to_pass_algo is dict:
+        # Pass the algo configuration.
+        algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
+    else:
+        # Pass the type of algo directly.
+        algo_config = algo
+
+    source_task = simple_quadratic(a=1, b=-2, c=1)
     target_task = simple_quadratic(a=1, b=-2, c=1)
 
-    n_source_trials = 20  # Number of trials from the source task
-    max_trials = 40  # Number of trials in the target task
+    source_space: Space = _space({"x": "uniform(-5, 5)"})
+    target_space: Space = _space({"x": "uniform(-5, 5)"})
 
+    n_source_trials = 20  # Number of trials from the source task
+    max_trials = 20  # Number of trials in the target task
+
+    # TODO: Until https://github.com/Epistimio/orion/pull/942 is merged, we can't create multiple
+    # KnowledgeBase instances, because we can't create multiple Storage instances.
+    # After the PR is merged, we should create KnowledgeBase instances instead of this
+    # DummyKnowledgeBase.
     warm_start_kb = create_dummy_kb(
         [source_space], [n_source_trials], task=source_task, prefix="warm"
     )
     hot_start_kb = create_dummy_kb(
-        [source_space], [n_source_trials], task=target_task, prefix="hot"
+        [target_space], [n_source_trials], task=target_task, prefix="hot"
     )
 
     # Populate the knowledge base.
-    # "cold start": Optimize the target task, without any previous knowledge.
     cold_start = workon(
         _wrap(target_task),
         name="cold_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo,
+        algorithms=algo_config,
         knowledge_base=None,
     )
 
@@ -146,7 +159,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
         name="warm_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo,
+        algorithms=algo_config,
         knowledge_base=warm_start_kb,
     )
 
@@ -155,14 +168,15 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
         name="warm_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo,
+        algorithms=algo_config,
         knowledge_base=hot_start_kb,
     )
 
     cold_objective = _get_best_trial_objective(cold_start)
     warm_objective = _get_best_trial_objective(warm_start)
     hot_objective = _get_best_trial_objective(hot_start)
-    assert hot_objective < warm_objective < cold_objective
+    assert hot_objective < warm_objective
+    assert warm_objective < cold_objective
 
 
 P = ParamSpec("P")
@@ -170,7 +184,7 @@ P = ParamSpec("P")
 
 def _wrap(objective_fn: Callable[P, float]) -> Callable[P, list[dict]]:
     """Adds some common boilerplate to this objective function."""
-    return _with_results(_count_calls(objective_fn))
+    return _with_results(objective_fn)
 
 
 def _with_results(objective_fn: Callable[P, float]) -> Callable[P, list[dict]]:
@@ -182,27 +196,6 @@ def _with_results(objective_fn: Callable[P, float]) -> Callable[P, list[dict]]:
         return [dict(name="objective", type="objective", value=objective)]
 
     return _with_results
-
-
-T = TypeVar("T")
-
-
-def _count_calls(objective_fn: Callable[P, T]) -> Callable[P, T]:
-    count = 0
-    signature = inspect.signature(objective_fn, follow_wrapped=True)
-
-    @functools.wraps(objective_fn)
-    def _count_calls(*args: P.args, **kwargs: P.kwargs):
-        nonlocal count
-        count += 1
-        bound_args = signature.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        print(f"Starting Trial #{count} with {bound_args.arguments}")
-        results = objective_fn(*args, **kwargs)
-        print(f"Results: {results}")
-        return results
-
-    return _count_calls
 
 
 def _get_objective(trial: Trial) -> float:
