@@ -93,7 +93,6 @@ def test_setup_database_bad_override():
     assert isinstance(database, PickledDB)
 
 
-
 def test_setup_database_bad_config_override():
     """Test setup with different config than existing singleton"""
 
