@@ -50,10 +50,11 @@ def _add_result(trial: Trial, objective: float) -> Trial:
 
 
 class DummyKnowledgeBase(KnowledgeBase):
-    """Knowledge base that returns fake trials from fake "similar" experiments.
+    """Knowledge base where we don't bother with the Storage. We just directly pass the related
+    experiments.
 
-    For the moment, we define "similarity" between experiments purely based on their search space.
-    (similar spaces)
+    This is useful since we want to isolate the KB tests from the multi-task wrapper tests, so we
+    can control exactly what happens in each one.
     """
 
     def __init__(
@@ -123,7 +124,7 @@ def create_dummy_kb(
         )
         for experiment, n_trials in zip(experiments, n_trials_per_space)
     ]
-    return DummyKnowledgeBase(previous_trials)
+    return DummyKnowledgeBase(storage=None, related_trials=previous_trials)  # type: ignore
 
 
 from orion.algo.random import Random
@@ -232,9 +233,8 @@ class TestMultiTaskWrapper:
             # The task_id should be set to 0, since we set the prior of the space to only allow
             # sampling trials with task_id of 0 (see other test).
             assert t1.params["task_id"] == 0
-
             # Set t2 to have the other task id.
-            # TODO:: Can't change a trial's params like this. The `params` property is just a view.
+            # NOTE: Can't change a trial's params like this. The `params` property is just a view.
             # t2.params["task_id"] = 1.0
             _set_params(t2, {"task_id": 1})
         else:
