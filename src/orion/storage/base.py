@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 def get_uid(
     item: Experiment | Trial | None = None,
-    uid: str | None = None,
+    uid: str | int | None = None,
     force_uid: bool = True,
 ):
     """Return uid either from `item` or directly uid.
@@ -53,7 +53,7 @@ def get_uid(
     item: Experiment or Trial, optional
        Object with .id attribute
 
-    uid: str, optional
+    uid: str or int, optional
         str id representation
 
     force_uid: bool, optional
@@ -82,7 +82,7 @@ def get_uid(
 def get_trial_uid_and_exp(
     trial: Trial | None = None,
     uid: str | None = None,
-    experiment_uid: str | None = None,
+    experiment_uid: str | int | None = None,
 ):
     """Return trial and experiment uid either from `trial` or directly uids.
 
@@ -94,8 +94,8 @@ def get_trial_uid_and_exp(
     uid: str, optional
         str id representation of the trial
 
-    experiment_uid: str, optional
-        str id representation of the experiment
+    experiment_uid: str or int, optional
+        Id of the experiment.
 
     Raises
     ------
@@ -192,7 +192,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
     def delete_experiment(
-        self, experiment: Experiment | None = None, uid: str | None = None
+        self, experiment: Experiment | None = None, uid: str | int | None = None
     ):
         """Delete matching experiments from the database
 
@@ -201,7 +201,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         Returns
@@ -221,7 +221,7 @@ class BaseStorageProtocol:
     def update_experiment(
         self,
         experiment: Experiment | None = None,
-        uid: str | None = None,
+        uid: str | int | None = None,
         where: dict | None = None,
         **kwargs,
     ) -> bool:
@@ -232,7 +232,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -269,7 +269,7 @@ class BaseStorageProtocol:
     def delete_trials(
         self,
         experiment: Experiment | None = None,
-        uid: str | None = None,
+        uid: str | int | None = None,
         where: dict | None = None,
     ) -> int:
         """Delete matching trials from the database
@@ -279,7 +279,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -322,7 +322,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -346,7 +346,7 @@ class BaseStorageProtocol:
     def update_trials(
         self,
         experiment: Experiment | None = None,
-        uid: str | None = None,
+        uid: str | int | None = None,
         where: dict | None = None,
         **kwargs,
     ):
@@ -357,7 +357,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -381,7 +381,7 @@ class BaseStorageProtocol:
         self,
         trial: Trial | None = None,
         uid: str | int | None = None,
-        experiment_uid: str | None = None,
+        experiment_uid: str | int | None = None,
         where: dict | None = None,
         **kwargs,
     ):
@@ -395,7 +395,7 @@ class BaseStorageProtocol:
         uid: str, optional
             id of the trial to update in the database
 
-        experiment_uid: str, optional
+        experiment_uid: str or int, optional
             experiment id of the trial to update in the database
 
         where: Optional[dict]
@@ -419,7 +419,7 @@ class BaseStorageProtocol:
         self,
         trial: Trial | None = None,
         uid: str | None = None,
-        experiment_uid: str | None = None,
+        experiment_uid: str | int | None = None,
     ) -> Trial | None:
         """Fetch a single trial
 
@@ -431,7 +431,7 @@ class BaseStorageProtocol:
         uid: str, optional
             trial id used to retrieve the trial object
 
-        experiment_uid: str, optional
+        experiment_uid: str or int, optional
             experiment id used to retrieve the trial object
 
         Returns
@@ -542,7 +542,7 @@ class BaseStorageProtocol:
     def release_algorithm_lock(
         self,
         experiment: Experiment | None = None,
-        uid: str | None = None,
+        uid: str | int | None = None,
         new_state: dict | None = None,
     ):
         """Release the algorithm lock
@@ -551,7 +551,7 @@ class BaseStorageProtocol:
         ----------
         experiment: Experiment, optional
            experiment object to retrieve from the database
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object.
         new_state: dict, optional
              The new state of the algorithm that should be saved in the lock object.
@@ -560,7 +560,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
     def get_algorithm_lock_info(
-        self, experiment: Experiment | None = None, uid: str | None = None
+        self, experiment: Experiment | None = None, uid: str | int | None = None
     ) -> LockedAlgorithmState:
         """Load algorithm lock info
 
@@ -568,7 +568,7 @@ class BaseStorageProtocol:
         ----------
         experiment: Experiment, optional
            experiment object to retrieve from the database
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object.
 
         Returns
@@ -581,7 +581,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
     def delete_algorithm_lock(
-        self, experiment: Experiment | None = None, uid: str | None = None
+        self, experiment: Experiment | None = None, uid: str | int | None = None
     ) -> Literal[0, 1]:
         """Delete experiment algorithm lock from the storage
 
@@ -589,7 +589,7 @@ class BaseStorageProtocol:
         ----------
         experiment: Experiment, optional
            experiment object to retrieve from the database
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         Returns
