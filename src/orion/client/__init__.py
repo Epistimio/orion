@@ -8,6 +8,7 @@ Provides functions for communicating with `orion.core`.
 from __future__ import annotations
 
 import logging
+import typing
 from typing import Any, Callable
 
 # pylint: disable=consider-using-from-import
@@ -27,6 +28,11 @@ from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.executor.base import BaseExecutor
 from orion.storage.base import setup_storage
 
+if typing.TYPE_CHECKING:
+    from typing_extensions import Unpack
+
+    from orion.core.worker.experiment_config import ExperimentConfig
+
 __all__ = [
     "interrupt_trial",
     "report_bad_trial",
@@ -41,7 +47,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def create_experiment(name, **config):
+def create_experiment(name, **config: Unpack[ExperimentConfig]):
     """Build an experiment to be executable
 
     This function is deprecated and will be removed in v0.3.0. Use `build_experiment`

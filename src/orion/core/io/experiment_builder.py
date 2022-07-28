@@ -665,7 +665,7 @@ def _instantiate_strategy(config=None):
     return None
 
 
-def _register_experiment(experiment):
+def _register_experiment(experiment: Experiment):
     """Register a new experiment in the database"""
     experiment.metadata["datetime"] = datetime.datetime.utcnow()
     config = experiment.configuration

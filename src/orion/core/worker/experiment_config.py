@@ -6,6 +6,8 @@ import typing
 from typing import Any, TypedDict
 
 if typing.TYPE_CHECKING:
+    from typing_extensions import Required
+
     from orion.core.evc.adapters import CompositeAdapter
 
 
@@ -28,24 +30,20 @@ class RefersConfig(TypedDict, total=False):
     adapter: list[dict]
 
 
-class BasicMetaData(TypedDict):
+class MetaData(TypedDict, total=False):
     """Config for the 'metadata' property of the experiment."""
 
-    user: str
+    # NOTE: Fields that are set in resolve_config when using the commandline interface:
+
+    user: Required[str]
     """ System user currently owning this running process, the one who invoked **Oríon**. """
 
-    orion_version: str
+    orion_version: Required[str]
     """ Version of **Oríon** which suggested this experiment. `user`'s current **Oríon** version.
     """
 
-    datetime: datetime.datetime
+    datetime: Required[datetime.datetime]
     """ When was this particular configuration submitted to the database. """
-
-
-class MetaData(BasicMetaData, total=False):
-    """Metadata of the experiment. Also contains some optional keys."""
-
-    # NOTE: Fields that are set in resolve_config when using the commandline interface:
 
     user_script: str
     """ Full absolute path to `user`'s executable. """
@@ -66,7 +64,7 @@ class MetaData(BasicMetaData, total=False):
 
 
 class ExperimentConfig(TypedDict):
-    """Immutable Dataclass that holds the information about an experiment."""
+    """TypedDict for the configuration of an `Experiment`."""
 
     name: str
     """ Unique identifier for this experiment per ``user``. """
