@@ -257,7 +257,6 @@ def test_get_from_args_hit(monkeypatch, raw_config, random_dt, new_config):
     cmdargs = {"name": "supernaekei", "config": raw_config}
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
-
         # This is necessary because storage is instantiated inside
         # `get_from_args` with its own config not the global config set by OrionState
         def get_storage(*args, **kwargs):

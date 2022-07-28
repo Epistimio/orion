@@ -234,13 +234,10 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
 def falcon_client(exp_config=None, trial_config=None, statuses=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
 
-    cfg, experiment, exp_client = create_experiment(exp_config, trial_config, statuses)
+    with create_experiment(exp_config, trial_config, statuses) as (cfg, experiment, exp_client):
+        falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
 
-    falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
-
-    yield cfg, experiment, exp_client, falcon_client
-
-    exp_client.close()
+        yield cfg, experiment, exp_client, falcon_client
 
 
 class MockDatetime(datetime.datetime):
