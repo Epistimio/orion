@@ -462,7 +462,7 @@ class Configuration:
             for key in self._config:  # pylint: disable=consider-using-dict-items
                 value = config.get(key)
 
-                if value:
+                if value is not None:
                     self[key] = value
                 else:
                     self._config[key].pop("value", None)
