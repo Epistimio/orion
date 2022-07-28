@@ -21,15 +21,6 @@ from orion.storage.base import BaseStorageProtocol
 # Function to create a space.
 _space: Callable[[dict], Space] = SpaceBuilder().build
 
-previous_spaces: list[Space] = [
-    _space({"x": "uniform(0, 5)"}),
-    _space({"x": "uniform(1, 6)"}),
-    _space({"x": "uniform(2, 7)"}),
-    _space({"x": "uniform(3, 8)"}),
-    _space({"x": "uniform(4, 9)"}),
-]
-target_space = _space({"x": "uniform(0, 10)"})
-
 
 def simple_quadratic(
     a: float = 1, b: float = -2, c: float = 1
