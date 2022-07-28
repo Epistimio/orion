@@ -152,7 +152,7 @@ class Experiment:
         working_dir: str | None = None,
         metadata: dict | None = None,
         refers: dict | None = None,
-        storage=None,
+        storage: BaseStorageProtocol | None = None,
     ):
         assert isinstance(storage, BaseStorageProtocol)
 
