@@ -66,8 +66,7 @@ def test_warm_starting_helps(
         name="source_exp",
         space=source_space,
         algorithms=Random,
-        # TODO: Uncomment once https://github.com/Epistimio/orion/pull/942 is merged.
-        # storage=storage,
+        storage=storage,
     )
     source_experiment.workon(_wrap(source_task), max_trials=n_source_trials)
     # Create the Knowledge base by passing the now-filled Storage.

@@ -172,26 +172,31 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
     def register(self, trial: Trial) -> None:
         if self.current_task_id != TARGET_TASK_ID:
             # Don't register it. We're in warm-start mode, and this trial comes from a different
-            # task.
-            # TODO: There's perhaps a problem with this: The base class register stuff in the
-            # registry mapping, so even if we don't register the trial here, it will still be
-            # registered in the registry mapping!
+            # task. We observe the trials from other tasks using `self.observe`, rather than
+            # self.algorithm.observe, since we want to reuse the collision-handling logic of the
+            # TransformWrapper.
+
+            # TODO: There's maybe a slight problem with this: The TransformWrapper base-class will
+            # registers trials in the registry mapping, and the registry mapping usually assumes
+            # that the source and target registries contain the source and target trials. However,
+            # here, we don't actually register the source trial in our source registry.
+            # This isn't currently causing any issues, and I'm currently unable to imagine a
+            # scenario in which it would cause problems, although it might be possible.
+            # Leaving this as a TODO for now.
             return
         super().register(trial)
 
     @property
     def n_suggested(self):
-        """Number of trials suggested by the algorithm **in the target task**"""
-        # TODO: Unsure about this.
+        """Number of trials suggested by the algorithm, excluding warm-starting."""
         return super().n_suggested
 
     @property
     def n_observed(self):
-        """Number of completed trials observed by the algorithm"""
-        # TODO: Unsure about this.
+        """Number of completed trials observed by the algorithm, excluding warm-starting."""
         return super().n_observed
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
@@ -242,8 +247,3 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
             trial_with_status=trial, trial_with_params=trial_without_task_id
         )
         return trial_without_task_id
-
-
-def get_task_id(trial: Trial) -> int:
-    """Retrieves the task id of the given trial."""
-    return trial.params["task_id"]
