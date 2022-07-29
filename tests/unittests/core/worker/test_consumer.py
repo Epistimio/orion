@@ -59,25 +59,6 @@ def test_trials_interrupted_sigterm(storage, config, monkeypatch):
     shutil.rmtree(trial.working_dir)
 
 
-def test_trial_working_dir_is_created(storage, config):
-    """Check that trial working dir is created."""
-
-    exp = experiment_builder.build(**config, storage=storage)
-
-    trial = tuple_to_trial((1.0,), exp.space)
-
-    exp.register_trial(trial, status="reserved")
-
-    assert not os.path.exists(trial.working_dir)
-
-    con = Consumer(exp)
-    con(trial)
-
-    assert os.path.exists(trial.working_dir)
-
-    shutil.rmtree(trial.working_dir)
-
-
 def setup_code_change_mock(storage, config, monkeypatch, ignore_code_changes):
     """Mock create experiment and trials, and infer_versioning_metadata"""
     exp = experiment_builder.build(**config, storage=storage)
