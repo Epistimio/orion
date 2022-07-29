@@ -231,7 +231,7 @@ class PB2(PBT):
                 .iloc[-1, :][["Budget", "R_before"]]
                 .values
             )
-            with control_randomness(self.random_state):
+            with control_randomness(self):
                 new = select_config(
                     x_raw,
                     y_raw,

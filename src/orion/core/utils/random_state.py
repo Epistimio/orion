@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -80,20 +80,26 @@ class RandomState:
         return random_state
 
 
+class Algo(Protocol):
+    """Protocol for algorithms with a random state that can be saved and restored."""
+
+    random_state: RandomState | None
+
+
 @contextmanager
-def control_randomness(random_state: RandomState | None):
+def control_randomness(algo: Algo):
     """Seeds the randomness inside the indented block of code using `self.random_state`."""
-    if random_state is None:
+    if algo.random_state is None:
         yield
         return
 
     # Save the initial random state.
     initial_rng_state = RandomState.current()
     # Set the random state.
-    random_state.set()
+    algo.random_state.set()
     yield
     # Update the random state stored on `self`, so that the changes inside the block are
     # reflected in the RandomState object.
-    random_state = RandomState.current()
+    algo.random_state = RandomState.current()
     # Reset the initial state.
     initial_rng_state.set()

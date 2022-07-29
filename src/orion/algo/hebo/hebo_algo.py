@@ -163,7 +163,7 @@ class HEBO(BaseAlgorithm):
 
         self.hebo_space: DesignSpace = orion_space_to_hebo_space(self.space)
 
-        with control_randomness(self.random_state):
+        with control_randomness(self):
             self.model = hebo.optimizers.hebo.HEBO(
                 space=self.hebo_space,
                 model_name=self.parameters.model_name,
@@ -234,7 +234,7 @@ class HEBO(BaseAlgorithm):
         A list of trials representing values suggested by the algorithm.
         """
         trials: list[Trial] = []
-        with control_randomness(self.random_state):
+        with control_randomness(self):
             v: pd.DataFrame = self.model.suggest(n_suggestions=num)
         point_dicts: dict[int, dict] = v.to_dict(orient="index")  # type: ignore
 
@@ -276,7 +276,7 @@ class HEBO(BaseAlgorithm):
 
         x_df = pd.DataFrame(new_xs)
         y_array = np.array(new_ys).reshape([-1, 1])
-        with control_randomness(self.random_state):
+        with control_randomness(self):
             self.model.observe(X=x_df, y=y_array)
 
     def _hebo_params_to_orion_params(self, hebo_params: dict) -> dict:
