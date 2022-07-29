@@ -80,26 +80,26 @@ class RandomState:
         return random_state
 
 
-class Algo(Protocol):  # pylint: disable=too-few-public-methods
-    """Protocol for algorithms with a random state that can be saved and restored."""
+class HasRandomState(Protocol):  # pylint: disable=too-few-public-methods
+    """Protocol for objects with a random state that can be saved and restored."""
 
     random_state: RandomState | None
 
 
 @contextmanager
-def control_randomness(algo: Algo):
+def control_randomness(has_random_state: HasRandomState):
     """Seeds the randomness inside the indented block of code using `self.random_state`."""
-    if algo.random_state is None:
+    if has_random_state.random_state is None:
         yield
         return
 
     # Save the initial random state.
     initial_rng_state = RandomState.current()
     # Set the random state.
-    algo.random_state.set()
+    has_random_state.random_state.set()
     yield
     # Update the random state stored on `self`, so that the changes inside the block are
     # reflected in the RandomState object.
-    algo.random_state = RandomState.current()
+    has_random_state.random_state = RandomState.current()
     # Reset the initial state.
     initial_rng_state.set()
