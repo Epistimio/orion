@@ -30,7 +30,7 @@ from orion.storage.base import BaseStorageProtocol, setup_storage
 if typing.TYPE_CHECKING:
     from typing_extensions import Unpack
 
-    from orion.core.worker.experiment_config import ExperimentConfig
+    from orion.core.worker.experiment_config import PartialExperimentConfig
 
 __all__ = [
     "interrupt_trial",
@@ -46,7 +46,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def create_experiment(name: str, **config: Unpack[ExperimentConfig]):
+def create_experiment(name: str, **config: Unpack[PartialExperimentConfig]):
     """Build an experiment to be executable
 
     This function is deprecated and will be removed in v0.3.0. Use `build_experiment`
