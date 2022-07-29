@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import functools
-import random
 from typing import Callable
 
-import numpy as np
 import pytest
 from typing_extensions import ParamSpec
 from unittests.core.worker.warm_start.test_multi_task import create_dummy_kb
@@ -33,21 +31,12 @@ def simple_quadratic(
 
 
 @pytest.mark.parametrize("algo", [TPE])
-@pytest.mark.parametrize("how_to_pass_algo", [type, str, dict])
 def test_warm_starting_helps(
-    algo: type[BaseAlgorithm], storage: BaseStorageProtocol, how_to_pass_algo: type
+    algo: type[BaseAlgorithm],
+    storage: BaseStorageProtocol,
 ):
     """Integration test. Shows that warm-starting helps in a simple task."""
-
-    if how_to_pass_algo is str:
-        # Pass the algo by name
-        algo_config = algo.__qualname__
-    elif how_to_pass_algo is dict:
-        # Pass the algo configuration.
-        algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
-    else:
-        # Pass the type of algo directly.
-        algo_config = algo
+    algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
 
     source_task = simple_quadratic(a=1, b=-2, c=1)
     target_task = simple_quadratic(a=1, b=-2, c=1)
@@ -58,10 +47,8 @@ def test_warm_starting_helps(
     target_space: Space = _space({"x": "uniform(0, 10)"})
 
     n_source_trials = 50  # Number of trials from the source task
-    max_trials = 30  # Number of trials in the target task
+    max_trials = 10  # Number of trials in the target task
 
-    np.random.seed(42)
-    random.seed(42)
     source_experiment = build_experiment(
         name="source_exp",
         space=source_space,
@@ -73,8 +60,6 @@ def test_warm_starting_helps(
     knowledge_base = KnowledgeBase(storage=storage)
     assert knowledge_base.n_stored_experiments == 1
 
-    np.random.seed(123)
-    random.seed(123)
     without_warm_starting = workon(
         _wrap(target_task),
         name="default",
@@ -85,8 +70,6 @@ def test_warm_starting_helps(
     )
     assert len(without_warm_starting.fetch_trials()) == max_trials
 
-    np.random.seed(123)
-    random.seed(123)
     with_warm_starting = workon(
         _wrap(target_task),
         name="warm_start",
@@ -108,8 +91,7 @@ def test_warm_starting_helps(
 
 
 @pytest.mark.parametrize("algo", [TPE])
-@pytest.mark.parametrize("how_to_pass_algo", [type, str, dict])
-def test_warm_start_benchmarking(algo: type[BaseAlgorithm], how_to_pass_algo: type):
+def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     """Integration test. Compares the performance in the three cases (cold, warm, hot)-starting.
 
     - Cold-start: Optimize the target task with no prior knowledge (lower bound);
@@ -117,16 +99,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], how_to_pass_algo: ty
     - Hot-start:  Optimize the target task with some prior knowledge from the *same* task (upper
                   bound).
     """
-
-    if how_to_pass_algo is str:
-        # Pass the algo by name
-        algo_config = algo.__qualname__
-    elif how_to_pass_algo is dict:
-        # Pass the algo configuration.
-        algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
-    else:
-        # Pass the type of algo directly.
-        algo_config = algo
+    algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
 
     source_task = simple_quadratic(a=1, b=-2, c=1)
     target_task = simple_quadratic(a=1, b=-2, c=1)
