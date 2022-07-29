@@ -266,7 +266,7 @@ def _instantiate_algo(
             backported_config = backward.port_algo_config(config)
             algo_name = backported_config.pop("of_type")
             algo_type = algo_factory.get_class(algo_name)
-            algo_config = {}
+            algo_config = backported_config
         else:
             raise ValueError(f"Invalid algorithm configuration: {config}")
 
