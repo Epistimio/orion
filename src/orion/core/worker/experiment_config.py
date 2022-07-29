@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import datetime  # noqa
 import typing
-from typing import Any, TypedDict
+from typing import Any
+
+from typing_extensions import TypedDict
 
 if typing.TYPE_CHECKING:
     from typing_extensions import Required
