@@ -441,10 +441,10 @@ def get_from_args(cmdargs, mode="r"):
 
 
 def build(
-    name,
-    version=None,
-    branching=None,
-    storage=None,
+    name: str,
+    version: int | None = None,
+    branching: dict | None = None,
+    storage: BaseStorageProtocol | dict | None = None,
     **config,
 ):
     """Build an experiment.
