@@ -192,6 +192,27 @@ class TestCreateAlgo:
         assert isinstance(algo.algorithm.algorithm, Random)
         assert algo.unwrapped is algo.algorithm.algorithm
 
+    @pytest.mark.parametrize("algo", [Random, TPE])
+    @pytest.mark.parametrize("how_to_pass_algo", [type, str, dict])
+    def test_passing_algo(self, algo: type[BaseAlgorithm], how_to_pass_algo: type):
+        """Test the different ways of passing the algorithm to create_algo."""
+        if how_to_pass_algo is str:
+            # Pass the algo by name
+            algo_config = algo.__qualname__
+        elif how_to_pass_algo is dict:
+            # Pass the algo configuration.
+            algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
+        else:
+            # Pass the type of algo directly.
+            algo_config = algo
+        source_experiment = build_experiment(
+            name="foo",
+            space={"x": "uniform(0, 1)"},
+            algorithms=algo_config,
+            debug=True,
+        )
+        assert isinstance(source_experiment.algorithms.unwrapped, algo)
+
 
 class TestMultiTaskWrapper:
     """Tests for the multi-task wrapper."""
