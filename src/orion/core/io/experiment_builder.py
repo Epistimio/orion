@@ -907,8 +907,8 @@ class ExperimentBuilder:
         storage: dict, optional
             Configuration of the storage backend.
         knowledge_base: KnowledgeBase | dict, optional
-            Knowledge base instance, or configuration of the knowledge base. Will be used to warm-start
-            the HPO algorithm, if possible.
+            Knowledge base instance, or configuration of the knowledge base. Will be used to
+            warm-start the HPO algorithm, if possible.
 
         """
         T = TypeVar("T")
