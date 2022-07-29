@@ -18,6 +18,7 @@ from __future__ import annotations
 import inspect
 import logging
 from abc import abstractmethod
+from typing import Any
 
 from orion.algo.registry import Registry
 from orion.algo.space import Space
@@ -104,7 +105,7 @@ class BaseAlgorithm:
 
     max_trials: int | None = None
 
-    def __init__(self, space, **kwargs):
+    def __init__(self, space: Space, **kwargs):
         log.debug(
             "Creating Algorithm object of %s type with parameters:\n%s",
             type(self).__name__,
@@ -146,14 +147,16 @@ class BaseAlgorithm:
         """Return a state dict that can be used to reset the state of the algorithm."""
         return {"registry": self.registry.state_dict}
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
         self.registry.set_state(state_dict["registry"])
 
-    def get_id(self, trial, ignore_fidelity=False, ignore_parent=False):
+    def get_id(
+        self, trial: Trial, ignore_fidelity: bool = False, ignore_parent: bool = False
+    ) -> str:
         """Return unique hash for a trials based on params
 
         The trial is assumed to be in the transformed space if the algorithm is working in a
@@ -180,7 +183,7 @@ class BaseAlgorithm:
         )
 
     @property
-    def fidelity_index(self):
+    def fidelity_index(self) -> str | None:
         """Returns the name of the first fidelity dimension if there is one, otherwise `None`."""
         fidelity_dims = [dim for dim in self.space.values() if dim.type == "fidelity"]
         if fidelity_dims:
@@ -213,7 +216,7 @@ class BaseAlgorithm:
         has suggested/observed, and for the auto-generated unit-tests to pass.
         """
 
-    def observe(self, trials):
+    def observe(self, trials: list[Trial]) -> None:
         """Observe the `results` of the evaluation of the `trials` in the
         process defined in user's script.
 
@@ -238,16 +241,16 @@ class BaseAlgorithm:
         self.registry.register(trial)
 
     @property
-    def n_suggested(self):
+    def n_suggested(self) -> int:
         """Number of trials suggested by the algorithm"""
         return len(self.registry)
 
     @property
-    def n_observed(self):
+    def n_observed(self) -> int:
         """Number of completed trials observed by the algorithm."""
         return sum(self.has_observed(trial) for trial in self.registry)
 
-    def has_suggested(self, trial):
+    def has_suggested(self, trial: Trial) -> bool:
         """Whether the algorithm has suggested a given point.
 
         Parameters
@@ -263,7 +266,7 @@ class BaseAlgorithm:
         """
         return self.registry.has_suggested(trial)
 
-    def has_observed(self, trial):
+    def has_observed(self, trial: Trial) -> bool:
         """Whether the algorithm has observed a given point objective.
 
         This only counts observed completed trials.
@@ -335,7 +338,8 @@ class BaseAlgorithm:
 
         return sum(map(_is_completed, self.registry)) >= self.max_trials
 
-    def score(self, trial):  # pylint:disable=no-self-use,unused-argument
+    # pylint:disable=no-self-use,unused-argument
+    def score(self, trial: Trial) -> float:
         """Allow algorithm to evaluate `trial` based on a prediction about
         this parameter set's performance.
 
@@ -353,7 +357,8 @@ class BaseAlgorithm:
         """
         return 0
 
-    def judge(self, trial, measurements):  # pylint:disable=no-self-use,unused-argument
+    # pylint:disable=no-self-use,unused-argument
+    def judge(self, trial: Trial, measurements: Any) -> dict | None:
         """Inform an algorithm about online `measurements` of a running trial.
 
         This method is to be used as a callback in a client-server communication
@@ -381,7 +386,7 @@ class BaseAlgorithm:
         """
         return None
 
-    def should_suspend(self, trial):
+    def should_suspend(self, trial: Trial) -> bool:
         """Allow algorithm to decide whether a particular running trial is still
         worth to complete its evaluation, based on information provided by the
         `judge` method.
@@ -390,10 +395,12 @@ class BaseAlgorithm:
         return False
 
     @property
-    def configuration(self):
+    def configuration(self) -> dict[str, Any]:
         """Return tunable elements of this algorithm in a dictionary form
         appropriate for saving.
 
+        By default, returns a dictionary containing the attributes of `self` which are also
+        constructor arguments.
         """
         dict_form = dict()
         for attrname in self._param_names:
