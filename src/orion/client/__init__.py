@@ -25,7 +25,7 @@ from orion.core.utils.exceptions import RaceCondition
 from orion.core.worker.producer import Producer
 from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.executor.base import BaseExecutor
-from orion.storage.base import setup_storage
+from orion.storage.base import BaseStorageProtocol, setup_storage
 
 if typing.TYPE_CHECKING:
     from typing_extensions import Unpack
@@ -64,7 +64,7 @@ def build_experiment(
     strategy: str | dict | None = None,
     max_trials: int | None = None,
     max_broken: int | None = None,
-    storage: dict | None = None,
+    storage: dict | BaseStorageProtocol | None = None,
     branching: dict | None = None,
     max_idle_time: int | None = None,
     heartbeat: int | None = None,
@@ -147,7 +147,7 @@ def build_experiment(
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
         Number of broken trials for the experiment to be considered broken.
-    storage: dict, optional
+    storage: dict or BaseStorageProtocol, optional
         Configuration of the storage backend.
     working_dir: str, optional
         Working directory created for the experiment inside which a unique folder will be created
@@ -218,7 +218,7 @@ def build_experiment(
             "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
         )
 
-    builder = experiment_builder.ExperimentBuilder(storage, debug)
+    builder = experiment_builder.ExperimentBuilder(storage, debug=debug)
 
     try:
         experiment = builder.build(

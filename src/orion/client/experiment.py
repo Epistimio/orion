@@ -25,6 +25,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.working_dir import SetupWorkingDir
+from orion.core.worker.experiment import AlgoT
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
@@ -96,7 +97,7 @@ class ExperimentClient:
 
     def __init__(
         self,
-        experiment: Experiment,
+        experiment: Experiment[AlgoT],
         executor: BaseExecutor | None = None,
         heartbeat: int | None = None,
     ):
@@ -177,7 +178,7 @@ class ExperimentClient:
         return self._experiment.refers
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with `max_trials`.
