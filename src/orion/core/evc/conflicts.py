@@ -58,7 +58,6 @@ from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name
-from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -288,8 +287,15 @@ class Conflicts:
         except Exception:  # pylint:disable=broad-except
             conflict.resolution = None
             conflict._is_resolved = None  # pylint:disable=protected-access
+
+            msg = traceback.format_exc()
+
+            # no silence error in debug mode
+            log.debug("%s", msg)
+
             if not silence_errors:
-                print(traceback.format_exc())
+                print(msg)
+
             return None
 
         if resolution:
@@ -372,7 +378,7 @@ class Conflict(metaclass=ABCMeta):
         return {}
 
     @abstractmethod
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution
 
         Conflict is then marked as resolved and its attribute `resolution` now points to the
@@ -564,7 +570,7 @@ class NewDimensionConflict(Conflict):
         self.dimension = dimension
         self.prior = prior
 
-    def try_resolve(self, default_value=Dimension.NO_DEFAULT_VALUE):
+    def try_resolve(self, default_value=Dimension.NO_DEFAULT_VALUE, *args, **kwargs):
         """Try to create a resolution AddDimensionResolution
 
         Parameters
@@ -703,7 +709,7 @@ class ChangedDimensionConflict(Conflict):
         self.old_prior = old_prior
         self.new_prior = new_prior
 
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution ChangeDimensionResolution"""
         if self.is_resolved:
             return None
@@ -868,7 +874,11 @@ class MissingDimensionConflict(Conflict):
         return {}
 
     def try_resolve(
-        self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE
+        self,
+        new_dimension_conflict=None,
+        default_value=Dimension.NO_DEFAULT_VALUE,
+        *args,
+        **kwargs,
     ):
         """Try to create a resolution RenameDimensionResolution of RemoveDimensionResolution
 
@@ -1076,7 +1086,7 @@ class AlgorithmConflict(Conflict):
         if old_config["algorithms"] != new_config["algorithms"]:
             yield cls(old_config, new_config)
 
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution AlgorithmResolution"""
         if self.is_resolved:
             return None
@@ -1171,7 +1181,7 @@ class CodeConflict(Conflict):
 
         return dict(change_type=code_change_type)
 
-    def try_resolve(self, change_type=None):
+    def try_resolve(self, change_type=None, *args, **kwargs):
         """Try to create a resolution CodeResolution
 
         Parameters
@@ -1339,7 +1349,7 @@ class CommandLineConflict(Conflict):
 
         return dict(change_type=cli_change_type)
 
-    def try_resolve(self, change_type=None):
+    def try_resolve(self, change_type=None, *args, **kwargs):
         """Try to create a resolution CommandLineResolution
 
         Parameters
@@ -1492,7 +1502,7 @@ class ScriptConfigConflict(Conflict):
 
         return dict(change_type=config_change_type)
 
-    def try_resolve(self, change_type=None):
+    def try_resolve(self, change_type=None, *args, **kwargs):
         """Try to create a resolution ScriptConfigResolution
 
         Parameters
@@ -1611,7 +1621,7 @@ class ExperimentNameConflict(Conflict):
         """Retrieve version of configuration"""
         return self.old_config["version"]
 
-    def try_resolve(self, new_name=None):
+    def try_resolve(self, new_name=None, storage=None, *args, **kwargs):
         """Try to create a resolution ExperimentNameResolution
 
         Parameters
@@ -1629,7 +1639,7 @@ class ExperimentNameConflict(Conflict):
         if self.is_resolved:
             return None
 
-        return self.ExperimentNameResolution(self, new_name)
+        return self.ExperimentNameResolution(self, new_name, storage=storage)
 
     @property
     def diff(self):
@@ -1660,7 +1670,7 @@ class ExperimentNameConflict(Conflict):
 
         ARGUMENT = "--branch-to"
 
-        def __init__(self, conflict, new_name):
+        def __init__(self, conflict, new_name, storage=None):
             """Initialize resolution and mark conflict as resolved
 
             Parameters
@@ -1685,18 +1695,18 @@ class ExperimentNameConflict(Conflict):
             self.old_name = self.conflict.old_config["name"]
             self.old_version = self.conflict.old_config.get("version", 1)
             self.new_version = self.old_version
-            self.validate()
+            self.validate(storage=storage)
             self.conflict.new_config["name"] = self.new_name
             self.conflict.new_config["version"] = self.new_version
 
-        def _validate(self):
+        def _validate(self, storage=None):
             """Validate new_name is not in database with a direct child for current version"""
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
             if self.new_name is not None and self.new_name != self.old_name:
                 # If we are trying to actually branch from experiment
-                if not self._name_is_unique():
+                if not self._name_is_unique(storage):
                     raise ValueError(
                         f"Cannot branch from {self.old_name} with name {self.new_name} "
                         "since it already exists."
@@ -1706,7 +1716,7 @@ class ExperimentNameConflict(Conflict):
 
             # If the new name is the same as the old name, we are trying to increment
             # the version of the experiment.
-            elif self._check_for_greater_versions():
+            elif self._check_for_greater_versions(storage):
                 raise ValueError(
                     f"Experiment name '{self.new_name}' already exist for version "
                     f"'{self.conflict.version}' and has children. Version cannot be "
@@ -1716,20 +1726,20 @@ class ExperimentNameConflict(Conflict):
                 self.new_name = self.old_name
                 self.new_version = self.conflict.old_config.get("version", 1) + 1
 
-        def _name_is_unique(self):
+        def _name_is_unique(self, storage):
             """Return True if given name is not in database for current version"""
             query = {"name": self.new_name, "version": self.conflict.version}
 
-            named_experiments = len(get_storage().fetch_experiments(query))
+            named_experiments = len(storage.fetch_experiments(query))
             return named_experiments == 0
 
-        def _check_for_greater_versions(self):
+        def _check_for_greater_versions(self, storage):
             """Check if experiment has children"""
             # If we made it this far, new_name is actually the name of the parent.
             parent = self.conflict.old_config
 
             query = {"name": parent["name"], "refers.parent_id": parent["_id"]}
-            children = len(get_storage().fetch_experiments(query))
+            children = len(storage.fetch_experiments(query))
 
             return bool(children)
 
@@ -1772,7 +1782,7 @@ class OrionVersionConflict(Conflict):
         ):
             yield cls(old_config, new_config)
 
-    def try_resolve(self):
+    def try_resolve(self, *args, **kwargs):
         """Try to create a resolution OrionVersionResolution"""
         if self.is_resolved:
             return None

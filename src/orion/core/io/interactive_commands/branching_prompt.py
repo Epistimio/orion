@@ -19,7 +19,6 @@ import traceback
 from orion.algo.space import Dimension
 from orion.core.evc import adapters, conflicts
 from orion.core.utils.diff import green, red
-from orion.storage.base import get_storage
 
 readline.set_completer_delims(" ")
 
@@ -306,7 +305,7 @@ class BranchingPrompt(cmd.Cmd):
             }
             names = [
                 experiment["name"]
-                for experiment in get_storage().fetch_experiments(query)
+                for experiment in self.branch_builder.storage.fetch_experiments(query)
             ]
 
         return self._get_completions(names, text)

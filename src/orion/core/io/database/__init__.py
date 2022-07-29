@@ -12,7 +12,7 @@ See :py:class:`orion.core.utils.GenericFactory` for more information on the fact
 import logging
 from abc import abstractmethod, abstractproperty
 
-from orion.core.utils.singleton import GenericSingletonFactory
+from orion.core.utils import Factory, GenericFactory
 
 
 # pylint: disable=too-many-public-methods
@@ -320,7 +320,7 @@ class OutdatedDatabaseError(DatabaseError):
     """Exception type used when the database is outdated."""
 
 
-database_factory = GenericSingletonFactory(Database)
+database_factory = GenericFactory(Database)
 
 
 # set per-module log level

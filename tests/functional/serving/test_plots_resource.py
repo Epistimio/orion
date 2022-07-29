@@ -1,7 +1,7 @@
 """Perform tests for the REST endpoint `/plots`"""
 import pytest
 
-from orion.testing import create_experiment
+from orion.testing import falcon_client
 
 config = dict(
     name="experiment-name",
@@ -58,12 +58,13 @@ class TestRegretPlots:
             "description": 'Experiment "unknown-experiment" does not exist',
         }
 
-    def test_plot(self, client):
+    def test_plot(self):
         """Tests that the API returns the plot in json format."""
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with falcon_client(config, trial_config, ["completed"]) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get("/plots/regret/experiment-name")
 
@@ -71,12 +72,13 @@ class TestRegretPlots:
         assert response.json
         assert list(response.json.keys()) == ["data", "layout"]
 
-    def test_no_trials(self, client):
+    def test_no_trials(self):
         """Tests that the API returns an empty figure when no trials are found."""
-        with create_experiment(config, trial_config, []) as (
+        with falcon_client(config, trial_config, []) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get("/plots/regret/experiment-name")
 
@@ -98,12 +100,13 @@ class TestParallelCoordinatesPlots:
             "description": 'Experiment "unknown-experiment" does not exist',
         }
 
-    def test_plot(self, client):
+    def test_plot(self):
         """Tests that the API returns the plot in json format."""
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with falcon_client(config, trial_config, ["completed"]) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get(
                 "/plots/parallel_coordinates/experiment-name"
@@ -113,12 +116,13 @@ class TestParallelCoordinatesPlots:
         assert response.json
         assert list(response.json.keys()) == ["data", "layout"]
 
-    def test_no_trials(self, client):
+    def test_no_trials(self):
         """Tests that the API returns an empty figure when no trials are found."""
-        with create_experiment(config, trial_config, []) as (
+        with falcon_client(config, trial_config, []) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get(
                 "/plots/parallel_coordinates/experiment-name"
@@ -142,12 +146,13 @@ class TestPartialDependenciesPlots:
             "description": 'Experiment "unknown-experiment" does not exist',
         }
 
-    def test_plot(self, client):
+    def test_plot(self):
         """Tests that the API returns the plot in json format."""
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with falcon_client(config, trial_config, ["completed"]) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get(
                 "/plots/partial_dependencies/experiment-name"
@@ -157,12 +162,13 @@ class TestPartialDependenciesPlots:
         assert response.json
         assert list(response.json.keys()) == ["data", "layout"]
 
-    def test_no_trials(self, client):
+    def test_no_trials(self):
         """Tests that the API returns an empty figure when no trials are found."""
-        with create_experiment(config, trial_config, []) as (
+        with falcon_client(config, trial_config, []) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get(
                 "/plots/partial_dependencies/experiment-name"
@@ -186,12 +192,13 @@ class TestLPIPlots:
             "description": 'Experiment "unknown-experiment" does not exist',
         }
 
-    def test_plot(self, client):
+    def test_plot(self):
         """Tests that the API returns the plot in json format."""
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with falcon_client(config, trial_config, ["completed"]) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get("/plots/lpi/experiment-name")
 
@@ -199,12 +206,13 @@ class TestLPIPlots:
         assert response.json
         assert list(response.json.keys()) == ["data", "layout"]
 
-    def test_no_trials(self, client):
+    def test_no_trials(self):
         """Tests that the API returns an empty figure when no trials are found."""
-        with create_experiment(config, trial_config, []) as (
+        with falcon_client(config, trial_config, []) as (
             _,
             _,
             experiment,
+            client,
         ):
             response = client.simulate_get("/plots/lpi/experiment-name")
 

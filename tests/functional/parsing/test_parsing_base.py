@@ -16,7 +16,7 @@ def _create_parser(need_subparser=True):
     return parser
 
 
-def test_common_group_arguments(setup_pickleddb_database, monkeypatch):
+def test_common_group_arguments(orionstate, monkeypatch):
     """Check the parsing of the common group"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     parser, subparsers = _create_parser()
@@ -28,7 +28,7 @@ def test_common_group_arguments(setup_pickleddb_database, monkeypatch):
     assert args["config"].name == "./orion_config_random.yaml"
 
 
-def test_user_group_arguments(setup_pickleddb_database, monkeypatch):
+def test_user_group_arguments(orionstate, monkeypatch):
     """Test the parsing of the user group"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     parser = _create_parser(False)
@@ -40,7 +40,7 @@ def test_user_group_arguments(setup_pickleddb_database, monkeypatch):
     assert args["user_args"] == ["./black_box.py", "-x~normal(50,50)"]
 
 
-def test_common_and_user_group_arguments(setup_pickleddb_database, monkeypatch):
+def test_common_and_user_group_arguments(orionstate, monkeypatch):
     """Test the parsing of the command and user groups"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     parser = _create_parser(False)

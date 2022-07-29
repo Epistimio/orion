@@ -64,7 +64,7 @@ def _compose_error_message(key: str, supported_parameters: list):
 
 
 def retrieve_experiment(
-    experiment_name: str, version: int = None
+    storage, experiment_name: str, version: int = None
 ) -> Optional[Experiment]:
     """
     Retrieve an experiment from the database with the given name and version.
@@ -75,7 +75,7 @@ def retrieve_experiment(
         When the experiment doesn't exist
     """
     try:
-        experiment = experiment_builder.load(experiment_name, version)
+        experiment = experiment_builder.load(experiment_name, version, storage=storage)
         if version and experiment.version != version:
             raise falcon.HTTPNotFound(
                 title=ERROR_EXPERIMENT_NOT_FOUND,

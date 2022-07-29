@@ -10,7 +10,7 @@ from pymongo import MongoClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
 from orion.core.io.database import database_factory
-from orion.storage.base import get_storage, storage_factory
+from orion.storage.base import storage_factory
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
@@ -235,9 +235,7 @@ def null_db_instances():
 def build_storage():
     """Build storage from scratch"""
     null_db_instances()
-    experiment_builder.setup_storage()
-
-    return get_storage()
+    return experiment_builder.setup_storage()
 
 
 @pytest.mark.usefixtures("fill_db")

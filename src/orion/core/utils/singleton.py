@@ -61,26 +61,6 @@ class SingletonFactory(AbstractSingletonType, Factory):
     `AbstractSingletonType`."""
 
 
-def update_singletons(values=None):
-    """Replace singletons by given values and return previous singleton objects"""
-    if values is None:
-        values = {}
-
-    # Avoiding circular import problems when importing this module.
-    from orion.core.io.database import database_factory
-    from orion.storage.base import storage_factory
-
-    singletons = (storage_factory, database_factory)
-
-    updated_singletons = {}
-    for singleton in singletons:
-        name = singleton.base.__name__.lower()
-        updated_singletons[name] = singleton.instance
-        singleton.instance = values.get(name, None)
-
-    return updated_singletons
-
-
 class GenericSingletonFactory(GenericFactory):
     """Factory to create singleton instances of classes inheriting a given ``base`` class.
 
@@ -127,6 +107,7 @@ class GenericSingletonFactory(GenericFactory):
 
         if self.instance is None and of_type is None:
             raise SingletonNotInstantiatedError(self.base.__name__)
+
         elif self.instance is None:
             try:
                 self.instance = super().create(of_type, *args, **kwargs)

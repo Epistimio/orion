@@ -3,7 +3,6 @@ import copy
 import datetime
 
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
 
 current_id = 0
 
@@ -59,26 +58,32 @@ class TestCollection:
         assert response.json == []
         assert response.status == "200 OK"
 
-    def test_send_name_and_versions(self, client):
+    def test_send_name_and_versions(self, client, ephemeral_storage):
         """Tests that the API returns all the experiments with their name and version"""
         expected = [{"name": "a", "version": 1}, {"name": "b", "version": 1}]
 
-        _add_experiment(name="a", version=1, _id=1)
-        _add_experiment(name="b", version=1, _id=2)
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_experiment(storage, name="b", version=1, _id=2)
+
+        assert len(storage.fetch_experiments({})) == 2
 
         response = client.simulate_get("/experiments")
 
         assert response.json == expected
         assert response.status == "200 OK"
 
-    def test_latest_versions(self, client):
+    def test_latest_versions(self, client, ephemeral_storage):
         """Tests that the API return the latest versions of each experiment"""
         expected = [{"name": "a", "version": 3}, {"name": "b", "version": 1}]
 
-        _add_experiment(name="a", version=1, _id=1)
-        _add_experiment(name="a", version=3, _id=2)
-        _add_experiment(name="a", version=2, _id=3)
-        _add_experiment(name="b", version=1, _id=4)
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_experiment(storage, name="a", version=3, _id=2)
+        _add_experiment(storage, name="a", version=2, _id=3)
+        _add_experiment(storage, name="b", version=1, _id=4)
 
         response = client.simulate_get("/experiments")
 
@@ -89,7 +94,7 @@ class TestCollection:
 class TestItem:
     """Tests the server's response to experiments/:name"""
 
-    def test_non_existent_experiment(self, client):
+    def test_non_existent_experiment(self, client, ephemeral_storage):
         """
         Tests that a 404 response is returned when the experiment
         doesn't exist in the database
@@ -102,7 +107,9 @@ class TestItem:
             "description": 'Experiment "a" does not exist',
         }
 
-        _add_experiment(name="a", version=1, _id=1)
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
         response = client.simulate_get("/experiments/b")
 
         assert response.status == "404 Not Found"
@@ -111,10 +118,13 @@ class TestItem:
             "description": 'Experiment "b" does not exist',
         }
 
-    def test_experiment_specification(self, client):
+    def test_experiment_specification(self, client, ephemeral_storage):
         """Tests that the experiment returned is following the specification"""
-        _add_experiment(name="a", version=1, _id=1)
-        _add_trial(experiment=1, id_override="ae8", status="completed")
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_trial(storage, experiment=1, id_override="ae8", status="completed")
 
         response = client.simulate_get("/experiments/a")
 
@@ -132,42 +142,50 @@ class TestItem:
         _assert_config(response.json["config"])
         _assert_best_trial(response.json["bestTrial"])
 
-    def test_default_is_latest_version(self, client):
+    def test_default_is_latest_version(self, client, ephemeral_storage):
         """Tests that the latest experiment is returned when no version parameter exists"""
-        _add_experiment(name="a", version=1, _id=1)
-        _add_experiment(name="a", version=3, _id=2)
-        _add_experiment(name="a", version=2, _id=3)
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_experiment(storage, name="a", version=3, _id=2)
+        _add_experiment(storage, name="a", version=2, _id=3)
 
         response = client.simulate_get("/experiments/a")
 
         assert response.status == "200 OK"
         assert response.json["version"] == 3
 
-    def test_specific_version(self, client):
+    def test_specific_version(self, client, ephemeral_storage):
         """Tests that the specified version of an experiment is returned"""
-        _add_experiment(name="a", version=1, _id=1)
-        _add_experiment(name="a", version=2, _id=2)
-        _add_experiment(name="a", version=3, _id=3)
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_experiment(storage, name="a", version=2, _id=2)
+        _add_experiment(storage, name="a", version=3, _id=3)
 
         response = client.simulate_get("/experiments/a?version=2")
 
         assert response.status == "200 OK"
         assert response.json["version"] == 2
 
-    def test_unknown_parameter(self, client):
+    def test_unknown_parameter(self, client, ephemeral_storage):
         """
         Tests that if an unknown parameter is specified in
         the query string, an error is returned even if the experiment doesn't exist.
         """
         response = client.simulate_get("/experiments/a?unknown=true")
 
+        storage = ephemeral_storage.storage
+
         assert response.status == "400 Bad Request"
         assert response.json == {
             "title": "Invalid parameter",
             "description": 'Parameter "unknown" is not supported. Expected parameter "version".',
         }
 
-        _add_experiment(name="a", version=1, _id=1)
+        _add_experiment(storage, name="a", version=1, _id=1)
 
         response = client.simulate_get("/experiments/a?unknown=true")
 
@@ -178,16 +196,16 @@ class TestItem:
         }
 
 
-def _add_experiment(**kwargs):
+def _add_experiment(storage, **kwargs):
     """Adds experiment to the dummy orion instance"""
     base_experiment.update(copy.deepcopy(kwargs))
-    get_storage().create_experiment(base_experiment)
+    storage.create_experiment(base_experiment)
 
 
-def _add_trial(**kwargs):
+def _add_trial(storage, **kwargs):
     """Add trials to the dummy orion instance"""
     base_trial.update(copy.deepcopy(kwargs))
-    get_storage().register_trial(Trial(**base_trial))
+    storage.register_trial(Trial(**base_trial))
 
 
 def _assert_config(config):

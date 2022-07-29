@@ -6,7 +6,7 @@ import pytest
 
 import orion.core.cli
 from orion.client import create_experiment
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def test_script_integrity(capsys):
@@ -22,7 +22,7 @@ def test_script_integrity(capsys):
     ), "The example script encountered an error during its execution."
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_orion_runs_script(monkeypatch):
     """Verifies Oríon can execute the example script."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
@@ -41,7 +41,7 @@ def test_orion_runs_script(monkeypatch):
     assert len(keys) == 1
     assert "/_pos_2" in keys
 
-    storage = get_storage()
+    storage = setup_storage()
     trials = storage.fetch_trials(uid=experiment.id)
     assert len(trials) == 1
 
@@ -50,7 +50,7 @@ def test_orion_runs_script(monkeypatch):
     assert trial.params["/_pos_2"] == 0.1
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_result_reproducibility(monkeypatch):
     """Verifies the script results stays consistent (with respect to the documentation)."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")

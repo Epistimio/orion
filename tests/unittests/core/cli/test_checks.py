@@ -149,7 +149,7 @@ def test_config_file_skips(monkeypatch, presence, config):
     assert presence.db_config == config["database"]
 
 
-@pytest.mark.usefixtures("null_db_instances", "setup_pickleddb_database")
+@pytest.mark.usefixtures("null_db_instances", "orionstate")
 def test_creation_pass(presence, config):
     """Check if test passes with valid database configuration."""
     presence.db_config = config["database"]
@@ -162,7 +162,7 @@ def test_creation_pass(presence, config):
     assert creation.instance is not None
 
 
-@pytest.mark.usefixtures("null_db_instances", "setup_pickleddb_database")
+@pytest.mark.usefixtures("null_db_instances", "orionstate")
 def test_creation_fails(monkeypatch, presence, config):
     """Check if test fails when not connected."""
     presence.db_config = config["database"]
