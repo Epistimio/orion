@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 import functools
+import random
+from pathlib import Path
 from typing import Callable
 
+import numpy as np
 import pytest
 from typing_extensions import ParamSpec
-from unittests.core.worker.warm_start.test_multi_task import create_dummy_kb
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.random import Random
 from orion.algo.space import Space
 from orion.algo.tpe import TPE
 from orion.client import build_experiment, workon
@@ -17,7 +18,7 @@ from orion.client.experiment import ExperimentClient
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
 from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
-from orion.storage.base import BaseStorageProtocol
+from orion.storage.base import BaseStorageProtocol, setup_storage
 
 # Function to create a space.
 _space: Callable[[dict], Space] = SpaceBuilder().build
@@ -30,6 +31,16 @@ def simple_quadratic(
     return lambda x: a * x**2 + b * x + c
 
 
+def _temp_storage(pickle_path: Path | str) -> BaseStorageProtocol:
+    """Creates a temporary storage."""
+    return setup_storage(
+        {
+            "type": "legacy",
+            "database": {"type": "pickleddb", "host": str(pickle_path)},
+        }
+    )
+
+
 @pytest.mark.parametrize("algo", [TPE])
 def test_warm_starting_helps(
     algo: type[BaseAlgorithm],
@@ -37,6 +48,11 @@ def test_warm_starting_helps(
 ):
     """Integration test. Shows that warm-starting helps in a simple task."""
     algo_config = {"of_type": algo.__qualname__.lower(), "seed": 42}
+
+    # TODO: There still seems to be some randomness in this test, despite the algorithms being
+    # seeded..
+    np.random.seed(123)
+    random.seed(123)
 
     source_task = simple_quadratic(a=1, b=-2, c=1)
     target_task = simple_quadratic(a=1, b=-2, c=1)
@@ -52,17 +68,18 @@ def test_warm_starting_helps(
     source_experiment = build_experiment(
         name="source_exp",
         space=source_space,
-        algorithms=Random,
+        algorithms={"of_type": "random", "seed": 42},
         storage=storage,
+        max_trials=n_source_trials,
     )
-    source_experiment.workon(_wrap(source_task), max_trials=n_source_trials)
+    source_experiment.workon(_wrap(source_task))
     # Create the Knowledge base by passing the now-filled Storage.
     knowledge_base = KnowledgeBase(storage=storage)
     assert knowledge_base.n_stored_experiments == 1
 
     without_warm_starting = workon(
         _wrap(target_task),
-        name="default",
+        name="witout_warm_start",
         space=target_space,
         max_trials=max_trials,
         algorithms=algo_config,
@@ -72,7 +89,7 @@ def test_warm_starting_helps(
 
     with_warm_starting = workon(
         _wrap(target_task),
-        name="warm_start",
+        name="with_warm_start",
         space=target_space,
         max_trials=max_trials,
         algorithms=algo_config,
@@ -91,7 +108,7 @@ def test_warm_starting_helps(
 
 
 @pytest.mark.parametrize("algo", [TPE])
-def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
+def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
     """Integration test. Compares the performance in the three cases (cold, warm, hot)-starting.
 
     - Cold-start: Optimize the target task with no prior knowledge (lower bound);
@@ -110,26 +127,33 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
     n_source_trials = 20  # Number of trials from the source task
     max_trials = 20  # Number of trials in the target task
 
-    # TODO: Until https://github.com/Epistimio/orion/pull/942 is merged, we can't create multiple
-    # KnowledgeBase instances, because we can't create multiple Storage instances.
-    # After the PR is merged, we should create KnowledgeBase instances instead of this
-    # DummyKnowledgeBase.
-    warm_start_kb = create_dummy_kb(
-        [source_space],
-        [n_source_trials],
-        task=source_task,
-        prefix="warm",
-        seed=123,
+    warm_start_storage = _temp_storage(tmp_path / "warm.pkl")
+    # Populate the warm-start storage with some data from the source task.
+    source_experiment = build_experiment(
+        name="source",
+        space=source_space,
+        storage=warm_start_storage,
+        max_trials=n_source_trials,
+        algorithms={"of_type": "random", "seed": 42},
     )
-    hot_start_kb = create_dummy_kb(
-        [target_space],
-        [n_source_trials],
-        task=target_task,
-        prefix="hot",
-        seed=123,
-    )
+    source_experiment.workon(_wrap(source_task))
+    warm_start_kb = KnowledgeBase(warm_start_storage)
+    assert warm_start_kb.n_stored_experiments == 1
 
-    # Populate the knowledge base.
+    hot_start_storage = _temp_storage(tmp_path / "hot.pkl")
+    # Populate the hot-start storage with some data from the *target* task.
+    target_prior_experiment = build_experiment(
+        name="target_prior",
+        space=target_space,
+        storage=hot_start_storage,
+        max_trials=n_source_trials,
+        algorithms={"of_type": "random", "seed": 42},
+    )
+    target_prior_experiment.workon(_wrap(target_task))
+    hot_start_kb = KnowledgeBase(hot_start_storage)
+
+    # Execute the three different experiments:
+    # Cold start: No prior information.
     cold_start = workon(
         _wrap(target_task),
         name="cold_start",
@@ -138,7 +162,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
         algorithms=algo_config,
         knowledge_base=None,
     )
-
+    # Warm-start: Prior information from the source task.
     warm_start = workon(
         _wrap(target_task),
         name="warm_start",
@@ -147,10 +171,10 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm]):
         algorithms=algo_config,
         knowledge_base=warm_start_kb,
     )
-
+    # Hot-start: Prior information from the target task.
     hot_start = workon(
         _wrap(target_task),
-        name="warm_start",
+        name="hot_start",
         space=target_space,
         max_trials=max_trials,
         algorithms=algo_config,

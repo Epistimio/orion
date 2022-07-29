@@ -41,17 +41,16 @@ def create_experiments(
     """Fixture that creates a set of experiments, and adds them to the given storage object."""
     # NOTE: The experiments are implicitly added to the Storage object, due to the storage being a
     # singleton.
-    source_experiments: list[ExperimentClient] = []
     task = RosenBrock()
+    source_experiments: list[ExperimentClient] = []
     assert len(storage.fetch_experiments({})) == 0
 
     for i in range(n_previous_experiments):
         source_experiment = build_experiment(
-            name=f"source_{i}",
+            name=f"{prefix}_{i}",
             space=task.get_search_space(),
             max_trials=n_trials_per_experiment,
-            # TODO: Uncomment this Once https://github.com/Epistimio/orion/pull/942 is merged.
-            # storage=storage,
+            storage=storage,
         )
         source_experiment.workon(task, max_trials=n_trials_per_experiment)
         source_experiments.append(source_experiment)

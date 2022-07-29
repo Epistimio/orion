@@ -61,6 +61,7 @@ class Producer:
                 and not self.warm_started
                 and is_warmstarteable(algorithm)
             ):
+                # todo: Not currently passing a limit on the max_trials to fetch from KB.
                 similar_trials = self.experiment.knowledge_base.get_related_trials(
                     self.experiment.configuration
                 )

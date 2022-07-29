@@ -89,8 +89,8 @@ class KnowledgeBase:
     def n_stored_experiments(self) -> int:
         """Returns the current number of experiments registered in the Knowledge base.
 
-        NOTE: Until https://github.com/Epistimio/orion/pull/942 is merged, the target experiment
-        will probably also count, since all experiments are in the same storage.
+        NOTE: IF the target experiment is using the same storage object as the KB, then this
+        will also count the target experiment.
         """
         return len(self.storage.fetch_experiments({}))
 
