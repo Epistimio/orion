@@ -80,7 +80,7 @@ class RandomState:
         return random_state
 
 
-class Algo(Protocol):
+class Algo(Protocol):  # pylint: disable=too-few-public-methods
     """Protocol for algorithms with a random state that can be saved and restored."""
 
     random_state: RandomState | None
