@@ -87,10 +87,6 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         NOTE: this assumes that the trial from the other experiment comes from the knowledge base,
         and that it therefore doesn't already have a task ID.
         """
-        # TODO: Should we also consider the trial compatible if it has extra dimensions compared to
-        # the current space? Or when the current space has an extra dimension, with a default
-        # value? Aren't I just replicating the EVC stuff at this point? Does this whole thing even
-        # make sense? ARGH! I'M CONFUSED!
         return trial_from_other_experiment in self.space
 
     def warm_start(

@@ -307,7 +307,11 @@ class TestMultiTaskWrapper:
             max_trials=max_trials,
             debug=True,
         )
-        assert experiment._experiment.knowledge_base is knowledge_base
+        # NOTE: There's a deepcopy happening in the build_experiment function, so this isn't true:
+        # assert experiment._experiment.knowledge_base is knowledge_base
+        # However we can check that the knowledge_base is indeed being set:
+        assert isinstance(experiment._experiment.knowledge_base, KnowledgeBase)
+
         # IDEA: Add type hints to the `Experiment` class, and make it generic in terms of the
         # algorithms, so that we could get the `algorithms` to be algo_type here.
         algo = experiment.algorithms
@@ -339,7 +343,7 @@ class TestMultiTaskWrapper:
             max_trials=100,
             debug=True,
         )
-        assert experiment._experiment.knowledge_base is knowledge_base
+        assert isinstance(experiment._experiment.knowledge_base, KnowledgeBase)
         algo = experiment.algorithms
         assert algo is not None
         assert isinstance(algo.unwrapped, DummyWarmStarteableAlgo)

@@ -606,7 +606,7 @@ class ExperimentBuilder:
         self._update_experiment(experiment)
         return experiment
 
-    def _get_conflicts(self, experiment, branching):
+    def _get_conflicts(self, experiment: Experiment, branching: dict):
         """Get conflicts between current experiment and corresponding configuration in database"""
         log.debug("Looking for conflicts in new configuration.")
         db_experiment = self.load(experiment.name, experiment.version, mode="r")
@@ -621,7 +621,7 @@ class ExperimentBuilder:
 
         return conflicts
 
-    def load(self, name, version=None, mode="r"):
+    def load(self, name: str, version: int | None = None, mode: Mode = "r"):
         """Load experiment from database
 
         An experiment view provides all reading operations of standard experiment but prevents the
@@ -661,7 +661,7 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode=mode, **db_config)
 
-    def fetch_config_from_db(self, name, version=None):
+    def fetch_config_from_db(self, name: str, version: int | None = None):
         """Fetch configuration from database
 
         Parameters
@@ -696,7 +696,7 @@ class ExperimentBuilder:
 
         return config
 
-    def _register_experiment(self, experiment):
+    def _register_experiment(self, experiment: Experiment):
         """Register a new experiment in the database"""
         experiment.metadata["datetime"] = datetime.datetime.utcnow()
         config = experiment.configuration
@@ -910,11 +910,14 @@ class ExperimentBuilder:
 
         space = _instantiate_space(space)
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
+        if isinstance(knowledge_base, dict):
+            knowledge_base = _instantiate_knowledge_base(knowledge_base)
         instantiated_algorithm = _instantiate_algo(
             space=space,
             max_trials=max_trials,
             config=algorithms,
             ignore_unavailable=mode != "x",
+            knowledge_base=knowledge_base,
         )
 
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)

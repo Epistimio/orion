@@ -46,7 +46,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def create_experiment(name, **config: Unpack[ExperimentConfig]):
+def create_experiment(name: str, **config: Unpack[ExperimentConfig]):
     """Build an experiment to be executable
 
     This function is deprecated and will be removed in v0.3.0. Use `build_experiment`
@@ -226,7 +226,6 @@ def build_experiment(
             version=version,
             space=space,
             algorithms=algorithms,
-            strategy=strategy,
             max_trials=max_trials,
             max_broken=max_broken,
             branching=branching,
