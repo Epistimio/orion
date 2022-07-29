@@ -795,9 +795,12 @@ class ExperimentClient:
 
         # Use worker's max_trials inside `exp.is_done` to reduce chance of
         # race condition for trials creation
+        assert self.max_trials is not None
+        assert max_trials is not None
         if self.max_trials > max_trials:
             self._experiment.max_trials = max_trials
-            self._experiment.algorithms.algorithm.max_trials = max_trials
+            assert self._experiment.algorithms is not None
+            self._experiment.algorithms.max_trials = max_trials
 
         with SetupWorkingDir(self):
             runner = Runner(
