@@ -4,7 +4,7 @@ test('test flatten object', () => {
   const input = {
     a: 1,
     b: {
-      ba: 'world',
+      be: 'world',
       bb: 1.5,
       bc: {
         bd: {
@@ -30,7 +30,7 @@ test('test flatten object', () => {
   const keys = Object.keys(output);
   expect(keys.length).toBe(12);
   expect(output.hasOwnProperty('a')).toBeTruthy();
-  expect(output.hasOwnProperty('b.ba')).toBeTruthy();
+  expect(output.hasOwnProperty('b.be')).toBeTruthy();
   expect(output.hasOwnProperty('b.bb')).toBeTruthy();
   expect(output.hasOwnProperty('b.bc.bd.a key')).toBeTruthy();
   expect(output.hasOwnProperty('b.bc.bd.another key.x')).toBeTruthy();

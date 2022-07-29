@@ -14,7 +14,6 @@ from orion.core.io import experiment_builder
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 
 log = logging.getLogger(__name__)
@@ -95,14 +94,12 @@ def main(args):
 
     storage_config["setup"] = False
 
-    experiment_builder.setup_storage(storage_config)
+    builder = experiment_builder.ExperimentBuilder(storage_config)
 
-    storage = get_storage()
-
-    upgrade_db_specifics(storage)
+    upgrade_db_specifics(builder.storage)
 
     print("Updating documents...")
-    upgrade_documents(storage)
+    upgrade_documents(builder.storage)
     print("Database upgrade completed successfully")
 
 

@@ -27,9 +27,8 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.experiment_config import ExperimentConfig
-from orion.storage.base import FailedUpdate, get_storage
+from orion.storage.base import BaseStorageProtocol, FailedUpdate
 
 if typing.TYPE_CHECKING:
     from orion.core.worker.trial import Trial
@@ -163,6 +162,7 @@ class Experiment(Generic[AlgoT]):
         metadata: dict | None = None,
         refers: dict | None = None,
         knowledge_base: KnowledgeBase | None = None,
+        storage: BaseStorageProtocol | None = None,
     ):
         self._id = _id
         self.name = name
@@ -173,13 +173,20 @@ class Experiment(Generic[AlgoT]):
         self.metadata = metadata or {}
         self.max_trials = max_trials
         self.max_broken = max_broken
-
         self.knowledge_base = knowledge_base
         self.algorithms = algorithms
         self.working_dir = working_dir
 
-        self._storage = get_storage()
-        self._node = ExperimentNode(self.name, self.version, experiment=self)
+        self._storage = storage
+
+        self._node = ExperimentNode(
+            self.name, self.version, experiment=self, storage=self._storage
+        )
+
+    @property
+    def storage(self):
+        """Return the storage currently in use by this experiment"""
+        return self._storage
 
     def _check_if_writable(self):
         if self.mode == "r":
@@ -201,19 +208,11 @@ class Experiment(Generic[AlgoT]):
         for entry in self.__slots__:
             state[entry] = getattr(self, entry)
 
-        # TODO: This should be removed when singletons and `get_storage()` are removed.
-        #       See https://github.com/Epistimio/orion/issues/606
-        singletons = update_singletons()
-        state["singletons"] = singletons
-        update_singletons(singletons)
-
         return state
 
     def __setstate__(self, state):
         for entry in self.__slots__:
             setattr(self, entry, state[entry])
-
-        update_singletons(state.pop("singletons"))
 
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment
@@ -459,7 +458,11 @@ class Experiment(Generic[AlgoT]):
                 log.warning(
                     "Saved configuration: %s", locked_algorithm_state.configuration
                 )
-                log.warning("Current configuration: %s", self.algorithms.configuration)
+                log.warning(
+                    "Current configuration: %s %s",
+                    self.algorithms.configuration,
+                    self._storage._db,
+                )
                 raise RuntimeError(
                     "Algorithm configuration changed since last experiment execution. "
                     "Algorithm cannot be resumed with a different configuration. "

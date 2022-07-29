@@ -22,6 +22,7 @@ from orion.benchmark.task.profet import (
     ProfetXgBoostTask,
 )
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from orion.storage.base import setup_storage
 
 try:
     from simple_parsing.helpers import choice
@@ -103,7 +104,15 @@ def main(config: ProfetExperimentConfig):
 
     print(f"Storage file used: {config.storage_pickle_path}")
 
+    storage = setup_storage(
+        {
+            "type": "legacy",
+            "database": {"type": "pickleddb", "host": str(config.storage_pickle_path)},
+        }
+    )
+
     benchmark = get_or_create_benchmark(
+        storage,
         name=config.name,
         algorithms=config.algorithms,
         targets=[
@@ -114,10 +123,6 @@ def main(config: ProfetExperimentConfig):
                 ],
             }
         ],
-        storage={
-            "type": "legacy",
-            "database": {"type": "pickleddb", "host": str(config.storage_pickle_path)},
-        },
         debug=config.debug,
     )
     benchmark.setup_studies()

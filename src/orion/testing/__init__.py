@@ -13,10 +13,13 @@ import datetime
 import os
 from contextlib import contextmanager
 
+from falcon import testing
+
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.producer import Producer
+from orion.serving.webapi import WebApi
 from orion.testing.state import OrionState
 
 base_experiment = {
@@ -145,9 +148,8 @@ def generate_benchmark_experiments_trials(
     return gen_exps, gen_trials
 
 
-@contextmanager
 def create_study_experiments(
-    exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
+    state, exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
 ):
     gen_exps, gen_trials = generate_benchmark_experiments_trials(
         algorithms, exp_config, trial_config, task_number * len(n_workers), max_trial
@@ -161,20 +163,25 @@ def create_study_experiments(
         for worker in n_workers:
             for _ in range(len(algorithms)):
                 workers.append(worker)
-    with OrionState(experiments=gen_exps, trials=gen_trials):
-        experiments = []
-        experiments_info = []
-        for i in range(task_number * len(n_workers) * len(algorithms)):
-            experiment = experiment_builder.build(f"experiment-name-{i}")
 
-            executor = Joblib(n_workers=workers[i], backend="threading")
-            client = ExperimentClient(experiment, executor=executor)
-            experiments.append(client)
+    state.add_trials(*gen_trials)
+    state.add_experiments(*gen_exps)
 
-        for index, exp in enumerate(experiments):
-            experiments_info.append((int(index / task_number), exp))
+    experiments = []
+    experiments_info = []
+    for i in range(task_number * len(n_workers) * len(algorithms)):
+        experiment = experiment_builder.build(
+            f"experiment-name-{i}", storage=state.storage_config
+        )
 
-        yield experiments_info
+        executor = Joblib(n_workers=workers[i], backend="threading")
+        client = ExperimentClient(experiment, executor=executor)
+        experiments.append(client)
+
+    for index, exp in enumerate(experiments):
+        experiments_info.append((int(index / task_number), exp))
+
+    return experiments_info
 
 
 def mock_space_iterate(monkeypatch):
@@ -214,13 +221,29 @@ def create_experiment(
         experiments=[exp_config],
         trials=generate_trials(trial_config, statuses, exp_config),
     ) as cfg:
-        experiment = experiment_builder.build(name=exp_config["name"])
+        experiment = experiment_builder.build(
+            name=exp_config["name"], storage=cfg.storage_config
+        )
         if cfg.trials:
             experiment._id = cfg.trials[0]["experiment"]
         client = ExperimentClient(experiment)
         yield cfg, experiment, client
 
     client.close()
+
+
+@contextmanager
+def falcon_client(exp_config=None, trial_config=None, statuses=None):
+    """Context manager for the creation of an ExperimentClient and storage init"""
+
+    with create_experiment(exp_config, trial_config, statuses) as (
+        cfg,
+        experiment,
+        exp_client,
+    ):
+        falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
+
+        yield cfg, experiment, exp_client, falcon_client
 
 
 class MockDatetime(datetime.datetime):

@@ -17,14 +17,13 @@ from orion.serving.responses import (
     build_experiment_response,
     build_experiments_response,
 )
-from orion.storage.base import get_storage
 
 
 class ExperimentsResource:
     """Handle requests for the experiments/ REST endpoint"""
 
-    def __init__(self):
-        self.storage = get_storage()
+    def __init__(self, storage):
+        self.storage = storage
 
     def on_get(self, req: Request, resp: Response):
         """Handle the GET requests for experiments/"""
@@ -41,7 +40,7 @@ class ExperimentsResource:
         """
         verify_query_parameters(req.params, ["version"])
         version = req.get_param_as_int("version")
-        experiment = retrieve_experiment(name, version)
+        experiment = retrieve_experiment(self.storage, name, version)
 
         status = _retrieve_status(experiment)
         algorithm = _retrieve_algorithm(experiment)

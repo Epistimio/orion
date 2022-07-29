@@ -1,8 +1,8 @@
 import React from 'react';
 import { Backend, DEFAULT_BACKEND } from '../../../utils/queryServer';
-import TrialTable from './TrialTable';
+import { FeaturedTable } from './FeaturedTable';
 import { BackendContext } from '../../BackendContext';
-import { Grid, Row, Column } from 'carbon-components-react';
+import { Column, Grid, Row } from 'carbon-components-react';
 import { flattenObject } from '../../../utils/flattenObject';
 
 /**
@@ -104,54 +104,59 @@ class TrialsProvider {
       // We assume paramKeys is the same for all trials
       const paramKeys = trials[0].paramKeys.slice();
       paramKeys.sort();
-      const paramHeaders = paramKeys.map(paramKey => ({
-        key: paramKey,
-        // Ignore prefix `params.`
-        header: `Parameter ${paramKey.substr(7)}`,
-      }));
-      const trialHeaders = [
+      const headers = [
         {
-          key: 'id',
+          accessorKey: 'id',
           header: 'ID',
+          sortingFn: 'text',
+          cell: info =>
+            info.getValue().length > 7 ? (
+              <span title={info.getValue()}>
+                {info.getValue().substr(0, 7)}...
+              </span>
+            ) : (
+              info.getValue()
+            ),
         },
-        ...paramHeaders,
         {
-          key: 'submitTime',
+          // Grouped parameters columns
+          header: 'Parameters',
+          columns: paramKeys.map(k => {
+            const p = { accessorFn: r => r[k], header: k.substr(7) };
+            if (!sortableParamCols[k]) {
+              // column not sortable
+              p.cell = props => props.getValue();
+              p.enableSorting = false;
+            }
+            return p;
+          }),
+        },
+        {
+          accessorKey: 'submitTime',
           header: 'Submit time',
         },
         {
-          key: 'startTime',
+          accessorKey: 'startTime',
           header: 'Start time',
         },
         {
-          key: 'endTime',
+          accessorKey: 'endTime',
           header: 'End time',
         },
         {
-          key: 'objective',
+          accessorKey: 'objective',
           header: 'Objective',
         },
         {
-          key: 'statistics',
+          // not sortable
+          accessorKey: 'statistics',
           header: 'Statistics',
+          cell: props => props.getValue(),
         },
       ];
-      // Map to specify sortable columns.
-      const sortableCols = {
-        ...sortableParamCols,
-        id: true,
-        submitTime: true,
-        startTime: true,
-        endTime: true,
-        objective: true,
-        statistics: false,
-      };
-      // Array to specify sortable columns by index.
-      const sortable = trialHeaders.map(header => sortableCols[header.key]);
       this.trials[experiment] = {
-        headers: trialHeaders,
+        headers: headers,
         trials: trials,
-        sortable: sortable,
       };
     }
     return this.trials[experiment];
@@ -183,10 +188,9 @@ class DatabasePage extends React.Component {
       <div className="bx--grid bx--grid--full-width bx--grid--no-gutter database-page">
         <div className="bx--row database-page__r1">
           <div className="bx--col-lg-16">
-            <TrialTable
-              headers={this.state.trials.headers}
-              rows={this.state.trials.trials}
-              sortable={this.state.trials.sortable}
+            <FeaturedTable
+              columns={this.state.trials.headers}
+              data={this.state.trials.trials}
               experiment={this.state.experiment}
             />
           </div>

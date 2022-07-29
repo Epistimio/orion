@@ -7,7 +7,7 @@ import pytest
 import orion.core.cli
 
 
-def test_no_experiments(setup_pickleddb_database, monkeypatch, capsys):
+def test_no_experiments(orionstate, monkeypatch, capsys):
     """Test status with no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["status"])
@@ -17,7 +17,7 @@ def test_no_experiments(setup_pickleddb_database, monkeypatch, capsys):
     assert captured == "No experiment found\n"
 
 
-def test_no_version_backward_compatible(one_experiment_no_version, capsys):
+def test_no_version_backward_compatible(one_experiment_no_version, capsys, storage):
     """Test status with no experiments."""
     orion.core.cli.main(["status"])
 
@@ -951,7 +951,7 @@ de370b6f6db68b3b8060ec76c9715835  suspended
     assert captured == expected
 
 
-def test_no_experiments_w_name(setup_pickleddb_database, monkeypatch, capsys):
+def test_no_experiments_w_name(orionstate, monkeypatch, capsys):
     """Test status when --name <exp> does not exist."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["status", "--name", "test_ghost_exp"])

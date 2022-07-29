@@ -31,7 +31,7 @@ from typing_extensions import Literal
 
 import orion.core
 from orion.core.io import resolve_config
-from orion.core.utils.singleton import GenericSingletonFactory
+from orion.core.utils import GenericFactory
 
 if typing.TYPE_CHECKING:
     from typing_extensions import Unpack
@@ -639,27 +639,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
 
-storage_factory = GenericSingletonFactory(BaseStorageProtocol)
-
-
-def get_storage():
-    """Return current storage
-
-    This is a wrapper around the Storage Singleton object to provide
-    better error message when it is used without being initialized.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying storage was not initialized prior to calling this function
-
-    Notes
-    -----
-    To initialize the underlying storage you must first call `Storage(...)`
-    with the appropriate arguments for the chosen backend
-
-    """
-    return storage_factory.create()
+storage_factory = GenericFactory(BaseStorageProtocol)
 
 
 def setup_storage(storage=None, debug=False):
@@ -698,7 +678,7 @@ def setup_storage(storage=None, debug=False):
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
-        storage_factory.create(of_type=storage_type, **storage)
+        return storage_factory.create(of_type=storage_type, **storage)
     except ValueError:
         if storage_factory.create().__class__.__name__.lower() != storage_type.lower():
             raise

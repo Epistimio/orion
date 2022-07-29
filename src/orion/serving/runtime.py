@@ -5,14 +5,13 @@ Represent the '/' REST endpoint
 import json
 
 import orion.core
-from orion.storage.base import get_storage
 
 
 class RuntimeResource:
     """Handle requests for the '/' REST endpoint"""
 
-    def __init__(self):
-        pass
+    def __init__(self, storage):
+        self.storage = storage
 
     def on_get(self, req, resp):
         """Handle the HTTP GET requests for the '/' endpoint
@@ -24,7 +23,7 @@ class RuntimeResource:
         resp
             The response to send back
         """
-        database = get_storage()._db.__class__.__name__
+        database = self.storage._db.__class__.__name__
         response = {
             "orion": orion.core.__version__,
             "server": "gunicorn",

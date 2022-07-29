@@ -6,16 +6,10 @@ import os
 
 import pytest
 
-from orion.core.io.database import database_factory
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import (
-    SingletonAlreadyInstantiatedError,
-    SingletonNotInstantiatedError,
-    update_singletons,
-)
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate
-from orion.storage.legacy import get_database, setup_database
+from orion.storage.legacy import setup_database
 from orion.testing import OrionState
 
 log = logging.getLogger(__name__)
@@ -66,18 +60,17 @@ mongodb_config = {
 db_backends = [{"type": "legacy", "database": mongodb_config}]
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_setup_database_default(monkeypatch):
     """Test that database is setup using default config"""
-    update_singletons()
-    setup_database()
-    database = database_factory.create()
+
+    database = setup_database()
     assert isinstance(database, PickledDB)
 
 
 def test_setup_database_bad():
     """Test how setup fails when configuring with non-existent backends"""
-    update_singletons()
+
     with pytest.raises(NotImplementedError) as exc:
         setup_database({"type": "idontexist"})
 
@@ -86,51 +79,32 @@ def test_setup_database_bad():
 
 def test_setup_database_custom():
     """Test setup with local configuration"""
-    update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = database_factory.create()
+
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
+
     assert isinstance(database, PickledDB)
     assert database.host == os.path.abspath("test.pkl")
 
 
 def test_setup_database_bad_override():
     """Test setup with different type than existing singleton"""
-    update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = database_factory.create()
-    assert isinstance(database, PickledDB)
-    with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
-        setup_database({"type": "mongodb"})
 
-    assert exc.match(r"A singleton instance of \(type: Database\)")
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
+    assert isinstance(database, PickledDB)
 
 
 def test_setup_database_bad_config_override():
     """Test setup with different config than existing singleton"""
-    update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = database_factory.create()
+
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
-    with pytest.raises(SingletonAlreadyInstantiatedError):
-        setup_database({"type": "pickleddb", "host": "other.pkl"})
-
-
-def test_get_database_uninitiated():
-    """Test that get database fails if no database singleton exist"""
-    update_singletons()
-    with pytest.raises(SingletonNotInstantiatedError) as exc:
-        get_database()
-
-    assert exc.match(r"No singleton instance of \(type: Database\) was created")
 
 
 def test_get_database():
     """Test that get database gets the singleton"""
-    update_singletons()
-    setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = get_database()
+
+    database = setup_database({"type": "pickleddb", "host": "test.pkl"})
     assert isinstance(database, PickledDB)
-    assert get_database() == database
 
 
 class TestLegacyStorage:
@@ -143,7 +117,7 @@ class TestLegacyStorage:
         with OrionState(
             experiments=[], trials=[reserved_trial], storage=storage
         ) as cfg:
-            storage = cfg.storage()
+            storage = cfg.storage
             trial = storage.get_trial(Trial(**reserved_trial))
             results = [Trial.Result(name="loss", type="objective", value=2)]
             trial.results = results
@@ -155,7 +129,7 @@ class TestLegacyStorage:
     def test_push_trial_results_unreserved(self, storage=None):
         """Successfully push a completed trial into database."""
         with OrionState(experiments=[], trials=[base_trial], storage=storage) as cfg:
-            storage = cfg.storage()
+            storage = cfg.storage
             trial = storage.get_trial(Trial(**base_trial))
             results = [Trial.Result(name="loss", type="objective", value=2)]
             trial.results = results

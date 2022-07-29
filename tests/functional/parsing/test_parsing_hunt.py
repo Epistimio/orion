@@ -16,7 +16,7 @@ def _create_parser(need_subparser=True):
     return parser
 
 
-def test_hunt_command_full_parsing(setup_pickleddb_database, monkeypatch):
+def test_hunt_command_full_parsing(orionstate, monkeypatch):
     """Test the parsing of the `hunt` command"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     parser, subparsers = _create_parser()

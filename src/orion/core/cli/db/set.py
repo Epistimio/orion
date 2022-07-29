@@ -14,7 +14,6 @@ import sys
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.core.utils.terminal import confirm_name
-from orion.storage.base import get_storage
 
 logger = logging.getLogger(__name__)
 
@@ -168,12 +167,10 @@ def build_update(update):
 def main(args):
     """Remove the experiment(s) or trial(s)."""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get("storage"))
+    builder = experiment_builder.ExperimentBuilder(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.load(
-        name=args["name"], version=args.get("version", None)
-    ).node
+    root = builder.load(name=args["name"], version=args.get("version", None)).node
 
     try:
         query = build_query(root.item, args["query"])
@@ -195,8 +192,6 @@ def main(args):
         print("Confirmation failed, aborting operation.")
         return 1
 
-    storage = get_storage()
-
-    process_updates(storage, root, query, update)
+    process_updates(builder.storage, root, query, update)
 
     return 0
