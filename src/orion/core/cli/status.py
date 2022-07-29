@@ -13,7 +13,7 @@ import tabulate
 
 from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Gives an overview of experiments' trials"
@@ -67,11 +67,11 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and status experiments"""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get("storage"))
+    storage = setup_storage(config.get("storage"))
 
     args["all_trials"] = args.pop("all", False)
 
-    experiments = get_experiments(args)
+    experiments = get_experiments(storage, args)
 
     if not experiments:
         print("No experiment found")
@@ -121,7 +121,7 @@ def print_evc(
             print_status(experiment, all_trials=all_trials, collapse=True)
 
 
-def get_experiments(args):
+def get_experiments(storage, args):
     """Return the different experiments.
 
     Parameters
@@ -133,7 +133,7 @@ def get_experiments(args):
     projection = {"name": 1, "version": 1, "refers": 1}
 
     query = {"name": args["name"]} if args.get("name") else {}
-    experiments = get_storage().fetch_experiments(query, projection)
+    experiments = storage.fetch_experiments(query, projection)
 
     if args["name"]:
         root_experiments = experiments

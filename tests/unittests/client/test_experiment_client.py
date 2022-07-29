@@ -20,7 +20,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import AlreadyReleased, Trial
 from orion.executor.base import ExecutorClosed, executor_factory
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.testing import create_experiment, mock_space_iterate
 
 config = dict(
@@ -584,11 +584,11 @@ class TestBroken:
                 with client.suggest() as trial:
                     assert trial.status == "reserved"
                     assert trial.results == []
-                    assert get_storage().get_trial(trial).objective is None
+                    assert setup_storage().get_trial(trial).objective is None
                     client.observe(
                         trial, [dict(name="objective", type="objective", value=101)]
                     )
-                    assert get_storage().get_trial(trial).objective.value == 101
+                    assert setup_storage().get_trial(trial).objective.value == 101
                     assert trial.status == "completed"
                     raise KeyboardInterrupt
 
@@ -839,9 +839,9 @@ class TestObserve:
             trial = Trial(**cfg.trials[1])
             assert trial.results == []
             client.reserve(trial)
-            assert get_storage().get_trial(trial).objective is None
+            assert setup_storage().get_trial(trial).objective is None
             client.observe(trial, [dict(name="objective", type="objective", value=101)])
-            assert get_storage().get_trial(trial).objective.value == 101
+            assert setup_storage().get_trial(trial).objective.value == 101
 
     def test_observe_unreserved(self):
         """Verify that `observe()` will fail on non-reserved trials"""
@@ -903,11 +903,11 @@ class TestObserve:
             with client.suggest() as trial:
                 assert trial.status == "reserved"
                 assert trial.results == []
-                assert get_storage().get_trial(trial).objective is None
+                assert setup_storage().get_trial(trial).objective is None
                 client.observe(
                     trial, [dict(name="objective", type="objective", value=101)]
                 )
-                assert get_storage().get_trial(trial).objective.value == 101
+                assert setup_storage().get_trial(trial).objective.value == 101
                 assert trial.status == "completed"
 
             assert trial.status == "completed"  # Still completed after __exit__

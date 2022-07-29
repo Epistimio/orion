@@ -7,12 +7,7 @@ import pymongo
 import pytest
 from pymongo import MongoClient
 
-from orion.core.io.database import (
-    Database,
-    DatabaseError,
-    DuplicateKeyError,
-    database_factory,
-)
+from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
 from .conftest import insert_test_collection
@@ -225,21 +220,6 @@ class TestConnection:
         assert orion_db.username == "lala"
         assert orion_db.password == "none"
         assert orion_db.name == "orion"
-
-    def test_singleton(self):
-        """Test that MongoDB class is a singleton."""
-        orion_db = database_factory.create(
-            of_type="mongodb",
-            host="mongodb://localhost",
-            port=27017,
-            name="orion_test",
-            username="user",
-            password="pass",
-        )
-        # reinit connection does not change anything
-        orion_db.initiate_connection()
-        orion_db.close_connection()
-        assert database_factory.create() is orion_db
 
     def test_change_server_timeout(self):
         """Test that the server timeout is correctly changed."""

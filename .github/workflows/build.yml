@@ -27,6 +27,7 @@ jobs:
     strategy:
       matrix:
         toxenv: [pylint, doc8, docs]
+
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.9

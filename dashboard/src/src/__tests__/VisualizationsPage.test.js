@@ -91,10 +91,10 @@ test('Test if we can select and unselect experiments', async () => {
   ).toBeInTheDocument();
 
   // Unselect experiment
-  const span = screen.queryByTitle(/unselect experiment '2-dim-shape-exp'/);
-  expect(span).toBeInTheDocument();
-  expect(span.tagName.toLowerCase()).toBe('span');
-  fireEvent.click(span);
+  const row = screen.queryByTitle(/unselect experiment '2-dim-shape-exp'/);
+  expect(row).toBeInTheDocument();
+  expect(row.tagName.toLowerCase()).toBe('label');
+  fireEvent.click(row);
   expect((await screen.findAllByText(/Nothing to display/)).length).toBe(3);
   expect(
     screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)

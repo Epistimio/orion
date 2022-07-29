@@ -398,6 +398,7 @@ def test_with_evc(algorithm, storage):
         space=space_with_fidelity,
         algorithms=algorithm_configs["random"],
         max_trials=10,
+        storage=storage,
     )
     base_exp.workon(rosenbrock, max_trials=10)
 
@@ -406,6 +407,7 @@ def test_with_evc(algorithm, storage):
         space=space_with_fidelity,
         algorithms=algorithm,
         max_trials=30,
+        storage=storage,
         branching={"branch_from": "exp", "enable": True},
     )
 
@@ -456,9 +458,7 @@ def test_parallel_workers(algorithm, storage):
     name = f"{list(algorithm.keys())[0]}_exp"
 
     exp = create_experiment(
-        name=name,
-        space=space_with_fidelity,
-        algorithms=algorithm,
+        name=name, space=space_with_fidelity, algorithms=algorithm, storage=storage
     )
 
     exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)

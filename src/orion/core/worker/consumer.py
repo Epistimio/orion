@@ -210,6 +210,7 @@ class Consumer:
         log.debug("New temp results file: %s", results_file.name)
 
         log.debug("Building command line argument and configuration for trial.")
+
         env = self.get_execution_environment(trial, results_file.name)
         cmd_args = self.template_builder.format(
             config_file.name, trial, self.experiment
@@ -252,13 +253,21 @@ class Consumer:
 
         try:
             # pylint: disable = consider-using-with
-            process = subprocess.Popen(command, env=environ)
+            process = subprocess.Popen(
+                command,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
         except PermissionError as exc:
             log.debug("Script is not executable")
             raise InexecutableUserScript(" ".join(cmd_args)) from exc
+
+        stdout, _ = process.communicate()
 
         return_code = process.wait()
         log.debug(f"Script finished with return code {return_code}")
 
         if return_code != 0:
+            log.debug("%s", stdout.decode("utf-8"))
             raise ExecutionError(return_code)

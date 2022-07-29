@@ -36,14 +36,13 @@ def config(exp_config):
     return config
 
 
-@pytest.mark.usefixtures("storage")
-def test_trials_interrupted_sigterm(config, monkeypatch):
+def test_trials_interrupted_sigterm(storage, config, monkeypatch):
     """Check if a trial is set as interrupted when a signal is raised."""
 
     def mock_popen(self, *args, **kwargs):
         os.kill(os.getpid(), signal.SIGTERM)
 
-    exp = experiment_builder.build(**config)
+    exp = experiment_builder.build(**config, storage=storage)
 
     monkeypatch.setattr(subprocess.Popen, "wait", mock_popen)
 
@@ -60,9 +59,28 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     shutil.rmtree(trial.working_dir)
 
 
-def setup_code_change_mock(config, monkeypatch, ignore_code_changes):
+def test_trial_working_dir_is_created(storage, config):
+    """Check that trial working dir is created."""
+
+    exp = experiment_builder.build(**config, storage=storage)
+
+    trial = tuple_to_trial((1.0,), exp.space)
+
+    exp.register_trial(trial, status="reserved")
+
+    assert not os.path.exists(trial.working_dir)
+
+    con = Consumer(exp)
+    con(trial)
+
+    assert os.path.exists(trial.working_dir)
+
+    shutil.rmtree(trial.working_dir)
+
+
+def setup_code_change_mock(storage, config, monkeypatch, ignore_code_changes):
     """Mock create experiment and trials, and infer_versioning_metadata"""
-    exp = experiment_builder.build(**config)
+    exp = experiment_builder.build(**config, storage=storage)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
@@ -85,11 +103,12 @@ def setup_code_change_mock(config, monkeypatch, ignore_code_changes):
     return con, trial
 
 
-@pytest.mark.usefixtures("storage")
-def test_code_changed_evc_disabled(config, monkeypatch, caplog):
+def test_code_changed_evc_disabled(storage, config, monkeypatch, caplog):
     """Check that trial has its working_dir attribute changed."""
 
-    con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=True)
+    con, trial = setup_code_change_mock(
+        storage, config, monkeypatch, ignore_code_changes=True
+    )
 
     with caplog.at_level(logging.WARNING):
         con(trial)
@@ -98,11 +117,12 @@ def test_code_changed_evc_disabled(config, monkeypatch, caplog):
     shutil.rmtree(trial.working_dir)
 
 
-@pytest.mark.usefixtures("storage")
-def test_code_changed_evc_enabled(config, monkeypatch):
+def test_code_changed_evc_enabled(storage, config, monkeypatch):
     """Check that trial has its working_dir attribute changed."""
 
-    con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=False)
+    con, trial = setup_code_change_mock(
+        storage, config, monkeypatch, ignore_code_changes=False
+    )
 
     with pytest.raises(BranchingEvent) as exc:
         con(trial)
@@ -112,14 +132,13 @@ def test_code_changed_evc_enabled(config, monkeypatch):
     shutil.rmtree(trial.working_dir)
 
 
-@pytest.mark.usefixtures("storage")
-def test_retrieve_result_nofile(config):
+def test_retrieve_result_nofile(storage, config):
     """Test retrieve result"""
     results_file = tempfile.NamedTemporaryFile(
         mode="w", prefix="results_", suffix=".log", dir=".", delete=True
     )
 
-    exp = experiment_builder.build(**config)
+    exp = experiment_builder.build(storage=storage, **config)
 
     con = Consumer(exp)
 

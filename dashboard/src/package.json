@@ -19,6 +19,7 @@
   "dependencies": {
     "@carbon/grid": "10.43.1",
     "@carbon/icons-react": "10.49.0",
+    "@tanstack/react-table": "^8.3.3",
     "axios": "^0.27.2",
     "bootstrap": "^4.6.1",
     "carbon-components": "^10.57.1",
@@ -49,7 +50,8 @@
   },
   "resolutions": {
     "nth-check": "^2.0.1",
-    "autoprefixer": "10.4.5"
+    "autoprefixer": "10.4.5",
+    "terser": "^5.14.2"
   },
   "eslintConfig": {
     "extends": "react-app"

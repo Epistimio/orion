@@ -9,7 +9,7 @@ import yaml
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -19,7 +19,7 @@ def execute(command, assert_code=0):
 
 
 @pytest.fixture
-def init_full_x(setup_pickleddb_database, monkeypatch):
+def init_full_x(orionstate, monkeypatch):
     """Init original experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = "full_x"
@@ -59,6 +59,8 @@ def init_no_evc(monkeypatch):
 @pytest.fixture
 def init_full_x_full_y(init_full_x):
     """Add y dimension to original"""
+    print("init_full_x_full_y start")
+
     name = "full_x"
     branch = "full_x_full_y"
     orion.core.cli.main(
@@ -393,10 +395,10 @@ def test_init(init_full_x):
     assert pairs == ((("/x", 0),),)
 
 
-def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
+def test_no_evc_overwrite(orionstate, init_no_evc):
     """Test that the experiment config is overwritten if --enable-evc is not passed"""
-    storage = get_storage()
-    assert len(get_storage().fetch_experiments({})) == 1
+    storage = setup_storage()
+    assert len(storage.fetch_experiments({})) == 1
     experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
@@ -966,7 +968,7 @@ def test_new_script(init_full_x, monkeypatch):
     metadata["user_script"] = "oh_oh_idontexist.py"
     metadata["user_args"][0] = "oh_oh_idontexist.py"
     metadata["parser"]["parser"]["arguments"][0][1] = "oh_oh_idontexist.py"
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1014,7 +1016,7 @@ def test_missing_config(init_full_x_new_config, monkeypatch):
     metadata["parser"]["file_config_path"] = bad_config_file
     metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
     metadata["user_args"][3] = bad_config_file
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1060,7 +1062,7 @@ def test_missing_and_new_config(init_full_x_new_config, monkeypatch):
             )
         )
 
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1170,9 +1172,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     ]
 
 
-def test_init_w_version_from_parent_w_children(
-    setup_pickleddb_database, monkeypatch, capsys
-):
+def test_init_w_version_from_parent_w_children(orionstate, monkeypatch, capsys):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1199,7 +1199,7 @@ def test_init_w_version_from_parent_w_children(
     assert "Experiment name" in captured.err
 
 
-def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatch):
+def test_init_w_version_from_exp_wout_child(orionstate, monkeypatch):
     """Test that init of experiment from version without child works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1219,11 +1219,11 @@ def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatc
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 3})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 3})
     assert len(list(exp))
 
 
-def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
+def test_init_w_version_gt_max(orionstate, monkeypatch):
     """Test that init of experiment from version higher than max works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1243,11 +1243,11 @@ def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 3})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 3})
     assert len(list(exp))
 
 
-def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
+def test_init_check_increment_w_children(orionstate, monkeypatch):
     """Test that incrementing version works with not same-named children."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1266,11 +1266,11 @@ def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
         "./black_box.py -x~normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 2})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 2})
     assert len(list(exp))
 
 
-def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
+def test_branch_from_selected_version(orionstate, monkeypatch):
     """Test that branching from a version passed with `--version` works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1290,7 +1290,7 @@ def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
         "-x~normal(0,1) -z~+normal(0,1)"
     )
 
-    storage = get_storage()
+    storage = setup_storage()
     parent = storage.fetch_experiments({"name": "experiment", "version": 1})[0]
     exp = storage.fetch_experiments({"name": "experiment_2"})[0]
     assert exp["refers"]["parent_id"] == parent["_id"]

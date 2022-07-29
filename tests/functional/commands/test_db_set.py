@@ -2,7 +2,7 @@
 """Perform functional tests for db set."""
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -37,9 +37,9 @@ def test_confirm_name(monkeypatch, single_with_trials):
 
     monkeypatch.setattr("builtins.input", correct_name)
 
-    assert len(get_storage()._fetch_trials({"status": "broken"})) > 0
+    assert len(setup_storage()._fetch_trials({"status": "broken"})) > 0
     execute("db set test_single_exp status=broken status=interrupted")
-    assert len(get_storage()._fetch_trials({"status": "broken"})) == 0
+    assert len(setup_storage()._fetch_trials({"status": "broken"})) == 0
 
 
 def test_invalid_query(single_with_trials, capsys):
@@ -62,11 +62,11 @@ def test_invalid_update(single_with_trials, capsys):
 
 def test_update_trial(single_with_trials, capsys):
     """Test that trial is updated properly"""
-    trials = get_storage()._fetch_trials({})
+    trials = setup_storage()._fetch_trials({})
     assert sum(trial.status == "broken" for trial in trials) > 0
     trials = dict(zip((trial.id for trial in trials), trials))
     execute("db set -f test_single_exp status=broken status=interrupted")
-    for trial in get_storage()._fetch_trials({}):
+    for trial in setup_storage()._fetch_trials({}):
         if trials[trial.id].status == "broken":
             assert trial.status == "interrupted", "status not changed properly"
         else:
@@ -81,11 +81,11 @@ def test_update_trial(single_with_trials, capsys):
 
 def test_update_trial_with_id(single_with_trials, capsys):
     """Test that trial is updated properly when querying with the id"""
-    trials = get_storage()._fetch_trials({})
+    trials = setup_storage()._fetch_trials({})
     trials = dict(zip((trial.id for trial in trials), trials))
-    trial = get_storage()._fetch_trials({"status": "broken"})[0]
+    trial = setup_storage()._fetch_trials({"status": "broken"})[0]
     execute(f"db set -f test_single_exp id={trial.id} status=interrupted")
-    for new_trial in get_storage()._fetch_trials({}):
+    for new_trial in setup_storage()._fetch_trials({}):
         if new_trial.id == trial.id:
             assert new_trial.status == "interrupted", "status not changed properly"
         else:
@@ -99,10 +99,10 @@ def test_update_trial_with_id(single_with_trials, capsys):
 
 def test_update_no_match_query(single_with_trials, capsys):
     """Test that no trials are updated when there is no match"""
-    trials = get_storage()._fetch_trials({})
+    trials = setup_storage()._fetch_trials({})
     trials = dict(zip((trial.id for trial in trials), trials))
     execute("db set -f test_single_exp status=invalid status=interrupted")
-    for trial in get_storage()._fetch_trials({}):
+    for trial in setup_storage()._fetch_trials({}):
         assert (
             trials[trial.id].status == trial.status
         ), "status should not have been changed"
