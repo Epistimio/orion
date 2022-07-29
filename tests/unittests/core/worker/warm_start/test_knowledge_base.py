@@ -94,7 +94,7 @@ class TestKnowledgeBase:
             space={"x": "uniform(0, 1)"},
             storage={
                 "type": "legacy",
-                "database": {"type": "pickledb", "host": f"{tmp_path}/foobar.pkl"},
+                "database": {"type": "pickleddb", "host": f"{tmp_path}/foobar.pkl"},
             },
         )
 
@@ -154,7 +154,7 @@ class TestKnowledgeBase:
             space={"x": "uniform(0, 1)"},
             storage={
                 "type": "legacy",
-                "database": {"type": "pickledb", "host": f"{tmp_path}/foobar.pkl"},
+                "database": {"type": "pickleddb", "host": f"{tmp_path}/foobar.pkl"},
             },
         )
 
