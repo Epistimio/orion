@@ -82,6 +82,7 @@ import inspect
 import logging
 import pprint
 import sys
+import typing
 from typing import Any, TypeVar
 
 import orion.core
@@ -103,10 +104,14 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment, Mode
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 
+if typing.TYPE_CHECKING:
+    from orion.core.evc.adapters import CompositeAdapter
+    from orion.storage.base import BaseStorageProtocol
 log = logging.getLogger(__name__)
 
 
@@ -174,7 +179,7 @@ def merge_producer_config(config: dict, new_config: dict) -> None:
 ##
 
 
-def _instantiate_adapters(config):
+def _instantiate_adapters(config: list[dict]) -> CompositeAdapter:
     """Instantiate the adapter object
 
     Parameters
@@ -284,7 +289,7 @@ def _instantiate_algo(
     return wrapped_algo
 
 
-def _instantiate_strategy(config=None):
+def _instantiate_strategy(config: dict | None = None) -> None:
     """Instantiate the strategy object
 
     Parameters
@@ -303,7 +308,9 @@ def _instantiate_strategy(config=None):
     return None
 
 
-def _fetch_config_version(configs, version=None):
+def _fetch_config_version(
+    configs: list[ExperimentConfig], version: int | None = None
+) -> ExperimentConfig:
     """Fetch the experiment configuration corresponding to the given version
 
     Parameters
@@ -332,9 +339,9 @@ def _fetch_config_version(configs, version=None):
 
     version = min(version, max_version)
 
-    configs = filter(lambda exp: exp.get("version", 1) == version, configs)
+    filtered_configs = filter(lambda exp: exp.get("version", 1) == version, configs)
 
-    return next(iter(configs))
+    return next(iter(filtered_configs))
 
 
 ###
@@ -342,7 +349,7 @@ def _fetch_config_version(configs, version=None):
 ###
 
 
-def get_cmd_config(cmdargs):
+def get_cmd_config(cmdargs) -> ExperimentConfig:
     """Fetch configuration defined by commandline and local configuration file.
 
     Arguments of commandline have priority over options in configuration file.
@@ -477,7 +484,9 @@ class ExperimentBuilder:
         If True, force using EphemeralDB for the storage. Default: False
     """
 
-    def __init__(self, storage=None, debug=False) -> None:
+    def __init__(
+        self, storage: dict | BaseStorageProtocol | None = None, debug: bool = False
+    ) -> None:
         singleton = None
         log.debug("Using for storage %s", storage)
 
