@@ -132,7 +132,6 @@ class BaseAlgorithm:
             self.seed_rng(self.seed)
 
         self.registry = Registry()
-        # TODO: Should `max_trials` take the value of self.space.cardinality by default?
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
