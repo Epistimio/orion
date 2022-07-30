@@ -70,7 +70,7 @@ class DumbAlgo(BaseAlgorithm):
     def __init__(
         self,
         space,
-        value=5,
+        value=(5,),
         scoring=0,
         judgement=None,
         suspend=False,
