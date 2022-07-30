@@ -18,7 +18,7 @@ from orion.algo.space import Space
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransform, create_algo
+from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
@@ -266,7 +266,7 @@ class BaseAlgoTests:
         seed: int | Sequence[int] | None = None,
         n_observed_trials: int | None = None,
         **kwargs,
-    ) -> SpaceTransform[AlgoType]:
+    ):
         """Create the algorithm based on config.
 
         Also initializes the algorithm with the required number of random trials from the previous
@@ -295,8 +295,7 @@ class BaseAlgoTests:
 
         original_space = space or cls.create_space()
         algo = create_algo(space=original_space, algo_type=cls.algo_type, **algo_kwargs)
-        # TODO: Add a `max_trials` attribute on the BaseAlgorithm class.
-        algo.algorithm.max_trials = cls.max_trials
+        algo.max_trials = cls.max_trials
 
         # Seed the randomness before we observe anything.
         if seed is not None:
