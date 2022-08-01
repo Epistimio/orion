@@ -330,10 +330,9 @@ def test_with_fidelity(algorithm: dict):
 
     trials = exp.fetch_trials()
     assert len(trials) >= 30 or exp.algorithms.is_done
-    assert trials[29].status == "completed"
+    assert trials[-1].status == "completed"
 
     trials = [trial for trial in trials if trial.status == "completed"]
-    results = [trial.objective.value for trial in trials]
     assert all(trial.objective is not None for trial in trials)
     best_trial = min(trials, key=lambda trial: trial.objective.value)
 
