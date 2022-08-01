@@ -337,7 +337,7 @@ class Experiment:
         evc_pending_trials = []
         # self._select_evc_call(
         #    with_evc_tree=True, function="fetch_pending_trials"
-        #)
+        # )
         exp_pending_trials = self._select_evc_call(
             with_evc_tree=False, function="fetch_pending_trials"
         )

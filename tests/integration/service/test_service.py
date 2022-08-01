@@ -1,10 +1,10 @@
 """Integration testing between the REST service and the client"""
 
+import logging
 import multiprocessing
 import os
 import signal
 import time
-import logging
 from contextlib import contextmanager
 
 from orion.service.client import ClientREST
@@ -60,11 +60,15 @@ def server() -> None:
 def test_new_experiment():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
-        expid1 = client.new_experiment(name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)"))
+        expid1 = client.new_experiment(
+            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+        )
 
         # same experiment should be no problem
         client2 = ClientREST(ENDPOINT, TOKEN2)
-        expid2 = client.new_experiment(name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)"))
+        expid2 = client.new_experiment(
+            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+        )
         assert expid1 != expid2
 
 
@@ -72,8 +76,10 @@ def test_suggest():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
 
-        client.new_experiment(name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)"))
-        print('----Done')
+        client.new_experiment(
+            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+        )
+        print("----Done")
 
         trials = client.suggest()
 

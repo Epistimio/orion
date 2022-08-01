@@ -1,11 +1,15 @@
 import logging
 from typing import Dict
 
-from orion.service.broker.broker import build_experiment, get_storage_for_user, ServiceContext, RequestContext, build_experiment_client, ExperimentBroker
-
+from orion.service.broker.broker import (
+    ExperimentBroker,
+    RequestContext,
+    build_experiment,
+    build_experiment_client,
+    get_storage_for_user,
+)
 
 log = logging.getLogger(__file__)
-
 
 
 def success(values) -> Dict:
@@ -27,6 +31,7 @@ class LocalExperimentBroker(ExperimentBroker):
     we can just load balance the request through n servers.
 
     """
+
     def new_experiment(self, request: RequestContext) -> Dict:
         log.debug("Spawning new experiment")
 
@@ -36,17 +41,17 @@ class LocalExperimentBroker(ExperimentBroker):
 
     def suggest(self, request: RequestContext):
         storage = get_storage_for_user(request)
-        experiment_name = request.data.pop('experiment_name')
+        experiment_name = request.data.pop("experiment_name")
 
         client = build_experiment(name=experiment_name, storage_instance=storage)
         client.remote_mode = True
 
         trial = client.suggest(**request.data).to_dict()
 
-        trial['experiment'] = str(trial['experiment'])
-        trial.pop('heartbeat')
-        trial.pop('submit_time')
-        trial.pop('start_time')
+        trial["experiment"] = str(trial["experiment"])
+        trial.pop("heartbeat")
+        trial.pop("submit_time")
+        trial.pop("start_time")
         print(trial)
 
         return success(dict(trials=[trial]))

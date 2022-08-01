@@ -59,8 +59,6 @@ def build_experiment(
     working_dir=None,
     debug=False,
     executor=None,
-    storage_instance=None,
-    username=None
 ):
     """Build an experiment to be executable
 
@@ -220,8 +218,6 @@ def build_experiment(
             max_broken=max_broken,
             branching=branching,
             working_dir=working_dir,
-            storage_instance=storage_instance,
-            username=username,
         )
     except RaceCondition:
         # Try again, but if it fails again, raise. Race conditions due to version increment should
@@ -237,8 +233,6 @@ def build_experiment(
                 max_broken=max_broken,
                 branching=branching,
                 working_dir=working_dir,
-                storage_instance=storage_instance,
-                username=username,
             )
         except RaceCondition as e:
             raise RaceCondition(

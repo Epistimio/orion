@@ -1,6 +1,5 @@
-import os
-from typing import Any, Dict, List
 import logging
+from typing import Any, Dict, List
 
 import requests
 
@@ -27,9 +26,9 @@ class ClientREST:
         status = payload.pop("status")
 
         if result.status_code >= 200 and result.status_code < 300 and status == 0:
-            return payload.pop('result')
+            return payload.pop("result")
 
-        error = payload.pop('error')
+        error = payload.pop("error")
         raise RuntimeError(f"Remote server returned error code {status}: {error}")
 
     def new_experiment(self, name, **config) -> str:
@@ -44,7 +43,9 @@ class ClientREST:
         if experiment_name is None:
             raise RuntimeError("experiment_name is not set")
 
-        result = self._post("suggest", experiment_name=experiment_name, pool_size=pool_size)
+        result = self._post(
+            "suggest", experiment_name=experiment_name, pool_size=pool_size
+        )
         return result["trials"]
 
     def observe(self, trial: Trial, results: List[Dict]) -> None:
@@ -61,8 +62,8 @@ class ClientREST:
 
 from orion.client.experiment import ExperimentClient
 
-class ExperimentClientREST(ExperimentClient):
 
+class ExperimentClientREST(ExperimentClient):
     def __init__(self, endpoint, token):
         self.rest = ClientREST(endpoint, token)
 

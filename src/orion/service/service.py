@@ -1,24 +1,19 @@
-import falcon
-
+import logging
 import os
 import traceback
-import logging
 
-from orion.storage.legacy import Legacy
-from orion.core.io.database.mongodb import MongoDB
-from orion.service.broker.broker import RequestContext, ServiceContext
-from orion.service.broker.remote import RemoteExperimentBroker
-from orion.service.broker.local import LocalExperimentBroker
+import falcon
 
 from orion.service.auth import AuthenticationService
+from orion.service.broker.broker import RequestContext, ServiceContext
+from orion.service.broker.remote import RemoteExperimentBroker
 
 log = logging.getLogger(__file__)
 
+
 class QueryRoute:
-    """Base route handling, makes sure status is always set
+    """Base route handling, makes sure status is always set"""
 
-
-    """
     def __init__(self, broker, auth) -> None:
         self.service = ServiceContext()
         self.broker = broker
@@ -30,7 +25,7 @@ class QueryRoute:
 
         try:
             msg = req.get_media()
-            token = msg.pop('token', None)
+            token = msg.pop("token", None)
 
             if token is None:
                 resp.status = falcon.HTTP_401
@@ -72,7 +67,7 @@ class OrionService:
 
     def __init__(self) -> None:
         self.app = falcon.App()
-        self.broker =  RemoteExperimentBroker() # LocalExperimentBroker() #
+        self.broker = RemoteExperimentBroker()  # LocalExperimentBroker() #
         self.auth = AuthenticationService()
         OrionService.add_routes(self.app, self.broker, self.auth)
 
@@ -89,7 +84,7 @@ class OrionService:
         return self
 
     def __exit__(self, *args):
-        log.info('Shuting down')
+        log.info("Shutting down")
         self.broker.stop()
 
     class NewExperiment(QueryRoute):
@@ -98,14 +93,14 @@ class OrionService:
         def on_post_request(self, ctx: RequestContext) -> None:
             result = self.broker.new_experiment(ctx)
 
-            ctx.response.status =  falcon.HTTP_200
+            ctx.response.status = falcon.HTTP_200
             ctx.response.media = result
 
     class Suggest(QueryRoute):
         """Suggest new trials for a given experiment"""
 
         def on_post_request(self, ctx: RequestContext) -> None:
-            result = self.broker.suggest(ctx);
+            result = self.broker.suggest(ctx)
             ctx.response.media = result
 
     class Observe(QueryRoute):

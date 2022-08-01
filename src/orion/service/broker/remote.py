@@ -1,18 +1,23 @@
-import multiprocessing as mp
-import logging
-import traceback
-from typing import Dict
 import datetime
+import logging
+import multiprocessing as mp
+import traceback
 from dataclasses import dataclass
+from typing import Dict
 
-from orion.service.broker.broker import RequestContext, build_experiment_client, ExperimentBroker
-
+from orion.service.broker.broker import (
+    ExperimentBroker,
+    RequestContext,
+    build_experiment_client,
+)
 
 log = logging.getLogger(__file__)
+
 
 @dataclass
 class ExperimentContext:
     """Context used to fetch the process associated with a given experiment"""
+
     request_queue: mp.Queue = None
     result_queue: mp.Queue = None
     process: mp.Process = None
@@ -30,6 +35,7 @@ class RemoteExperimentBroker(ExperimentBroker):
     This is harder to scale because each users need to be routed to the same server all the time.
     in the worst case the process can still be recreated though (i.e if the original server dies)
     """
+
     def __init__(self) -> None:
         self.manager = mp.Manager()
         self.experiments: Dict[str, ExperimentContext] = dict()
@@ -43,7 +49,7 @@ class RemoteExperimentBroker(ExperimentBroker):
     def stop(self):
         log.debug("Closing queues")
         for ctx in self.experiments.values():
-            ctx.request_queue.put(dict(function='stop'))
+            ctx.request_queue.put(dict(function="stop"))
 
         log.debug("Closing workers")
         for ctx in self.experiments.values():
@@ -59,20 +65,19 @@ class RemoteExperimentBroker(ExperimentBroker):
         experiment.result_queue = self.manager.Queue()
 
         experiment.process = mp.Process(
-            target=experiment_worker,
-            args=(request, experiment)
+            target=experiment_worker, args=(request, experiment)
         )
         experiment.process.start()
         result = experiment.result_queue.get()
 
-        if result['status'] == 0:
-            exp_id = result['result']['experiment_name']
+        if result["status"] == 0:
+            exp_id = result["result"]["experiment_name"]
             self.experiments[(request.token, exp_id)] = experiment
 
         return result
 
     def suggest(self, request: RequestContext):
-        experiment_name = request.data.pop('experiment_name')
+        experiment_name = request.data.pop("experiment_name")
         experiment = self.experiments.get((request.token, experiment_name), None)
 
         if experiment is None:
@@ -81,20 +86,19 @@ class RemoteExperimentBroker(ExperimentBroker):
             # if not an error will be raised
             result = self.new_experiment(request)
 
-            if result['status'] != 0:
-                raise RuntimeError(f"Need to create an experiment first: {result['error']}")
+            if result["status"] != 0:
+                raise RuntimeError(
+                    f"Need to create an experiment first: {result['error']}"
+                )
 
-        experiment.request_queue.put(dict(
-            function='suggest',
-            kwargs=request.data
-        ))
+        experiment.request_queue.put(dict(function="suggest", kwargs=request.data))
 
-        trial = experiment.result_queue.get()['result'].to_dict()
+        trial = experiment.result_queue.get()["result"].to_dict()
 
-        trial['experiment'] = str(trial['experiment'])
-        trial.pop('heartbeat')
-        trial.pop('submit_time')
-        trial.pop('start_time')
+        trial["experiment"] = str(trial["experiment"])
+        trial.pop("heartbeat")
+        trial.pop("submit_time")
+        trial.pop("start_time")
 
         return dict(status=0, result=dict(trials=[trial]))
 
@@ -109,11 +113,7 @@ class RemoteExperimentBroker(ExperimentBroker):
         if ctx is None:
             ctx = self.resume_experiment()
 
-        ctx.request_queue.put(dict(
-            function=function,
-            args=args,
-            kwargs=kwargs
-        ))
+        ctx.request_queue.put(dict(function=function, args=args, kwargs=kwargs))
 
         return ctx.result_queue.get()
 
@@ -144,15 +144,15 @@ def experiment_worker(request: RequestContext, experiment: ExperimentContext):
         # wait until we receive a request
         rpc_request = experiment.request_queue.get(True)
 
-        function = rpc_request.pop('function')
+        function = rpc_request.pop("function")
 
-        if function == 'stop':
+        if function == "stop":
             log.debug("Stopping worker")
             break
 
         try:
-            args = rpc_request.pop('arg', [])
-            kwargs = rpc_request.pop('kwargs', dict())
+            args = rpc_request.pop("arg", [])
+            kwargs = rpc_request.pop("kwargs", dict())
 
             result = getattr(client, function)(*args, **kwargs)
             success(result)
@@ -160,4 +160,3 @@ def experiment_worker(request: RequestContext, experiment: ExperimentContext):
         except Exception as err:
             traceback.print_exc()
             error(err)
-

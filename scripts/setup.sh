@@ -5,7 +5,7 @@
 
 
 PORT=${PORT:-8124}
-ADDRESS=${ADDRES:-192.168.0.116}
+ADDRESS=${ADDRESS:-192.168.0.116}
 ADMIN=${ADMIN:-god}
 PASSWORD=${PASS:-god123}
 
@@ -13,7 +13,7 @@ set -evx
 
 function start_init_mongod() {
     # Start mongodb without Access Control, this is used to insert the admin user
-    # the db is then stoped and started with Access Control
+    # the db is then stopped and started with Access Control
 
     if test -f "db/pid"; then
         pid=$(cat db/pid)
