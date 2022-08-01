@@ -13,7 +13,6 @@ from orion.serving.parameters import (
     verify_status,
 )
 from orion.serving.responses import build_trial_response, build_trials_response
-from orion.storage.base import get_storage
 
 SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 
@@ -21,8 +20,8 @@ SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 class TrialsResource:
     """Serves all the requests made to trials/ REST endpoint"""
 
-    def __init__(self):
-        self.storage = get_storage()
+    def __init__(self, storage):
+        self.storage = storage
 
     def on_get_trials_in_experiment(
         self, req: Request, resp: Response, experiment_name: str
@@ -38,7 +37,7 @@ class TrialsResource:
         version = req.get_param_as_int("version")
         with_ancestors = req.get_param_as_bool("ancestors", default=False)
 
-        experiment = retrieve_experiment(experiment_name, version)
+        experiment = retrieve_experiment(self.storage, experiment_name, version)
         if status:
             trials = experiment.fetch_trials_by_status(status, with_ancestors)
         else:
@@ -54,7 +53,7 @@ class TrialsResource:
         Handle GET requests for trials/:experiment/:trial_id where ``experiment`` is
         the user-defined name of the experiment and ``trial_id`` the id of the trial.
         """
-        experiment = retrieve_experiment(experiment_name)
+        experiment = retrieve_experiment(self.storage, experiment_name)
         trial = retrieve_trial(experiment, trial_id)
 
         response = build_trial_response(trial)

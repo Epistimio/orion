@@ -7,6 +7,7 @@ import pytest
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import BenchmarkTask, Branin
+from orion.storage.base import setup_storage
 
 algorithms = [
     {"algorithm": {"random": {"seed": 1}}},
@@ -48,7 +49,7 @@ class BirdLike(BenchmarkTask):
         return rspace
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
+@pytest.mark.usefixtures("orionstate")
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
     task_num = 2
@@ -59,7 +60,9 @@ def test_simple():
         BirdLike(max_trials),
     ]
 
+    storage = setup_storage()
     benchmark = get_or_create_benchmark(
+        storage,
         name="bm001",
         algorithms=algorithms,
         targets=[{"assess": assessments, "task": tasks}],
@@ -83,7 +86,8 @@ def test_simple():
 
     assert_benchmark_figures(figures, 4, assessments, tasks)
 
-    benchmark = get_or_create_benchmark(name="bm001")
+    storage = setup_storage()
+    benchmark = get_or_create_benchmark(storage, name="bm001")
     figures = benchmark.analysis()
 
     assert_benchmark_figures(figures, 4, assessments, tasks)

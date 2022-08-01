@@ -4,6 +4,7 @@ Base class and function utilities for cli
 """
 import argparse
 import logging
+import os
 import sys
 import textwrap
 
@@ -51,6 +52,13 @@ class OrionArgsParser:
         )
 
         self.parser.add_argument(
+            "--logdir",
+            type=str,
+            default=None,
+            help="Path to a directory to store logs",
+        )
+
+        self.parser.add_argument(
             "-d",
             "--debug",
             action="store_true",
@@ -69,9 +77,19 @@ class OrionArgsParser:
 
         verbose = args.pop("verbose", 0)
         levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+
+        logdir = args.pop("logdir")
+        logfile = None
+        if logdir is not None:
+            os.makedirs(logdir, exist_ok=True)
+
+            pid = os.getpid()
+            logfile = os.path.join(logdir, f"orion_{pid}.log")
+
         logging.basicConfig(
             format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
             level=levels.get(verbose, logging.DEBUG),
+            filename=logfile,
         )
         logger.debug("Orion version : %s", orion.core.__version__)
 

@@ -13,6 +13,7 @@ from gunicorn.app.base import BaseApplication
 
 from orion.core.io import experiment_builder
 from orion.serving.webapi import WebApi
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 DESCRIPTION = "Starts Oríon's REST API server"
@@ -39,7 +40,8 @@ def main(args):
     """Starts an application server to serve http requests"""
     config = experiment_builder.get_cmd_config(args)
 
-    web_api = WebApi(config)
+    storage = setup_storage(config.get("storage"))
+    web_api = WebApi(storage, config)
 
     gunicorn_app = GunicornApp(web_api)
     gunicorn_app.run()

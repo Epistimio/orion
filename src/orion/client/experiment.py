@@ -848,13 +848,8 @@ class ExperimentClient:
             raise RuntimeError(f"Reservation for trial {trial.id} has been lost.")
 
     def _maintain_reservation(self, trial):
-        # if this client is created by the service
-        # we should create pacemakers because the client is shortlive
-        # and/or the service is actually not the one reserving the trials
-        # the client doing the actual work needs to do the pacemaker's job
-        if not self.remote_mode:
-            self._pacemakers[trial.id] = TrialPacemaker(trial)
-            self._pacemakers[trial.id].start()
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self.storage)
+        self._pacemakers[trial.id].start()
 
     def _release_reservation(self, trial, raise_if_unreserved=True):
         if trial.id not in self._pacemakers:
@@ -866,3 +861,8 @@ class ExperimentClient:
                 return
 
         self._pacemakers.pop(trial.id).stop()
+
+    @property
+    def storage(self):
+        """Return the storage currently in use by this client"""
+        return self._experiment.storage

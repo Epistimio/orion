@@ -204,15 +204,15 @@ def test_fetch_config_no_hit():
     assert config == {}
 
 
-def test_fetch_config(config_file):
+def test_fetch_config(raw_config):
     """Verify fetch_config returns valid dictionary"""
-    config = resolve_config.fetch_config({"config": config_file})
+    config = resolve_config.fetch_config({"config": raw_config})
 
     assert config.pop("storage") == {
         "database": {
-            "host": "mongodb://user:pass@localhost",
+            "host": "${FILE}",
             "name": "orion_test",
-            "type": "mongodb",
+            "type": "pickleddb",
         }
     }
 

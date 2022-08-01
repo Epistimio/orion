@@ -12,6 +12,7 @@ from tabulate import tabulate
 import orion.core
 from orion.client import create_experiment
 from orion.executor.base import executor_factory
+from orion.storage.base import BaseStorageProtocol
 
 
 class Benchmark:
@@ -20,8 +21,12 @@ class Benchmark:
 
     Parameters
     ----------
+    storage: Storage
+        Instance of the storage to use
+
     name: str
         Name of the benchmark
+
     algorithms: list, optional
         Algorithms used for benchmark, and for each algorithm, it can be formats as below:
 
@@ -49,19 +54,26 @@ class Benchmark:
         task: list
             Task objects
 
-    storage: dict, optional
-        Configuration of the storage backend.
     executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     """
 
-    def __init__(self, name, algorithms, targets, storage=None, executor=None):
+    def __init__(
+        self,
+        storage,
+        name,
+        algorithms,
+        targets,
+        executor=None,
+    ):
+        assert isinstance(storage, BaseStorageProtocol)
+
         self._id = None
         self.name = name
         self.algorithms = algorithms
         self.targets = targets
         self.metadata = {}
-        self.storage_config = storage
+        self.storage = storage
         self._executor = executor
         self._executor_owner = False
 
@@ -353,7 +365,7 @@ class Study:
                     space=space,
                     algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
-                    storage=self.benchmark.storage_config,
+                    storage=self.benchmark.storage,
                     executor=executor,
                 )
                 self.experiments_info.append((task_index, experiment))

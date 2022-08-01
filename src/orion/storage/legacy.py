@@ -27,26 +27,6 @@ from orion.storage.base import (
 log = logging.getLogger(__name__)
 
 
-def get_database():
-    """Return current database
-
-    This is a wrapper around the Database Singleton object to provide
-    better error message when it is used without being initialized.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying database was not initialized prior to calling this function
-
-    Notes
-    -----
-    To initialize the underlying database you must first call `Database(...)`
-    with the appropriate arguments for the chosen backend
-
-    """
-    return database_factory.create()
-
-
 def setup_database(config=None):
     """Create the Database instance from a configuration.
 
@@ -65,6 +45,7 @@ def setup_database(config=None):
     dbtype = db_opts.pop("type")
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+
     return database_factory.create(dbtype, **db_opts)
 
 
@@ -82,14 +63,8 @@ class Legacy(BaseStorageProtocol):
 
     """
 
-    def __init__(self, database=None, setup=True, database_instance=None):
-        if database is not None:
-            setup_database(database)
-
-        if database_instance is None:
-            self._db = database_factory.create()
-        else:
-            self._db = database_instance
+    def __init__(self, database=None, setup=True):
+        self._db = setup_database(database)
 
         if setup:
             self._setup_db()

@@ -13,6 +13,6 @@ algorithms:
         seed: null
 
 database:
-  type: 'mongodb'
+  type: 'pickleddb'
   name: 'orion_test'
-  host: 'mongodb://user:pass@localhost'
+  host: '${FILE}'

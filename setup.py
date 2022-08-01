@@ -41,6 +41,7 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
         "numpy",
