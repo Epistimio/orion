@@ -99,7 +99,7 @@ def control_randomness(has_random_state: HasRandomState):
     # Set the random state.
     has_random_state.random_state.set()
     yield
-    # Update the random state stored on `self`, so that the changes inside the block are
+    # Update the stored random state, so that the changes inside the block are
     # reflected in the RandomState object.
     has_random_state.random_state = RandomState.current()
     # Reset the initial state.
