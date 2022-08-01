@@ -350,7 +350,6 @@ class HEBO(BaseAlgorithm):
         # Add the max value for the Fidelity dimensions, if any.
         if self.fidelity_index is not None:
             fidelity_dim = self.space[self.fidelity_index]
-            assert isinstance(fidelity_dim, TransformedDimension)
             while isinstance(fidelity_dim, TransformedDimension):
                 fidelity_dim = fidelity_dim.original_dimension
             assert isinstance(fidelity_dim, Fidelity)

@@ -204,9 +204,6 @@ class AxOptimizer(BaseAlgorithm):
                 if self.fidelity_index is not None:
                     # Convert 0-dim arrays into python numbers so their type can
                     # be validated by Ax
-                    assert isinstance(
-                        self.space[self.fidelity_index], TransformedDimension
-                    )
                     fidelity_dim = self.space[self.fidelity_index]
                     while isinstance(fidelity_dim, TransformedDimension):
                         fidelity_dim = fidelity_dim.original_dimension
