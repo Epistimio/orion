@@ -126,7 +126,7 @@ scheduler) or the take too much time to complete. This is checked in
 :py:attr:`orion.client.runner.Runner.is_broken`.
 
 If one of the workers returns an unexpected result the experiment is
-also stop immediately because it is assume that something is wrong
+also stopped immediately because it assumed that something is wrong
 with either the code or the configuration and spending more time
 computing stuff will not fix it. This is also checked for in
 :py:meth:`orion.client.runner.Runner.gather`.
