@@ -13,6 +13,7 @@ import orion.core.io.experiment_builder as experiment_builder
 import orion.core.io.resolve_config as resolve_config
 import orion.core.utils.backward as backward
 import orion.core.worker.consumer as consumer
+from orion.client.runner import prepare_trial_working_dir
 from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import BranchingEvent, MissingResultFile
 from orion.core.utils.format_trials import tuple_to_trial
@@ -47,31 +48,13 @@ def test_trials_interrupted_sigterm(storage, config, monkeypatch):
 
     trial = tuple_to_trial((1.0,), exp.space)
     exp.register_trial(trial)
+    prepare_trial_working_dir(exp, trial)
 
     con = Consumer(exp)
 
     with pytest.raises(KeyboardInterrupt):
         with sigterm_as_interrupt():
             con(trial)
-
-    shutil.rmtree(trial.working_dir)
-
-
-def test_trial_working_dir_is_created(storage, config):
-    """Check that trial working dir is created."""
-
-    exp = experiment_builder.build(**config, storage=storage)
-
-    trial = tuple_to_trial((1.0,), exp.space)
-
-    exp.register_trial(trial, status="reserved")
-
-    assert not os.path.exists(trial.working_dir)
-
-    con = Consumer(exp)
-    con(trial)
-
-    assert os.path.exists(trial.working_dir)
 
     shutil.rmtree(trial.working_dir)
 
@@ -83,6 +66,7 @@ def setup_code_change_mock(storage, config, monkeypatch, ignore_code_changes):
     trial = tuple_to_trial((1.0,), exp.space)
 
     exp.register_trial(trial, status="reserved")
+    prepare_trial_working_dir(exp, trial)
 
     con = Consumer(exp, ignore_code_changes=ignore_code_changes)
 

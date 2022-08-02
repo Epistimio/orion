@@ -1,11 +1,7 @@
 """Example usage and tests for :mod:`orion.algo.random`."""
-
-import pytest
-
 from orion.algo.pbt.exploit import BaseExploit
 from orion.algo.pbt.explore import BaseExplore
 from orion.algo.pbt.pbt import LineageNode, Lineages
-from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.pptree import print_tree
 from orion.core.worker.trial import Trial
 
@@ -87,38 +83,6 @@ class RNGStub:
     pass
 
 
-@pytest.fixture
-def no_shutil_copytree(monkeypatch):
-    monkeypatch.setattr("shutil.copytree", lambda dir_a, dir_b: None)
-    yield
-
-
-@pytest.fixture
-def space():
-    return SpaceBuilder().build(
-        {
-            "x": "uniform(0, 100)",
-            "y": "uniform(0, 10, discrete=True)",
-            "z": 'choices(["a", "b", 0, True])',
-            "f": "fidelity(1, 100, base=1)",
-        }
-    )
-
-
-@pytest.fixture
-def hspace():
-    return SpaceBuilder().build(
-        {
-            "numerical": {
-                "x": "uniform(0, 100)",
-                "y": "uniform(0, 10, discrete=True)",
-                "f": "fidelity(1, 100, base=1)",
-            },
-            "z": 'choices(["a", "b", 0, True])',
-        }
-    )
-
-
 def sample_trials(
     space,
     num,
@@ -138,6 +102,7 @@ def sample_trials(
             trial = trial.branch(params=params)
 
         trial = space.transform(space.reverse(trial))
+        trial.experiment = 1
 
         trial.exp_working_dir = exp_working_dir
 

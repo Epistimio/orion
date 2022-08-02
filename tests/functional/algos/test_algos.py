@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import copy
+import os
 import random
+from pathlib import Path
 
 import numpy
 import pytest
 
+from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
 from orion.client import create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils.module_import import ImportOptional
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
-from orion.testing.state import OrionState
+from orion.core.worker.trial import Trial
+from orion.storage.base import BaseStorageProtocol
 
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
@@ -50,16 +55,96 @@ algorithm_configs = {
             "max_retries": 100,
         }
     },
+    "pbt": {
+        "pbt": {
+            "seed": 1,
+            "generations": 5,
+            "population_size": 10,
+            "exploit": {
+                "exploit_configs": [
+                    {
+                        "candidate_pool_ratio": 0.2,
+                        "min_forking_population": 5,
+                        "of_type": "BacktrackExploit",
+                        "truncation_quantile": 0.9,
+                    },
+                    {
+                        "candidate_pool_ratio": 0.2,
+                        "min_forking_population": 5,
+                        "of_type": "TruncateExploit",
+                        "truncation_quantile": 0.8,
+                    },
+                ],
+                "of_type": "PipelineExploit",
+            },
+            "explore": {
+                "explore_configs": [
+                    {"of_type": "ResampleExplore", "probability": 0.2},
+                    {"factor": 1.2, "of_type": "PerturbExplore", "volatility": 0.0001},
+                ],
+                "of_type": "PipelineExplore",
+            },
+            "fork_timeout": 60,
+        }
+    },
+    "pb2": {
+        "pb2": {
+            "seed": 1,
+            "generations": 2,
+            "population_size": 10,
+            "exploit": {
+                "exploit_configs": [
+                    {
+                        "candidate_pool_ratio": 0.5,
+                        "min_forking_population": 5,
+                        "of_type": "BacktrackExploit",
+                        "truncation_quantile": 0.9,
+                    },
+                    {
+                        "candidate_pool_ratio": 0.5,
+                        "min_forking_population": 5,
+                        "of_type": "TruncateExploit",
+                        "truncation_quantile": 0.8,
+                    },
+                ],
+                "of_type": "PipelineExploit",
+            },
+            "fork_timeout": 60,
+        }
+    },
 }
+
+
+def xfail_if_not_installed(value: dict, import_optional: ImportOptional):
+    name = next(iter(value.keys()))
+    return pytest.param(
+        value,
+        marks=pytest.mark.xfail(
+            condition=import_optional.failed,
+            reason=f"{name} dependency is requered for these tests",
+            raises=ImportError,
+        ),
+    )
+
+
+algorithm_configs["pb2"] = xfail_if_not_installed(
+    algorithm_configs["pb2"], pb2_import_optional
+)
+
 
 no_fidelity_algorithms = ["random", "tpe", "gridsearch"]
 no_fidelity_algorithm_configs = {
     key: algorithm_configs[key] for key in no_fidelity_algorithms
 }
 
-fidelity_only_algorithms = ["asha", "hyperband", "evolutiones"]
+fidelity_only_algorithms = ["asha", "hyperband", "evolutiones", "pbt", "pb2"]
 fidelity_only_algorithm_configs = {
     key: algorithm_configs[key] for key in fidelity_only_algorithms
+}
+
+branching_algorithms = ["pbt", "pb2"]
+branching_algorithm_configs = {
+    key: algorithm_configs[key] for key in branching_algorithms
 }
 
 
@@ -120,6 +205,15 @@ space = rosenbrock.get_search_space()
 space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
 
 multidim_rosenbrock = MultiDimRosenbrock(max_trials=30, with_fidelity=False)
+
+
+def branching_rosenbrock(
+    x: float, trial: Trial, noise: float | None = None
+) -> list[dict]:
+    with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
+        f.write(trial.params_repr() + "\n")
+
+    return rosenbrock(x, noise)
 
 
 @pytest.mark.parametrize(
@@ -220,10 +314,7 @@ def test_cardinality_stop_loguniform(algorithm: dict):
 
 @pytest.mark.parametrize(
     "algorithm",
-    [
-        pytest.param(value, marks=pytest.mark.skipif(key == "tpe", reason="Flaky test"))
-        for key, value in algorithm_configs.items()
-    ],
+    algorithm_configs.values(),
     ids=list(algorithm_configs.keys()),
 )
 def test_with_fidelity(algorithm: dict):
@@ -238,11 +329,10 @@ def test_with_fidelity(algorithm: dict):
     assert exp.configuration["algorithms"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 30
-    assert trials[29].status == "completed"
+    assert len(trials) >= 30 or exp.algorithms.is_done
+    assert trials[-1].status == "completed"
 
     trials = [trial for trial in trials if trial.status == "completed"]
-    results = [trial.objective.value for trial in trials]
     assert all(trial.objective is not None for trial in trials)
     best_trial = min(trials, key=lambda trial: trial.objective.value)
 
@@ -252,7 +342,7 @@ def test_with_fidelity(algorithm: dict):
     fidelity = best_trial._params[0]
     assert fidelity.name == "noise"
     assert fidelity.type == "fidelity"
-    assert fidelity.value in [1, 2, 5, 10]
+    assert fidelity.value in exp.space["noise"]
     param = best_trial._params[1]
     assert param.name == "x"
     assert param.type == "real"
@@ -274,7 +364,7 @@ def test_with_multidim(algorithm):
     assert exp.configuration["algorithms"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 25  # Grid-search is a bit smaller
+    assert len(trials) >= 25 or exp.algorithms.is_done
     completed_trials = exp.fetch_trials_by_status("completed")
     assert len(completed_trials) >= MAX_TRIALS or len(completed_trials) == len(trials)
 
@@ -289,7 +379,7 @@ def test_with_multidim(algorithm):
     fidelity = best_trial._params[0]
     assert fidelity.name == "noise"
     assert fidelity.type == "fidelity"
-    assert fidelity.value in [1, 2, 5, 10]
+    assert fidelity.value in exp.space["noise"]
     param = best_trial._params[1]
     assert param.name == "x"
     assert param.type == "real"
@@ -299,105 +389,134 @@ def test_with_multidim(algorithm):
 @pytest.mark.parametrize(
     "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
 )
-def test_with_evc(algorithm):
+def test_with_evc(algorithm, storage):
     """Test a scenario where algos are warm-started with EVC."""
 
-    with OrionState(
-        storage={"type": "legacy", "database": {"type": "PickledDB"}}
-    ) as cfg:
-        base_exp = create_experiment(
-            name="exp",
-            space=space_with_fidelity,
-            algorithms=algorithm_configs["random"],
-            max_trials=10,
-            storage=cfg.storage_config,
-        )
-        base_exp.workon(rosenbrock, max_trials=10)
+    base_exp = create_experiment(
+        name="exp",
+        space=space_with_fidelity,
+        algorithms=algorithm_configs["random"],
+        max_trials=10,
+        storage=storage,
+    )
+    base_exp.workon(rosenbrock, max_trials=10)
 
-        exp = create_experiment(
-            name="exp",
-            space=space_with_fidelity,
-            algorithms=algorithm,
-            max_trials=30,
-            branching={"branch_from": "exp", "enable": True},
-            storage=cfg.storage_config,
-        )
+    exp = create_experiment(
+        name="exp",
+        space=space_with_fidelity,
+        algorithms=algorithm,
+        max_trials=30,
+        storage=storage,
+        branching={"branch_from": "exp", "enable": True},
+    )
 
-        assert exp.version == 2
+    assert exp.version == 2
 
-        exp.workon(rosenbrock, max_trials=30)
+    exp.workon(rosenbrock, max_trials=30)
 
-        assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithms"] == algorithm
 
-        trials = exp.fetch_trials(with_evc_tree=False)
+    trials = exp.fetch_trials(with_evc_tree=False)
 
-        # Some algo may not be able to suggest exactly 30 trials (ex: hyperband)
-        assert len(trials) >= 20
+    # Some algo may not be able to suggest exactly 30 trials (ex: hyperband)
+    assert len(trials) >= 20
 
-        trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-        assert len(trials_with_evc) >= 30
-        assert len(trials_with_evc) - len(trials) == 10
+    trials_with_evc = exp.fetch_trials(with_evc_tree=True)
+    assert len(trials_with_evc) >= 30 or exp.algorithms.is_done
+    assert len(trials_with_evc) - len(trials) == 10
 
-        completed_trials = [
-            trial for trial in trials_with_evc if trial.status == "completed"
-        ]
-        assert len(completed_trials) == 30
+    completed_trials = [
+        trial for trial in trials_with_evc if trial.status == "completed"
+    ]
+    assert len(completed_trials) == 30
 
-        results = [trial.objective.value for trial in completed_trials]
-        assert all(trial.objective is not None for trial in completed_trials)
-        best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
+    results = [trial.objective.value for trial in completed_trials]
+    assert all(trial.objective is not None for trial in completed_trials)
+    best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
 
-        assert best_trial.objective.name == "objective"
-        assert abs(best_trial.objective.value - 23.4) < 1e-5
-        assert len(best_trial.params) == 2
-        fidelity = best_trial._params[0]
-        assert fidelity.name == "noise"
-        assert fidelity.type == "fidelity"
-        assert fidelity.value == 10
-        param = best_trial._params[1]
-        assert param.name == "x"
-        assert param.type == "real"
+    assert best_trial.objective.name == "objective"
+    assert abs(best_trial.objective.value - 23.4) < 1e-5
+    assert len(best_trial.params) == 2
+    fidelity = best_trial._params[0]
+    assert fidelity.name == "noise"
+    assert fidelity.type == "fidelity"
+    assert fidelity.value == 10
+    param = best_trial._params[1]
+    assert param.name == "x"
+    assert param.type == "real"
 
 
 @pytest.mark.parametrize(
     "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
 )
-def test_parallel_workers(algorithm):
+def test_parallel_workers(algorithm, storage):
     """Test parallel execution with joblib"""
     MAX_TRIALS = 30
     ASHA_UGLY_FIX = 10
-    with OrionState() as cfg:  # Using PickledDB
 
-        name = f"{list(algorithm.keys())[0]}_exp"
+    name = f"{list(algorithm.keys())[0]}_exp"
 
-        exp = create_experiment(
-            name=name,
-            space=space_with_fidelity,
-            algorithms=algorithm,
-            storage=cfg.storage_config,
+    exp = create_experiment(
+        name=name, space=space_with_fidelity, algorithms=algorithm, storage=storage
+    )
+
+    exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)
+
+    assert exp.configuration["algorithms"] == algorithm
+
+    trials = exp.fetch_trials()
+    assert len(trials) >= MAX_TRIALS or exp.algorithms.is_done
+
+    completed_trials = [trial for trial in trials if trial.status == "completed"]
+    assert MAX_TRIALS <= len(completed_trials) <= MAX_TRIALS + 2
+
+    results = [trial.objective.value for trial in completed_trials]
+    assert all(trial.objective is not None for trial in completed_trials)
+    best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
+
+    assert best_trial.objective.name == "objective"
+    assert abs(best_trial.objective.value - 23.4) < 1e-5 + ASHA_UGLY_FIX
+    assert len(best_trial.params) == 2
+    fidelity = best_trial._params[0]
+    assert fidelity.name == "noise"
+    assert fidelity.type == "fidelity"
+    assert fidelity.value + ASHA_UGLY_FIX >= 1
+    param = best_trial._params[1]
+    assert param.name == "x"
+    assert param.type == "real"
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    branching_algorithm_configs.values(),
+    ids=list(branching_algorithm_configs.keys()),
+)
+def test_branching_algos(
+    algorithm: dict[str, dict], storage: BaseStorageProtocol, tmp_path: Path
+):
+
+    exp = create_experiment(
+        name="exp",
+        space=space_with_fidelity,
+        algorithms=algorithm,
+        working_dir=tmp_path,
+    )
+
+    exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
+
+    def build_params_hist(trial: Trial) -> list[str]:
+        params = [trial.params_repr()]
+        while trial.parent:
+            trial = exp.algorithms.registry[trial.parent]
+            params.append(trial.params_repr())
+        return params[::-1]
+
+    for trial in exp.fetch_trials():
+        params = build_params_hist(trial)
+        # TODO: This assumes algo.fidelities which may be specific to PBT...
+        assert (
+            len(params)
+            == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
         )
-
-        exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)
-
-        assert exp.configuration["algorithms"] == algorithm
-
-        trials = exp.fetch_trials()
-        assert len(trials) >= MAX_TRIALS
-
-        completed_trials = [trial for trial in trials if trial.status == "completed"]
-        assert MAX_TRIALS <= len(completed_trials) <= MAX_TRIALS + 2
-
-        results = [trial.objective.value for trial in completed_trials]
-        assert all(trial.objective is not None for trial in completed_trials)
-        best_trial = min(completed_trials, key=lambda trial: trial.objective.value)
-
-        assert best_trial.objective.name == "objective"
-        assert abs(best_trial.objective.value - 23.4) < 1e-5 + ASHA_UGLY_FIX
-        assert len(best_trial.params) == 2
-        fidelity = best_trial._params[0]
-        assert fidelity.name == "noise"
-        assert fidelity.type == "fidelity"
-        assert fidelity.value + ASHA_UGLY_FIX >= 1
-        param = best_trial._params[1]
-        assert param.name == "x"
-        assert param.type == "real"
+        with open(os.path.join(trial.working_dir, "hist.txt")) as f:
+            assert "\n".join(params) == f.read().strip("\n")

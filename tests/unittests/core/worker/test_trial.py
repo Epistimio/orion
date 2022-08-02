@@ -498,7 +498,7 @@ class TestTrial:
     def test_branch_empty(self, base_trial):
         """Test that branching with no args is only copying"""
         branched_trial = base_trial.branch()
-        assert branched_trial.experiment is None
+        assert branched_trial.experiment is base_trial.experiment
         assert branched_trial is not base_trial
         assert branched_trial.status == "new"
         assert branched_trial.start_time is None
