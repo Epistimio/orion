@@ -3,16 +3,13 @@
 import logging
 import multiprocessing
 import os
-from re import sub
 import signal
-import tempfile
 import time
 from contextlib import contextmanager
-import subprocess
-import traceback
 
 from orion.service.broker.broker import ServiceContext
 from orion.service.client import ClientREST
+from orion.testing.mongod import mongod
 
 TOKEN = "Tok1"
 TOKEN2 = "Tok2"
@@ -28,39 +25,13 @@ def wait(p):
         time.sleep(0.01)
 
 
-def start_mongodb(port, address, dir):
-    os.environ['MONGO_PATH'] = dir
-    os.environ['MONGO_PORT'] = str(port)
-    os.environ['MONGO_ADDRESS'] = str(address)
-    mongodb_run_script = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'scripts', 'setup.sh'))
-
-    log.debug("Started mongo")
-    subprocess.call(args=['bash', mongodb_run_script])
-
-
 @contextmanager
-def mongod(port, address) -> None:
-    import os
-    from multiprocessing import Process
-
-    with tempfile.TemporaryDirectory() as dir:
-        print('Starting process')
-
-        start_mongodb(port, address, dir);
-
-        yield
-
-        subprocess.run(['mongod', '--shutdown', '--dbpath', dir])
-        # proc.kill()
-
-
-@contextmanager
-def service(port, address, service) -> None:
+def service(port, address, servicectx) -> None:
     import time
 
     from orion.service.service import main
 
-    p = multiprocessing.Process(target=main, args=(address, port))
+    p = multiprocessing.Process(target=main, args=(address, port, servicectx))
     p.start()
 
     # The server takes a bit of time to setup
@@ -90,23 +61,25 @@ def service(port, address, service) -> None:
 
 @contextmanager
 def server():
-    service = ServiceContext()
-    service.host = 'losthost'
-    service.port = 8124
+    servicectx = ServiceContext()
+    servicectx.host = "losthost"
+    servicectx.port = 8124
 
-    with mongod(service.port, service.host):
-        with service(8080, 'localhost', service):
+    with mongod(servicectx.port, servicectx.host):
+        with service(8080, "localhost", servicectx):
             yield
 
 
 def test_setup():
     import logging
+
     logging.basicConfig()
 
-    print('here')
-    with mongod(8124, 'localhost'):
+    print("here")
+    with mongod(8124, "localhost") as dbpath:
         print("Starting service")
-    print('done')
+        # add_mongo_user(dbpath, "abc", '123')
+    print("done")
 
 
 def test_new_experiment():

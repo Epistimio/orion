@@ -33,6 +33,8 @@ function start_mongod {
 }
 
 function stop_mongod  {
+    # mongo --dbpath $DB_PATH --shutdown
+
     echo "$(pwd)"
     pid=$(cat $DB_PATH/pid)
     kill -s TERM $pid
@@ -110,4 +112,6 @@ function launch {
     add_user User3 Pass3
 }
 
+export MONGO_RUNNING="${DB_PATH}"
 launch
+

@@ -14,8 +14,8 @@ log = logging.getLogger(__file__)
 class QueryRoute:
     """Base route handling, makes sure status is always set"""
 
-    def __init__(self, broker, auth) -> None:
-        self.service = ServiceContext()
+    def __init__(self, ctx, broker, auth) -> None:
+        self.service = ctx
         self.broker = broker
         self.auth = auth
 
@@ -65,9 +65,10 @@ class QueryRoute:
 class OrionService:
     """Orion service API implementation"""
 
-    def __init__(self) -> None:
+    def __init__(self, ctx) -> None:
+        self.ctx = ctx
         self.app = falcon.App()
-        self.broker = LocalExperimentBroker() #
+        self.broker = LocalExperimentBroker()  #
         self.auth = AuthenticationService()
         OrionService.add_routes(self.app, self.broker, self.auth)
 
@@ -134,7 +135,9 @@ class OrionService:
             pass
 
 
-def main(address: str = "localhost", port: int = 8080) -> None:
+def main(
+    address: str = "localhost", port: int = 8080, servicectx=ServiceContext()
+) -> None:
     logging.basicConfig(level=logging.DEBUG)
 
     with OrionService() as service:
