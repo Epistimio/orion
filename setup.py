@@ -53,7 +53,7 @@ extras_require = {
     ],
     "bohb": [
         "hpbandster",
-        "ConfigSpace==0.5.0",
+        "ConfigSpace",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "pb2": ["GPy"],
