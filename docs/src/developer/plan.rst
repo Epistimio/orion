@@ -32,7 +32,7 @@ its properties.
 If the experiment is new, meaning it has no storage id, then it will
 attempt to save it to storage, which may conflict in case another
 instance of ``orion hunt`` is doing the same thing. The storage is
-responsible for repoting conflicts and
+responsible for reporting conflicts and
 :py:func:`orion.core.io.experiment_builder.build` is called again
 recursively in that case to retry the whole operation.
 
