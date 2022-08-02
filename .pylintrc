@@ -51,8 +51,8 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=abstract-class-instantiated,useless-super-delegation,no-member,keyword-arg-before-vararg,unidiomatic-typecheck,redefined-outer-name,fixme,F0401,intern-builtin,wrong-import-position,wrong-import-order,no-self-use,
-        C0415, F0010, R0205, R1705, R1711, R1720, W0106, W0107, W0127, W0706, C0330, C0326, W1203, E1136
+disable=abstract-class-instantiated,useless-super-delegation,no-member,keyword-arg-before-vararg,unidiomatic-typecheck,redefined-outer-name,fixme,F0401,wrong-import-position,wrong-import-order,
+        C0415, F0010, R0205, R1705, R1711, R1720, W0106, W0107, W0127, W0706, W1203, E1136
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -127,12 +127,6 @@ max-line-length=100
 
 # Maximum number of lines in a module
 max-module-lines=750
-
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,dict-separator
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -215,14 +209,8 @@ notes=FIXME,XXX,TODO
 
 [BASIC]
 
-# Naming hint for argument names
-argument-name-hint=(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
-
 # Regular expression matching correct argument names
 argument-rgx=^(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
-
-# Naming hint for attribute names
-attr-name-hint=(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
 
 # Regular expression matching correct attribute names
 attr-rgx=^(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
@@ -230,20 +218,11 @@ attr-rgx=^(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata,lalala,alalal
 
-# Naming hint for class attribute names
-class-attribute-name-hint=([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$
-
 # Regular expression matching correct class attribute names
 class-attribute-rgx=^([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$
 
-# Naming hint for class names
-class-name-hint=[A-Z_][a-zA-Z0-9]+$
-
 # Regular expression matching correct class names
 class-rgx=^[A-Z_][a-zA-Z0-9]+$
-
-# Naming hint for constant names
-const-name-hint=(([A-Z_][A-Z0-9_]*)|(__.*__))$
 
 # Regular expression matching correct constant names
 const-rgx=^(([A-Z_][A-Z0-9_]*)|(__.*__)|([a-z][a-z0-9_]{1,30})|(_[a-z0-9_]*))$
@@ -251,9 +230,6 @@ const-rgx=^(([A-Z_][A-Z0-9_]*)|(__.*__)|([a-z][a-z0-9_]{1,30})|(_[a-z0-9_]*))$
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
 docstring-min-length=-1
-
-# Naming hint for function names
-function-name-hint=(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
 
 # Regular expression matching correct function names
 function-rgx=^(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
@@ -264,20 +240,11 @@ good-names=i,j,k,v,ex,Run,_,f,e
 # Include a hint for the correct naming format with invalid-name
 include-naming-hint=no
 
-# Naming hint for inline iteration names
-inlinevar-name-hint=[A-Za-z_][A-Za-z0-9_]*$
-
 # Regular expression matching correct inline iteration names
 inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 
-# Naming hint for method names
-method-name-hint=(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
-
 # Regular expression matching correct method names
 method-rgx=(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
-
-# Naming hint for module names
-module-name-hint=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
 # Regular expression matching correct module names
 module-rgx=^(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
@@ -293,9 +260,6 @@ no-docstring-rgx=^_
 # List of decorators that produce properties, such as abc.abstractproperty. Add
 # to this list to register other decorators that produce valid properties.
 property-classes=abc.abstractproperty
-
-# Naming hint for variable names
-variable-name-hint=(([a-z][a-z0-9_]{1,30})|(_[a-z0-9_]*))$
 
 # Regular expression matching correct variable names
 variable-rgx=^(([a-z][a-z0-9_]{1,30})|(_[a-z0-9_]*))$

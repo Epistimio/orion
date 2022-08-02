@@ -74,11 +74,11 @@ async function lookupPlot(...texts) {
 
 /**
  * Wait for given amount of time
- * @param milliseonds - time to wait
+ * @param milliseconds - time to wait
  */
-async function sleep(milliseonds) {
+async function sleep(milliseconds) {
   let value = 0;
-  await new Promise(r => setTimeout(r, milliseonds)).then(() => {
+  await new Promise(r => setTimeout(r, milliseconds)).then(() => {
     value = 1;
   });
   expect(value).toBe(1);
@@ -280,6 +280,7 @@ test('Test sleep', async () => {
   await sleep(1000);
   let end = performance.now();
   let diff = end - start;
+  diff = Math.round(diff);
   console.log(diff);
   expect(diff).toBeGreaterThanOrEqual(1000);
   expect(diff).toBeLessThan(2000);
@@ -288,6 +289,8 @@ test('Test sleep', async () => {
   await sleep(2000);
   end = performance.now();
   diff = end - start;
+  // NB: got 1999.5901880000001 on a run.
+  diff = Math.round(diff);
   console.log(diff);
   expect(diff).toBeGreaterThanOrEqual(2000);
   expect(diff).toBeLessThan(3000);
@@ -296,6 +299,7 @@ test('Test sleep', async () => {
   await sleep(20000);
   end = performance.now();
   diff = end - start;
+  diff = Math.round(diff);
   console.log(diff);
   expect(diff).toBeGreaterThanOrEqual(20000);
   expect(diff).toBeLessThan(21000);

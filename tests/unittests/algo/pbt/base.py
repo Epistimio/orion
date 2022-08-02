@@ -1,19 +1,8 @@
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
-import os
-import random
-import shutil
-
-import numpy
-import pytest
-
 from orion.algo.pbt.exploit import BaseExploit
 from orion.algo.pbt.explore import BaseExplore
-from orion.algo.pbt.pbt import PBT, LineageNode, Lineages, compute_fidelities
-from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.flatten import flatten
+from orion.algo.pbt.pbt import LineageNode, Lineages
 from orion.core.utils.pptree import print_tree
-from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 
 
@@ -85,45 +74,13 @@ def build_population(objectives):
 
 
 def compare_generations(trials, population_size, depth):
-    trial_ids = set(trial.id for trial in trials)
-    expected_ids = set(f"lineage-{i}-{depth}" for i in range(population_size))
+    trial_ids = {trial.id for trial in trials}
+    expected_ids = {f"lineage-{i}-{depth}" for i in range(population_size)}
     assert trial_ids == expected_ids
 
 
 class RNGStub:
     pass
-
-
-@pytest.fixture
-def no_shutil_copytree(monkeypatch):
-    monkeypatch.setattr("shutil.copytree", lambda dir_a, dir_b: None)
-    yield
-
-
-@pytest.fixture
-def space():
-    return SpaceBuilder().build(
-        {
-            "x": "uniform(0, 100)",
-            "y": "uniform(0, 10, discrete=True)",
-            "z": 'choices(["a", "b", 0, True])',
-            "f": "fidelity(1, 100, base=1)",
-        }
-    )
-
-
-@pytest.fixture
-def hspace():
-    return SpaceBuilder().build(
-        {
-            "numerical": {
-                "x": "uniform(0, 100)",
-                "y": "uniform(0, 10, discrete=True)",
-                "f": "fidelity(1, 100, base=1)",
-            },
-            "z": 'choices(["a", "b", 0, True])',
-        }
-    )
 
 
 def sample_trials(
@@ -145,6 +102,7 @@ def sample_trials(
             trial = trial.branch(params=params)
 
         trial = space.transform(space.reverse(trial))
+        trial.experiment = 1
 
         trial.exp_working_dir = exp_working_dir
 
@@ -254,7 +212,7 @@ class ExploitStub(BaseExploit):
 
     @property
     def configuration(self):
-        configuration = super(ExploitStub, self).configuration
+        configuration = super().configuration
         configuration["rval"] = self.rval
         configuration["skip"] = self.skip
         configuration["should_receive"] = self.should_receive
@@ -279,7 +237,7 @@ class ExploreStub(BaseExplore):
 
     @property
     def configuration(self):
-        configuration = super(ExploreStub, self).configuration
+        configuration = super().configuration
         configuration["rval"] = self.rval
         configuration["no_call"] = self.no_call
         configuration.update(self.kwargs)

@@ -6,19 +6,25 @@ import typing
 from typing import ClassVar
 
 import pytest
-from hebo.models.model_factory import model_dict
-from pymoo.factory import get_algorithm_options
 
 from orion.algo.hebo.hebo_algo import (
     HEBO,
     EvolutionStrategyName,
     ModelName,
+    import_optional,
     properly_seeded_models,
 )
 from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
 if typing.TYPE_CHECKING:
     from _pytest.fixtures import SubRequest
+
+if import_optional.failed:
+    pytest.skip("skipping HEBO tests", allow_module_level=True)
+
+from hebo.models.model_factory import model_dict
+from pymoo.factory import get_algorithm_options
+
 _model_names = sorted(model_dict.keys())
 _es_names = sorted(dict(get_algorithm_options()).keys())
 
@@ -129,17 +135,16 @@ def xfail_if_unseeded_model_chosen(request: SubRequest):
 
     # NOTE: We need to detect the phase. The reason for this is so we can avoid having a
     # bunch of tests XPASS when the test is ran in the random phase (where some do work).
-    if "num" not in request.fixturenames:
-        return  # One of the tests that doesn't involve the phase.
-
-    in_random_phase: bool = request.getfixturevalue("num") == 0
-    if in_random_phase:
+    phase: TestPhase = request.getfixturevalue("phase")
+    if phase.n_trials == 0:
         return
 
     # NOTE: Also can't use `request.function` because of `parametrize_this`, since it points
     # to the local closure inside `parametrize_this`.
     # if request.function in test_that_check_seeding:
-    if any(func == request.function for func in tests_that_check_seeding):
+    if any(
+        func.__name__ == request.function.__name__ for func in tests_that_check_seeding
+    ):
         request.node.add_marker(
             pytest.mark.xfail(
                 reason=f"This model name {model_name} is not properly seeded.",
@@ -190,3 +195,11 @@ class TestHEBO(BaseAlgoTests):
         same_trials = new_algo.suggest(1)
         assert same_trials is not None
         assert same_trials[0].id == trials[0].id
+
+    def test_suggest_n(self):
+        """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
+        algo = self.create_algo()
+        trials = algo.suggest(5)
+        assert trials is not None
+        # HEBO sometimes returns fewer than 5 trials.
+        assert 3 <= len(trials) <= 5

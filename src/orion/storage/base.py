@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Generic Storage Protocol
 ========================
@@ -22,13 +21,11 @@ raises more granular error messages.
 """
 import contextlib
 import copy
-import functools
-import inspect
 import logging
 
 import orion.core
 from orion.core.io import resolve_config
-from orion.core.utils.singleton import GenericSingletonFactory
+from orion.core.utils import GenericFactory
 
 log = logging.getLogger(__name__)
 
@@ -67,22 +64,58 @@ def get_uid(item=None, uid=None, force_uid=True):
     return uid
 
 
+def get_trial_uid_and_exp(trial=None, uid=None, experiment_uid=None):
+    """Return trial and experiment uid either from `trial` or directly uids.
+
+    Parameters
+    ----------
+    trial: Trial, optional
+       Object with .id attribute
+
+    uid: str, optional
+        str id representation of the trial
+
+    experiment_uid: str, optional
+        str id representation of the experiment
+
+    Raises
+    ------
+    UndefinedCall
+        if both trial and (uid or experiment_uid) are not set
+
+    AssertionError
+        if both trial and (uid or experiment_uid) are provided and they do not match
+
+    Returns
+    -------
+    (trial uid, experiment uid)
+    """
+
+    if trial is None and experiment_uid is None:
+        raise MissingArguments(
+            "Either `trial` or (`uid` and `experiment_uid`) should be set"
+        )
+
+    if trial is not None and experiment_uid:
+        assert trial.experiment == experiment_uid
+    elif trial is not None:
+        experiment_uid = trial.experiment
+
+    trial_uid = get_uid(trial, uid)
+
+    return trial_uid, experiment_uid
+
+
 class FailedUpdate(Exception):
     """Exception raised when we are unable to update a trial' status"""
-
-    pass
 
 
 class MissingArguments(Exception):
     """Raised when calling a function without the minimal set of parameters"""
 
-    pass
-
 
 class LockAcquisitionTimeout(Exception):
     """Raised when the lock acquisition timeout (not lock is granted)."""
-
-    pass
 
 
 class LockedAlgorithmState:
@@ -299,7 +332,9 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+    def update_trial(
+        self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
+    ):
         """Update fields of a given trial
 
         Parameters
@@ -309,6 +344,9 @@ class BaseStorageProtocol:
 
         uid: str, optional
             id of the trial to update in the database
+
+        experiment_uid: str, optional
+            experiment id of the trial to update in the database
 
         where: Optional[dict]
             constraint trials must respect. Note: useful to handle race conditions.
@@ -327,7 +365,7 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def get_trial(self, trial=None, uid=None):
+    def get_trial(self, trial=None, uid=None, experiment_uid=None):
         """Fetch a single trial
 
         Parameters
@@ -338,9 +376,12 @@ class BaseStorageProtocol:
         uid: str, optional
             trial id used to retrieve the trial object
 
+        experiment_uid: str, optional
+            experiment id used to retrieve the trial object
+
         Returns
         -------
-        return none if the trial is not found,
+        return None if the trial is not found,
 
         Raises
         ------
@@ -461,7 +502,7 @@ class BaseStorageProtocol:
         Returns
         -------
         ``orion.storage.base.LockedAlgorithmState``
-            The locked state of the algoithm. Note that the lock is not acquired by the process
+            The locked state of the algorithm. Note that the lock is not acquired by the process
             calling ``get_algorithm_lock_info`` and the value of LockedAlgorithmState.locked
             may not be valid if another process is running and could acquire the lock concurrently.
         """
@@ -517,27 +558,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
 
-storage_factory = GenericSingletonFactory(BaseStorageProtocol)
-
-
-def get_storage():
-    """Return current storage
-
-    This is a wrapper around the Storage Singleton object to provide
-    better error message when it is used without being initialized.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying storage was not initialized prior to calling this function
-
-    Notes
-    -----
-    To initialize the underlying storage you must first call `Storage(...)`
-    with the appropriate arguments for the chosen backend
-
-    """
-    return storage_factory.create()
+storage_factory = GenericFactory(BaseStorageProtocol)
 
 
 def setup_storage(storage=None, debug=False):
@@ -549,7 +570,7 @@ def setup_storage(storage=None, debug=False):
         Configuration for the storage backend. If not defined, global configuration
         is used.
     debug: bool, optional
-        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        If using in debug mode, the storage config is overridden with legacy:EphemeralDB.
         Defaults to False.
 
     """
@@ -576,14 +597,14 @@ def setup_storage(storage=None, debug=False):
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
-        storage_factory.create(of_type=storage_type, **storage)
+        return storage_factory.create(of_type=storage_type, **storage)
     except ValueError:
         if storage_factory.create().__class__.__name__.lower() != storage_type.lower():
             raise
 
 
 # pylint: disable=too-few-public-methods
-class ReadOnlyStorageProtocol(object):
+class ReadOnlyStorageProtocol:
     """Read-only interface from a storage protocol.
 
     .. seealso::

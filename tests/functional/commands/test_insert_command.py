@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test of the default commands for demo purposes."""
 import os
 
 import pytest
 
 import orion.core.cli
-from orion.storage.base import get_storage
 
 
 def get_user_corneau():

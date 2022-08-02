@@ -13,7 +13,7 @@ axis so that the entire space can be visualized simultaneously. Each dimension
 is represented as a vertical axis and trials are represented as lines crossing each 
 axis at the corresponding value of the hyperparameters. There is no obvious optimal ordering
 for the vertical axis, and you will often find that changing the order helps better understanding
-the data. Additionaly, the lines are plotted with graded colors based on the objective. The
+the data. Additionally, the lines are plotted with graded colors based on the objective. The
 gradation is shown in a color bar on the right of the plot. Note that the objectives are added
 as the last axis is the plot as well.
 
@@ -25,6 +25,8 @@ The parallel coordinates plot can be executed directly from the ``experiment`` w
 
 """
 from orion.client import get_experiment
+
+# flake8: noqa
 
 # Specify the database where the experiments are stored. We use a local PickleDB here.
 storage = dict(type="legacy", database=dict(type="pickleddb", host="../db.pkl"))

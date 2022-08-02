@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Web application endpoint
 ========================
@@ -12,8 +11,9 @@ import logging
 
 from gunicorn.app.base import BaseApplication
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import experiment_builder
 from orion.serving.webapi import WebApi
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 DESCRIPTION = "Starts Oríon's REST API server"
@@ -40,7 +40,8 @@ def main(args):
     """Starts an application server to serve http requests"""
     config = experiment_builder.get_cmd_config(args)
 
-    web_api = WebApi(config)
+    storage = setup_storage(config.get("storage"))
+    web_api = WebApi(storage, config)
 
     gunicorn_app = GunicornApp(web_api)
     gunicorn_app.run()
@@ -52,11 +53,10 @@ class GunicornApp(BaseApplication):
     def __init__(self, app, options=None):
         self.options = options or {}
         self.application = app
-        super(GunicornApp, self).__init__()
+        super().__init__()
 
     def init(self, parser, opts, args):
         """Pre-run initialization"""
-        pass
 
     def load_config(self):
         """Load the gunicorn config"""

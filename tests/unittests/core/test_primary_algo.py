@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
 from __future__ import annotations
 
 import copy
 import logging
 import typing
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar
 
+import numpy
 import pytest
 from pytest import MonkeyPatch
 
-from orion.algo.base import BaseAlgorithm, algo_factory
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
@@ -233,6 +233,31 @@ class StupidAlgo(BaseAlgorithm):
         return []
 
 
+class GenealogistAlgo(BaseAlgorithm):
+    """An algo that always returns a child trial branched from the parent."""
+
+    requires_type: ClassVar[str | None] = "real"
+    requires_shape: ClassVar[str | None] = "flattened"
+    requires_dist: ClassVar[str | None] = "linear"
+
+    def __init__(
+        self,
+        space: Space,
+        base_suggestion: Trial | None = None,
+    ):
+        super().__init__(space)
+        self.base_suggestion = base_suggestion
+
+    def suggest(self, num):
+        new_trial = self.space.sample(1)[0]
+        if self.base_suggestion is not None:
+            self.base_suggestion = self.base_suggestion.branch(params=new_trial.params)
+        else:
+            self.base_suggestion = new_trial
+        self.register(self.base_suggestion)
+        return [self.base_suggestion]
+
+
 @pytest.fixture()
 def algo_wrapper():
     """Fixture that creates the setup for the registration tests below."""
@@ -273,7 +298,7 @@ class TestRegistration:
             {"x": 10}, space=algo_wrapper.space
         )
         fixed_transformed = algo_wrapper.transformed_space.transform(fixed_original)
-        assert fixed_transformed.params == {"x": 2.302585092994046}
+        assert fixed_transformed.params == {"x": numpy.log(10)}
         transformed_space = algo_wrapper.transformed_space
 
         algo_wrapper.algorithm.fixed_suggestion = fixed_transformed
@@ -355,6 +380,61 @@ class TestRegistration:
 
         assert algo_wrapper.has_suggested(equivalent_original)
         assert algo_wrapper.algorithm.has_suggested(equivalent_transformed)
+
+    def test_suggest_nonexistent_parents(self):
+        original_space = SpaceBuilder().build(
+            {"x": "loguniform(1, 100, discrete=True)"}
+        )
+        transformed_space = build_required_space(
+            original_space=original_space,
+            type_requirement=GenealogistAlgo.requires_type,
+            shape_requirement=GenealogistAlgo.requires_shape,
+            dist_requirement=GenealogistAlgo.requires_dist,
+        )
+
+        base_original = format_trials.dict_to_trial({"x": 10}, space=original_space)
+        base_transformed = transformed_space.transform(base_original)
+        assert base_transformed.params == {"x": numpy.log(10)}
+
+        algo = GenealogistAlgo(
+            space=transformed_space, base_suggestion=base_transformed
+        )
+
+        algo_wrapper = SpaceTransformAlgoWrapper(algorithm=algo, space=original_space)
+
+        with pytest.raises(
+            KeyError, match=f"Parent with id {base_transformed.id} is not registered."
+        ):
+            suggested_trials = algo_wrapper.suggest(1)
+
+    def test_suggest_parents(self):
+        original_space = SpaceBuilder().build(
+            {"x": "loguniform(1, 100, discrete=True)"}
+        )
+        transformed_space = build_required_space(
+            original_space=original_space,
+            type_requirement=GenealogistAlgo.requires_type,
+            shape_requirement=GenealogistAlgo.requires_shape,
+            dist_requirement=GenealogistAlgo.requires_dist,
+        )
+
+        base_original = format_trials.dict_to_trial({"x": 10}, space=original_space)
+        base_transformed = transformed_space.transform(base_original)
+        assert base_transformed.params == {"x": numpy.log(10)}
+
+        algo = GenealogistAlgo(space=transformed_space, base_suggestion=None)
+
+        algo_wrapper = SpaceTransformAlgoWrapper(algorithm=algo, space=original_space)
+        assert algo_wrapper.algorithm is algo
+
+        # Get a suggestion from the wrapper.
+        suggested_trials = algo_wrapper.suggest(1)
+        assert suggested_trials[0] is not None
+
+        for i in range(5):
+            suggested_trials.extend(algo_wrapper.suggest(1))
+            assert suggested_trials[i + 1] is not None
+            assert suggested_trials[i + 1].parent == suggested_trials[i].id
 
     def test_observe_trial_not_suggested(
         self, algo_wrapper: SpaceTransformAlgoWrapper[StupidAlgo]

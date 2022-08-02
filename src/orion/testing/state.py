@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Mocks Oríon's runtime
 =====================
@@ -8,32 +7,31 @@ Boilerplate to simulate Oríon's runtime and data sources.
 """
 # pylint: disable=protected-access
 
+import copy
 import os
 import tempfile
 
 import yaml
 
+import orion
 from orion.core.io import experiment_builder as experiment_builder
-from orion.core.utils.singleton import (
-    SingletonAlreadyInstantiatedError,
-    update_singletons,
-)
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, storage_factory
+from orion.storage.base import setup_storage, storage_factory
 
 
 # pylint: disable=no-self-use,protected-access
 class BaseOrionState:
-    """Setup global variables and singleton for tests.
+    """Setup global variables and storage for tests.
 
-    It swaps the singleton with `None` at startup and restores them after the tests.
+    It generates a new storage configuration and swaps it,
+    the previous configuration is restored after the test.
     It also initializes PickleDB as the storage for testing.
     We use PickledDB as our storage mock
 
     Parameters
     ----------
     benchmarks: List, optional
-       List of benchmarks ot insert into the database
+       List of benchmarks to insert into the database
     experiments: list, optional
         List of experiments to insert into the database
     trials: list, optional
@@ -83,7 +81,10 @@ class BaseOrionState:
 
         self.tempfile = None
         self.tempfile_path = None
+
+        self.previous_config = copy.deepcopy(orion.core.config.storage.to_dict())
         self.storage_config = _select(storage, _get_default_test_storage())
+        self.storage = None
 
         self._benchmarks = _select(benchmarks, [])
         self._experiments = _select(experiments, [])
@@ -100,7 +101,7 @@ class BaseOrionState:
 
     def init(self, config):
         """Initialize environment before testing"""
-        self.storage(config)
+        self.setup_storage(config)
         self.load_experience_configuration()
         return self
 
@@ -119,19 +120,31 @@ class BaseOrionState:
             os.close(self.tempfile)
         _remove(self.tempfile_path)
 
+    def add_experiments(self, *experiments):
+        """Add experiments to the database"""
+        for exp in experiments:
+            self.storage.create_experiment(exp)
+            self._experiments.append(exp)
+
+    def add_trials(self, *trials):
+        """Add trials to the database"""
+        for trial in trials:
+            nt = self.storage.register_trial(Trial(**trial))
+            self.trials.append(nt)
+
     def _set_tables(self):
         self.trials = []
         self.lies = []
 
         for exp in self._experiments:
-            get_storage().create_experiment(exp)
+            self.storage.create_experiment(exp)
 
         for trial in self._trials:
-            nt = get_storage().register_trial(Trial(**trial))
+            nt = self.storage.register_trial(Trial(**trial))
             self.trials.append(nt.to_dict())
 
         for lie in self._lies:
-            nt = get_storage().register_lie(Trial(**lie))
+            nt = self.storage.register_lie(Trial(**lie))
             self.lies.append(nt.to_dict())
 
     def load_experience_configuration(self):
@@ -142,7 +155,7 @@ class BaseOrionState:
         for i, t_dict in enumerate(self._lies):
             self._lies[i] = Trial(**t_dict).to_dict()
 
-        self._trials.sort(key=lambda obj: int(obj["_id"], 16), reverse=True)
+        self._trials.sort(key=lambda obj: int(obj["id"], 16), reverse=True)
 
         for i, experiment in enumerate(self._experiments):
             if "user_script" in experiment["metadata"]:
@@ -180,53 +193,53 @@ class BaseOrionState:
 
     def __enter__(self):
         """Load a new database state"""
-        self.singletons = update_singletons()
         self.cleanup()
         return self.init(self.make_config())
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup database state"""
         self.cleanup()
+        orion.core.config.storage.from_dict(self.previous_config)
 
-        update_singletons(self.singletons)
-
-    def storage(self, config=None):
+    def setup_storage(self, config=None):
         """Return test storage"""
+        self.previous_config = orion.core.config.storage.to_dict()
+        orion.core.config.storage.from_dict(config)
+
         if config is None:
-            return get_storage()
+            self.storage = setup_storage()
+            return self.storage
 
         try:
+            self.storage_config = copy.deepcopy(config)
             config["of_type"] = config.pop("type")
-            db = storage_factory.create(**config)
-            self.storage_config = config
-        except SingletonAlreadyInstantiatedError:
-            db = get_storage()
+            self.storage = storage_factory.create(**config)
 
         except KeyError:
             print(self.storage_config)
             raise
 
-        return db
+        return self.storage
 
 
 class LegacyOrionState(BaseOrionState):
     """See :func:`~orion.testing.state.BaseOrionState`"""
 
     def __init__(self, *args, **kwargs):
-        super(LegacyOrionState, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.initialized = False
 
     @property
     def database(self):
         """Retrieve legacy database handle"""
-        return get_storage()._db
+        return self.storage._db
 
     def init(self, config):
         """Initialize environment before testing"""
-        self.storage(config)
+        self.setup_storage(config)
         self.initialized = True
 
-        if hasattr(get_storage(), "_db"):
+        if hasattr(self.storage, "_db"):
             self.database.remove("experiments", {})
             self.database.remove("trials", {})
 
@@ -245,11 +258,11 @@ class LegacyOrionState(BaseOrionState):
         if self._experiments:
             self.database.write("experiments", self._experiments)
             for experiment in self._experiments:
-                get_storage().initialize_algorithm_lock(
+                self.storage.initialize_algorithm_lock(
                     experiment["_id"], experiment.get("algorithms")
                 )
                 # For tests that need a deterministic experiment id.
-                get_storage().initialize_algorithm_lock(
+                self.storage.initialize_algorithm_lock(
                     experiment["name"], experiment.get("algorithms")
                 )
         if self._trials:

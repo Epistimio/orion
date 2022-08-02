@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Track Storage Protocol
 ======================
@@ -12,7 +11,6 @@ import datetime
 import hashlib
 import logging
 import sys
-import warnings
 from collections import defaultdict
 
 import orion.core
@@ -428,7 +426,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
                 new_query["metadata.name"] = v
 
             elif k.startswith("metadata"):
-                new_query["metadata.{}".format(k)] = v
+                new_query[f"metadata.{k}"] = v
 
             elif k == "_id":
                 new_query["_uid"] = v
@@ -607,8 +605,9 @@ class Track(BaseStorageProtocol):  # noqa: F811
 
         return self._fetch_trials(where)
 
-    def get_trial(self, trial=None, uid=None):
+    def get_trial(self, trial=None, uid=None, experiment_uid=None):
         """See :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
+        # TODO: How do we set hash based on trial.id+trial.experiment for Track?
         uid = get_uid(trial, uid)
 
         _hash, _rev = 0, 0
@@ -664,7 +663,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
 
     _ignore_updates_for = {"results", "params", "_id"}
 
-    def update_trial(self, trial=None, uid=None, **kwargs):
+    def update_trial(self, trial=None, uid=None, experiment_uid=None, **kwargs):
         """Update the fields of a given trials
 
         Parameters
@@ -683,6 +682,8 @@ class Track(BaseStorageProtocol):  # noqa: F811
         returns 1 if the underlying storage was updated else 0
 
         """
+        # TODO: How do we set hash based on trial.id+trial.experiment for Track?
+
         # Get a TrialAdapter
         trial = self.get_trial(trial=trial, uid=uid)
 
@@ -723,7 +724,6 @@ class Track(BaseStorageProtocol):  # noqa: F811
     def push_trial_results(self, trial):
         """Push the trial's results to the database"""
         # Track already pushed the info no need to do it here
-        pass
 
     def fetch_noncompleted_trials(self, experiment):
         """Fetch all non completed trials"""

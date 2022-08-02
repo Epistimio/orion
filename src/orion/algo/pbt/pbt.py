@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import copy
 import logging
-import shutil
 import time
 from typing import Any, ClassVar, Iterable, Sequence
 
@@ -47,9 +46,9 @@ def compute_fidelities(
     base: float,
 ) -> list[float]:
     if base == 1:
-        return numpy.linspace(low, high, num=n_branching + 1, endpoint=True).tolist()
+        fidelities = numpy.linspace(low, high, num=n_branching + 1, endpoint=True)
     else:
-        budgets = numpy.logspace(
+        fidelities = numpy.logspace(
             numpy.log(low) / numpy.log(base),
             numpy.log(high) / numpy.log(base),
             n_branching + 1,
@@ -57,14 +56,13 @@ def compute_fidelities(
             endpoint=True,
         )
 
-        return budgets.tolist()
+    return numpy.clip(fidelities, a_min=low, a_max=high).tolist()
 
 
 class PBT(BaseAlgorithm):
     """Population Based Training algorithm
 
-    Warning:PBT is broken in current version v0.2.4. We are working on a fix to be released in
-    v0.2.5, ETA July 2022.
+    Warning:PBT was broken in version v0.2.4. Make sure to use latest release.
 
     Population based training is an evolutionary algorithm that evolve trials
     from low fidelity levels to high fidelity levels (ex: number of epochs).
@@ -281,7 +279,7 @@ class PBT(BaseAlgorithm):
     def is_done(self) -> bool:
         """Is done if ``population_size`` trials at highest fidelity level are completed."""
         n_completed = 0
-        final_depth = self._get_depth_of(self.fidelity_dim.high)
+        final_depth = self._get_depth_of(self.fidelities[-1])
         for trial in self.lineages.get_trials_at_depth(final_depth):
             n_completed += int(trial.status == "completed")
 
@@ -365,6 +363,9 @@ class PBT(BaseAlgorithm):
             branched_trial = trial.branch(
                 params={self.fidelity_dim.name: self.fidelity_dim.low}
             )
+            # NOTE: We are using branching as a simple way to update the fidelity, we should not keep the
+            #       parent id since it is not a mutation from a parent trial.
+            branched_trial.parent = None
             self.register(branched_trial)
             trials.append(branched_trial)
 
@@ -462,7 +463,7 @@ class PBT(BaseAlgorithm):
 
             new_trial = trial_to_branch.branch(params=new_params)
             # TODO: Keep this? or not?
-            new_trial = self.space.transform(self.space.reverse(new_trial))
+            assert new_trial.parent is not None
 
             logger.debug("Attempt %s - Creating new trial %s", attempts, new_trial)
 
@@ -472,7 +473,9 @@ class PBT(BaseAlgorithm):
             self.has_suggested(new_trial)
             and time.perf_counter() - start > self.fork_timeout
         ):
-            raise RuntimeError(
+            trial_to_branch = None
+            new_trial = None
+            logger.info(
                 f"Could not generate unique new parameters for trial {trial.id} in "
                 f"less than {self.fork_timeout} seconds. Attempted {attempts} times."
             )
@@ -521,10 +524,17 @@ class PBT(BaseAlgorithm):
                     )
 
             elif trial.status == "completed":
-                logger.debug(
-                    "Trial %s is completed, queuing it to attempt forking.", trial
-                )
-                self._queue.append(trial)
+                if trial.params[self.fidelity_index] == self.fidelities[-1]:
+                    logger.debug(
+                        "Trial %s is completed at full fidelity (%s). Not forking.",
+                        trial,
+                        self.fidelities[-1],
+                    )
+                else:
+                    logger.debug(
+                        "Trial %s is completed, queuing it to attempt forking.", trial
+                    )
+                    self._queue.append(trial)
 
     def observe(self, trials: list[Trial]):
         """Observe the trials and queue those available for promotion or forking.
@@ -807,9 +817,6 @@ class LineageNode(TreeNode[Trial]):
         A new lineage node referring to ``new_trial`` will be created and added as a child
         to current node.
 
-        The working directory of the current trial, ``trial.working_dir``
-        will be copied to ``new_trial.working_dir``.
-
         Parameters
         ----------
         new_trial: ``orion.core.worker.trial.Trial``
@@ -820,30 +827,7 @@ class LineageNode(TreeNode[Trial]):
         LineageNode
             LineageNode referring to ``new_trial``
 
-        Raises
-        ------
-        RuntimeError
-            The working directory of the trials is identical. This should never happen
-            since the working_dir is inferred from a hash on trial parameters, and therefore
-            identical working_dir would imply that different trials have identical parameters.
-
         """
-        if self.item.working_dir == new_trial.working_dir:
-            raise RuntimeError(
-                f"The new trial {new_trial.id} has the same working directory as "
-                f"trial {self.item.id}, which would lead to corrupted checkpoints. "
-                "This should never happen. Please "
-                "report at https://github.com/Epistimio/orion/issues"
-            )
-
-        try:
-            shutil.copytree(self.item.working_dir, new_trial.working_dir)
-        except FileExistsError as e:
-            raise FileExistsError(
-                f"Folder already exists for trial {new_trial.id}. This could be a folder "
-                "remaining from a previous experiment with same trial id."
-            ) from e
-
         return LineageNode(new_trial, parent=self)
 
     def set_jump(self, node: LineageNode) -> None:

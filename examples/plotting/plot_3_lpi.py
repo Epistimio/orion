@@ -28,6 +28,8 @@ The local parameter importance plot can be executed directly from the ``experime
 """
 from orion.client import get_experiment
 
+# flake8: noqa: E265
+
 # Specify the database where the experiments are stored. We use a local PickleDB here.
 storage = dict(type="legacy", database=dict(type="pickleddb", host="../db.pkl"))
 
@@ -74,7 +76,7 @@ experiment.plot.lpi()
 # a narrowed prior for the learning rate, we will see that it becomes an unimportant
 # hyperparameter.
 # See documentation on :ref:`EVC system` for more information on branching, or
-# :py:func:`orion.client.build_experiment` for informations on ``branching`` arguments.
+# :py:func:`orion.client.build_experiment` for information on ``branching`` arguments.
 # Original learning rate prior was ``loguniform(1e-5, 0.1)``. We will narrow it to
 # ``loguniform(1e-3, 0.1)``.
 

@@ -1,4 +1,4 @@
-``info`` Detailed informations about experiments
+``info`` Detailed information about experiments
 ------------------------------------------------
 
 This command gives a detailed description of a given experiment.

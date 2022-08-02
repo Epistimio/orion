@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.orion_cmdliner_parser`."""
 import os
 from pathlib import Path
@@ -447,21 +446,21 @@ def test_configurable_config_arg(
 
 
 def test_infer_user_script(script_path: str):
-    """Test that user script is infered correctly"""
+    """Test that user script is inferred correctly"""
     parser = OrionCmdlineParser()
     parser.parse(f"{script_path} and some args".split(" "))
     assert parser.user_script == script_path
 
 
 def test_infer_user_script_python(script_path: str):
-    """Test that user script is infered correctly when using python"""
+    """Test that user script is inferred correctly when using python"""
     parser = OrionCmdlineParser()
     parser.parse(f"python {script_path} and some args".split(" "))
     assert parser.user_script == script_path
 
 
 def test_infer_user_script_when_missing():
-    """Test that user script is infered correctly even if missing"""
+    """Test that user script is inferred correctly even if missing"""
     parser = OrionCmdlineParser()
 
     with pytest.raises(FileNotFoundError) as exc:

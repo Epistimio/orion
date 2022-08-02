@@ -55,8 +55,6 @@ class BaseExplore:
 
         """
 
-        pass
-
     @property
     def configuration(self):
         """Configuration of the exploit object"""
@@ -131,7 +129,7 @@ class PipelineExplore(BaseExplore):
     @property
     def configuration(self):
         """Configuration of the exploit object"""
-        configuration = super(PipelineExplore, self).configuration
+        configuration = super().configuration
         configuration["explore_configs"] = [
             explore.configuration for explore in self.pipeline
         ]
@@ -159,7 +157,7 @@ class PerturbExplore(BaseExplore):
     volatility: float, optional
         If the results of ``value * factor`` or ``value / factor`` exceeds the
         limit of the search space, the new value is set to limit and then added
-        or substracted ``abs(normal(0, volatility))`` (if at lower limit or upper limit).
+        or subtracted ``abs(normal(0, volatility))`` (if at lower limit or upper limit).
         Default: 0.0001
 
     Notes
@@ -245,7 +243,11 @@ class PerturbExplore(BaseExplore):
             CategoricalDimension object defining the search space for this dimension.
 
         """
-        return rng.choice(dim.interval())
+        # NOTE: Can't use rng.choice otherwise the interval is an array of strings
+        #       and the value is casted.
+        choices = dim.interval()
+        choice = choices[rng.randint(len(choices))]
+        return choice
 
     def __call__(self, rng, space, params):
         """Execute perturbation
@@ -297,7 +299,7 @@ class PerturbExplore(BaseExplore):
     @property
     def configuration(self):
         """Configuration of the exploit object"""
-        configuration = super(PerturbExplore, self).configuration
+        configuration = super().configuration
         configuration["factor"] = self.factor
         configuration["volatility"] = self.volatility
         return configuration
@@ -355,7 +357,7 @@ class ResampleExplore(BaseExplore):
     @property
     def configuration(self):
         """Configuration of the exploit object"""
-        configuration = super(ResampleExplore, self).configuration
+        configuration = super().configuration
         configuration["probability"] = self.probability
         return configuration
 

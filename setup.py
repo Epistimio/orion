@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Installation script for Oríon."""
 import os
 
 from setuptools import setup
 
 import versioneer
-
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -43,13 +41,14 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
         "numpy",
     ],
     "dehb": [
         "ConfigSpace",
-        "dehb @ git+https://github.com/automl/DEHB.git@development#egg=dehb",
+        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "bohb": [
@@ -61,10 +60,18 @@ extras_require = {
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
         "numpy",
+        "pymoo==0.5.0",
         "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
     ],
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
+
+dashboard_files = []
+for root, sub_directories, files in os.walk("dashboard/build"):
+    for file in files:
+        # Install dashboard build in a folder `orion-dashboard`
+        install_root = os.path.join("orion-dashboard", *root.split(os.sep)[1:])
+        dashboard_files.append((install_root, [os.path.join(root, file)]))
 
 setup_args = dict(
     name="orion",
@@ -72,7 +79,7 @@ setup_args = dict(
     cmdclass=versioneer.get_cmdclass(),
     description="Asynchronous [black-box] Optimization",
     long_description=open(
-        os.path.join(repo_root, "README.rst"), "rt", encoding="utf8"
+        os.path.join(repo_root, "README.rst"), encoding="utf8"
     ).read(),
     license="BSD-3-Clause",
     author="Epistímio",
@@ -80,6 +87,7 @@ setup_args = dict(
     url="https://github.com/epistimio/orion",
     packages=packages,
     package_dir={"": "src"},
+    data_files=dashboard_files,
     include_package_data=True,
     python_requires=">=3.7",
     entry_points={

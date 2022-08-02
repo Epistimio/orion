@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 from logging import getLogger as get_logger
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Generic, Sequence, TypeVar
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.registry import Registry, RegistryMapping
@@ -19,14 +19,14 @@ from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
-AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
+AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
 
 
 def create_algo(
-    algo_type: type[AlgoType],
+    algo_type: type[AlgoT],
     space: Space,
     **algo_kwargs,
-) -> SpaceTransformAlgoWrapper[AlgoType]:
+) -> SpaceTransformAlgoWrapper[AlgoT]:
     """Creates an algorithm of the given type, taking care of transforming the space if needed."""
     original_space = space
     from orion.core.worker.transformer import build_required_space
@@ -45,7 +45,7 @@ def create_algo(
 
 
 # pylint: disable=too-many-public-methods
-class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
+class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -64,9 +64,9 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
 
     """
 
-    def __init__(self, space: Space, algorithm: AlgoType):
+    def __init__(self, space: Space, algorithm: AlgoT):
         super().__init__(space=space)
-        self.algorithm: AlgoType = algorithm
+        self.algorithm: AlgoT = algorithm
         self.registry = Registry()
         self.registry_mapping = RegistryMapping(
             original_registry=self.registry,
@@ -152,6 +152,19 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
                         f"Space: {self.transformed_space}"
                     )
                 original = self.transformed_space.reverse(transformed_trial)
+                if transformed_trial.parent:
+
+                    original_parent = get_original_parent(
+                        self.algorithm.registry,
+                        self.transformed_space,
+                        transformed_trial.parent,
+                    )
+                    if original_parent.id not in self.registry:
+                        raise KeyError(
+                            f"Parent with id {original_parent.id} is not registered."
+                        )
+
+                    original.parent = original_parent.id
                 if original in self.registry:
                     logger.debug(
                         "Already have a trial that matches %s in the registry.",
@@ -337,7 +350,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
         """
         return self.algorithm.fidelity_index
 
-    def _verify_trial(self, trial: Trial, space: Optional[Space] = None) -> None:
+    def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
         if space is None:
             space = self.space
 
@@ -348,9 +361,35 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoType]):
             )
 
 
+def get_original_parent(
+    registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str
+) -> Trial:
+    """Get the parent trial in original space based on parent id in transformed_space.
+
+    If the parent trial also has a parent, then this function is called recursively
+    to set the proper parent id in original space rather than transformed space.
+    """
+    try:
+        parent = registry[trial_parent_id]
+    except KeyError as e:
+        raise KeyError(f"Parent with id {trial_parent_id} is not registered.") from e
+
+    original_parent = transformed_space.reverse(parent)
+    if original_parent.parent is None:
+        return original_parent
+
+    original_grand_parent = get_original_parent(
+        registry, transformed_space, original_parent.parent
+    )
+    original_parent.parent = original_grand_parent.id
+    return original_parent
+
+
 def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
     """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
     new_transformed_trial = copy.deepcopy(original_trial)
     # pylint: disable=protected-access
     new_transformed_trial._params = copy.deepcopy(transformed_trial._params)
+    new_transformed_trial.experiment = None
+    new_transformed_trial.parent = transformed_trial.parent
     return new_transformed_trial

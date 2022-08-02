@@ -213,7 +213,7 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad"]
+autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad", "torch"]
 
 # -- Gallery configuration -----------------------------------------------
 
@@ -254,7 +254,7 @@ intersphinx_mapping = {
     "plotly": ("https://plotly.com/python-api-reference/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
-    "pandas": ("https://pandas.pydata.org/docs/", None)
+    "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 
 
@@ -303,6 +303,7 @@ type_hints = [
     "orion.core.utils.tree.T",
     "orion.core.utils.tree.NodeType",
     "orion.core.utils.tree.Self",
+    "orion.algo.space.T",
     "Self",
     "AlgoType",
     "T",

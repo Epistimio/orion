@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 WSGI REST server application
 ============================
@@ -17,7 +16,6 @@ from orion.serving.experiments_resource import ExperimentsResource
 from orion.serving.plots_resources import PlotsResource
 from orion.serving.runtime import RuntimeResource
 from orion.serving.trials_resource import TrialsResource
-from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -57,7 +55,7 @@ class MyCORSMiddleware(CORSMiddleware):
         super().process_resource(req, resp, resource, *args)
 
         # We then verify if some access control headers were added to response.
-        # If not, reponse is not allowed.
+        # If not, response is not allowed.
         # Special case: if request did not have an origin, it was certainly sent from
         # a browser (ie. not another server), so CORS is not relevant.
         cors_resp_headers_after = [
@@ -83,7 +81,7 @@ class WebApi(falcon.API):
     routing engine.
     """
 
-    def __init__(self, config=None):
+    def __init__(self, storage, config=None):
         # By default, server will reject requests coming from a server
         # with different origin. E.g., if server is hosted at
         # http://myorionserver.com, it won't accept an API call
@@ -104,16 +102,15 @@ class WebApi(falcon.API):
             )
         )
         cors = MyCORS(allow_origins_list=frontends_uri)
-        super(WebApi, self).__init__(middleware=[cors.middleware])
+        super().__init__(middleware=[cors.middleware])
         self.config = config
-
-        setup_storage(config.get("storage"))
+        self.storage = storage
 
         # Create our resources
-        root_resource = RuntimeResource()
-        experiments_resource = ExperimentsResource()
-        trials_resource = TrialsResource()
-        plots_resource = PlotsResource()
+        root_resource = RuntimeResource(self.storage)
+        experiments_resource = ExperimentsResource(self.storage)
+        trials_resource = TrialsResource(self.storage)
+        plots_resource = PlotsResource(self.storage)
 
         # Build routes
         self.add_route("/", root_resource)
@@ -144,8 +141,6 @@ class WebApi(falcon.API):
 
     def start(self):
         """A hook to when a Gunicorn worker calls run()."""
-        pass
 
     def stop(self, signal):
         """A hook to when a Gunicorn worker starts shutting down."""
-        pass

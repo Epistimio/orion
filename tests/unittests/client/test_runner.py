@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
-import copy
+from __future__ import annotations
+
 import os
 import signal
 import sys
@@ -9,12 +9,15 @@ import time
 import traceback
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
+from pathlib import Path
 from threading import Thread
-from wsgiref.simple_server import sys_version
+from typing import Callable
 
 import pytest
+from typing_extensions import Literal
 
-from orion.client.runner import LazyWorkers, Runner
+from orion.client.experiment import ExperimentClient
+from orion.client.runner import LazyWorkers, Runner, prepare_trial_working_dir
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -23,7 +26,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
-from orion.executor.base import executor_factory
+from orion.executor.base import BaseExecutor, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.storage.base import LockAcquisitionTimeout
 
@@ -94,12 +97,17 @@ class FakeClient:
             self.executor = None
             self.executor_owner = False
 
+    def get_trial(self, uid: str) -> Trial:
+        trial = [trial for trial in self.trials if trial.id == uid]
+        if trial:
+            return trial[0]
+
 
 class InvalidResultClient(FakeClient):
     """Fake client that raise InvalidResult on observe"""
 
     def __init__(self, n_workers):
-        super(InvalidResultClient, self).__init__(n_workers)
+        super().__init__(n_workers)
         self.trials.append(new_trial(1))
 
     def observe(self, trial, value):
@@ -112,7 +120,16 @@ def function(lhs, sleep):
     return lhs + sleep
 
 
-def new_runner(idle_timeout, n_workers=2, client=None, executor=None, backend="joblib"):
+def new_runner(
+    idle_timeout: int,
+    n_workers: int = 2,
+    client: FakeClient | None = None,
+    executor: BaseExecutor | None = None,
+    backend: Literal["joblib", "singleexecutor", "dask", "poolexecutor"] = "joblib",
+    prepare_trial: Callable[
+        [ExperimentClient, Trial], None
+    ] = prepare_trial_working_dir,
+):
     """Create a new runner with a mock client."""
     if client is None:
         client = FakeClient(n_workers, backend=backend, executor=executor)
@@ -126,6 +143,7 @@ def new_runner(idle_timeout, n_workers=2, client=None, executor=None, backend="j
         max_trials_per_worker=2,
         trial_arg=[],
         on_error=None,
+        prepare_trial=prepare_trial,
     )
     runner.stat.report()
     return runner
@@ -627,8 +645,7 @@ def test_runner_inside_subprocess():
     result = subprocess.run(
         ["python", f"{dir}/runner_subprocess.py", "--backend", "joblib"],
         check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
     )
 
     assert result.stderr.decode("utf-8") == ""
@@ -663,3 +680,85 @@ def test_runner_inside_dask():
     future = executor.submit(run_runner, executor=executor, reraise=True)
 
     assert future.get() == 0
+
+
+def test_custom_prepare_trial():
+    """Test that a different callback can be passed for prepare_trial"""
+
+    def test_callback(experiment_client: ExperimentClient, trial: Trial) -> None:
+        test_callback.called += 1
+        return
+
+    test_callback.called = 0
+
+    count = 2
+
+    runner = new_runner(
+        0.1,
+        n_workers=2,
+        prepare_trial=test_callback,
+    )
+
+    client = runner.client
+    client.trials.extend([new_trial(i, sleep=0.75) for i in range(count, -1, -1)])
+
+    runner.run()
+
+    assert test_callback.called == count
+
+
+def test_prepare_trial_working_dir(tmp_path: Path):
+    """Test that folders are created or copied properly"""
+    exp_working_dir = tmp_path / "exp_wdir"
+    assert not os.path.exists(exp_working_dir)
+
+    count = 2
+
+    runner = new_runner(
+        0.1,
+        n_workers=1,
+    )
+    runner.max_trials_per_worker = 4
+
+    client = runner.client
+    base_trial, parent_trial, child_trial, orphan_trial, resumed_trial = (
+        new_trial(i, sleep=0.75) for i in range(5)
+    )
+    trials = [base_trial, parent_trial, child_trial, orphan_trial, resumed_trial]
+    for trial in trials:
+        trial.experiment = 0
+        trial.exp_working_dir = exp_working_dir
+
+    child_trial.parent = parent_trial.id
+    orphan_trial.parent = "idontexist"
+
+    os.makedirs(parent_trial.working_dir)
+    with open(os.path.join(parent_trial.working_dir, "id.txt"), "w") as f:
+        f.write(parent_trial.id)
+
+    os.makedirs(resumed_trial.working_dir)
+    with open(os.path.join(resumed_trial.working_dir, "id.txt"), "w") as f:
+        f.write(resumed_trial.id)
+
+    client.trials.extend(trials)
+
+    runner.run()
+
+    assert client.status == [
+        "completed",
+        "broken",  # Orphan is broken
+        "completed",
+        "completed",
+        "completed",
+    ]
+
+    assert runner.worker_broken_trials == 1
+
+    # Folders were created as expected
+    assert os.path.exists(base_trial.working_dir)
+
+    # Folder was copied as expected
+    assert child_trial.working_dir != parent_trial.working_dir
+    for working_dir in [child_trial.working_dir, parent_trial.working_dir]:
+        with open(os.path.join(working_dir, "id.txt")) as f:
+            assert f.read() == parent_trial.id

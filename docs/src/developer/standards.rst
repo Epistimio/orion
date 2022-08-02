@@ -210,14 +210,14 @@ Inactive
 No action needed or possible. The issue is either fixed, addressed
 
 * |on hold|_
-* |wont fix|_
+* |won't fix|_
 * |duplicate|_
 * |invalid|_
 
 .. |on hold| replace:: ``on hold``
 .. _on hold: https://github.com/Epistimio/orion/labels/on%20hold
-.. |wont fix| replace:: ``wont fix``
-.. _wont fix: https://github.com/Epistimio/orion/labels/wont%20fix
+.. |won't fix| replace:: ``won't fix``
+.. _won't fix: https://github.com/Epistimio/orion/labels/wont%20fix
 .. |duplicate| replace:: ``duplicate``
 .. _duplicate: https://github.com/Epistimio/orion/labels/duplicate
 .. |invalid| replace:: ``invalid``

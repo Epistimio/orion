@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.evc.experiment`."""
 
 import pytest
 
-from orion.client import build_experiment, get_experiment
-from orion.core.evc.adapters import CodeChange
-from orion.core.evc.experiment import ExperimentNode
+from orion.client import get_experiment
 from orion.testing.evc import (
     build_child_experiment,
     build_grand_child_experiment,
@@ -141,7 +138,7 @@ def generic_tree_test(
         num_nodes += len(children_names)
 
     if grand_children_names:
-        grand_children = sum([child.children for child in exp_node.children], [])
+        grand_children = sum((child.children for child in exp_node.children), [])
         assert [child.item.name for child in grand_children] == grand_children_names
         num_nodes += len(grand_children_names)
 
@@ -171,9 +168,9 @@ def generic_tree_test(
         ] == children_trials
 
     if grand_children_names:
-        grand_children = sum([child.children for child in exp_node.children], [])
+        grand_children = sum((child.children for child in exp_node.children), [])
         all_trials = sum(
-            [child_node.item.fetch_trials() for child_node in grand_children], []
+            (child_node.item.fetch_trials() for child_node in grand_children), []
         )
         print("In grand-children")
         for trial in all_trials:

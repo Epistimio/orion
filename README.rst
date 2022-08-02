@@ -50,8 +50,8 @@ now what you have to do looks like this:
 
 Check out our `getting started guide`_ or `this presentation
 <https://bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`_
-for an overview, or our `scikit-learn example`_ for a more hands-on experience. Finally we encourage you
-to browse our `documentation`_.
+for an overview, or our `scikit-learn example`_ for a more hands-on experience. Finally we
+encourage you to browse our `documentation`_.
 
 .. _getting started guide: https://orion.readthedocs.io/en/stable/install/gettingstarted.html
 .. _documentation: https://orion.readthedocs.io/
@@ -87,11 +87,11 @@ Presentations
 - 2021-07-14 - SciPy 2021 (`Video <https://youtu.be/H1jQBQIbQmA>`__) (`Slides <https://docs.google.com/presentation/d/1Aekt1hKtiT1y7pyvWeRRoVND4cDUYFj53xAzk8Zb8z0/edit?usp=sharing>`__)
 - 2021-05-19 - Dask Summit 2021 (`Video <https://youtu.be/W5oWdRiSSr8>`__) (`Slides <https://docs.google.com/presentation/d/1MBy0gjWNV-8GjtEXVLCThN8JddK7znHSg7puycwkBZ4/edit?usp=sharing>`__)
 - 2021-03-16 - AICamp
-  (`Video 
+  (`Video
   <https://www.youtube.com/watch?v=QQ69vxF3LTI>`__)
   (`Slides
   <https://docs.google.com/presentation/d/1Tq3KrWcp66wdlZJtCFaxfq1m5ydyhcPiDCGCOuh_REg/edit?usp=sharing>`__)
-- 2019-11-28 - Tech-talk @ Mila 
+- 2019-11-28 - Tech-talk @ Mila
   (`Video
   <https:/bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`__)
   (`Slides

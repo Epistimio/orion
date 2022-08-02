@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.utils.working_dir`."""
 import os
 import shutil
 from pathlib import Path
-
-import pytest
 
 from orion.core.utils.working_dir import SetupWorkingDir
 

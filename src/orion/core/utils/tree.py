@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tree data structure
 ===================
@@ -22,98 +21,41 @@ Self = TypeVar("Self", bound="TreeNode")
 NodeType = TypeVar("NodeType", bound="TreeNode")
 
 
-# pylint: disable=too-few-public-methods
-class PreOrderTraversal(Iterable[NodeType]):
-    """Iterate on a tree in a pre-order traversal fashion
-
-    Attributes
-    ----------
-    stack: list of `orion.core.utils.tree.TreeNode`
-        Nodes logged during iteration
-
-    """
-
-    __slots__ = ("stack",)
-
-    def __init__(self, tree_node: NodeType):
-        """Initialize the stack for iteration"""
-        self.stack = [tree_node]
-
-    def __iter__(self) -> Iterator[NodeType]:
-        """Get the iterator"""
-        return self
-
-    def __next__(self) -> NodeType:
-        """Get the next node in pre-order traversal"""
-        try:
-            node = self.stack.pop()
-        except IndexError:
-            raise StopIteration
-
-        self.stack += node.children[::-1]
-
-        return node
+def PreOrderTraversal(tree_node: NodeType) -> Iterator[NodeType]:
+    """Iterate on a tree in a pre-order traversal fashion"""
+    stack = [tree_node]
+    while stack:
+        node = stack.pop()
+        yield node
+        stack.extend(node.children[::-1])
 
 
-# pylint: disable=too-few-public-methods
-class DepthFirstTraversal(Iterable[NodeType]):
-    """Iterate on a tree in a pre-order traversal fashion
+def DepthFirstTraversal(tree_node: NodeType) -> Iterable[NodeType]:
+    """Iterate on a tree in a post-order traversal fashion"""
+    seen: set[NodeType] = set()
 
-    Attributes
-    ----------
-    stack: list of `orion.core.utils.tree.TreeNode`
-        Nodes logged during iteration
-    seen: set of `orion.core.utils.tree.TreeNode`
-        Nodes which have been returned during iteration
+    def _inner(node: NodeType) -> Iterable[NodeType]:
+        if node in seen:
+            return
+        seen.add(node)
+        for child in node.children:
+            yield from _inner(child)
+        yield node
 
-    """
-
-    __slots__ = ("stack", "seen")
-
-    def __init__(self, tree_node: NodeType):
-        """Initialize the stack and set of seen nodes for iteration"""
-        self.stack = [tree_node]
-        self.seen: set[NodeType] = set()
-
-    def _compute_potential(self) -> list[NodeType]:
-        """Filter out seen nodes from the stack"""
-        if not self.stack:
-            return []
-
-        return list(filter(lambda n: n not in self.seen, self.stack[-1].children))
-
-    def __iter__(self) -> Iterator[NodeType]:
-        """Get the iterator"""
-        return self
-
-    def __next__(self) -> NodeType:
-        """Get the next node in depth-first traversal"""
-        potential = self._compute_potential()
-        while self.stack and potential:
-            self.stack.extend(potential[::-1])
-            potential = self._compute_potential()
-
-        try:
-            node = self.stack.pop()
-        except IndexError:
-            raise StopIteration
-
-        self.seen.add(node)
-
-        return node
+    return _inner(tree_node)
 
 
 class TreeNode(Generic[T], Iterable[T]):
     r"""Tree node data structure
 
-    Nodes have an attribute item to carry arbitrary information. A node may only have one parent and
-    can have as many children as desired.
+    Nodes have an attribute item to carry arbitrary information. A node may only have one parent
+    and can have as many children as desired.
 
-    Parents can be set at initialiation or via `node.set_parent`. Setting a parent automatically set
-    the current node as the child of the parent.
+    Parents can be set at initialization or via `node.set_parent`. Setting a parent automatically
+    set the current node as the child of the parent.
 
-    Children can be set at initialiation or via `node.add_children`. Setting children automatically
-    set their parent as the current node.
+    Children can be set at initialization or via `node.add_children`. Setting children
+    automatically set their parent as the current node.
 
     Tree of nodes are iterable, by default with preorder traversal.
 
@@ -128,7 +70,7 @@ class TreeNode(Generic[T], Iterable[T]):
     parent: None or instance of `orion.core.utils.tree.TreeNode`
         The parent of the current node, None if the current node is the root.
     children: None or list of instances of `orion.core.utils.tree.TreeNode`
-        The children of the curent node.
+        The children of the current node.
     root: instance of `orion.core.utils.tree.TreeNode`
         The top node of the current tree. The root node returns itself.
 
@@ -243,7 +185,7 @@ class TreeNode(Generic[T], Iterable[T]):
             return
 
         if node is not None and not isinstance(node, TreeNode):
-            raise TypeError("Cannot set parent to %s" % str(node))
+            raise TypeError(f"Cannot set parent to {str(node)}")
 
         if self.parent is not None:
             self.drop_parent()
@@ -290,7 +232,7 @@ class TreeNode(Generic[T], Iterable[T]):
                 raise TypeError(f"Cannot add {child} to children")
 
             if child not in self._children:
-                # TreeNode.set_parent uses add_children so using it here could cause an infinit
+                # TreeNode.set_parent uses add_children so using it here could cause an infinite
                 # recursion. add_children() gets the dirty job done.
                 child.drop_parent()
                 # pylint: disable=protected-access
@@ -345,7 +287,7 @@ class TreeNode(Generic[T], Iterable[T]):
 
         nodes = self.map(has_depth, self.children)
 
-        return sum([node.item for node in nodes], [])
+        return sum((node.item for node in nodes), [])
 
     # NOTE: Would be nice to type-annotate this method with overloads, but it's really tough.
 
@@ -454,7 +396,7 @@ class TreeNode(Generic[T], Iterable[T]):
             rval, children_nodes = function(self, rval_children_nodes)
             return TreeNode(rval, parent=None, children=children_nodes)
         else:
-            raise ValueError("Invalid nodes: %s" % str(node))
+            raise ValueError(f"Invalid nodes: {str(node)}")
 
     def __iter__(self: Self) -> PreOrderTraversal[Self]:
         """Iterate on the tree with pre-order traversal"""
@@ -466,12 +408,7 @@ class TreeNode(Generic[T], Iterable[T]):
 
         children = [child.item for child in self.children]
 
-        return "%s(%s, parent=%s, children=%s)" % (
-            self.__class__.__name__,
-            str(self.item),
-            str(parent_item),
-            str(children),
-        )
+        return f"{self.__class__.__name__}({self.item}, parent={parent_item}, children={children})"
 
 
 def flattened(trials_tree: TreeNode[T]) -> list[T]:

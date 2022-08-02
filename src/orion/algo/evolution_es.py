@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The Evolved Transformer and large-scale evolution of image classifiers
 ======================================================================
@@ -11,11 +10,11 @@ from __future__ import annotations
 import copy
 import importlib
 import logging
-from typing import Callable, ClassVar, Sequence
+from typing import Callable, ClassVar, Sequence, TypeVar
 
 import numpy as np
 
-from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket, RungDict
+from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket
 from orion.algo.space import Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
@@ -90,7 +89,10 @@ def compute_budgets(
     return budgets_eves
 
 
-class EvolutionES(Hyperband):
+BracketT = TypeVar("BracketT", bound="BracketEVES")
+
+
+class EvolutionES(Hyperband[BracketT]):
     """EvolutionES formulates hyperparameter optimization as an evolution.
 
     For more information on the algorithm,
@@ -138,6 +140,8 @@ class EvolutionES(Hyperband):
         mutate: str | dict | None = None,
         max_retries: int = 1000,
     ):
+        self.mutate = mutate
+
         super().__init__(space, seed=seed, repetitions=repetitions)
         pair = nums_population // 2
         mutate_ratio = 0.3
@@ -145,7 +149,6 @@ class EvolutionES(Hyperband):
         self.nums_comp_pairs = pair
         self.max_retries = max_retries
         self.mutate_ratio = mutate_ratio
-        self.mutate = mutate
         self.nums_mutate_gene = (
             int((len(self.space.values()) - 1) * mutate_ratio)
             if int((len(self.space.values()) - 1) * mutate_ratio) > 0
@@ -169,10 +172,13 @@ class EvolutionES(Hyperband):
             pair,
         )
 
-        self.brackets: list[BracketEVES] = [
-            BracketEVES(self, bracket_budgets, 1) for bracket_budgets in self.budgets
-        ]
+        self.brackets: list[BracketT] = self.create_brackets()
         self.seed_rng(seed)
+
+    def create_bracket(
+        self, bracket_budgets: list[BudgetTuple], iteration: int
+    ) -> BracketT:
+        return BracketEVES(self, bracket_budgets, iteration)
 
     @property
     def state_dict(self) -> dict:
@@ -190,7 +196,7 @@ class EvolutionES(Hyperband):
         self.hurdles = state_dict["hurdles"]
         super().set_state(state_dict)
 
-    def _get_bracket(self, trial: Trial) -> BracketEVES:
+    def _get_bracket(self, trial: Trial) -> BracketT:
         """Get the bracket of a trial during observe"""
         return self.brackets[-1]
 

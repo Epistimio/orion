@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 =================
 Python API basics
@@ -11,6 +10,8 @@ the algorithms.
 We first import the only function needed, :func:`build experiment <orion.client.build_experiment>`.
 """
 from orion.client import build_experiment
+
+# flake8: noqa: E266
 
 #%%
 # We configure the database with PickledDB so that the results are saved locally on disk. This
@@ -55,7 +56,7 @@ experiment = build_experiment(
 def rosenbrock(x, noise=None):
     """Evaluate partial information of a quadratic."""
     y = x - 34.56789
-    z = 4 * y ** 2 + 23.4
+    z = 4 * y**2 + 23.4
 
     return [{"name": "objective", "type": "objective", "value": z}]
 

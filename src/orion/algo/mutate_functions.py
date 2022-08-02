@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Different mutate functions: large-scale evolution of image classifiers
 ======================================================================
@@ -7,8 +6,6 @@ Implement evolution to exploit configurations with fixed resource efficiently
 
 """
 import logging
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

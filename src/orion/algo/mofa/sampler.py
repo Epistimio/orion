@@ -5,7 +5,6 @@ MOFA Sampler module
 from __future__ import annotations
 
 import logging
-from typing import Tuple
 
 import numpy as np
 from numpy.random import RandomState
@@ -36,7 +35,7 @@ def _find_n_levels(dimensions: int) -> int:
 
 def generate_olh_samples(
     space: Space, n_levels: int, strength: int, index: int, rng: RandomState
-) -> Tuple[np.array, int]:
+) -> tuple[np.array, int]:
     """
     Generates samples from an orthogonal Latin hypercube (OLH)
 

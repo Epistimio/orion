@@ -62,7 +62,7 @@ def mock_load_data(
     def _load_data(self: MetaModelConfig, path: Path):
         if use_real_data and path == REAL_PROFET_DATA_DIR:
             # Return real datasets.
-            logger.info(f"Testing using the real Profet datasets.")
+            logger.info("Testing using the real Profet datasets.")
             return real_load_data(self, REAL_PROFET_DATA_DIR)
         # Generate fake datasets.
         logger.info("Using random data instead of the actual profet training data.")

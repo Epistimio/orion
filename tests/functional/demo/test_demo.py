@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test for demo purposes."""
 import os
 import shutil
 import subprocess
 import tempfile
 from collections import defaultdict
+from contextlib import contextmanager
 
 import numpy
 import pytest
@@ -14,9 +14,6 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli.hunt import workon
-from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.storage.base import get_storage
-from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
@@ -244,30 +241,81 @@ def test_demo_inexecutable_script(storage, monkeypatch, capsys):
     assert "User script is not executable" in captured
 
 
-def test_demo_four_workers(storage, monkeypatch):
+@contextmanager
+def generate_config(template, tmp_path):
+    """Generate a configuration file inside a temporary directory with the current storage config"""
+
+    with open(template) as file:
+        conf = yaml.safe_load(file)
+
+    conf["storage"] = orion.core.config.storage.to_dict()
+    conf_file = os.path.join(tmp_path, "config.yaml")
+    config_str = yaml.dump(conf)
+
+    with open(conf_file, "w") as file:
+        file.write(config_str)
+
+    with open(conf_file) as file:
+        yield file
+
+
+def logging_directory():
+    """Default logging directory for testing `<reporoot>/logdir`.
+    The folder is deleted if it exists at the beginning of testing,
+    it will not be deleted at the end of the tests to help debugging.
+
+    """
+    base_repo = os.path.dirname(os.path.abspath(orion.core.__file__))
+    logdir = os.path.abspath(os.path.join(base_repo, "..", "..", "..", "logdir"))
+    shutil.rmtree(logdir, ignore_errors=True)
+    return logdir
+
+
+def test_demo_four_workers(tmp_path, storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    processes = []
-    for _ in range(4):
-        process = subprocess.Popen(
-            [
-                "orion",
-                "hunt",
-                "-n",
-                "four_workers_demo",
-                "--config",
-                "./orion_config_random.yaml",
-                "--max-trials",
-                "20",
-                "./black_box.py",
-                "-x~norm(34, 3)",
-            ]
-        )
-        processes.append(process)
 
-    for process in processes:
-        rcode = process.wait()
-        assert rcode == 0
+    logdir = logging_directory()
+    print(logdir)
+
+    with generate_config("orion_config_random.yaml", tmp_path) as conf_file:
+        processes = []
+        for _ in range(4):
+            process = subprocess.Popen(
+                [
+                    "orion",
+                    "-vvv",
+                    "--logdir",
+                    logdir,
+                    "hunt",
+                    "--working-dir",
+                    str(tmp_path),
+                    "-n",
+                    "four_workers_demo",
+                    "--config",
+                    f"{conf_file.name}",
+                    "--max-trials",
+                    "20",
+                    "./black_box.py",
+                    "-x~norm(34, 3)",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            processes.append(process)
+
+        for process in processes:
+            stdout, _ = process.communicate()
+
+            rcode = process.wait()
+
+            if rcode != 0:
+                print("OUT", stdout.decode("utf-8"))
+
+            assert rcode == 0
+
+    assert storage._db.host == orion.core.config.storage.database.host
+    print(storage._db.host)
 
     exp = list(storage.fetch_experiments({"name": "four_workers_demo"}))
     assert len(exp) == 1
@@ -308,8 +356,14 @@ def test_workon():
         "-x~uniform(-50, 50, precision=None)",
     ]
 
-    with OrionState():
-        experiment = experiment_builder.build_from_args(config)
+    with OrionState() as cfg:
+        cmd_config = experiment_builder.get_cmd_config(config)
+
+        builder = experiment_builder.ExperimentBuilder(
+            cfg.storage, debug=cmd_config.get("debug")
+        )
+
+        experiment = builder.build(**cmd_config)
 
         workon(
             experiment,
@@ -325,7 +379,7 @@ def test_workon():
             executor_configuration={"backend": "threading"},
         )
 
-        storage = get_storage()
+        storage = cfg.storage
 
         exp = list(storage.fetch_experiments({"name": name}))
         assert len(exp) == 1
@@ -361,13 +415,14 @@ def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
         [
+            "-vvv",
             "hunt",
-            "--max-trials={}".format(how_many),
+            f"--max-trials={how_many}",
             "--name=lalala",
             "--config",
             "./stress_gradient.yaml",
             "./dir_per_trial.py",
-            "--dir={}".format(str(tmpdir)),
+            f"--dir={str(tmpdir)}",
             "--other-name",
             "{exp.name}",
             "--name",
@@ -552,7 +607,7 @@ def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
     with open("strategy_config.yaml") as f:
         config = yaml.safe_load(f.read())
 
-    config_file = "{}_strategy_config.yaml".format(strategy)
+    config_file = f"{strategy}_strategy_config.yaml"
 
     with open(config_file, "w") as f:
         config["producer"]["strategy"] = strategy
@@ -643,9 +698,9 @@ def test_worker_trials(storage, monkeypatch):
     assert n_completed() == 6
 
 
-@pytest.mark.usefixtures("storage")
-def test_resilience(monkeypatch):
+def test_resilience(storage, monkeypatch):
     """Test if Oríon stops after enough broken trials."""
+
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     MAX_BROKEN = 3
@@ -665,27 +720,28 @@ def test_resilience(monkeypatch):
     assert len(exp.fetch_trials_by_status("broken")) == MAX_BROKEN
 
 
-@pytest.mark.usefixtures("storage")
-def test_demo_with_shutdown_quickly(monkeypatch):
+def test_demo_with_shutdown_quickly(storage, monkeypatch, tmp_path):
     """Check simple pipeline with random search is reasonably fast."""
+
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     monkeypatch.setattr(orion.core.config.worker, "heartbeat", 120)
 
-    process = subprocess.Popen(
-        [
-            "orion",
-            "hunt",
-            "--config",
-            "./orion_config_random.yaml",
-            "--max-trials",
-            "10",
-            "./black_box.py",
-            "-x~uniform(-50, 50)",
-        ]
-    )
+    with generate_config("orion_config_random.yaml", tmp_path) as conf_file:
+        process = subprocess.Popen(
+            [
+                "orion",
+                "hunt",
+                "--config",
+                f"{conf_file.name}",
+                "--max-trials",
+                "10",
+                "./black_box.py",
+                "-x~uniform(-50, 50)",
+            ]
+        )
 
-    assert process.wait(timeout=40) == 0
+        assert process.wait(timeout=40) == 0
 
 
 def test_demo_with_nondefault_config_keyword(storage, monkeypatch):
@@ -774,30 +830,27 @@ def test_demo_precision(storage, monkeypatch):
     assert value == float(numpy.format_float_scientific(value, precision=4))
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
-def test_debug_mode(monkeypatch):
+def test_debug_mode(storage, monkeypatch, tmp_path):
     """Test debug mode."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-    orion.core.cli.main(
-        [
-            "--debug",
-            "hunt",
-            "--config",
-            "./orion_config.yaml",
-            "--max-trials",
-            "2",
-            "./black_box.py",
-        ]
-        + user_args
-    )
+    with generate_config("orion_config.yaml", tmp_path) as conf_file:
+        orion.core.cli.main(
+            [
+                "--debug",
+                "hunt",
+                "--config",
+                f"{conf_file.name}",
+                "--max-trials",
+                "2",
+                "./black_box.py",
+            ]
+            + user_args
+        )
 
-    storage = get_storage()
-
-    assert isinstance(storage, Legacy)
-    assert isinstance(storage._db, EphemeralDB)
+    assert len(list(storage.fetch_experiments({}))) == 0
 
 
 def test_no_args(capsys):

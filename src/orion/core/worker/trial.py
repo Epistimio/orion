@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: skip-file
 """
 Container class for `Trial` entity
@@ -11,6 +10,7 @@ import copy
 import hashlib
 import logging
 import os
+import warnings
 
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
@@ -21,8 +21,6 @@ log = logging.getLogger(__name__)
 class AlreadyReleased(Exception):
     """Raised when a trial gets released twice"""
 
-    pass
-
 
 def validate_status(status):
     """
@@ -30,9 +28,7 @@ def validate_status(status):
     ``completed``, ``interrupted``, or ``broken``.
     """
     if status is not None and status not in Trial.allowed_stati:
-        raise ValueError(
-            "Given status `{0}` not one of: {1}".format(status, Trial.allowed_stati)
-        )
+        raise ValueError(f"Given status `{status}` not one of: {Trial.allowed_stati}")
 
 
 class Trial:
@@ -40,15 +36,15 @@ class Trial:
 
     Attributes
     ----------
-    experiment : str
+    experiment: str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
     id_override: str
         Trial id returned by the database. It should be unique for a given
         set of parameters
-    heartbeat : datetime.datetime
+    heartbeat: datetime.datetime
         Last time trial was identified as being alive.
-    status : str
+    status: str
        Indicates how this trial is currently being used. Can take the following
        values:
 
@@ -65,19 +61,19 @@ class Trial:
           of the worker process).
        * 'broken' : Indicates a trial that was not successfully evaluated for not
           expected reason.
-    worker : str
+    worker: str
        Corresponds to worker's unique id that handled this trial.
-    submit_time : `datetime.datetime`
+    submit_time: `datetime.datetime`
        When was this trial suggested?
-    start_time : `datetime.datetime`
+    start_time: `datetime.datetime`
        When was this trial first reserved?
-    end_time : `datetime.datetime`
+    end_time: `datetime.datetime`
        When was this trial evaluated successfully?
-    results : list of `Trial.Result`
+    results: list of `Trial.Result`
        List of evaluated metrics for this particular set of params. One and only
        one of them is necessarily an *objective* function value. The other are
        *constraints*, the value of an expression desired to be larger/equal to 0.
-    params : dict of params
+    params: dict of params
        Dict of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
 
@@ -102,12 +98,12 @@ class Trial:
 
         Attributes
         ----------
-        name : str
+        name: str
            A possible named for the quality that this is quantifying.
-        type : str
+        type: str
            An identifier with semantic importance for **Oríon**. See
            `Param.type` and `Result.type`.
-        value : str or numerical
+        value: str or numerical
            value suggested for this dimension of the parameter space.
 
         """
@@ -144,7 +140,7 @@ class Trial:
 
         def __str__(self):
             """Represent partially with a string."""
-            ret = "{0}(name={1}, type={2}, value={3})".format(
+            ret = "{}(name={}, type={}, value={})".format(
                 type(self).__name__, repr(self.name), repr(self.type), repr(self.value)
             )
             return ret
@@ -160,7 +156,7 @@ class Trial:
         def type(self, type_):
             if type_ is not None and type_ not in self.allowed_types:
                 raise ValueError(
-                    "Given type, {0}, not one of: {1}".format(type_, self.allowed_types)
+                    f"Given type, {type_}, not one of: {self.allowed_types}"
                 )
             self._type = type_
 
@@ -216,6 +212,10 @@ class Trial:
 
         # Store the id as an override to support different backends
         self.id_override = kwargs.pop("_id", None)
+        kwargs.pop("id", None)
+
+        # NOTE: For backward compatibility with <v0.2.5
+        kwargs.pop("id_override", None)
 
         for attrname, value in kwargs.items():
             if attrname == "parents":
@@ -267,6 +267,7 @@ class Trial:
             raise ValueError(f"Some parameters are not part of base trial: {params}")
 
         return Trial(
+            experiment=self.experiment,
             status=status,
             params=config_params,
             parent=self.id,
@@ -286,13 +287,16 @@ class Trial:
         trial_dictionary["results"] = list(map(lambda x: x.to_dict(), self.results))
         trial_dictionary["params"] = list(map(lambda x: x.to_dict(), self._params))
 
-        trial_dictionary["_id"] = trial_dictionary.pop("id")
+        trial_dictionary["id"] = self.id
+        id_override = trial_dictionary.pop("id_override", None)
+        if id_override:
+            trial_dictionary["_id"] = id_override
 
         return trial_dictionary
 
     def __str__(self):
         """Represent partially with a string."""
-        return "Trial(experiment={0}, status={1}, params={2})".format(
+        return "Trial(experiment={}, status={}, params={})".format(
             repr(self.experiment), repr(self._status), self.format_params(self._params)
         )
 
@@ -314,7 +318,7 @@ class Trial:
         objective = self._fetch_one_result_of_type("objective", results)
 
         if objective is None:
-            raise InvalidResult("No objective found in results: {}".format(results))
+            raise InvalidResult(f"No objective found in results: {results}")
         if not isinstance(objective.value, (float, int)):
             raise InvalidResult(
                 "Results must contain a type `objective` with type float/int: {}".format(
@@ -327,11 +331,11 @@ class Trial:
     def get_working_dir(
         self,
         ignore_fidelity=False,
-        ignore_experiment=False,
+        ignore_experiment=None,
         ignore_lie=False,
         ignore_parent=False,
     ):
-        if not self.exp_working_dir:
+        if self.exp_working_dir is None:
             raise RuntimeError(
                 "Cannot infer trial's working_dir because trial.exp_working_dir is not set."
             )
@@ -371,10 +375,18 @@ class Trial:
 
     @property
     def id(self):
-        """Return hash_name which is also the database key ``_id``."""
-        if self.id_override is None:
-            return self.__hash__()
-        return self.id_override
+        """Return hash_name which is also the database key ``id``."""
+        return self.__hash__()
+
+    @property
+    def legacy_id(self):
+        """Backward compatible id
+
+        Deprecated and will be removed in v0.4.0.
+
+        This is equivalent to `Trial.id` prior to v0.2.5.
+        """
+        return self.compute_trial_hash(self, ignore_experiment=False)
 
     @property
     def objective(self):
@@ -488,7 +500,7 @@ class Trial:
     def compute_trial_hash(
         trial,
         ignore_fidelity=False,
-        ignore_experiment=False,
+        ignore_experiment=None,
         ignore_lie=False,
         ignore_parent=False,
     ):
@@ -501,8 +513,17 @@ class Trial:
 
         params = Trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
 
+        if ignore_experiment is not None:
+            warnings.warn(
+                "Argument ignore_experiment is deprecated and will be removed in v0.3.0. "
+                "Trial.id does not include experiment id since release v0.2.5.",
+                DeprecationWarning,
+            )
+        else:
+            ignore_experiment = True
+
         experiment_repr = ""
-        if not ignore_experiment:
+        if not ignore_experiment and trial.experiment is not None:
             experiment_repr = str(trial.experiment)
 
         lie_repr = ""

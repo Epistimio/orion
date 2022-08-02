@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Flatten and unflatten dicts
 ===========================
@@ -38,13 +37,13 @@ def flatten(dictionary):
 
 def unflatten(dictionary):
     """Turn all keys with format {key}.{subkey} into nested dictionaries"""
-    unflattened_dictionary = dict()
+    unflattened_dictionary = {}
     for key, value in dictionary.items():
         parts = key.split(".")
         sub_dictionary = unflattened_dictionary
         for part in parts[:-1]:
             if part not in sub_dictionary:
-                sub_dictionary[part] = dict()
+                sub_dictionary[part] = {}
             sub_dictionary = sub_dictionary[part]
         sub_dictionary[parts[-1]] = value
     return unflattened_dictionary

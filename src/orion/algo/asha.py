@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Asynchronous Successive Halving Algorithm
 =========================================
@@ -6,23 +5,20 @@ Asynchronous Successive Halving Algorithm
 from __future__ import annotations
 
 import copy
-import hashlib
 import logging
 from collections import defaultdict
-from typing import Any, Sequence
+from typing import Sequence
 
 import numpy
 import numpy as np
 
-from orion.algo.base import BaseAlgorithm
 from orion.algo.hyperband import (
     BudgetTuple,
     Hyperband,
     HyperbandBracket,
-    RungDict,
     display_budgets,
 )
-from orion.algo.space import Fidelity, Space
+from orion.algo.space import Space
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -80,10 +76,10 @@ def compute_budgets(
     if budgets[-1] > max_resources:
         raise ValueError(BUDGET_ERROR.format(min_resources, max_resources, num_rungs))
 
-    ressources = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
+    resources = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
     budgets_lists: list[list[BudgetTuple]] = []
     budgets_tab: dict[int, list[BudgetTuple]] = defaultdict(list)
-    for bracket_ressources in ressources:
+    for bracket_ressources in resources:
         bracket_budgets: list[BudgetTuple] = []
         for i, min_ressources in enumerate(bracket_ressources[::-1]):
             budget = BudgetTuple(reduction_factor**i, min_ressources)
@@ -215,9 +211,7 @@ class ASHA(Hyperband):
     def suggest(self, num: int) -> list[Trial]:
         return super().suggest(num)
 
-    def create_bracket(
-        self, i: Any, budgets: list[BudgetTuple], iteration: int
-    ) -> ASHABracket:
+    def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> ASHABracket:
         return ASHABracket(self, budgets, iteration)
 
 
