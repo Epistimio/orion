@@ -15,8 +15,8 @@ class ServiceContext:
     """Global configuration for the service"""
 
     database: str = "orion"
-    host: str = "192.168.0.116"
-    port: int = 8124
+    host: str = "localhost"
+    port: int = 8123
 
 
 @dataclass
@@ -46,7 +46,7 @@ def get_storage_for_user(request: RequestContext):
         password=request.password,
     )
 
-    # this bypass the Storage singleton logic
+    # this bypass the setup logic
     log.debug("Initializing storage")
     storage = Legacy(
         database_instance=db,
@@ -66,7 +66,11 @@ def build_experiment_client(request: RequestContext) -> ExperimentClient:
 
     log.debug("Building experiment")
     client = build_experiment(
-        **request.data, storage_instance=storage, username=request.username
+        **request.data,
+        storage_instance=storage,
+        # if we keep the username on the storage that would prevent
+        # more pervasive modification
+        # username=request.username,
     )
     client.remote_mode = True
     return client

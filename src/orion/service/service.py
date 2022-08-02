@@ -6,7 +6,7 @@ import falcon
 
 from orion.service.auth import AuthenticationService
 from orion.service.broker.broker import RequestContext, ServiceContext
-from orion.service.broker.remote import RemoteExperimentBroker
+from orion.service.broker.local import LocalExperimentBroker
 
 log = logging.getLogger(__file__)
 
@@ -51,7 +51,7 @@ class QueryRoute:
             return
 
         except Exception as err:
-            traceback.print_exc()
+            log.error(traceback.format_exc())
 
             resp.status = falcon.HTTP_200
             resp.media["status"] = 1
@@ -67,7 +67,7 @@ class OrionService:
 
     def __init__(self) -> None:
         self.app = falcon.App()
-        self.broker = RemoteExperimentBroker()  # LocalExperimentBroker() #
+        self.broker = LocalExperimentBroker() #
         self.auth = AuthenticationService()
         OrionService.add_routes(self.app, self.broker, self.auth)
 
@@ -134,11 +134,11 @@ class OrionService:
             pass
 
 
-def main(hostname: str = "", port: int = 8080) -> None:
+def main(address: str = "localhost", port: int = 8080) -> None:
     logging.basicConfig(level=logging.DEBUG)
 
     with OrionService() as service:
-        service.run(hostname, port)
+        service.run(address, port)
 
 
 if __name__ == "__main__":

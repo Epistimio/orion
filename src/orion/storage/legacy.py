@@ -63,11 +63,14 @@ class Legacy(BaseStorageProtocol):
 
     """
 
-    def __init__(self, database=None, setup=True):
-        self._db = setup_database(database)
+    def __init__(self, database=None, setup=True, database_instance=None):
+        if database_instance is not None:
+            self._db = database_instance
+        else:
+            self._db = setup_database(database)
 
-        if setup:
-            self._setup_db()
+            if setup:
+                self._setup_db()
 
     def _setup_db(self):
         """Database index setup"""
