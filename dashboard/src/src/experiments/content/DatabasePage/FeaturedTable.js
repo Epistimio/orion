@@ -13,6 +13,7 @@ import {
   MultiSelect,
   Pagination,
   Row,
+  Button,
 } from 'carbon-components-react';
 
 const sortingIcons = {
@@ -51,6 +52,9 @@ export function FeaturedTable({ columns, data, experiment }) {
     id: col.id,
     label: col.columnDef.header,
   }));
+  const [selectedColumns, setSelectedColumns] = React.useState(
+    selectableColumns
+  );
   const columnVisibilitySetter = selectedColumns => {
     const colSet = new Set(selectedColumns.selectedItems.map(item => item.id));
     const def = {};
@@ -58,11 +62,15 @@ export function FeaturedTable({ columns, data, experiment }) {
       .getAllLeafColumns()
       .forEach(column => (def[column.id] = colSet.has(column.id)));
     table.setColumnVisibility(def);
+    setSelectedColumns(selectableColumns.filter(item => colSet.has(item.id)));
   };
   const setCarbonPagination = ({ page, pageSize }) => {
     // table.setPageIndex(page - 1);
     // table.setPageSize(pageSize);
     setPagination({ pageIndex: page - 1, pageSize: pageSize });
+  };
+  const displayAllColumns = () => {
+    columnVisibilitySetter({ selectedItems: selectableColumns });
   };
   return (
     <div className="bx--data-table-container">
@@ -70,12 +78,14 @@ export function FeaturedTable({ columns, data, experiment }) {
         <Grid>
           <Row>
             <Column>
-              <h4 className="bx--data-table-header__title">
-                Experiment Trials for "{experiment}"
-              </h4>
-              <p className="bx--data-table-header__description">
-                {data.length} trial(s) for experiment "{experiment}"
-              </p>
+              <div>
+                <h4 className="bx--data-table-header__title">
+                  Experiment Trials for "{experiment}"
+                </h4>
+                <p className="bx--data-table-header__description">
+                  {data.length} trial(s) for experiment "{experiment}"
+                </p>
+              </div>
             </Column>
             <Column>
               <Pagination
@@ -91,10 +101,15 @@ export function FeaturedTable({ columns, data, experiment }) {
                 id="multiselect-columns"
                 label="Columns to display"
                 items={selectableColumns}
-                initialSelectedItems={selectableColumns}
+                selectedItems={selectedColumns}
                 onChange={columnVisibilitySetter}
                 sortItems={items => items}
               />
+            </Column>
+            <Column>
+              <Button kind="secondary" size="md" onClick={displayAllColumns}>
+                Display all
+              </Button>
             </Column>
           </Row>
         </Grid>
