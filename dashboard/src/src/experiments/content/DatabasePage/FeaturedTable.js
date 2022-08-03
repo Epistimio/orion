@@ -108,6 +108,9 @@ export function FeaturedTable({ columns, data, experiment }) {
                   <th
                     key={header.id}
                     colSpan={header.colSpan}
+                    {...(header.isPlaceholder
+                      ? { className: 'placeholder' }
+                      : {})}
                     {...(header.column.getCanSort()
                       ? { 'aria-sort': false }
                       : {})}>

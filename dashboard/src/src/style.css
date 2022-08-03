@@ -36,3 +36,6 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
 .bx--structured-list-row.selected-experiment-row .bx--structured-list-td {
   font-weight: bold;
 }
+.bx--data-table th.placeholder {
+  background-color: #f4f4f4;
+}
