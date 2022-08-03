@@ -130,7 +130,7 @@ class MongoDBConfig:
 @contextmanager
 def mongod(port, address) -> None:
     """Launch a mongoDB server in parallel. The server is stop on exit"""
-
+    log.debug("Starting mongodb on %s:%d", address, port)
     with tempfile.TemporaryDirectory() as dir:
         start_mongodb(port, address, dir)
 

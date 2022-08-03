@@ -53,13 +53,15 @@ function add_admin_user {
         pwd: "$PASSWORD",
         roles: [
             { role: "userAdminAnyDatabase", db: "admin" },
-            { role: "readWriteAnyDatabase", db: "admin" }
+            { role: "readWriteAnyDatabase", db: "admin" },
         ]
     })
 EOM
     )
 
     echo "$CMD" | mongo --port $PORT
+
+    add_user $ADMIN $PASSWORD
 }
 
 function add_user {

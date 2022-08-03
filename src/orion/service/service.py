@@ -14,10 +14,16 @@ log = logging.getLogger(__file__)
 class QueryRoute:
     """Base route handling, makes sure status is always set"""
 
-    def __init__(self, ctx, broker, auth) -> None:
+    def __init__(self, ctx: ServiceContext) -> None:
         self.service = ctx
-        self.broker = broker
-        self.auth = auth
+
+    @property
+    def broker(self):
+        return self.service.broker
+
+    @property
+    def auth(self):
+        return self.service.auth
 
     def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
         """Force status to be set, and send back an error on exception"""
@@ -67,26 +73,27 @@ class OrionService:
 
     def __init__(self, ctx) -> None:
         self.ctx = ctx
+        ctx.broker = LocalExperimentBroker(ctx)
+        ctx.auth = AuthenticationService()
+
         self.app = falcon.App()
-        self.broker = LocalExperimentBroker()  #
-        self.auth = AuthenticationService()
-        OrionService.add_routes(self.app, self.broker, self.auth)
+        OrionService.add_routes(self.app, ctx)
 
     @staticmethod
-    def add_routes(app: falcon.App, broker, auth) -> None:
+    def add_routes(app: falcon.App, ctx) -> None:
         """Add the routes to a given falcon App"""
-        app.add_route("/experiment", OrionService.NewExperiment(broker, auth))
-        app.add_route("/suggest", OrionService.Suggest(broker, auth))
-        app.add_route("/observe", OrionService.Observe(broker, auth))
-        app.add_route("/is_done", OrionService.IsDone(broker, auth))
-        app.add_route("/heartbeat", OrionService.Heartbeat(broker, auth))
+        app.add_route("/experiment", OrionService.NewExperiment(ctx))
+        app.add_route("/suggest", OrionService.Suggest(ctx))
+        app.add_route("/observe", OrionService.Observe(ctx))
+        app.add_route("/is_done", OrionService.IsDone(ctx))
+        app.add_route("/heartbeat", OrionService.Heartbeat(ctx))
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args):
         log.info("Shutting down")
-        self.broker.stop()
+        self.ctx.broker.stop()
 
     class NewExperiment(QueryRoute):
         """Create or set the experiment"""
@@ -138,9 +145,14 @@ class OrionService:
 def main(
     address: str = "localhost", port: int = 8080, servicectx=ServiceContext()
 ) -> None:
-    logging.basicConfig(level=logging.DEBUG)
 
-    with OrionService() as service:
+    logging.basicConfig(
+        format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
+        level=logging.DEBUG,
+        force=True,
+    )
+
+    with OrionService(servicectx) as service:
         service.run(address, port)
 
 

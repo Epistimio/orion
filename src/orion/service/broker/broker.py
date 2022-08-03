@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
 
@@ -17,6 +19,8 @@ class ServiceContext:
     database: str = "orion"
     host: str = "localhost"
     port: int = 8123
+    broker: ExperimentBroker = None
+    auth = AuthenticationService = None
 
 
 @dataclass
@@ -38,6 +42,9 @@ def trial_to_json(t):
 
 def get_storage_for_user(request: RequestContext):
     log.debug("Connecting to database")
+
+    assert request.username is not None
+
     db = MongoDB(
         name=request.service.database,
         host=request.service.host,
@@ -65,9 +72,10 @@ def build_experiment_client(request: RequestContext) -> ExperimentClient:
     storage = get_storage_for_user(request)
 
     log.debug("Building experiment")
+
     client = build_experiment(
         **request.data,
-        storage_instance=storage,
+        storage=storage,
         # if we keep the username on the storage that would prevent
         # more pervasive modification
         # username=request.username,
@@ -81,6 +89,9 @@ class ExperimentBroker:
     trials are done on the user' side
 
     """
+
+    def __init__(self, ctx: ServiceContext) -> None:
+        self.ctx = ctx
 
     def __enter__(self):
         return self

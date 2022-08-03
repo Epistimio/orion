@@ -43,15 +43,18 @@ class LocalExperimentBroker(ExperimentBroker):
         storage = get_storage_for_user(request)
         experiment_name = request.data.pop("experiment_name")
 
-        client = build_experiment(name=experiment_name, storage_instance=storage)
+        log.debug("Suggest %s", experiment_name)
+        client = build_experiment(name=experiment_name, storage=storage)
         client.remote_mode = True
 
         trial = client.suggest(**request.data).to_dict()
 
         trial["experiment"] = str(trial["experiment"])
+
+        # Fix Json encoding issues
         trial.pop("heartbeat")
         trial.pop("submit_time")
         trial.pop("start_time")
-        print(trial)
+        trial["_id"] = str(trial["_id"])
 
         return success(dict(trials=[trial]))

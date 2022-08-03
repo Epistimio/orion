@@ -22,7 +22,7 @@ class ClientREST:
 
         result = requests.post(self.endpoint + "/" + path, json=data)
         payload = result.json()
-        log.debug(payload)
+        log.debug("client: post: %s", payload)
         status = payload.pop("status")
 
         if result.status_code >= 200 and result.status_code < 300 and status == 0:
@@ -43,6 +43,7 @@ class ClientREST:
         if experiment_name is None:
             raise RuntimeError("experiment_name is not set")
 
+        log.debug("client: suggest: %s", experiment_name)
         result = self._post(
             "suggest", experiment_name=experiment_name, pool_size=pool_size
         )
