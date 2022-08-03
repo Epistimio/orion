@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.config`."""
 
 import argparse
@@ -103,7 +102,7 @@ def test_set_non_existing_option():
 
 
 def test_set_subconfig_over_option():
-    """Test that overwritting an option with a subconfig is not possible"""
+    """Test that overwriting an option with a subconfig is not possible"""
     config = Configuration()
     config.add_option("test", option_type=int)
     config.test = 1
@@ -625,3 +624,116 @@ def test_get_deprecated_key_ignore_warning(caplog):
         assert config.get("option", deprecated="ignore") == "hello"
 
     assert caplog.record_tuples == []
+
+
+def test_from_dict_additional_keys_are_ignored():
+    config = Configuration()
+    config.from_dict(dict(undefined="are ignored"))
+    assert config.to_dict() == dict()
+
+
+def test_from_dict_simple_value():
+    config = Configuration()
+    config.add_option(
+        "option",
+        option_type=str,
+        default="hello",
+    )
+
+    values = dict(option="123")
+    config.from_dict(values)
+    assert config.to_dict() == values
+
+
+def test_from_dict_simple_value_value_error():
+    config = Configuration()
+    config.add_option(
+        "option",
+        option_type=float,
+        default="hello",
+    )
+
+    values = dict(option="1232")
+    with pytest.raises(ValueError):
+        config.from_dict(values)
+
+
+def test_from_dict_old_values_are_popped():
+    config = Configuration()
+    config.add_option(
+        "option1",
+        option_type=str,
+        default="hello",
+    )
+
+    config.add_option(
+        "option2",
+        option_type=str,
+        default="hello",
+    )
+
+    default = config.to_dict()
+
+    # Override everything
+    overrides = dict(option1="123", option2="123")
+    config.from_dict(overrides)
+    assert config.to_dict() == overrides
+
+    #
+    overrides.pop("option2")
+    config.from_dict(overrides)
+
+    # Get the expected value
+    default.update(overrides)
+
+    assert config.to_dict() == default
+
+
+def test_from_dict_nested_config():
+    config = Configuration()
+    nested = Configuration()
+    nested.add_option(
+        "option1",
+        option_type=str,
+        default="hello",
+    )
+    config.sub = nested
+
+    values = dict(sub=dict(option1="123"))
+    config.from_dict(values)
+    assert config.to_dict() == values
+
+
+def test_from_dict_nested_values_are_popped():
+    config = Configuration()
+    nested = Configuration()
+    nested.add_option(
+        "option1",
+        option_type=str,
+        default="hello",
+    )
+    nested.add_option(
+        "option2",
+        option_type=str,
+        default="hello",
+    )
+    config.sub = nested
+    default = nested.to_dict()
+
+    # Override everything
+    overrides = dict(option1="123", option2="123")
+    all = dict(sub=overrides)
+
+    config.from_dict(all)
+    assert config.to_dict() == all
+
+    # Remove one override
+    overrides.pop("option2")
+    partial = dict(sub=overrides)
+
+    # Get the expected result by applying overrides to the default config
+    default.update(overrides)
+    expected = dict(sub=default)
+
+    config.from_dict(partial)
+    assert config.to_dict() == expected

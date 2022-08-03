@@ -13,14 +13,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip install pre-commit
+      - run: pre-commit --version
+      - run: pre-commit install
+      - run: pre-commit run --all-files
   pretest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toxenv: [black, isort, pylint, doc8, docs]
+        toxenv: [pylint, doc8, docs]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -31,8 +40,46 @@ jobs:
           pip install tox tox-gh-actions
     - name: Run pre-tests with Tox
       run: tox -e ${{ matrix.toxenv }}
-  test:
+
+  test-dashboard-build:
     needs: pretest
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+    - name: Compile Dashboard
+      run: |
+          cd dashboard/src
+          yarn
+          yarn build
+          rm -rf ../build
+          mv build ..
+          cd ../../
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install -e .[test]
+    - name: Get gecko driver
+      run: |
+          wget https://github.com/mozilla/geckodriver/releases/download/v0.31.0/geckodriver-v0.31.0-linux64.tar.gz
+          tar -xvf geckodriver-v0.31.0-linux64.tar.gz
+          export PATH=$PATH:$(pwd)
+    - name: Launch backend
+      run: orion serve -c .github/workflows/orion/orion_config.yaml &
+    - name: Launch frontend
+      run: orion frontend &
+    - name: Test frontend
+      run: pytest tests/functional/serving/test_frontend.py
+
+  test:
+    needs: [pre-commit, pretest]
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
@@ -63,7 +110,7 @@ jobs:
         fail_ci_if_error: false
 
   test-long-algos:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ${{ matrix.platform }}
     strategy:
       matrix:
@@ -97,7 +144,7 @@ jobs:
         fail_ci_if_error: false
 
   test_no_extras:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -120,7 +167,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   mongodb:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -149,7 +196,7 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
   backward-compatibility:
-    needs: pretest
+    needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 2
@@ -184,7 +231,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   pypi:
-    needs: [test, backward-compatibility, test-long-algos]
+    needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras, test-dashboard-build]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -200,6 +247,58 @@ jobs:
       run: tox -e packaging
     - name: Build
       run: tox -e build
+    - name: Test dashboard build deployment on normal install
+      run: |
+          # Get package path
+          export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+          echo Package path: ${ORION_PACKAGE}
+          # Move to another folder (to prevent any confusion at installation with repo folder)
+          cd ~
+          echo Normal install
+          pip install ${ORION_PACKAGE}
+          # Get prefix
+          export ORION_PREFIX=$( python -c "import sys; print(sys.prefix);" )
+          echo Check if dashboard build is installed
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          echo Check if frontend script can find dashboard build
+          python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+          echo Clean-up
+          pip uninstall -y orion
+          echo Check if dashboard build is correctly removed
+          # NB: It seems orion-dashboard build is not deleted,
+          # but it should be empty after uninstall
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; fi
+          echo End
+          cd -
+    - name: Test dashboard build deployment on user install
+      run: |
+          # Get package path
+          export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+          echo Package path: ${ORION_PACKAGE}
+          # Move to another folder (to prevent any confusion at installation with repo folder)
+          cd ~
+          echo User install
+          pip install --user ${ORION_PACKAGE}
+          # Get prefix
+          export ORION_PREFIX=$( python -c "import site; print(site.USER_BASE);" )
+          echo Check if dashboard build is installed
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then true; else false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
+          echo Check if frontend script can find dashboard build
+          python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+          echo Clean-up
+          pip uninstall -y orion
+          echo Check if dashboard build is correctly removed
+          # NB: In user install case, it seems folder orion-dashboard itself is not deleted,
+          # but it should be empty after uninstall
+          if ( [ -f "${ORION_PREFIX}/orion-dashboard/build/index.html" ] ); then false; fi
+          if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; fi
+          echo End
+          cd -
     - name: Publish distribution 📦 to Test PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
@@ -214,7 +313,7 @@ jobs:
         user: __token__
         password: ${{ secrets.pypi_password }}
   conda:
-    needs: [test, backward-compatibility, test-long-algos]
+    needs: [test, backward-compatibility, test-long-algos, test-dashboard-build]
     runs-on: ubuntu-latest
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}

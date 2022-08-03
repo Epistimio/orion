@@ -17,6 +17,8 @@ from sklearn import datasets
 from sklearn.model_selection import cross_validate
 from sklearn.svm import SVC
 
+# flake8: noqa: E265
+
 
 def main(C, gamma, tol, class_weight, joblib_backend="loky"):
 
@@ -44,7 +46,7 @@ def main(C, gamma, tol, class_weight, joblib_backend="loky"):
 # We load the dataset ``digits`` and divide it in features ``X`` and targets ``y``.
 # We then create the model with the given hyperparameter values.
 # We use ``joblib.parallel_backend`` to execute the cross-validation on 5 folds in parallel
-# for more effiency. Finaly we compute the average accuracy, and convert it to test error
+# for more efficiency. Finally we compute the average accuracy, and convert it to test error
 # rate since Oríon is minimizing the objective and we would not want to minimize the accuracy.
 # The results is returned in the format required by Oríon.
 #

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Parse command line arguments for Orion
 ======================================
@@ -17,7 +16,7 @@ import os
 from collections import OrderedDict
 
 
-class CmdlineParser(object):
+class CmdlineParser:
     """Simple class for commandline arguments parsing.
 
     `CmdlineParser` provides a simple interface to interpret commandline arguments
@@ -47,7 +46,7 @@ class CmdlineParser(object):
     def __init__(self):
         """See `CmdlineParser` description"""
         # TODO Handle parsing twice.
-        self.keys = dict()
+        self.keys = {}
         self.arguments = OrderedDict()
         self._already_parsed = False
         self.template = []
@@ -84,7 +83,7 @@ class CmdlineParser(object):
         Returns
         -------
         list
-            A list ressembling the one given to the `parse` method but with values of
+            A list resembling the one given to the `parse` method but with values of
             `configuration`.
 
         """
@@ -122,7 +121,7 @@ class CmdlineParser(object):
         Parameters
         ----------
         commandline : list
-            List of string representing the commmandline arguments.
+            List of string representing the commandline arguments.
 
         Returns
         -------
@@ -241,7 +240,7 @@ class CmdlineParser(object):
 
                 if key in keys:
                     raise ValueError(
-                        "Conflict: two arguments have the same name: {}".format(key)
+                        f"Conflict: two arguments have the same name: {key}"
                     )
 
                 arguments[key] = []
@@ -258,7 +257,7 @@ class CmdlineParser(object):
             # No argument name means we have not reached them yet, so we're still in the
             # Positional arguments part
             elif key is None:
-                _pos_key = "_pos_{}".format(len(arguments))
+                _pos_key = f"_pos_{len(arguments)}"
                 keys[_pos_key] = _pos_key
                 arguments[_pos_key] = item
 

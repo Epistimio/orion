@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple example to fill db with python api"""
 from orion.client import create_experiment
 

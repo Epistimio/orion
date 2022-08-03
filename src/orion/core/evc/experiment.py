@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=protected-access
 """
 Experiment node for EVC
@@ -18,7 +17,6 @@ import functools
 import logging
 
 from orion.core.utils.tree import TreeNode
-from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -48,20 +46,30 @@ class ExperimentNode(TreeNode):
         "version",
         "_no_parent_lookup",
         "_no_children_lookup",
+        "storage",
     ) + TreeNode.__slots__
 
-    def __init__(self, name, version, experiment=None, parent=None, children=tuple()):
+    def __init__(
+        self,
+        name,
+        version,
+        experiment=None,
+        parent=None,
+        children=tuple(),
+        storage=None,
+    ):
         """Initialize experiment node with item, experiment, parent and children
 
         .. seealso::
             :class:`orion.core.utils.tree.TreeNode` for information about the attributes
         """
-        super(ExperimentNode, self).__init__(experiment, parent, children)
+        super().__init__(experiment, parent, children)
         self.name = name
         self.version = version
 
         self._no_parent_lookup = True
         self._no_children_lookup = True
+        self.storage = storage or experiment._storage
 
     @property
     def item(self):
@@ -72,9 +80,11 @@ class ExperimentNode(TreeNode):
         """
         if self._item is None:
             # TODO: Find another way around the circular import
-            import orion.core.io.experiment_builder as experiment_builder
+            from orion.core.io import experiment_builder
 
-            self._item = experiment_builder.load(name=self.name, version=self.version)
+            self._item = experiment_builder.load(
+                name=self.name, version=self.version, storage=self.storage
+            )
             self._item._node = self
 
         return self._item
@@ -93,12 +103,14 @@ class ExperimentNode(TreeNode):
             self._no_parent_lookup = False
             query = {"_id": self.item.refers.get("parent_id")}
             selection = {"name": 1, "version": 1}
-            experiments = get_storage().fetch_experiments(query, selection)
+            experiments = self.storage.fetch_experiments(query, selection)
 
             if experiments:
                 parent = experiments[0]
                 exp_node = ExperimentNode(
-                    name=parent["name"], version=parent.get("version", 1)
+                    name=parent["name"],
+                    version=parent.get("version", 1),
+                    storage=self.storage,
                 )
                 self.set_parent(exp_node)
         return self._parent
@@ -118,10 +130,14 @@ class ExperimentNode(TreeNode):
             self._no_children_lookup = False
             query = {"refers.parent_id": self.item.id}
             selection = {"name": 1, "version": 1}
-            experiments = get_storage().fetch_experiments(query, selection)
+            experiments = self.storage.fetch_experiments(query, selection)
             for child in experiments:
                 self.add_children(
-                    ExperimentNode(name=child["name"], version=child.get("version", 1))
+                    ExperimentNode(
+                        name=child["name"],
+                        version=child.get("version", 1),
+                        storage=self.storage,
+                    )
                 )
 
         return self._children
@@ -135,7 +151,7 @@ class ExperimentNode(TreeNode):
     def tree_name(self):
         """Return a formatted name of the Node for a tree pretty-print."""
         if self.item is not None:
-            return self.name + "-v{}".format(self.item.version)
+            return f"{self.name}-v{self.item.version}"
 
         return self.name
 
@@ -194,7 +210,7 @@ class ExperimentNode(TreeNode):
 
         adapt_trials(children_trials)
 
-        return sum([node.item["trials"] for node in children_trials.root], [])
+        return sum((node.item["trials"] for node in children_trials.root), [])
 
 
 def _adapt_parent_trials(node, parent_trials_node, ids):
@@ -206,13 +222,10 @@ def _adapt_parent_trials(node, parent_trials_node, ids):
 
     """
     # Ids from children are passed to prioritized them if they are also present in parent nodes.
-    node_ids = (
-        set(
-            trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
-            for trial in node.item["trials"]
-        )
-        | ids
-    )
+    node_ids = {
+        trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+        for trial in node.item["trials"]
+    } | ids
     if parent_trials_node is not None:
         adapter = node.item["experiment"].refers["adapter"]
         for parent in parent_trials_node.root:
@@ -239,10 +252,10 @@ def _adapt_children_trials(node, children_trials_nodes):
         To call with node.map(fct, node.children) to connect with children
 
     """
-    ids = set(
+    ids = {
         trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
         for trial in node.item["trials"]
-    )
+    }
 
     for child in children_trials_nodes:
         adapter = child.item["experiment"].refers["adapter"]

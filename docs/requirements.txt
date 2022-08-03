@@ -3,6 +3,7 @@ sphinx_rtd_theme
 sphinxcontrib.httpdomain
 sphinx-autoapi
 sphinx_gallery
+sphinx-autodoc-typehints
 numpydoc
 plotly
 matplotlib

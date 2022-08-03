@@ -10,20 +10,18 @@ import numpy as np
 from scipy.optimize import minimize
 from sklearn.metrics import euclidean_distances, pairwise_distances
 
-try:
+from orion.core.utils.module_import import ImportOptional
+
+with ImportOptional("PB2") as import_optional:
     import GPy
     from GPy import Param
     from GPy.kern import Kern
 
-    HAS_PB2 = True
-except ImportError:
-    GPy = None
-    HAS_PB2 = False
+if import_optional.failed:
+    GPy = None  # noqa: F811
+    Param = None  # noqa: F811
 
-
-if not HAS_PB2:
-
-    class Kern:
+    class Kern:  # noqa: F811
         def __init__(self, *args, **kwargs):
             pass
 
@@ -37,6 +35,7 @@ class TVSquaredExp(Kern):
     def __init__(
         self, input_dim, variance=1.0, lengthscale=1.0, epsilon=0.0, active_dims=None
     ):
+        import_optional.ensure()
         super().__init__(input_dim, active_dims, "time_se")
         self.variance = Param("variance", variance)
         self.lengthscale = Param("lengthscale", lengthscale)
@@ -203,7 +202,7 @@ def select_length(Xraw, yraw, bounds, num_f):
 
             scores.append(m.log_likelihood())
         idx = np.argmax(scores)
-        length = (idx + int((min_len / 10))) * 10
+        length = (idx + int(min_len / 10)) * 10
         return length
 
 

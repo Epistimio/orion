@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client`."""
 import copy
 import json
@@ -20,8 +19,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
     UnsupportedOperation,
 )
-from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
@@ -70,7 +68,7 @@ def data():
     return "this is datum"
 
 
-class TestReportResults(object):
+class TestReportResults:
     """Check functionality and edge cases of `report_results` helper interface."""
 
     def test_with_no_env(self, monkeypatch, capsys, data):
@@ -111,7 +109,7 @@ class TestReportResults(object):
         assert out == ""
         assert err == ""
 
-        with open(path, mode="r") as results_file:
+        with open(path) as results_file:
             res = json.load(results_file)
         assert res == data
 
@@ -148,22 +146,23 @@ class TestReportResults(object):
 class TestCreateExperiment:
     """Test creation of experiment with `client.create_experiment()`"""
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
+    @pytest.mark.usefixtures("orionstate")
     def test_create_experiment_no_storage(self, monkeypatch):
         """Test creation if storage is not configured"""
         name = "oopsie_forgot_a_storage"
         host = orion.core.config.storage.database.host
 
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
-            # Reset the Storage and drop instances so that get_storage() would fail.
+            # Reset the Storage and drop instances so that setup_storage() would fail.
             cfg.cleanup()
-            cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `create_experiment()`
-            with pytest.raises(SingletonNotInstantiatedError):
-                get_storage()
+            # with pytest.raises(SingletonNotInstantiatedError):
+            #    setup_storage()
 
-            experiment = create_experiment(name=name, space={"x": "uniform(0, 10)"})
+            experiment = create_experiment(
+                name=name, space={"x": "uniform(0, 10)"}, storage=cfg.storage_config
+            )
 
             assert isinstance(experiment._experiment._storage, Legacy)
             assert isinstance(experiment._experiment._storage._db, PickledDB)
@@ -171,18 +170,17 @@ class TestCreateExperiment:
 
     def test_create_experiment_new_no_space(self):
         """Test that new experiment needs space"""
-        with OrionState():
+        with OrionState() as cfg:
             name = "oopsie_forgot_a_space"
             with pytest.raises(NoConfigurationError) as exc:
-                create_experiment(name=name)
+                create_experiment(name=name, storage=cfg.storage_config)
 
-            assert "Experiment {} does not exist in DB".format(name) in str(exc.value)
+            assert f"Experiment {name} does not exist in DB" in str(exc.value)
 
     def test_create_experiment_bad_storage(self):
         """Test error message if storage is not configured properly"""
         name = "oopsie_bad_storage"
         # Make sure there is no existing storage singleton
-        update_singletons()
 
         with pytest.raises(NotImplementedError) as exc:
             create_experiment(
@@ -198,8 +196,10 @@ class TestCreateExperiment:
         """Test creating a new experiment with all defaults"""
         name = "all_default"
         space = {"x": "uniform(0, 10)"}
-        with OrionState():
-            experiment = create_experiment(name="all_default", space=space)
+        with OrionState() as cfg:
+            experiment = create_experiment(
+                name="all_default", space=space, storage=cfg.storage_config
+            )
 
             assert experiment.name == name
             assert experiment.space.configuration == space
@@ -211,8 +211,8 @@ class TestCreateExperiment:
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""
-        with OrionState():
-            experiment = create_experiment(**user_config)
+        with OrionState() as cfg:
+            experiment = create_experiment(**user_config, storage=cfg.storage_config)
 
             exp_config = experiment.configuration
 
@@ -224,8 +224,8 @@ class TestCreateExperiment:
 
     def test_create_experiment_hit_no_branch(self, user_config):
         """Test creating an existing experiment by specifying all identical attributes."""
-        with OrionState(experiments=[config]):
-            experiment = create_experiment(**user_config)
+        with OrionState(experiments=[config]) as cfg:
+            experiment = create_experiment(**user_config, storage=cfg.storage_config)
 
             exp_config = experiment.configuration
 
@@ -239,8 +239,8 @@ class TestCreateExperiment:
 
     def test_create_experiment_hit_no_config(self):
         """Test creating an existing experiment by specifying the name only."""
-        with OrionState(experiments=[config]):
-            experiment = create_experiment(config["name"])
+        with OrionState(experiments=[config]) as cfg:
+            experiment = create_experiment(config["name"], storage=cfg.storage_config)
 
             assert experiment.name == config["name"]
             assert experiment.version == 1
@@ -252,11 +252,12 @@ class TestCreateExperiment:
 
     def test_create_experiment_hit_branch(self):
         """Test creating a differing experiment that cause branching."""
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             experiment = create_experiment(
                 config["name"],
                 space={"y": "uniform(0, 10)"},
                 branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             assert experiment.name == config["name"]
@@ -268,17 +269,18 @@ class TestCreateExperiment:
             assert experiment.working_dir == config["working_dir"]
 
     def test_create_experiment_race_condition(self, monkeypatch):
-        """Test that a single race condition is handled seemlessly
+        """Test that a single race condition is handled seamlessly
 
         RaceCondition during registration is already handled by `build()`, therefore we will only
         test for race conditions during version update.
         """
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             parent = create_experiment(config["name"])
             child = create_experiment(
                 config["name"],
                 space={"y": "uniform(0, 10)"},
                 branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             def insert_race_condition(self, query):
@@ -301,7 +303,7 @@ class TestCreateExperiment:
             insert_race_condition.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition
+                setup_storage().__class__, "fetch_experiments", insert_race_condition
             )
 
             experiment = create_experiment(
@@ -316,12 +318,13 @@ class TestCreateExperiment:
 
     def test_create_experiment_race_condition_broken(self, monkeypatch):
         """Test that two or more race condition leads to raise"""
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             parent = create_experiment(config["name"])
             child = create_experiment(
                 config["name"],
                 space={"y": "uniform(0, 10)"},
                 branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             def insert_race_condition(self, query):
@@ -342,7 +345,7 @@ class TestCreateExperiment:
             insert_race_condition.count = 0
 
             monkeypatch.setattr(
-                get_storage().__class__, "fetch_experiments", insert_race_condition
+                setup_storage().__class__, "fetch_experiments", insert_race_condition
             )
 
             with pytest.raises(RaceCondition) as exc:
@@ -360,9 +363,12 @@ class TestCreateExperiment:
     def test_create_experiment_hit_manual_branch(self):
         """Test creating a differing experiment that cause branching."""
         new_space = {"y": "uniform(0, 10)"}
-        with OrionState(experiments=[config]):
+        with OrionState(experiments=[config]) as cfg:
             create_experiment(
-                config["name"], space=new_space, branching={"enable": True}
+                config["name"],
+                space=new_space,
+                branching={"enable": True},
+                storage=cfg.storage_config,
             )
 
             with pytest.raises(BranchingEvent) as exc:
@@ -377,11 +383,10 @@ class TestCreateExperiment:
 
     def test_create_experiment_debug_mode(self, tmp_path):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
-        update_singletons()
 
         conf_file = str(tmp_path / "db.pkl")
 
-        create_experiment(
+        experiment = create_experiment(
             config["name"],
             space={"x": "uniform(0, 10)"},
             storage={
@@ -390,22 +395,18 @@ class TestCreateExperiment:
             },
         )
 
-        storage = get_storage()
-
+        storage = experiment._experiment._storage
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
 
-        update_singletons()
-
-        create_experiment(
+        experiment = create_experiment(
             config["name"],
             space={"x": "uniform(0, 10)"},
             storage={"type": "legacy", "database": {"type": "pickleddb"}},
             debug=True,
         )
 
-        storage = get_storage()
-
+        storage = experiment._experiment._storage
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)
 
@@ -464,7 +465,6 @@ class TestWorkon:
         monkeypatch.setattr("orion.core.io.experiment_builder.build", build_fail)
 
         # Flush storage singleton
-        update_singletons()
 
         with pytest.raises(RuntimeError) as exc:
             experiment = workon(
@@ -473,22 +473,16 @@ class TestWorkon:
 
         assert exc.match("You shall not build!")
 
-        # Verify that tmp storage was cleared
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
-
         # Now test with a prior storage
         with OrionState(
             storage={"type": "legacy", "database": {"type": "EphemeralDB"}}
-        ):
-            storage = get_storage()
+        ) as cfg:
+            storage = cfg.storage
 
             with pytest.raises(RuntimeError) as exc:
                 workon(foo, space={"x": "uniform(0, 10)"}, max_trials=5, name="voici")
 
             assert exc.match("You shall not build!")
-
-            assert get_storage() is storage
 
     def test_workon_twice(self):
         """Verify setting the each experiment has its own storage"""
@@ -548,26 +542,28 @@ class TestGetExperiment:
             "no view can be created." == str(exception.value)
         )
 
-    @pytest.mark.usefixtures("mock_database")
-    def test_experiment_exist(self):
+    def test_experiment_exist(self, mock_database):
         """
         Tests that an instance of :class:`orion.client.experiment.ExperimentClient` is
         returned representing the latest version when none is given.
         """
-        experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
+        experiment = create_experiment(
+            "a", space={"x": "uniform(0, 10)"}, storage=mock_database.storage
+        )
 
-        experiment = get_experiment("a")
+        experiment = get_experiment("a", storage=mock_database.storage)
 
         assert experiment
         assert isinstance(experiment, ExperimentClient)
         assert experiment.mode == "r"
 
-    @pytest.mark.usefixtures("mock_database")
-    def test_version_do_not_exist(self, caplog):
+    def test_version_do_not_exist(self, caplog, mock_database):
         """Tests that a warning is printed when the experiment exist but the version doesn't"""
-        create_experiment("a", space={"x": "uniform(0, 10)"})
+        create_experiment(
+            "a", space={"x": "uniform(0, 10)"}, storage=mock_database.storage
+        )
 
-        experiment = get_experiment("a", 2)
+        experiment = get_experiment("a", 2, storage=mock_database.storage)
 
         assert experiment.version == 1
         assert (
@@ -575,13 +571,14 @@ class TestGetExperiment:
             in caplog.text
         )
 
-    @pytest.mark.usefixtures("mock_database")
-    def test_read_write_mode(self):
+    def test_read_write_mode(self, mock_database):
         """Tests that experiment can be created in write mode"""
-        experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
+        experiment = create_experiment(
+            "a", space={"x": "uniform(0, 10)"}, storage=mock_database.storage
+        )
         assert experiment.mode == "x"
 
-        experiment = get_experiment("a", 2, mode="r")
+        experiment = get_experiment("a", 2, mode="r", storage=mock_database.storage)
         assert experiment.mode == "r"
 
         with pytest.raises(UnsupportedOperation) as exc:
@@ -589,7 +586,7 @@ class TestGetExperiment:
 
         assert exc.match("ExperimentClient must have write rights to execute `insert()")
 
-        experiment = get_experiment("a", 2, mode="w")
+        experiment = get_experiment("a", 2, mode="w", storage=mock_database.storage)
         assert experiment.mode == "w"
 
         trial = experiment.insert({"x": 0})

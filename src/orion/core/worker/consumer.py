@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Evaluate objective on a set of parameters
 =========================================
@@ -30,11 +29,11 @@ class ExecutionError(Exception):
     """Error raised when Orion is unable to execute the user's script without errors."""
 
     def __init__(self, return_code=0):
-        super(ExecutionError, self).__init__()
+        super().__init__()
         self.return_code = return_code
 
 
-class Consumer(object):
+class Consumer:
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
     It uses an `Experiment` object to push an evaluated trial, if results are
@@ -119,8 +118,6 @@ class Consumer(object):
 
         """
         log.debug("Consumer context: %s", trial.working_dir)
-        os.makedirs(trial.working_dir, exist_ok=True)
-
         results_file = self._consume(trial, trial.working_dir)
 
         log.debug("Parsing results from file and fill corresponding Trial object.")
@@ -129,11 +126,11 @@ class Consumer(object):
         return results
 
     def retrieve_results(self, results_file):
-        """Retrive the results from the file"""
+        """Retrieve the results from the file"""
         try:
             results = JSONConverter().parse(results_file.name)
-        except json.decoder.JSONDecodeError:
-            raise MissingResultFile()
+        except json.decoder.JSONDecodeError as exc:
+            raise MissingResultFile() from exc
 
         return results
 
@@ -198,11 +195,14 @@ class Consumer(object):
         return env
 
     def _consume(self, trial, workdirname):
+        # pylint: disable = consider-using-with
         config_file = tempfile.NamedTemporaryFile(
             mode="w", prefix="trial_", suffix=".conf", dir=workdirname, delete=False
         )
         config_file.close()
         log.debug("New temp config file: %s", config_file.name)
+
+        # pylint: disable = consider-using-with
         results_file = tempfile.NamedTemporaryFile(
             mode="w", prefix="results_", suffix=".log", dir=workdirname, delete=False
         )
@@ -210,6 +210,7 @@ class Consumer(object):
         log.debug("New temp results file: %s", results_file.name)
 
         log.debug("Building command line argument and configuration for trial.")
+
         env = self.get_execution_environment(trial, results_file.name)
         cmd_args = self.template_builder.format(
             config_file.name, trial, self.experiment
@@ -246,19 +247,27 @@ class Consumer(object):
                 "https://orion.readthedocs.io/en/stable/user/config.html#experiment-version-control"
             )
 
-    # pylint: disable = no-self-use
     def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
         command = cmd_args
 
         try:
-            process = subprocess.Popen(command, env=environ)
-        except PermissionError:
+            # pylint: disable = consider-using-with
+            process = subprocess.Popen(
+                command,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+        except PermissionError as exc:
             log.debug("Script is not executable")
-            raise InexecutableUserScript(" ".join(cmd_args))
+            raise InexecutableUserScript(" ".join(cmd_args)) from exc
+
+        stdout, _ = process.communicate()
 
         return_code = process.wait()
         log.debug(f"Script finished with return code {return_code}")
 
         if return_code != 0:
+            log.debug("%s", stdout.decode("utf-8"))
             raise ExecutionError(return_code)

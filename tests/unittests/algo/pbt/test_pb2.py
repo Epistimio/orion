@@ -4,26 +4,17 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import numpy
 import pytest
 
-from orion.algo.pbt.pb2_utils import HAS_PB2
+from orion.algo.pbt.pb2_utils import import_optional
 from orion.testing.algo import BaseAlgoTests, TestPhase
 
-pytest.skip("skipping PBT tests for v0.2.4", allow_module_level=True)
-
-
-if not HAS_PB2:
-    pytest.skip("PB2 deps not installed", allow_module_level=True)
+if import_optional.failed:
+    pytest.skip("skipping PB2 tests", allow_module_level=True)
 
 population_size = 10
 generations = 5
-
-
-@pytest.fixture
-def no_shutil_copytree(monkeypatch):
-    """Pytest fixture copied from orion"""
-    monkeypatch.setattr("shutil.copytree", lambda dir_a, dir_b: None)
-    yield
 
 
 # Test suite for algorithms. You may reimplement some of the tests to adapt them to your algorithm
@@ -35,7 +26,7 @@ class TestPB2(BaseAlgoTests):
     """Test suite for algorithm PB2"""
 
     algo_name = "pb2"
-    max_trials = population_size * generations
+    max_trials = population_size * (generations + 1)
     config = {
         "seed": 123456,
         "population_size": population_size,
@@ -59,13 +50,23 @@ class TestPB2(BaseAlgoTests):
         },
         "fork_timeout": 5,
     }
-    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
+    space = {
+        "x": "uniform(0, 1, precision=15)",
+        "y": "uniform(0, 1, precision=15)",
+        "f": "fidelity(1, 10, base=1)",
+    }
 
     phases: ClassVar[list[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
+        TestPhase("generation_1", 1 * population_size, "_generate_offspring"),
         TestPhase("generation_2", 2 * population_size, "_generate_offspring"),
         TestPhase("generation_3", 3 * population_size, "_generate_offspring"),
     ]
+
+    def test_cat_data(self):
+        if self._current_phase.name in ["generation_2", "generation_3"]:
+            pytest.xfail("PB2 does not explore well categorical dimensions")
+        super().test_cat_data()
 
     @pytest.mark.skip(
         reason="There are no good reasons to use PBT if search space is so small"
@@ -82,13 +83,13 @@ class TestPB2(BaseAlgoTests):
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = local_max_trials
 
-        objective = 0
+        rng = numpy.random.RandomState(123456)
+
         while not algo.is_done:
             trials = algo.suggest(num)
             assert trials is not None
             if trials:
-                self.observe_trials(trials, algo, objective)
-                objective += len(trials)
+                self.observe_trials(trials, algo, rng)
 
         # BPT should ignore max trials.
         assert algo.n_observed > local_max_trials

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the release command
 ==================================
@@ -11,10 +10,9 @@ import argparse
 import logging
 import sys
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.core.utils.terminal import confirm_name
-from orion.storage.base import get_storage
 
 logger = logging.getLogger(__name__)
 
@@ -101,16 +99,14 @@ def release_locks(storage, root, name, force):
 def main(args):
     """Remove the experiment(s) or trial(s)."""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get("storage"))
+    builder = experiment_builder.ExperimentBuilder(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.load(
-        name=args["name"], version=args.get("version", None)
-    ).node
+    root = builder.load(name=args["name"], version=args.get("version", None)).node
 
     # List all experiments with children
     print_tree(root, nameattr="tree_name")
 
-    storage = get_storage()
+    storage = builder.storage
 
     release_locks(storage, root, args["name"], args["force"])

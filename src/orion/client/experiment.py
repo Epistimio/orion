@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=too-many-lines
 """
 Experiment wrapper client
@@ -6,13 +5,15 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
+from __future__ import annotations
+
 import inspect
 import logging
 from contextlib import contextmanager
+from typing import Callable
 
 import orion.core
-import orion.core.utils.format_trials as format_trials
-from orion.client.runner import Runner
+from orion.client.runner import Runner, prepare_trial_working_dir
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
@@ -21,6 +22,7 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
     WaitingForTrials,
 )
+from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
@@ -374,15 +376,14 @@ class ExperimentClient:
                 "Cannot observe a trial and reserve it. A trial with results has status "
                 "`completed` and cannot be reserved."
             )
-        trial = format_trials.dict_to_trial(params, self.space)
+        trial = dict_to_trial(params, self.space)
         try:
             self._experiment.register_trial(trial, status="reserved")
             self._maintain_reservation(trial)
         except DuplicateKeyError as e:
             message = (
-                "A trial with params {} already exist for experiment {}-v{}".format(
-                    params, self.name, self.version
-                )
+                f"A trial with params {params} already exist for experiment "
+                f"{self.name}-v{self.version}"
             )
             raise DuplicateKeyError(message) from e
 
@@ -439,7 +440,7 @@ class ExperimentClient:
             return
         elif trial.status == "reserved" and trial.id not in self._pacemakers:
             raise RuntimeError(
-                "Trial {} is already reserved by another process.".format(trial.id)
+                f"Trial {trial.id} is already reserved by another process."
             )
         try:
             self._experiment.set_trial_status(
@@ -447,10 +448,8 @@ class ExperimentClient:
             )
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError(
-                    "Trial {} does not exist in database.".format(trial.id)
-                ) from e
-            raise RuntimeError("Could not reserve trial {}.".format(trial.id)) from e
+                raise ValueError(f"Trial {trial.id} does not exist in database.") from e
+            raise RuntimeError(f"Could not reserve trial {trial.id}.") from e
 
         self._maintain_reservation(trial)
 
@@ -490,19 +489,15 @@ class ExperimentClient:
             self._producer.observe(trial)
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError(
-                    "Trial {} does not exist in database.".format(trial.id)
-                ) from e
+                raise ValueError(f"Trial {trial.id} does not exist in database.") from e
             if current_status != "reserved":
                 raise_if_unreserved = False
                 raise AlreadyReleased(
-                    "Trial {} was already released locally.".format(trial.id)
+                    f"Trial {trial.id} was already released locally."
                 ) from e
 
             raise RuntimeError(
-                "Reservation for trial {} has been lost before release.".format(
-                    trial.id
-                )
+                f"Reservation for trial {trial.id} has been lost before release."
             ) from e
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
@@ -625,12 +620,10 @@ class ExperimentClient:
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise_if_unreserved = False
-                raise ValueError(
-                    "Trial {} does not exist in database.".format(trial.id)
-                ) from e
+                raise ValueError(f"Trial {trial.id} does not exist in database.") from e
 
             raise RuntimeError(
-                "Reservation for trial {} has been lost.".format(trial.id)
+                f"Reservation for trial {trial.id} has been lost."
             ) from e
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
@@ -659,18 +652,21 @@ class ExperimentClient:
     # pylint:disable=too-many-arguments
     def workon(
         self,
-        fct,
-        n_workers=None,
-        pool_size=0,
-        reservation_timeout=None,
-        max_trials=None,
-        max_trials_per_worker=None,
-        max_broken=None,
-        trial_arg=None,
-        on_error=None,
-        idle_timeout=None,
+        fct: Callable,
+        n_workers: int | None = None,
+        pool_size: int = 0,
+        reservation_timeout: int | None = None,
+        max_trials: int | None = None,
+        max_trials_per_worker: int | None = None,
+        max_broken: int | None = None,
+        trial_arg: str | None = None,
+        on_error: Callable[[ExperimentClient, Exception, int], bool] | None = None,
+        prepare_trial: Callable[
+            [ExperimentClient, Trial], None
+        ] = prepare_trial_working_dir,
+        idle_timeout: int | None = None,
         **kwargs,
-    ):
+    ) -> int:
         """Optimize a given function
 
         Experiment must be in executable ('x') mode.
@@ -718,6 +714,10 @@ class ExperimentClient:
             If the callblack returns False, the error will be ignored, otherwise it is counted
             for the threshold `max_broken`. In case of critical errors, you may also directly
             raise an error and force break out of ``workon``.
+        prepare_trial: callable, optional
+            Callback that is executed before the trial is submitted to workers for execution.
+            Default is `orion.client.runner.prepare_trial_working_dir` which will create working
+            directory of trials if necessary.
         idle_timeout: int, optional
             Maximum time (seconds) allowed for idle workers. LazyWorkers will be raised if
             timeout is reached. Such timeout are generally caused when reaching the
@@ -798,6 +798,7 @@ class ExperimentClient:
                 max_broken=max_broken,
                 trial_arg=trial_arg,
                 on_error=on_error,
+                prepare_trial=prepare_trial,
                 n_workers=n_workers,
                 **kwargs,
             )
@@ -826,9 +827,9 @@ class ExperimentClient:
 
         if self._pacemakers:
             raise RuntimeError(
-                "There is still reserved trials: {}\nRelease all trials before "
-                "closing the client, using "
-                "client.release(trial).".format(self._pacemakers.keys())
+                f"There is still reserved trials: {self._pacemakers.keys()}\n"
+                "Release all trials before closing the client, using "
+                "client.release(trial)."
             )
 
     ###
@@ -845,33 +846,34 @@ class ExperimentClient:
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "Experiment(name=%s, version=%s)" % (self.name, self.version)
+        return f"Experiment(name={self.name}, version={self.version})"
 
     def _verify_reservation(self, trial):
         if trial.id not in self._pacemakers:
             raise RuntimeError(
-                "Trial {} had no pacemakers. Was it reserved properly?".format(trial.id)
+                f"Trial {trial.id} had no pacemakers. Was it reserved properly?"
             )
 
         if self.get_trial(trial).status != "reserved":
             self._release_reservation(trial)
-            raise RuntimeError(
-                "Reservation for trial {} has been lost.".format(trial.id)
-            )
+            raise RuntimeError(f"Reservation for trial {trial.id} has been lost.")
 
     def _maintain_reservation(self, trial):
-        self._pacemakers[trial.id] = TrialPacemaker(trial)
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self.storage)
         self._pacemakers[trial.id].start()
 
     def _release_reservation(self, trial, raise_if_unreserved=True):
         if trial.id not in self._pacemakers:
             if raise_if_unreserved:
                 raise RuntimeError(
-                    "Trial {} had no pacemakers. Was it reserved properly?".format(
-                        trial.id
-                    )
+                    f"Trial {trial.id} had no pacemakers. Was it reserved properly?"
                 )
             else:
                 return
 
         self._pacemakers.pop(trial.id).stop()
+
+    @property
+    def storage(self):
+        """Return the storage currently in use by this client"""
+        return self._experiment.storage

@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform functional tests for the parsing of the different commands."""
 import argparse
 import os
-
-import pytest
 
 from orion.core.cli import insert
 
@@ -19,7 +16,7 @@ def _create_parser(need_subparser=True):
     return parser
 
 
-def test_insert_command_full_parsing(setup_pickleddb_database, monkeypatch):
+def test_insert_command_full_parsing(orionstate, monkeypatch):
     """Test the parsing of all the options of insert"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     parser, subparsers = _create_parser()

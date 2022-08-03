@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test of the debug verbosity level."""
 import logging
+import os
 
 import pytest
 
@@ -25,3 +25,15 @@ def test_version_print_debug_verbosity(caplog):
             text.startswith("Orion version : ") and (loggerlevel != logging.DEBUG)
         )
     assert "Orion version : " in caplog.text
+
+
+def test_log_directory(tmp_path):
+    """Tests that Orion creates a log directory when the option is specified"""
+
+    logging.shutdown()
+
+    logdir = f"{tmp_path}/mydir"
+    with pytest.raises(SystemExit):
+        orion.core.cli.main(["-vvv", "--logdir", logdir])
+
+    assert os.path.exists(logdir), "Log dir was created"

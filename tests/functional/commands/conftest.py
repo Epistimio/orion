@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
 import copy
 import os
@@ -7,14 +6,11 @@ import zlib
 
 import pytest
 import yaml
-from pymongo import MongoClient
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.io.database import database_factory
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
 
 
 @pytest.fixture()
@@ -64,13 +60,13 @@ def one_experiment(monkeypatch, storage):
         ["hunt", "--init-only", "-n", name, "./black_box.py", "--x~uniform(0,1)"]
     )
     ensure_deterministic_id(name, storage)
-    return get_storage().fetch_experiments({"name": name})[0]
+    return storage.fetch_experiments({"name": name})[0]
 
 
 @pytest.fixture
-def one_experiment_changed_vcs(one_experiment):
+def one_experiment_changed_vcs(storage, one_experiment):
     """Create an experiment without trials."""
-    experiment = experiment_builder.build(name=one_experiment["name"])
+    experiment = experiment_builder.build(name=one_experiment["name"], storage=storage)
 
     experiment.metadata["VCS"] = {
         "type": "git",
@@ -80,46 +76,45 @@ def one_experiment_changed_vcs(one_experiment):
         "diff_sha": None,
     }
 
-    get_storage().update_experiment(experiment, metadata=experiment.metadata)
+    storage.update_experiment(experiment, metadata=experiment.metadata)
 
 
 @pytest.fixture
-def one_experiment_no_version(monkeypatch, one_experiment):
+def one_experiment_no_version(monkeypatch, one_experiment, storage):
     """Create an experiment without trials."""
     one_experiment["name"] = one_experiment["name"] + "-no-version"
     one_experiment.pop("version")
 
-    def fetch_without_version(query, selection=None):
+    def fetch_without_version(self, query, selection=None):
         if query.get("name") == one_experiment["name"] or query == {}:
             return [copy.deepcopy(one_experiment)]
 
         return []
 
-    monkeypatch.setattr(get_storage(), "fetch_experiments", fetch_without_version)
+    monkeypatch.setattr(type(storage), "fetch_experiments", fetch_without_version)
 
     return one_experiment
 
 
 @pytest.fixture
-def with_experiment_using_python_api(monkeypatch, one_experiment):
+def with_experiment_using_python_api(storage, monkeypatch, one_experiment):
     """Create an experiment without trials."""
     experiment = experiment_builder.build(
-        name="from-python-api", space={"x": "uniform(0, 10)"}
+        name="from-python-api", space={"x": "uniform(0, 10)"}, storage=storage
     )
 
     return experiment
 
 
 @pytest.fixture
-def with_experiment_missing_conf_file(monkeypatch, one_experiment):
+def with_experiment_missing_conf_file(monkeypatch, one_experiment, storage, orionstate):
     """Create an experiment without trials."""
-    exp = experiment_builder.build(name="test_single_exp", version=1)
+    exp = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
     conf_file = "idontexist.yaml"
     exp.metadata["user_config"] = conf_file
     exp.metadata["user_args"] += ["--config", conf_file]
-    database_factory.create().write(
-        "experiments", exp.configuration, query={"_id": exp.id}
-    )
+
+    orionstate.database.write("experiments", exp.configuration, query={"_id": exp.id})
 
     return exp
 
@@ -133,12 +128,12 @@ def broken_refers(one_experiment, storage):
 
 
 @pytest.fixture
-def single_without_success(one_experiment):
+def single_without_success(one_experiment, orionstate, storage):
     """Create an experiment without a successful trial."""
     statuses = list(Trial.allowed_stati)
     statuses.remove("completed")
 
-    exp = experiment_builder.build(name="test_single_exp")
+    exp = experiment_builder.build(name="test_single_exp", storage=storage)
     x = {"name": "/x", "type": "real"}
 
     x_value = 0
@@ -146,18 +141,18 @@ def single_without_success(one_experiment):
         x["value"] = x_value
         trial = Trial(experiment=exp.id, params=[x], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
+        orionstate.database.write("trials", trial.to_dict())
 
 
 @pytest.fixture
-def single_with_trials(single_without_success):
+def single_with_trials(single_without_success, orionstate, storage):
     """Create an experiment with all types of trials."""
-    exp = experiment_builder.build(name="test_single_exp")
+    exp = experiment_builder.build(name="test_single_exp", storage=storage)
 
     x = {"name": "/x", "type": "real", "value": 100}
     results = {"name": "obj", "type": "objective", "value": 0}
     trial = Trial(experiment=exp.id, params=[x], status="completed", results=[results])
-    database_factory.create().write("trials", trial.to_dict())
+    orionstate.database.write("trials", trial.to_dict())
     return exp.configuration
 
 
@@ -195,10 +190,13 @@ def two_experiments(monkeypatch, storage):
 
 
 @pytest.fixture
-def family_with_trials(two_experiments):
+def family_with_trials(two_experiments, orionstate):
     """Create two related experiments with all types of trials."""
-    exp = experiment_builder.build(name="test_double_exp")
-    exp2 = experiment_builder.build(name="test_double_exp_child")
+
+    exp = experiment_builder.build(name="test_double_exp", storage=orionstate.storage)
+    exp2 = experiment_builder.build(
+        name="test_double_exp_child", storage=orionstate.storage
+    )
     x = {"name": "/x", "type": "real"}
     y = {"name": "/y", "type": "real"}
 
@@ -210,29 +208,29 @@ def family_with_trials(two_experiments):
         x["value"] = x_value + 0.5  # To avoid duplicates
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
-        database_factory.create().write("trials", trial2.to_dict())
+        orionstate.database.write("trials", trial.to_dict())
+        orionstate.database.write("trials", trial2.to_dict())
 
 
 @pytest.fixture
-def unrelated_with_trials(family_with_trials, single_with_trials):
+def unrelated_with_trials(family_with_trials, single_with_trials, orionstate):
     """Create two unrelated experiments with all types of trials."""
-    exp = experiment_builder.build(name="test_double_exp_child")
+    exp = experiment_builder.build(
+        name="test_double_exp_child", storage=orionstate.storage
+    )
 
-    database_factory.create().remove("trials", {"experiment": exp.id})
-    database_factory.create().remove("experiments", {"_id": exp.id})
+    orionstate.database.remove("trials", {"experiment": exp.id})
+    orionstate.database.remove("experiments", {"_id": exp.id})
 
 
 @pytest.fixture
 def three_experiments(two_experiments, one_experiment):
     """Create a single experiment and an experiment and its child."""
-    pass
 
 
 @pytest.fixture
 def three_experiments_with_trials(family_with_trials, single_with_trials):
     """Create three experiments, two unrelated, with all types of trials."""
-    pass
 
 
 @pytest.fixture
@@ -256,9 +254,11 @@ def three_experiments_family(two_experiments, storage):
 
 
 @pytest.fixture
-def three_family_with_trials(three_experiments_family, family_with_trials):
+def three_family_with_trials(three_experiments_family, family_with_trials, orionstate):
     """Create three experiments, all related, two direct children, with all types of trials."""
-    exp = experiment_builder.build(name="test_double_exp_child2")
+    exp = experiment_builder.build(
+        name="test_double_exp_child2", storage=orionstate.storage
+    )
     x = {"name": "/x", "type": "real"}
     z = {"name": "/z", "type": "real"}
 
@@ -268,7 +268,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, z], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
+        orionstate.database.write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -294,13 +294,15 @@ def three_experiments_family_branch(two_experiments, storage):
 
 @pytest.fixture
 def three_family_branch_with_trials(
-    three_experiments_family_branch, family_with_trials
+    three_experiments_family_branch, family_with_trials, orionstate
 ):
     """Create three experiments, all related, one child and one grandchild,
     with all types of trials.
 
     """
-    exp = experiment_builder.build(name="test_double_exp_grand_child")
+    exp = experiment_builder.build(
+        name="test_double_exp_grand_child", storage=orionstate.storage
+    )
     x = {"name": "/x", "type": "real"}
     y = {"name": "/y", "type": "real"}
     z = {"name": "/z", "type": "real"}
@@ -312,7 +314,7 @@ def three_family_branch_with_trials(
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
         x_value += 1
-        database_factory.create().write("trials", trial.to_dict())
+        orionstate.database.write("trials", trial.to_dict())
 
 
 @pytest.fixture
@@ -400,8 +402,11 @@ def three_experiments_same_name(two_experiments_same_name, storage):
 
 
 @pytest.fixture
-def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
+def three_experiments_same_name_with_trials(
+    two_experiments_same_name, orionstate, storage
+):
     """Create three experiments with the same name but different versions."""
+
     orion.core.cli.main(
         [
             "hunt",
@@ -417,9 +422,9 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
     )
     ensure_deterministic_id("test_single_exp", storage, version=3)
 
-    exp = experiment_builder.build(name="test_single_exp", version=1)
-    exp2 = experiment_builder.build(name="test_single_exp", version=2)
-    exp3 = experiment_builder.build(name="test_single_exp", version=3)
+    exp = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
+    exp2 = experiment_builder.build(name="test_single_exp", version=2, storage=storage)
+    exp3 = experiment_builder.build(name="test_single_exp", version=3, storage=storage)
 
     x = {"name": "/x", "type": "real"}
     y = {"name": "/y", "type": "real"}
@@ -432,7 +437,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
         trial = Trial(experiment=exp.id, params=[x], status=status)
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         trial3 = Trial(experiment=exp3.id, params=[x, y, z], status=status)
-        database_factory.create().write("trials", trial.to_dict())
-        database_factory.create().write("trials", trial2.to_dict())
-        database_factory.create().write("trials", trial3.to_dict())
+        orionstate.database.write("trials", trial.to_dict())
+        orionstate.database.write("trials", trial2.to_dict())
+        orionstate.database.write("trials", trial3.to_dict())
         x_value += 1

@@ -42,7 +42,7 @@ def test_node_creation():
 
 
 def test_node_creation_with_parent():
-    """Test assignement of parent on initialization"""
+    """Test assignment of parent on initialization"""
     parent = TreeNode("test")
     child = TreeNode("test", parent)
 
@@ -52,7 +52,7 @@ def test_node_creation_with_parent():
 
 
 def test_node_set_parent():
-    """Test assignement of parent"""
+    """Test assignment of parent"""
     parent = TreeNode("test")
     child = TreeNode("test")
 
@@ -64,7 +64,7 @@ def test_node_set_parent():
 
 
 def test_node_set_no_parent():
-    """Test assignement of no parent, meaning droping the parent"""
+    """Test assignment of no parent, meaning dropping the parent"""
     parent = TreeNode("test")
     child = TreeNode("test")
 
@@ -96,7 +96,7 @@ def test_node_drop_parent():
 
 
 def test_node_add_child():
-    """Test assignement of child"""
+    """Test assignment of child"""
     parent = TreeNode("test")
     child = TreeNode("test")
 
@@ -123,7 +123,7 @@ def test_node_remove_child():
 
 
 def test_node_add_children():
-    """Test assignement of children"""
+    """Test assignment of children"""
     parent = TreeNode("test")
     child1 = TreeNode("test1")
     child2 = TreeNode("test2")

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.Benchmark`."""
 
 import plotly
@@ -10,14 +9,14 @@ from orion.benchmark import Benchmark, Study
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client.experiment import ExperimentClient
-from orion.core.worker.experiment import Experiment
 from orion.testing import OrionState, create_study_experiments
 
 
 @pytest.fixture
-def benchmark(benchmark_algorithms):
+def benchmark(storage, benchmark_algorithms):
     """Return a benchmark instance"""
     return Benchmark(
+        storage,
         name="benchmark007",
         algorithms=benchmark_algorithms,
         targets=[
@@ -79,14 +78,12 @@ class TestBenchmark:
 
     def test_process(self, benchmark, study):
         """Test to process a benchmark"""
-        with OrionState():
-            study.setup_experiments()
-            benchmark.studies = [study]
-            benchmark.process()
-            name = "benchmark007_AverageResult_RosenBrock_0_0"
-            experiment = experiment_builder.build(name)
-
-            assert experiment is not None
+        study.setup_experiments()
+        benchmark.studies = [study]
+        benchmark.process()
+        name = "benchmark007_AverageResult_RosenBrock_0_0"
+        experiment = experiment_builder.build(name)
+        assert experiment is not None
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_status(
@@ -96,91 +93,92 @@ class TestBenchmark:
         study_experiments_config,
         task_number,
         max_trial,
+        orionstate,
     ):
         """Test to get the status of a benchmark"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-            study.experiments_info = experiments
+        study.experiments_info = experiments
 
-            benchmark.studies = [study]
+        benchmark.studies = [study]
 
-            assert benchmark.status() == [
-                {
-                    "Algorithms": "random",
-                    "Assessments": "AverageResult",
-                    "Tasks": "RosenBrock",
-                    "Total Experiments": task_number,
-                    "Completed Experiments": task_number,
-                    "Submitted Trials": task_number * max_trial,
-                },
-                {
-                    "Algorithms": "tpe",
-                    "Assessments": "AverageResult",
-                    "Tasks": "RosenBrock",
-                    "Total Experiments": task_number,
-                    "Completed Experiments": task_number,
-                    "Submitted Trials": task_number * max_trial,
-                },
-            ]
+        assert benchmark.status() == [
+            {
+                "Algorithms": "random",
+                "Assessments": "AverageResult",
+                "Tasks": "RosenBrock",
+                "Total Experiments": task_number,
+                "Completed Experiments": task_number,
+                "Submitted Trials": task_number * max_trial,
+            },
+            {
+                "Algorithms": "tpe",
+                "Assessments": "AverageResult",
+                "Tasks": "RosenBrock",
+                "Total Experiments": task_number,
+                "Completed Experiments": task_number,
+                "Submitted Trials": task_number * max_trial,
+            },
+        ]
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_analysis(self, benchmark, study, study_experiments_config):
+    def test_analysis(self, orionstate, benchmark, study, study_experiments_config):
         """Test to analysis benchmark result"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
+        study.experiments_info = experiments
 
-            study.experiments_info = experiments
+        benchmark.studies = [study]
 
-            benchmark.studies = [study]
+        figures = benchmark.analysis()
 
-            figures = benchmark.analysis()
-
-            assert len(figures) == 1
-            assert (
-                type(figures[study.assess_name][study.task_name]["regrets"])
-                is plotly.graph_objects.Figure
-            )
+        assert len(figures) == 1
+        assert (
+            type(figures[study.assess_name][study.task_name]["regrets"])
+            is plotly.graph_objects.Figure
+        )
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_experiments(
         self,
+        orionstate,
         benchmark,
         study,
         study_experiments_config,
         max_trial,
     ):
         """Test to get experiments list of a benchmark"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-            study.experiments_info = experiments
+        study.experiments_info = experiments
 
-            benchmark.studies = [study]
+        benchmark.studies = [study]
 
-            assert benchmark.experiments() == [
-                {
-                    "Algorithm": "random",
-                    "Experiment Name": "experiment-name-0",
-                    "Number Trial": max_trial,
-                    "Best Evaluation": 0,
-                },
-                {
-                    "Algorithm": "tpe",
-                    "Experiment Name": "experiment-name-1",
-                    "Number Trial": max_trial,
-                    "Best Evaluation": 0,
-                },
-                {
-                    "Algorithm": "random",
-                    "Experiment Name": "experiment-name-2",
-                    "Number Trial": max_trial,
-                    "Best Evaluation": 0,
-                },
-                {
-                    "Algorithm": "tpe",
-                    "Experiment Name": "experiment-name-3",
-                    "Number Trial": max_trial,
-                    "Best Evaluation": 0,
-                },
-            ]
+        assert benchmark.experiments() == [
+            {
+                "Algorithm": "random",
+                "Experiment Name": "experiment-name-0",
+                "Number Trial": max_trial,
+                "Best Evaluation": 0,
+            },
+            {
+                "Algorithm": "tpe",
+                "Experiment Name": "experiment-name-1",
+                "Number Trial": max_trial,
+                "Best Evaluation": 0,
+            },
+            {
+                "Algorithm": "random",
+                "Experiment Name": "experiment-name-2",
+                "Number Trial": max_trial,
+                "Best Evaluation": 0,
+            },
+            {
+                "Algorithm": "tpe",
+                "Experiment Name": "experiment-name-3",
+                "Number Trial": max_trial,
+                "Best Evaluation": 0,
+            },
+        ]
 
 
 class TestStudy:
@@ -223,84 +221,84 @@ class TestStudy:
 
     def test_setup_experiments(self, study):
         """Test to setup experiments for study"""
-        with OrionState():
-            study.setup_experiments()
+        study.setup_experiments()
 
-            assert len(study.experiments_info) == 4
-            assert isinstance(study.experiments_info[0][1], ExperimentClient)
+        assert len(study.experiments_info) == 4
+        assert isinstance(study.experiments_info[0][1], ExperimentClient)
 
     def test_execute(self, study):
         """Test to execute a study"""
-        with OrionState():
-            study.setup_experiments()
-            study.execute()
-            name = "benchmark007_AverageResult_RosenBrock_0_0"
-            experiment = experiment_builder.build(name)
+        study.setup_experiments()
+        study.execute()
+        name = "benchmark007_AverageResult_RosenBrock_0_0"
+        experiment = experiment_builder.build(name)
 
-            assert len(experiment.fetch_trials()) == study.task.max_trials
+        assert len(experiment.fetch_trials()) == study.task.max_trials
 
-            assert experiment is not None
+        assert experiment is not None
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_status(
         self,
+        orionstate,
         study,
         study_experiments_config,
         task_number,
         max_trial,
     ):
         """Test to get status of a study"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-            study.experiments_info = experiments
+        study.experiments_info = experiments
 
-            assert study.status() == [
-                {
-                    "algorithm": "random",
-                    "assessment": "AverageResult",
-                    "task": "RosenBrock",
-                    "experiments": task_number,
-                    "completed": task_number,
-                    "trials": task_number * max_trial,
-                },
-                {
-                    "algorithm": "tpe",
-                    "assessment": "AverageResult",
-                    "task": "RosenBrock",
-                    "experiments": task_number,
-                    "completed": task_number,
-                    "trials": task_number * max_trial,
-                },
-            ]
+        assert study.status() == [
+            {
+                "algorithm": "random",
+                "assessment": "AverageResult",
+                "task": "RosenBrock",
+                "experiments": task_number,
+                "completed": task_number,
+                "trials": task_number * max_trial,
+            },
+            {
+                "algorithm": "tpe",
+                "assessment": "AverageResult",
+                "task": "RosenBrock",
+                "experiments": task_number,
+                "completed": task_number,
+                "trials": task_number * max_trial,
+            },
+        ]
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_analysis(
         self,
+        orionstate,
         study,
         study_experiments_config,
     ):
         """Test to get the ploty figure of a study"""
-        with create_study_experiments(**study_experiments_config) as experiments:
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-            study.experiments_info = experiments
+        study.experiments_info = experiments
 
-            figure = study.analysis()
+        figure = study.analysis()
 
-            assert (
-                type(figure[study.assess_name][study.task_name]["regrets"])
-                is plotly.graph_objects.Figure
-            )
+        assert (
+            type(figure[study.assess_name][study.task_name]["regrets"])
+            is plotly.graph_objects.Figure
+        )
 
-    def test_experiments(self, study, study_experiments_config, task_number):
+    def test_experiments(
+        self, orionstate, study, study_experiments_config, task_number
+    ):
         """Test to get experiments of a study"""
         algo_num = len(study_experiments_config["algorithms"])
-        with create_study_experiments(**study_experiments_config) as experiments:
+        experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-            study.experiments_info = experiments
+        study.experiments_info = experiments
 
-            experiments = study.experiments()
+        experiments = study.experiments()
 
-            assert (
-                len(experiments) == study_experiments_config["task_number"] * algo_num
-            )
-            assert isinstance(experiments[0], ExperimentClient)
+        assert len(experiments) == study_experiments_config["task_number"] * algo_num
+        assert isinstance(experiments[0], ExperimentClient)

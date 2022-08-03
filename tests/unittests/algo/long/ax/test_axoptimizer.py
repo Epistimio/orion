@@ -4,17 +4,17 @@ from typing import ClassVar, List
 
 import pytest
 
-from orion.algo.axoptimizer import has_Ax
+from orion.algo.axoptimizer import import_optional
 from orion.benchmark.task.base import BenchmarkTask
 from orion.core.utils import backward
 from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 
-if not has_Ax:
+if import_optional.failed:
     pytest.skip("skipping Ax tests", allow_module_level=True)
-else:
-    import numpy
-    from botorch.test_functions.multi_objective import BraninCurrin
-    from torch import Tensor
+
+import numpy
+from botorch.test_functions.multi_objective import BraninCurrin
+from torch import Tensor
 
 N_INIT = 5
 TOL = 0.1
@@ -108,7 +108,8 @@ class TestAxOptimizer(BaseAlgoTests):
         new_algo = self.create_algo(seed=seed)
         assert new_algo.n_observed == algo.n_observed
         trial_c = new_algo.suggest(1)[0]
-        assert trial_c == trial_a
+        if self._current_phase.name == "Sobol":
+            assert trial_c == trial_a
         numpy.testing.assert_allclose(
             numpy.array(list(trial_a.params.values())).astype(float),
             numpy.array(list(trial_c.params.values())).astype(float),

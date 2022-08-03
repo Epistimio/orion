@@ -16,9 +16,9 @@ import orion.core.cli.hunt
 import orion.core.evc.conflicts
 import orion.core.io.resolve_config
 from orion.client import get_experiment
+from orion.core.io import experiment_builder
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
 
@@ -28,7 +28,7 @@ script = os.path.join(
 
 
 def with_storage_fork(func):
-    """Copy PickledDB to a tmp adress and work in the tmp path within the func execution.
+    """Copy PickledDB to a tmp address and work in the tmp path within the func execution.
 
     Functions decorated with this decorator should only be called after the storage has been
     initialized.
@@ -37,14 +37,16 @@ def with_storage_fork(func):
     def call(*args, **kwargs):
 
         with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
-            storage = get_storage()
+
+            storage = setup_storage()
             old_path = storage._db.host
-            storage._db.host = tmp_file.name
+
+            orion.core.config.storage.database.host = tmp_file.name
             shutil.copyfile(old_path, tmp_file.name)
 
             rval = func(*args, **kwargs)
 
-            storage._db.host = old_path
+            orion.core.config.storage.database.host = old_path
 
         return rval
 
@@ -58,21 +60,36 @@ class ConfigurationTestSuite:
 
     default_storage = {
         "type": "legacy",
-        "database": {"type": "pickleddb", "host": "experiment.pkl"},
+        "database": {"type": "pickleddb", "host": "${file}_experiment.pkl"},
     }
 
     @contextmanager
     def setup_global_config(self, tmp_path):
         """Setup temporary yaml file for the global configuration"""
-        with OrionState(storage=self.default_storage):
+        with OrionState(storage=self.default_storage) as cfg:
             conf_file = tmp_path / "config.yaml"
-            conf_file.write_text(yaml.dump(self.config))
+
+            if "storage" not in self.config:
+                self.config["storage"] = self.default_storage
+
+            config_str = yaml.dump(self.config)
+            config_str = config_str.replace("${tmp_path}", str(tmp_path))
+            config_str = config_str.replace("${file}", str(cfg.tempfile_path))
+
+            conf_file.write_text(config_str)
             conf_files = orion.core.DEF_CONFIG_FILES_PATHS
             orion.core.DEF_CONFIG_FILES_PATHS = [conf_file]
+
             orion.core.config = orion.core.build_config()
+
             try:
                 yield conf_file
             finally:
+                try:
+                    os.remove(orion.core.config.storage.database.host)
+                except:
+                    pass
+
                 orion.core.DEF_CONFIG_FILES_PATHS = conf_files
                 orion.core.config = orion.core.build_config()
 
@@ -82,6 +99,9 @@ class ConfigurationTestSuite:
         with self.setup_global_config(tmp_path):
             tmp = {}
             for key, value in self.env_vars.items():
+                if isinstance(value, str):
+                    value = value.replace("${tmp_path}", str(tmp_path))
+
                 tmp[key] = os.environ.pop(key, None)
                 os.environ[key] = str(value)
             try:
@@ -97,16 +117,20 @@ class ConfigurationTestSuite:
     def setup_db_config(self, tmp_path):
         """Setup database with temporary data"""
         with self.setup_env_var_config(tmp_path):
-            storage = get_storage()
+            storage = setup_storage()
             storage.create_experiment(self.database)
-            yield
+            yield storage
 
     @contextmanager
     def setup_local_config(self, tmp_path):
         """Setup local configuration on top"""
         with self.setup_db_config(tmp_path):
             conf_file = tmp_path / "local.yaml"
-            conf_file.write_text(yaml.dump(self.local))
+
+            config_str = yaml.dump(self.local)
+            config_str = config_str.replace("${tmp_path}", str(tmp_path))
+
+            conf_file.write_text(config_str)
             yield conf_file
 
     @contextmanager
@@ -117,14 +141,14 @@ class ConfigurationTestSuite:
 
     def test_global_config(self, tmp_path, monkeypatch):
         """Test that global configuration is set properly based on global yaml"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_global_config(tmp_path):
             self.check_global_config(tmp_path, monkeypatch)
 
     def test_env_var_config(self, tmp_path, monkeypatch):
         """Test that env vars are set properly in global config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_env_var_config(tmp_path):
             self.check_env_var_config(tmp_path, monkeypatch)
@@ -134,7 +158,7 @@ class ConfigurationTestSuite:
     )
     def test_db_config(self, tmp_path):
         """Test that exp config in db overrides global config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_db_config(tmp_path):
             self.check_db_config()
@@ -142,7 +166,7 @@ class ConfigurationTestSuite:
     @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_local_config(self, tmp_path, monkeypatch):
         """Test that local config overrides db/global config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_local_config(tmp_path) as conf_file:
             self.check_local_config(tmp_path, conf_file, monkeypatch)
@@ -150,7 +174,7 @@ class ConfigurationTestSuite:
     @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_cmd_args_config(self, tmp_path, monkeypatch):
         """Test that cmd_args config overrides local config"""
-        update_singletons()
+
         self.sanity_check()
         with self.setup_cmd_args_config(tmp_path) as conf_file:
             self.check_cmd_args_config(tmp_path, conf_file, monkeypatch)
@@ -165,7 +189,7 @@ class TestStorage(ConfigurationTestSuite):
             "database": {
                 "name": "test_name",
                 "type": "pickleddb",
-                "host": "here.pkl",
+                "host": "${tmp_path}/here.pkl",
                 "port": 101,
             },
         }
@@ -175,14 +199,14 @@ class TestStorage(ConfigurationTestSuite):
         "ORION_STORAGE_TYPE": "legacy",
         "ORION_DB_NAME": "test_env_var_name",
         "ORION_DB_TYPE": "pickleddb",
-        "ORION_DB_ADDRESS": "there.pkl",
+        "ORION_DB_ADDRESS": "${tmp_path}/there.pkl",
         "ORION_DB_PORT": "103",
     }
 
     local = {
         "storage": {
             "type": "legacy",
-            "database": {"type": "pickleddb", "host": "local.pkl"},
+            "database": {"type": "pickleddb", "host": "${tmp_path}/local.pkl"},
         }
     }
 
@@ -192,78 +216,97 @@ class TestStorage(ConfigurationTestSuite):
 
     def check_global_config(self, tmp_path, monkeypatch):
         """Check that global configuration is set properly"""
-        update_singletons()
 
-        assert orion.core.config.storage.to_dict() == self.config["storage"]
+        storage_config = copy.deepcopy(self.config["storage"])
+        storage_config["database"]["host"] = storage_config["database"]["host"].replace(
+            "${tmp_path}", str(tmp_path)
+        )
+        assert orion.core.config.storage.to_dict() == storage_config
 
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+        # Build storage
+        storage = setup_storage()
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        # if hunt worked it should insert its experiment
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
+
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == os.path.abspath("here.pkl")
+        assert storage._db.host == str(tmp_path / "here.pkl")
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
-        update_singletons()
 
         assert orion.core.config.storage.to_dict() == {
             "type": self.env_vars["ORION_STORAGE_TYPE"],
             "database": {
                 "name": self.env_vars["ORION_DB_NAME"],
                 "type": self.env_vars["ORION_DB_TYPE"],
-                "host": self.env_vars["ORION_DB_ADDRESS"],
+                "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                    "${tmp_path}", str(tmp_path)
+                ),
                 "port": int(self.env_vars["ORION_DB_PORT"]),
             },
         }
 
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+        # Build storage
+        storage = setup_storage()
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
+        # Make sure hunt is picking up the right database
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        # if hunt worked it should insert its experiment
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
+
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
+        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"].replace(
+            "${tmp_path}", str(tmp_path)
+        )
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        update_singletons()
 
         assert orion.core.config.storage.to_dict() == {
             "type": self.env_vars["ORION_STORAGE_TYPE"],
             "database": {
                 "name": self.env_vars["ORION_DB_NAME"],
                 "type": self.env_vars["ORION_DB_TYPE"],
-                "host": self.env_vars["ORION_DB_ADDRESS"],
+                "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                    "${tmp_path}", str(tmp_path)
+                ),
                 "port": int(self.env_vars["ORION_DB_PORT"]),
             },
         }
 
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+        # Build storage with local config
+        cmd_config = experiment_builder.get_cmd_config(dict(config=open(conf_file)))
+        builder = experiment_builder.ExperimentBuilder(cmd_config["storage"])
+        storage = builder.storage
 
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
+
+        # Make sure hunt is picking up the right database
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        # if hunt worked it should insert its experiment
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
+
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == os.path.abspath("local.pkl")
+        assert storage._db.host == str(tmp_path / "local.pkl")
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
-        pass
 
 
 class TestDatabaseDeprecated(ConfigurationTestSuite):
@@ -273,7 +316,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         "database": {
             "name": "test_name",
             "type": "pickleddb",
-            "host": "dbhere.pkl",
+            "host": "${tmp_path}/dbhere.pkl",
             "port": 101,
         }
     }
@@ -281,11 +324,11 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
     env_vars = {
         "ORION_DB_NAME": "test_env_var_name",
         "ORION_DB_TYPE": "pickleddb",
-        "ORION_DB_ADDRESS": "there.pkl",
+        "ORION_DB_ADDRESS": "${tmp_path}/dbthere.pkl",
         "ORION_DB_PORT": "103",
     }
 
-    local = {"database": {"type": "pickleddb", "host": "dblocal.pkl"}}
+    local = {"database": {"type": "pickleddb", "host": "${tmp_path}/dblocal.pkl"}}
 
     def sanity_check(self):
         """Check that defaults are different than testing configuration"""
@@ -293,72 +336,83 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
 
     def check_global_config(self, tmp_path, monkeypatch):
         """Check that global configuration is set properly"""
-        update_singletons()
 
-        assert orion.core.config.database.to_dict() == self.config["database"]
+        database = copy.deepcopy(self.config["database"])
+        database["host"] = database["host"].replace("${tmp_path}", str(tmp_path))
+        assert orion.core.config.database.to_dict() == database
 
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+        storage = setup_storage()
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
+
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == os.path.abspath("dbhere.pkl")
+        assert storage._db.host == str(tmp_path / "dbhere.pkl")
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
-        update_singletons()
 
         assert orion.core.config.database.to_dict() == {
             "name": self.env_vars["ORION_DB_NAME"],
             "type": self.env_vars["ORION_DB_TYPE"],
-            "host": self.env_vars["ORION_DB_ADDRESS"],
+            "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                "${tmp_path}", str(tmp_path)
+            ),
             "port": int(self.env_vars["ORION_DB_PORT"]),
         }
 
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+        storage = setup_storage()
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
+
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
+        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"].replace(
+            "${tmp_path}", str(tmp_path)
+        )
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        update_singletons()
 
         assert orion.core.config.database.to_dict() == {
             "name": self.env_vars["ORION_DB_NAME"],
             "type": self.env_vars["ORION_DB_TYPE"],
-            "host": self.env_vars["ORION_DB_ADDRESS"],
+            "host": self.env_vars["ORION_DB_ADDRESS"].replace(
+                "${tmp_path}", str(tmp_path)
+            ),
             "port": int(self.env_vars["ORION_DB_PORT"]),
         }
 
-        with pytest.raises(SingletonNotInstantiatedError):
-            get_storage()
+        cmd_config = experiment_builder.get_cmd_config(dict(config=open(conf_file)))
+        builder = experiment_builder.ExperimentBuilder(cmd_config["storage"])
+        storage = builder.storage
 
+        assert len(storage.fetch_experiments({"name": "test"})) == 0
+
+        # Make sure hunt is picking up the right database
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        # if hunt worked it should insert its experiment
+        assert len(storage.fetch_experiments({"name": "test"})) == 1
+
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == os.path.abspath("dblocal.pkl")
+        assert storage._db.host == str(tmp_path / "dblocal.pkl")
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
-        pass
 
 
 class TestExperimentConfig(ConfigurationTestSuite):
@@ -472,11 +526,10 @@ class TestExperimentConfig(ConfigurationTestSuite):
         self._compare(
             self.config["experiment"], orion.core.config.to_dict()["experiment"]
         )
-
         command = f"hunt --init-only -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment("test")
         self._compare(
@@ -515,7 +568,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         command = f"hunt --worker-max-trials 0 -n {name}"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment(name)
         self._compare(self.database, experiment.configuration, ignore=["worker_trials"])
@@ -525,7 +578,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         command = f"hunt --worker-max-trials 0 -c {conf_file}"
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment("test-name")
         self._compare(self.local["experiment"], experiment.configuration)
@@ -534,11 +587,11 @@ class TestExperimentConfig(ConfigurationTestSuite):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
         command = f"hunt --worker-max-trials 0 -c {conf_file} --branch-from test-name --enable-evc"
         command += " " + " ".join(
-            "--{} {}".format(name, value) for name, value in self.cmdargs.items()
+            f"--{name} {value}" for name, value in self.cmdargs.items()
         )
         orion.core.cli.main(command.split(" "))
 
-        storage = get_storage()
+        storage = setup_storage()
 
         experiment = get_experiment("exp-name")
         assert experiment.name == "exp-name"
@@ -647,13 +700,13 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def _mock_producer(self, monkeypatch):
         self.producer = None
-        old_init = orion.core.cli.hunt.Producer.__init__
+        old_init = orion.core.worker.producer.Producer.__init__
 
         def init(p_self, *args, **kwargs):
             old_init(p_self, *args, **kwargs)
             self.producer = p_self
 
-        monkeypatch.setattr(orion.core.cli.hunt.Producer, "__init__", init)
+        monkeypatch.setattr(orion.core.worker.producer.Producer, "__init__", init)
 
     def _mock_workon(self, monkeypatch):
         workon = orion.core.cli.hunt.workon
@@ -738,7 +791,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
@@ -775,7 +827,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
         command = f"hunt -c {conf_file} -n cmd-test"
         command += " " + " ".join(
-            "--{} {}".format(name, value) for name, value in self.cmdargs.items()
+            f"--{name} {value}" for name, value in self.cmdargs.items()
         )
         command += f" python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
@@ -967,7 +1019,6 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
-        pass
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""

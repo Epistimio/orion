@@ -3,13 +3,9 @@ import glob
 import os
 import shutil
 import subprocess
-import sys
 
 from orion.client import get_experiment
-from orion.core.cli.db.rm import process_exp_rm
-from orion.core.utils.singleton import update_singletons
-from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, setup_storage
+from orion.storage.base import setup_storage
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 DOC_SRC_DIR = os.path.join(ROOT_DIR, "..", "src")
@@ -72,9 +68,8 @@ def prepare_dbs():
 
 def setup_tmp_storage(host):
     # Clear singletons
-    update_singletons()
 
-    setup_storage(
+    return setup_storage(
         storage={
             "type": "legacy",
             "database": {
@@ -83,8 +78,6 @@ def setup_tmp_storage(host):
             },
         }
     )
-
-    return get_storage()
 
 
 def load_data(host):
@@ -105,7 +98,7 @@ def copy_data(data, host=TMP_DB_HOST):
     storage = setup_tmp_storage(host)
     for exp_id, experiment in data["experiments"].items():
         del experiment["_id"]
-        storage.create_experiment(experiment)
+        storage.create_experiment(experiment, storage=storage)
         assert exp_id != experiment["_id"]
         trials = []
         for trial in data["trials"][exp_id]:

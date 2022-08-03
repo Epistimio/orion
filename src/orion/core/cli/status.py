@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module to status experiments
 ============================
@@ -12,9 +11,9 @@ import logging
 
 import tabulate
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
-from orion.storage.base import get_storage
+from orion.core.io import experiment_builder
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Gives an overview of experiments' trials"
@@ -68,11 +67,11 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and status experiments"""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get("storage"))
+    storage = setup_storage(config.get("storage"))
 
     args["all_trials"] = args.pop("all", False)
 
-    experiments = get_experiments(args)
+    experiments = get_experiments(storage, args)
 
     if not experiments:
         print("No experiment found")
@@ -99,7 +98,7 @@ def print_evc(
     all_trials=False,
     collapse=False,
     expand_versions=False,
-    **kwargs
+    **kwargs,
 ):
     """Print each EVC tree
 
@@ -122,7 +121,7 @@ def print_evc(
             print_status(experiment, all_trials=all_trials, collapse=True)
 
 
-def get_experiments(args):
+def get_experiments(storage, args):
     """Return the different experiments.
 
     Parameters
@@ -134,7 +133,7 @@ def get_experiments(args):
     projection = {"name": 1, "version": 1, "refers": 1}
 
     query = {"name": args["name"]} if args.get("name") else {}
-    experiments = get_storage().fetch_experiments(query, projection)
+    experiments = storage.fetch_experiments(query, projection)
 
     if args["name"]:
         root_experiments = experiments
@@ -220,7 +219,7 @@ def print_summary(trials, offset=0):
         line = [status, len(c_trials)]
 
         if c_trials[0].objective:
-            headers.append("min {}".format(c_trials[0].objective.name))
+            headers.append(f"min {c_trials[0].objective.name}")
             line.append(
                 min(trial.objective.value for trial in c_trials if trial.objective)
             )
@@ -255,7 +254,7 @@ def print_all_trials(trials, offset=0):
         line = [trial.id, trial.status]
 
         if trial.objective:
-            headers[-1] = "min {}".format(trial.objective.name)
+            headers[-1] = f"min {trial.objective.name}"
             line.append(trial.objective.value)
 
         lines.append(line)

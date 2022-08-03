@@ -1,6 +1,4 @@
-import sys
 import time
-from multiprocessing import TimeoutError
 
 import pytest
 
@@ -234,7 +232,7 @@ def nested(executor):
     for i in range(5):
         futures.append(executor.submit(function, 1, 2, 3))
 
-    return sum([f.get() for f in futures])
+    return sum(f.get() for f in futures)
 
 
 @pytest.mark.parametrize("backend", [xfail_dask_if_not_installed(Dask), SingleExecutor])

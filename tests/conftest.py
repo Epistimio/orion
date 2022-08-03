@@ -1,10 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
-import datetime
 import getpass
 import os
-import tempfile
 
 import numpy
 import pytest
@@ -17,13 +14,9 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io import resolve_config
 from orion.core.io.database import database_factory
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import format_trials
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, setup_storage, storage_factory
-from orion.storage.legacy import Legacy
+from orion.storage.base import storage_factory
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
@@ -97,7 +90,7 @@ class DumbAlgo(BaseAlgorithm):
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
-        super(DumbAlgo, self).__init__(
+        super().__init__(
             space,
             value=value,
             scoring=scoring,
@@ -119,7 +112,7 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(DumbAlgo, self).state_dict
+        _state_dict = super().state_dict
         _state_dict.update(
             {
                 "index": self._index,
@@ -135,7 +128,7 @@ class DumbAlgo(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(DumbAlgo, self).set_state(state_dict)
+        super().set_state(state_dict)
         self._index = state_dict["index"]
         self._suggested = state_dict["suggested"]
         self._num = state_dict["num"]
@@ -162,7 +155,7 @@ class DumbAlgo(BaseAlgorithm):
 
     def observe(self, trials):
         """Log inputs."""
-        super(DumbAlgo, self).observe(trials)
+        super().observe(trials)
         self._trials += trials
 
     def score(self, trial):
@@ -177,14 +170,14 @@ class DumbAlgo(BaseAlgorithm):
         return self.judgement
 
     def should_suspend(self, trial):
-        """Cound how many times it has been called and return `suspend`."""
+        """Count how many times it has been called and return `suspend`."""
         self._suspend_trial = trial
         self._times_called_suspend += 1
         return self.suspend
 
     @property
     def is_done(self):
-        """Cound how many times it has been called and return `done`."""
+        """Count how many times it has been called and return `done`."""
         self._times_called_is_done += 1
         return self.done
 
@@ -366,26 +359,6 @@ def mock_infer_versioning_metadata(monkeypatch):
     monkeypatch.setattr(resolve_config, "infer_versioning_metadata", fixed_dictionary)
 
 
-@pytest.fixture(scope="function")
-def setup_pickleddb_database():
-    """Configure the database"""
-    update_singletons()
-    temporary_file = tempfile.NamedTemporaryFile()
-
-    os.environ["ORION_DB_TYPE"] = "pickleddb"
-    os.environ["ORION_DB_ADDRESS"] = temporary_file.name
-    yield
-    temporary_file.close()
-    del os.environ["ORION_DB_TYPE"]
-    del os.environ["ORION_DB_ADDRESS"]
-
-
-@pytest.fixture(scope="function")
-def storage(setup_pickleddb_database):
-    setup_storage()
-    yield get_storage()
-
-
 @pytest.fixture()
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""
@@ -397,3 +370,15 @@ def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
     with mocked_datetime(monkeypatch) as datetime:
         yield datetime.utcnow()
+
+
+@pytest.fixture(scope="function")
+def orionstate():
+    """Configure the database"""
+    with OrionState() as cfg:
+        yield cfg
+
+
+@pytest.fixture(scope="function")
+def storage(orionstate):
+    yield orionstate.storage
