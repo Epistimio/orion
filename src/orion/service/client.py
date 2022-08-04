@@ -8,6 +8,10 @@ from orion.core.worker.trial import Trial
 log = logging.getLogger(__file__)
 
 
+class ExperiementIsNotSetup(Exception):
+    pass
+
+
 class ClientREST:
     """Implements the basic REST client for the experiment"""
 
@@ -41,7 +45,7 @@ class ClientREST:
         experiment_name = experiment_name or self.experiment_name
 
         if experiment_name is None:
-            raise RuntimeError("experiment_name is not set")
+            raise ExperiementIsNotSetup("experiment_name is not set")
 
         log.debug("client: suggest: %s", experiment_name)
         result = self._post(
@@ -49,14 +53,24 @@ class ClientREST:
         )
         return result["trials"]
 
-    def observe(self, trial: Trial, results: List[Dict]) -> None:
-        self._post("observe", trial_id=trial.id, results=results)
+    def observe(self, trial: Trial, results: List[Dict], experiment_name=None) -> None:
+        experiment_name = experiment_name or self.experiment_name
+
+        if experiment_name is None:
+            raise ExperiementIsNotSetup("experiment_name is not set")
+
+        self._post(
+            "observe",
+            experiment_name=experiment_name,
+            trial_id=trial["_id"],
+            results=results,
+        )
 
     def is_done(self) -> bool:
         return self._post("is_done", experiment_name=self.experiment_name)
 
     def heartbeat(self, trial: Trial) -> None:
-        self._post("heartbeat", trial_id=trial.id)
+        self._post("heartbeat", trial_id=trial["_id"])
 
 
 # WIP

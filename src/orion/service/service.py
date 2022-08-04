@@ -115,19 +115,22 @@ class OrionService:
         """Observe results for a given trial"""
 
         def on_post_request(self, ctx: RequestContext) -> None:
-            pass
+            result = self.broker.observe(ctx)
+            ctx.response.media = result
 
     class IsDone(QueryRoute):
         """Query the status of a given experiment"""
 
         def on_post_request(self, ctx: RequestContext) -> None:
-            pass
+            result = self.broker.is_done(ctx)
+            ctx.response.media = result
 
     class Heartbeat(QueryRoute):
         """Notify the server than the trial is still running"""
 
         def on_post_request(self, ctx: RequestContext) -> None:
-            pass
+            result = self.broker.heartbeat(ctx)
+            ctx.response.media = result
 
     def run(self, hostname: str, port: int) -> None:
         """Run the server forever"""

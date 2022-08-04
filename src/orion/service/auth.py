@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class AuthenticationService:
     def __init__(self) -> None:
         self.tok_to_user = {
@@ -7,4 +12,7 @@ class AuthenticationService:
         }
 
     def authenticate(self, token):
-        return self.tok_to_user.get(token)
+        username, password = self.tok_to_user.get(token)
+
+        logger.debug("Authenticated %s => %s", token, username)
+        return username, password

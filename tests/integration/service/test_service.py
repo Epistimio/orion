@@ -7,9 +7,11 @@ import signal
 import time
 from contextlib import contextmanager
 
+import pytest
+
 from orion.core.io.database.mongodb import MongoDB
 from orion.service.broker.broker import ServiceContext
-from orion.service.client import ClientREST
+from orion.service.client import ClientREST, ExperiementIsNotSetup
 from orion.storage.legacy import Legacy
 from orion.testing.mongod import mongod
 
@@ -104,7 +106,7 @@ def test_new_experiment():
 
         # same experiment should be no problem
         client2 = ClientREST(ENDPOINT, TOKEN2)
-        expid2 = client.new_experiment(
+        expid2 = client2.new_experiment(
             name="MyExperiment", space=dict(a="uniform(0, 1)", c="uniform(0, 1)")
         )
         assert expid1 == expid2
@@ -118,6 +120,10 @@ def test_suggest():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
 
+        # no experiment
+        with pytest.raises(ExperiementIsNotSetup):
+            trials = client.suggest()
+
         client.new_experiment(
             name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
         )
@@ -130,8 +136,19 @@ def test_observe():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
 
+        # no experiment
+        with pytest.raises(ExperiementIsNotSetup):
+            trials = client.suggest()
+
+        # create an experiment
+        client.new_experiment(
+            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+        )
+
+        # Suggest a trial using current experiment
         trials = client.suggest()
 
+        print(trials)
         assert len(trials) > 0
         client.observe(trials[0], [dict(name="objective", type="objective", value=1)])
 
