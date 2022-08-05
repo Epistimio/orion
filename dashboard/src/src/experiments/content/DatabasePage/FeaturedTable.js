@@ -13,7 +13,6 @@ import {
   MultiSelect,
   Pagination,
   Row,
-  Button,
 } from 'carbon-components-react';
 
 const sortingIcons = {
@@ -48,29 +47,41 @@ export function FeaturedTable({ columns, data, experiment }) {
     onPaginationChange: setPagination,
     // manualPagination: true
   });
-  const selectableColumns = table.getAllLeafColumns().map((col, index) => ({
-    id: col.id,
-    label: col.columnDef.header,
-  }));
+  const itemSelectAll = { id: '(select all)', label: '(select all)' };
+  const selectableColumns = [
+    itemSelectAll,
+    ...table.getAllLeafColumns().map((col, index) => ({
+      id: col.id,
+      label: col.columnDef.header,
+    })),
+  ];
   const [selectedColumns, setSelectedColumns] = React.useState(
     selectableColumns
   );
-  const columnVisibilitySetter = selectedColumns => {
-    const colSet = new Set(selectedColumns.selectedItems.map(item => item.id));
+  const columnVisibilitySetter = multiSelect => {
+    const previousColSet = new Set(selectedColumns.map(item => item.id));
+    const colSet = new Set(multiSelect.selectedItems.map(item => item.id));
+    if (!previousColSet.has(itemSelectAll.id) && colSet.has(itemSelectAll.id)) {
+      table.getAllLeafColumns().forEach(column => colSet.add(column.id));
+    } else if (
+      previousColSet.has(itemSelectAll.id) &&
+      colSet.has(itemSelectAll.id) &&
+      previousColSet.size > colSet.size
+    ) {
+      colSet.delete(itemSelectAll.id);
+    }
     const def = {};
     table
       .getAllLeafColumns()
       .forEach(column => (def[column.id] = colSet.has(column.id)));
     table.setColumnVisibility(def);
-    setSelectedColumns(selectableColumns.filter(item => colSet.has(item.id)));
+    setSelectedColumns([
+      ...(colSet.has(itemSelectAll.id) ? [itemSelectAll] : []),
+      ...selectableColumns.filter(item => !!def[item.id]),
+    ]);
   };
   const setCarbonPagination = ({ page, pageSize }) => {
-    // table.setPageIndex(page - 1);
-    // table.setPageSize(pageSize);
     setPagination({ pageIndex: page - 1, pageSize: pageSize });
-  };
-  const displayAllColumns = () => {
-    columnVisibilitySetter({ selectedItems: selectableColumns });
   };
   return (
     <div className="bx--data-table-container">
@@ -105,11 +116,6 @@ export function FeaturedTable({ columns, data, experiment }) {
                 onChange={columnVisibilitySetter}
                 sortItems={items => items}
               />
-            </Column>
-            <Column>
-              <Button kind="secondary" size="md" onClick={displayAllColumns}>
-                Display all
-              </Button>
             </Column>
           </Row>
         </Grid>
