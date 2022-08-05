@@ -41,5 +41,5 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
 }
 .bx--grid.database-page .bx--col {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
 }
