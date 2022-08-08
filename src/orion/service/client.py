@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, List
 
 import requests
@@ -12,13 +13,34 @@ class ExperiementIsNotSetup(Exception):
     pass
 
 
+@dataclass
+class RemoteExperiment:
+    euid: str
+    name: str
+
+
+@dataclass
+class RemoteTrial:
+    db_id: str
+    params_id: str
+    params: List[Dict[str, Any]]
+
+
 class ClientREST:
     """Implements the basic REST client for the experiment"""
 
     def __init__(self, endpoint, token) -> None:
         self.endpoint = endpoint
         self.token = token
-        self.experiment_name = None
+        self.experiment = None
+
+    @property
+    def experiment_name(self):
+        return self.experiment.name if self.experiment else None
+
+    @property
+    def experiment_id(self):
+        return self.experiment.euid if self.experiment else None
 
     def _post(self, path: str, **data) -> Any:
         """Basic reply handling, makes sure status is 0, else it will raise an error"""
@@ -35,13 +57,13 @@ class ClientREST:
         error = payload.pop("error")
         raise RuntimeError(f"Remote server returned error code {status}: {error}")
 
-    def new_experiment(self, name, **config) -> str:
-        self._post("experiment", name=name, **config)
+    def new_experiment(self, name, **config) -> RemoteExperiment:
+        payload = self._post("experiment", name=name, **config)
 
-        self.experiment_name = name
-        return self.experiment_name
+        self.experiment = RemoteExperiment(payload.get("euid"), name)
+        return self.experiment
 
-    def suggest(self, pool_size: int = 1, experiment_name=None) -> List[Trial]:
+    def suggest(self, pool_size: int = 1, experiment_name=None) -> List[RemoteTrial]:
         experiment_name = experiment_name or self.experiment_name
 
         if experiment_name is None:
@@ -51,9 +73,16 @@ class ClientREST:
         result = self._post(
             "suggest", experiment_name=experiment_name, pool_size=pool_size
         )
-        return result["trials"]
 
-    def observe(self, trial: Trial, results: List[Dict], experiment_name=None) -> None:
+        trials = []
+        for trial in result["trials"]:
+            trials.append(RemoteTrial(**trial))
+
+        return trials
+
+    def observe(
+        self, trial: RemoteTrial, results: List[Dict], experiment_name=None
+    ) -> None:
         experiment_name = experiment_name or self.experiment_name
 
         if experiment_name is None:
@@ -61,16 +90,19 @@ class ClientREST:
 
         self._post(
             "observe",
-            experiment_name=experiment_name,
-            trial_id=trial["_id"],
+            euid=self.experiment_id,
+            trial_id=trial.db_id,
             results=results,
         )
 
     def is_done(self) -> bool:
-        return self._post("is_done", experiment_name=self.experiment_name)
+        payload = self._post(
+            "is_done", experiment_name=self.experiment_name, euid=self.experiment_id
+        )
+        return payload.get("is_done", True)
 
     def heartbeat(self, trial: Trial) -> None:
-        self._post("heartbeat", trial_id=trial["_id"])
+        self._post("heartbeat", trial_id=trial.db_id)
 
 
 # WIP

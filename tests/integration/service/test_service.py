@@ -109,11 +109,23 @@ def test_new_experiment():
         expid2 = client2.new_experiment(
             name="MyExperiment", space=dict(a="uniform(0, 1)", c="uniform(0, 1)")
         )
-        assert expid1 == expid2
+        assert expid1.name == expid2.name
+        assert expid1.euid != expid2.euid
 
         storage = get_mongo_admin()
         experiences = storage.fetch_experiments(dict(name="MyExperiment"))
         assert len(experiences) == 2, "Each user has their own experiment"
+
+        # mongo = storage._db._db
+        # experiments = mongo['experiments'].find()
+
+        # print()
+        # for e in experiences:
+        #     print(e)
+
+        # print()
+        # for e in experiments:
+        #     print(e)
 
 
 def test_suggest():
@@ -125,11 +137,20 @@ def test_suggest():
             trials = client.suggest()
 
         client.new_experiment(
-            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+            name="MyExperiment",
+            space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
         )
 
-        trials = client.suggest()
-        assert len(trials) > 0
+        client_trials = client.suggest()
+        assert len(client_trials) > 0, "A trial was generated"
+
+        storage = get_mongo_admin()
+        mongo = storage._db._db
+        trials = mongo["trials"].find()
+
+        assert (
+            str(trials[0]["_id"]) == client_trials[0].db_id
+        ), "Trial exists inside the database"
 
 
 def test_observe():
@@ -152,19 +173,64 @@ def test_observe():
         assert len(trials) > 0
         client.observe(trials[0], [dict(name="objective", type="objective", value=1)])
 
+        storage = get_mongo_admin()
+        mongo = storage._db._db
+        trials = mongo["trials"].find()
+
+        assert trials[0].get("results") is not None, "Trial has results"
+        assert trials[0]["results"] == [
+            dict(name="objective", type="objective", value=1)
+        ]
+
 
 def test_heartbeat():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
 
-        trials = client.suggest()
+        # create an experiment
+        client.new_experiment(
+            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+        )
 
-        assert len(trials) > 0
-        client.heartbeat(trials[0])
+        # Suggest a trial for heartbeat
+        client_trials = client.suggest()
+        assert len(client_trials) > 0
+
+        storage = get_mongo_admin()
+        mongo = storage._db._db
+        trials = list(mongo["trials"].find())
+
+        old_heartbeat = trials[0]["heartbeat"]
+
+        # Update heartbeat
+        client.heartbeat(client_trials[0])
+
+        trials = list(mongo["trials"].find())
+        new_heartbeat = trials[0]["heartbeat"]
+        assert old_heartbeat != new_heartbeat, "Heartbeat should have changed"
 
 
 def test_is_done():
     with server():
         client = ClientREST(ENDPOINT, TOKEN)
-        expid = client.is_done()
-        print(expid)
+
+        # create an experiment
+        client.new_experiment(
+            name="MyExperiment",
+            space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
+            max_trials=10,
+        )
+
+        while not client.is_done():
+            trials = client.suggest()
+            client.observe(
+                trials[0], [dict(name="objective", type="objective", value=1)]
+            )
+            print(trials[0])
+
+        storage = get_mongo_admin()
+        mongo = storage._db._db
+        trials = list(mongo["trials"].find())
+        assert len(trials) == 10
+
+        print("Done")

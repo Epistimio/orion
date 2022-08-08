@@ -1,5 +1,8 @@
+import datetime
 import logging
 from typing import Dict
+
+from bson import ObjectId
 
 from orion.service.broker.broker import (
     ExperimentBroker,
@@ -20,6 +23,10 @@ def error(exception) -> Dict:
     return dict(status=1, error=str(exception))
 
 
+class ObserverError(Exception):
+    pass
+
+
 class LocalExperimentBroker(ExperimentBroker):
     """Creates an experiment client for each request and process the request.
     Parallel requests will instantiate different clients which might generate race conditions,
@@ -36,8 +43,9 @@ class LocalExperimentBroker(ExperimentBroker):
         log.debug("Spawning new experiment")
 
         client = build_experiment_client(request)
+        euid = str(client._experiment.id)
 
-        return success(dict(experiment_name=str(client.name)))
+        return success(dict(experiment_name=str(client.name), euid=euid))
 
     def suggest(self, request: RequestContext):
         storage = get_storage_for_user(request)
@@ -49,47 +57,36 @@ class LocalExperimentBroker(ExperimentBroker):
 
         trial = client.suggest(**request.data).to_dict()
 
-        trial["experiment"] = str(trial["experiment"])
+        small_trial = dict()
+        small_trial["db_id"] = str(trial["_id"])
+        small_trial["params_id"] = str(trial["id"])
+        small_trial["params"] = str(trial["params"])
 
-        # Fix Json encoding issues
-        trial.pop("heartbeat")
-        trial.pop("submit_time")
-        trial.pop("start_time")
-        trial["_id"] = str(trial["_id"])
-
-        return success(dict(trials=[trial]))
+        return success(dict(trials=[small_trial]))
 
     def observe(self, request: RequestContext):
         storage = get_storage_for_user(request)
 
-        # TODO: fix this, this makes us create
-        experiment_name = request.data.pop("experiment_name")
-        client = build_experiment(name=experiment_name, storage=storage)
-
-        client.remote_mode = True
-
         trial_id = request.data.get("trial_id")
+        euid = request.data.get("euid")
         results = request.data.get("results")
-        experiment_id = client._experiment.id
 
-        import datetime
-
-        # we don not need all the clutter from client.oberserve
+        # we do not need all the clutter from client.observe
         # 1. it makes the producer oberserve the result
-        #    but the producer gets deleted after the oberserve
+        #    but the producer gets deleted after the observe
         # 2. it makes us create a trial object, fetch the previous results
         #    and then update the trial object
         #    before we can push the results to the storage
         # Push the result to the storage
         result = storage._db._db["trials"].update_one(
             {
-                "id": trial_id,
-                "experiment": experiment_id,
-                "status": "reserved",
-            },
+                "_id": ObjectId(trial_id),
+                "experiment": ObjectId(euid),
+                "status": "reserved",  # This protects us against race conditions
+            },  # Trials should be reserved when being worked on
             {
                 "$push": {
-                    "params": {
+                    "results": {
                         "$each": results,
                     }
                 },
@@ -100,13 +97,33 @@ class LocalExperimentBroker(ExperimentBroker):
             },
         )
 
-        assert result.modified_count > 0
+        if result.modified_count <= 0:
+            raise ObserverError("Trial update failed, was it reserved ?")
 
-        # print(client._experiment)
-        # print(client._experiment.id)
+        return success(dict())
 
-        # trial = Trial(id_override=trial_id, experiment=client._experiment.id)
-        # log.debug("Observe %s %s %s", trial_id, trial._id, trial.experiment)
+    def is_done(self, request: RequestContext):
+        storage = get_storage_for_user(request)
+        experiment_name = request.data.pop("experiment_name")
 
-        # client.observe(trial, results).to_dict()
+        client = build_experiment(name=experiment_name, storage=storage)
+        client.remote_mode = True
+
+        return success(dict(is_done=client.is_done))
+
+    def heartbeat(self, request: RequestContext):
+        storage = get_storage_for_user(request)
+        trial_id = request.data.get("trial_id")
+
+        storage._db._db["trials"].update_one(
+            {
+                "_id": ObjectId(trial_id),
+                "status": "reserved",
+            },
+            {
+                "$set": {
+                    "heartbeat": datetime.datetime.utcnow(),
+                }
+            },
+        )
         return success(dict())
