@@ -1,14 +1,22 @@
+"""Boilerplate for Falcon server
+
+All the logic is implemented through the broker interface
+"""
 import logging
 import os
 import traceback
 
 import falcon
 
-from orion.service.auth import AuthenticationService
+from orion.service.auth import NO_CREDENTIAL, AuthenticationService
 from orion.service.broker.broker import RequestContext, ServiceContext
 from orion.service.broker.local import LocalExperimentBroker
 
 log = logging.getLogger(__file__)
+
+
+class AuthenticationError(Exception):
+    pass
 
 
 class QueryRoute:
@@ -25,22 +33,25 @@ class QueryRoute:
     def auth(self):
         return self.service.auth
 
+    def authenticate(self, token):
+        if token is None:
+            raise AuthenticationError("Missing authentication token")
+
+        credentials = self.auth.authenticate(token)
+        if credentials == NO_CREDENTIAL:
+            raise AuthenticationError("Incorrect authentication token")
+
+        return credentials
+
     def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
         """Force status to be set, and send back an error on exception"""
         resp.media = dict()
 
         try:
             msg = req.get_media()
+
             token = msg.pop("token", None)
-
-            if token is None:
-                resp.status = falcon.HTTP_401
-                return
-
-            credentials = self.auth.authenticate(token)
-            if credentials is None:
-                resp.status = falcon.HTTP_401
-                return
+            credentials = self.authenticate(token)
 
             ctx = RequestContext(
                 self.service,

@@ -4,23 +4,17 @@ from typing import Dict
 
 from bson import ObjectId
 
+from orion.core.utils.exceptions import BrokenExperiment
 from orion.service.broker.broker import (
     ExperimentBroker,
     RequestContext,
     build_experiment,
     build_experiment_client,
     get_storage_for_user,
+    success,
 )
 
 log = logging.getLogger(__file__)
-
-
-def success(values) -> Dict:
-    return dict(status=0, result=values)
-
-
-def error(exception) -> Dict:
-    return dict(status=1, error=str(exception))
 
 
 class ObserverError(Exception):
@@ -54,6 +48,9 @@ class LocalExperimentBroker(ExperimentBroker):
         log.debug("Suggest %s", experiment_name)
         client = build_experiment(name=experiment_name, storage=storage)
         client.remote_mode = True
+
+        if client.is_broken:
+            raise BrokenExperiment()
 
         trial = client.suggest(**request.data).to_dict()
 
@@ -108,6 +105,9 @@ class LocalExperimentBroker(ExperimentBroker):
 
         client = build_experiment(name=experiment_name, storage=storage)
         client.remote_mode = True
+
+        if client.is_broken:
+            raise BrokenExperiment()
 
         return success(dict(is_done=client.is_done))
 

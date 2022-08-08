@@ -11,7 +11,7 @@ import pytest
 
 from orion.core.io.database.mongodb import MongoDB
 from orion.service.broker.broker import ServiceContext
-from orion.service.client import ClientREST, ExperiementIsNotSetup
+from orion.service.client import ClientREST, ExperiementIsNotSetup, RemoteException
 from orion.storage.legacy import Legacy
 from orion.testing.mongod import mongod
 
@@ -234,3 +234,15 @@ def test_is_done():
         assert len(trials) == 10
 
         print("Done")
+
+
+def test_broken_experiment():
+    pass
+
+
+def test_authentication():
+    with server():
+        client = ClientREST(ENDPOINT, "NOT A TOKEN")
+
+        with pytest.raises(RemoteException):
+            client.new_experiment(name="MyExperiment")

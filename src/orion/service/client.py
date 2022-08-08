@@ -13,6 +13,10 @@ class ExperiementIsNotSetup(Exception):
     pass
 
 
+class RemoteException(Exception):
+    pass
+
+
 @dataclass
 class RemoteExperiment:
     euid: str
@@ -55,7 +59,7 @@ class ClientREST:
             return payload.pop("result")
 
         error = payload.pop("error")
-        raise RuntimeError(f"Remote server returned error code {status}: {error}")
+        raise RemoteException(f"Remote server returned error code {status}: {error}")
 
     def new_experiment(self, name, **config) -> RemoteExperiment:
         payload = self._post("experiment", name=name, **config)

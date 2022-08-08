@@ -12,6 +12,14 @@ from orion.storage.legacy import Legacy
 log = logging.getLogger(__file__)
 
 
+def success(values) -> dict:
+    return dict(status=0, result=values)
+
+
+def error(exception) -> dict:
+    return dict(status=1, error=str(exception))
+
+
 @dataclass
 class ServiceContext:
     """Global configuration for the service"""

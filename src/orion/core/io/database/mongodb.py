@@ -262,8 +262,8 @@ class MongoDB(Database):
         if type(data) not in (list, tuple):
             data["owner_id"] = self.owner
         else:
-            for d in data:
-                d["owner_id"] = self.owner
+            for document in data:
+                document["owner_id"] = self.owner
 
         if query is None:
             # We can assume that we do not want to update.
