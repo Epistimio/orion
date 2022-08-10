@@ -41,6 +41,7 @@ extras_require = {
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
         "numpy",
@@ -59,6 +60,7 @@ extras_require = {
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
         "numpy",
+        "pymoo==0.5.0",
         "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
     ],
 }

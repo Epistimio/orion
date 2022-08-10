@@ -6,7 +6,6 @@ The HEBO algorithm implementation can be found at https://github.com/huawei-noah
 """
 from __future__ import annotations
 
-import contextlib
 import copy
 import typing
 import warnings
@@ -19,26 +18,24 @@ import pandas as pd
 from typing_extensions import Literal, TypedDict  # type: ignore
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.hebo.random_state import RandomState
 from orion.algo.space import Dimension, Fidelity, Space
 from orion.core.utils.format_trials import dict_to_trial
+from orion.core.utils.module_import import ImportOptional
+from orion.core.utils.random_state import RandomState, control_randomness
+from orion.core.worker.transformer import TransformedDimension
 from orion.core.worker.trial import Trial
 
-_HEBO_REQUIRED_ERROR = None
-try:
+with ImportOptional("HEBO") as import_optional:
     import hebo
     from hebo.acquisitions.acq import MACE, Acquisition
     from hebo.design_space import DesignSpace
     from hebo.design_space.param import Parameter
     from torch.quasirandom import SobolEngine
 
-except ImportError as err:
-    MACE = object
-    _HEBO_REQUIRED_ERROR = ImportError(
-        "The HEBO package is not installed. Install it with `pip install orion[hebo]`"
-    )
+if import_optional.failed:
+    MACE = object  # noqa: F811
 
-if typing.TYPE_CHECKING and _HEBO_REQUIRED_ERROR:
+if typing.TYPE_CHECKING and import_optional.failed:
     Acquisition = object  # noqa
     DesignSpace = object  # noqa
     Parameter = object  # noqa
@@ -137,8 +134,7 @@ class HEBO(BaseAlgorithm):
         seed: int | None = None,
         parameters: Parameters | dict | None = None,
     ):
-        if _HEBO_REQUIRED_ERROR:
-            raise _HEBO_REQUIRED_ERROR
+        import_optional.ensure()
 
         super().__init__(space)
         if isinstance(parameters, dict):
@@ -167,7 +163,7 @@ class HEBO(BaseAlgorithm):
 
         self.hebo_space: DesignSpace = orion_space_to_hebo_space(self.space)
 
-        with self._control_randomness():
+        with control_randomness(self):
             self.model = hebo.optimizers.hebo.HEBO(
                 space=self.hebo_space,
                 model_name=self.parameters.model_name,
@@ -238,7 +234,7 @@ class HEBO(BaseAlgorithm):
         A list of trials representing values suggested by the algorithm.
         """
         trials: list[Trial] = []
-        with self._control_randomness():
+        with control_randomness(self):
             v: pd.DataFrame = self.model.suggest(n_suggestions=num)
         point_dicts: dict[int, dict] = v.to_dict(orient="index")  # type: ignore
 
@@ -280,7 +276,7 @@ class HEBO(BaseAlgorithm):
 
         x_df = pd.DataFrame(new_xs)
         y_array = np.array(new_ys).reshape([-1, 1])
-        with self._control_randomness():
+        with control_randomness(self):
             self.model.observe(X=x_df, y=y_array)
 
     def _hebo_params_to_orion_params(self, hebo_params: dict) -> dict:
@@ -330,11 +326,11 @@ class HEBO(BaseAlgorithm):
         params = {}
         for name, value in orion_params.items():
             orion_dim: Dimension = self.space[name]
-            hebo_dim: Parameter = self.hebo_space.paras[name]
-
             if orion_dim.type == "fidelity":
                 continue
             from hebo.design_space.categorical_param import CategoricalPara
+
+            hebo_dim: Parameter = self.hebo_space.paras[name]
 
             if isinstance(hebo_dim, CategoricalPara):
                 if (
@@ -353,32 +349,13 @@ class HEBO(BaseAlgorithm):
         # Need to convert the {name: value} of point_dict into this format for Orion's Trial.
         # Add the max value for the Fidelity dimensions, if any.
         if self.fidelity_index is not None:
-            fidelity_dim: Fidelity = self.space[self.fidelity_index]
-            orion_params[self.fidelity_index] = fidelity_dim.high
+            fidelity_dim = self.space[self.fidelity_index]
+            while isinstance(fidelity_dim, TransformedDimension):
+                fidelity_dim = fidelity_dim.original_dimension
+            assert isinstance(fidelity_dim, Fidelity)
+            orion_params[self.fidelity_index] = float(fidelity_dim.high)
         trial: Trial = dict_to_trial(orion_params, space=self.space)
         return trial
-
-    @contextlib.contextmanager
-    def _control_randomness(self):
-        """Seeds the randomness inside the indented block of code using `self.random_state`.
-
-        NOTE: This only has an effect if `seed_rng` was called previously, i.e. if
-        `self.random_state` is not None.
-        """
-        if self.random_state is None:
-            yield
-            return
-
-        # Save the initial random state.
-        initial_rng_state = RandomState.current()
-        # Set the random state.
-        self.random_state.set()
-        yield
-        # Update the random state stored on `self`, so that the changes inside the block are
-        # reflected in the RandomState object.
-        self.random_state = RandomState.current()
-        # Reset the initial state.
-        initial_rng_state.set()
 
 
 def orion_space_to_hebo_space(space: Space) -> DesignSpace:

@@ -142,7 +142,10 @@ def display_budgets(
     logger.info(table_str)
 
 
-class Hyperband(BaseAlgorithm):
+BracketT = TypeVar("BracketT", bound="HyperbandBracket")
+
+
+class Hyperband(BaseAlgorithm, Generic[BracketT]):
     """Hyperband formulates hyperparameter optimization as a pure-exploration non-stochastic
     infinite-armed bandit problem where a predefined resource like iterations, data samples,
     or features is allocated to randomly sampled configurations.`
@@ -177,7 +180,7 @@ class Hyperband(BaseAlgorithm):
         super().__init__(space)
         self.seed = seed
         self.repetitions = repetitions
-        self.brackets: list[HyperbandBracket] = []
+        self.brackets: list[BracketT] = []
         # Stores Point id (with no fidelity) -> Bracket (int)
         self.trial_to_brackets: dict[str, int] = {}
 
@@ -210,12 +213,10 @@ class Hyperband(BaseAlgorithm):
         if seed is not None:
             self.seed_rng(seed)
 
-    def create_bracket(
-        self, i: Any, budgets: list[BudgetTuple], iteration: int
-    ) -> HyperbandBracket:
+    def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> BracketT:
         return HyperbandBracket(self, budgets, iteration)
 
-    def sample_from_bracket(self, bracket: HyperbandBracket, num: int) -> list[Trial]:
+    def sample_from_bracket(self, bracket: BracketT, num: int) -> list[Trial]:
         """Sample new trials from bracket"""
         trials: list[Trial] = []
         while len(trials) < num:
@@ -226,6 +227,10 @@ class Hyperband(BaseAlgorithm):
             trial = trial.branch(
                 params={self.fidelity_index: bracket.rungs[0]["resources"]}
             )
+            # trial.branch used for convenience only to override fidelity value.
+            # Parent should be set to None since this parent trial does not exist in
+            # the registry.
+            trial.parent = None
 
             full_id = self.get_id(trial, ignore_fidelity=False, ignore_parent=False)
             id_wo_fidelity = self.get_id(
@@ -233,7 +238,7 @@ class Hyperband(BaseAlgorithm):
             )
 
             bracket_id = self.trial_to_brackets.get(id_wo_fidelity, None)
-            bracket_observed: HyperbandBracket | None = None
+            bracket_observed: BracketT | None = None
             if bracket_id is not None:
                 bracket_observed = self.brackets[bracket_id]
             else:
@@ -420,13 +425,13 @@ class Hyperband(BaseAlgorithm):
         # Reset brackets seeds
         self.seed_brackets(self.seed)
 
-    def create_brackets(self) -> list[HyperbandBracket]:
+    def create_brackets(self) -> list[BracketT]:
         return [
-            self.create_bracket(i, bracket_budgets, self.executed_times + 1)
-            for i, bracket_budgets in enumerate(self.budgets)
+            self.create_bracket(bracket_budgets, self.executed_times + 1)
+            for bracket_budgets in self.budgets
         ]
 
-    def _get_bracket(self, trial: Trial) -> HyperbandBracket:
+    def _get_bracket(self, trial: Trial) -> BracketT:
         """Get the bracket of a trial"""
         _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True, ignore_parent=True)
         return self.brackets[self.trial_to_brackets[_id_wo_fidelity]]
@@ -553,23 +558,14 @@ class HyperbandBracket(Generic[Owner]):
         self._samples = None
 
     def get_sample(self) -> Trial | None:
-        if self._samples is None:
+        if not self._samples:
+            was = self._samples
             n_samples = int(self.rungs[0]["n_trials"] * self.buffer)
             self._samples = self.owner.space.sample(n_samples, seed=self.seed)
+            if was is not None:
+                return None
 
-        return self._samples.pop(0) if self._samples else None
-
-    def sample(self, num: int) -> list[Trial]:
-        """Sample a new trial with lowest fidelity"""
-        should_have_n_trials = self.rungs[0]["n_trials"]
-        n_trials = len(self.rungs[0]["results"])
-        request = max(min(should_have_n_trials - n_trials, num), 0)
-        if request == 0:
-            return []
-        # BUG: Shouldn't this be `sample_from_bracket`?
-        return self.owner.sample_for_bracket(
-            request, self, buffer=should_have_n_trials * 10 / request
-        )
+        return self._samples.pop(0)
 
     def register(self, trial: Trial) -> None:
         """Register a trial in the corresponding rung"""
@@ -718,6 +714,12 @@ class HyperbandBracket(Generic[Owner]):
                         self.owner.fidelity_index: self.rungs[rung_id + 1]["resources"]
                     },
                 )
+                # NOTE: We could use branching with data folder copy like it is done in
+                #       PBT to support checkpointing. This would require adapting the
+                #       documentation however, and perhaps make sure trial.hash_params
+                #       does not take into account trial.parent otherwise it will change
+                #       the id although we ignore the fidelity dimension.
+                candidate.parent = None
                 if not self.owner.has_suggested(candidate):
                     trials.append(candidate)
 

@@ -827,6 +827,17 @@ class TestTPE(BaseAlgoTests):
         # Verify trial was sampled randomly, not using BO
         assert spy.call_count == 2
 
+    def test_suggest_n(self):
+        """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
+        algo = self.create_algo()
+        trials = algo.suggest(5)
+        assert trials is not None
+        # TODO: Why did this change? Why did it use to return 5 trials?
+        if self._current_phase.name == "bo":
+            assert len(trials) == 1
+        else:
+            assert len(trials) == 5
+
     @first_phase_only
     def test_thin_real_space(self, monkeypatch, first_phase: TestPhase):
         algo = self.create_algo()

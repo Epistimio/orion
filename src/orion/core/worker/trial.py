@@ -268,6 +268,7 @@ class Trial:
             raise ValueError(f"Some parameters are not part of base trial: {params}")
 
         return Trial(
+            experiment=self.experiment,
             status=status,
             params=config_params,
             parent=self.id,
@@ -335,7 +336,7 @@ class Trial:
         ignore_lie=False,
         ignore_parent=False,
     ):
-        if not self.exp_working_dir:
+        if self.exp_working_dir is None:
             raise RuntimeError(
                 "Cannot infer trial's working_dir because trial.exp_working_dir is not set."
             )
@@ -523,7 +524,7 @@ class Trial:
             ignore_experiment = True
 
         experiment_repr = ""
-        if not ignore_experiment:
+        if not ignore_experiment and trial.experiment is not None:
             experiment_repr = str(trial.experiment)
 
         lie_repr = ""

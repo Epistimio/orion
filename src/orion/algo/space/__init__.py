@@ -27,9 +27,13 @@ scipy documentation for each specific implementation of a random variable type,
 unless noted otherwise!
 
 """
+from __future__ import annotations
+
 import copy
 import logging
 import numbers
+from functools import singledispatch
+from typing import Any, Generic, TypeVar
 
 import numpy
 from scipy.stats import distributions
@@ -64,6 +68,59 @@ def check_random_state(seed):
 class _Ellipsis:  # pylint:disable=too-few-public-methods
     def __repr__(self):
         return "..."
+
+
+def _to_snake_case(name: str) -> str:
+    """Transform a class name ``MyClassName`` to snakecase ``my_class_name``"""
+    frags = []
+
+    frag = []
+    for c in name:
+        if c.isupper() and frag:
+            frags.append("".join(frag).lower())
+            frag = []
+
+        frag.append(c)
+
+    if frag:
+        frags.append("".join(frag).lower())
+
+    return "_".join(frags)
+
+
+T = TypeVar("T")
+
+
+class SpaceConverter(Generic[T]):
+    """SpaceConverter iterates over an Orion search space.
+    This can be used to implement new features for ``orion.algo.space.Space``
+    outside of Orion's code base.
+
+    """
+
+    def convert_dimension(self, dimension: Dimension) -> T:
+        """Call the dimension conversion handler"""
+        return getattr(self, _to_snake_case(type(dimension).__name__))(dimension)
+
+    def dimension(self, dim: Dimension) -> T:
+        """Called when the dimension does not have a decicated handler"""
+
+    def real(self, dim: Real) -> T:
+        """Called by real dimension"""
+
+    def integer(self, dim: Integer) -> T:
+        """Called by integer dimension"""
+
+    def categorical(self, dim: Categorical) -> T:
+        """Called by categorical dimension"""
+
+    def fidelity(self, dim: Fidelity) -> T:
+        """Called by fidelity dimension"""
+
+    def space(self, space: Space) -> None:
+        """Iterate through a research space and visit each dimensions"""
+        for _, dim in space.items():
+            self.visit(dim)
 
 
 class Dimension:
@@ -1095,3 +1152,14 @@ class Space(dict):
         for dim in self.values():
             capacities *= dim.cardinality
         return capacities
+
+
+@singledispatch
+def to_orionspace(space: Any) -> Space:
+    """Convert a third party search space into an Orion compatible space
+
+    Raises
+    ------
+    NotImplementedError if no conversion was registered
+    """
+    raise NotImplementedError()

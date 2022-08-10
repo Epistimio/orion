@@ -6,20 +6,20 @@ import contextlib
 import copy
 from typing import List, Optional
 
-try:
+from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Fidelity, Space
+from orion.core.utils import format_trials
+from orion.core.utils.flatten import flatten
+from orion.core.utils.module_import import ImportOptional
+from orion.core.worker.transformer import TransformedDimension
+
+with ImportOptional("Ax") as import_optional:
     from ax.service.ax_client import AxClient
     from ax.service.utils.instantiation import ObjectiveProperties
 
-    has_Ax = True
-except ImportError:
-    AxClient = None
-    ObjectiveProperties = None
-    has_Ax = False
-
-from orion.algo.base import BaseAlgorithm
-from orion.algo.space import Space
-from orion.core.utils import format_trials
-from orion.core.utils.flatten import flatten
+if import_optional.failed:
+    AxClient = None  # noqa: F811
+    ObjectiveProperties = None  # noqa: F811
 
 
 class AxOptimizer(BaseAlgorithm):
@@ -35,7 +35,7 @@ class AxOptimizer(BaseAlgorithm):
         generator and for BoTorch-powered models. For the latter models, the
         trials generated from the same optimization setup with the same seed,
         will be mostly similar, but the exact parameter values may still vary
-        and trials latter in the optimizations will diverge more and more.  This
+        and trials latter in the optimizations will diverge more and more. This
         is because a degree of randomness is essential for high performance of
         the Bayesian optimization models and is not controlled by the seed.
 
@@ -75,6 +75,8 @@ class AxOptimizer(BaseAlgorithm):
         extra_objectives: Optional[List[str]] = None,
         constraints: Optional[List[str]] = None,
     ):
+        import_optional.ensure()
+
         extra_objectives = set(extra_objectives if extra_objectives else [])
         constraints = constraints if constraints else []
 
@@ -202,9 +204,11 @@ class AxOptimizer(BaseAlgorithm):
                 if self.fidelity_index is not None:
                     # Convert 0-dim arrays into python numbers so their type can
                     # be validated by Ax
-                    parameters[self.fidelity_index] = float(
-                        self.space[self.fidelity_index].high
-                    )
+                    fidelity_dim = self.space[self.fidelity_index]
+                    while isinstance(fidelity_dim, TransformedDimension):
+                        fidelity_dim = fidelity_dim.original_dimension
+                    assert isinstance(fidelity_dim, Fidelity)
+                    parameters[self.fidelity_index] = float(fidelity_dim.high)
 
                 new_trial = format_trials.dict_to_trial(parameters, self.space)
 

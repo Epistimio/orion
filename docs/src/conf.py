@@ -213,7 +213,7 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad"]
+autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad", "torch"]
 
 # -- Gallery configuration -----------------------------------------------
 
@@ -303,6 +303,7 @@ type_hints = [
     "orion.core.utils.tree.T",
     "orion.core.utils.tree.NodeType",
     "orion.core.utils.tree.Self",
+    "orion.algo.space.T",
     "Self",
     "AlgoType",
     "T",

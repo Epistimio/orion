@@ -17,20 +17,18 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.dehb.brackets import SHBracketManager
 from orion.algo.space import Fidelity, Space
 from orion.core.utils import format_trials
+from orion.core.utils.module_import import ImportOptional
 from orion.core.worker.trial import Trial
 
-try:
+with ImportOptional("DEHB") as import_optional:
     from dehb.optimizers import DEHB as DEHBImpl
     from sspace.convert import convert_space
     from sspace.convert import transform as to_orion
 
-    IMPORT_ERROR = None
-except ImportError as exc:
+if import_optional.failed:
 
-    class DEHBImpl:
+    class DEHBImpl:  # noqa: F811
         pass
-
-    IMPORT_ERROR = exc
 
 
 logger = logging.getLogger(__name__)
@@ -265,6 +263,8 @@ class DEHB(BaseAlgorithm):
         min_clip: int | None = None,
         max_clip: int | None = None,
     ):
+        import_optional.ensure()
+
         # Sanity Check
         if mutation_strategy not in MUTATION_STRATEGIES:
             raise UnsupportedConfiguration(

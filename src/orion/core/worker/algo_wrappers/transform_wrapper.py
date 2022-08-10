@@ -7,9 +7,10 @@ from abc import ABC, abstractmethod
 from logging import getLogger as get_logger
 from typing import Any
 
-from orion.algo.registry import RegistryMapping
+from orion.algo.registry import Registry, RegistryMapping
 from orion.algo.space import Space
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT, AlgoWrapper
+from orion.core.worker.transformer import TransformedSpace
 from orion.core.worker.trial import Trial
 
 if typing.TYPE_CHECKING:
@@ -71,15 +72,31 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
         for transformed_trial in transformed_trials:
             if transformed_trial not in self.algorithm.space:
                 raise ValueError(
-                    f"Trial {transformed_trial.id} not contained in transformed space:\n"
+                    f"Trial {transformed_trial.id} not contained in space:\n"
                     f"Params: {transformed_trial.params}\n"
                     f"Space: {self.algorithm.space}"
                 )
             original = self.reverse_transform(transformed_trial)
 
+            if transformed_trial.parent:
+                # NOTE: This block of code was previously in what is now the SpaceTransform wrapper
+                transformed_space = self.algorithm.space
+                assert isinstance(transformed_space, TransformedSpace)
+                original_parent = get_original_parent(
+                    registry=self.algorithm.registry,
+                    transformed_space=transformed_space,
+                    trial_parent_id=transformed_trial.parent,
+                )
+                if original_parent.id not in self.registry:
+                    raise KeyError(
+                        f"Parent with id {original_parent.id} is not registered."
+                    )
+
+                original.parent = original_parent.id
+
             if self.has_suggested(original):
                 logger.debug(
-                    "Already suggested or observed a trial that matches %s in the registry.",
+                    "Already have a trial that matches %s in the registry.",
                     original,
                 )
                 # We already have a trial that is equivalent to this one.
@@ -87,30 +104,24 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 original = self.registry.get_existing(original)
                 logger.debug("Matching trial (with results/status): %s", original)
 
-                # Copy over the status and any results from the original to the transformed trial
+                # Copy over the status and results from the original to the transformed trial
                 # and observe it.
                 transformed_trial = _copy_status_and_results(
                     trial_with_status=original, trial_with_params=transformed_trial
                 )
                 logger.debug(
-                    "Transformed trial (with status/results): %s", transformed_trial
+                    "Transformed trial (with results/status): %s", transformed_trial
                 )
                 self.algorithm.observe([transformed_trial])
-
             else:
-                logger.debug(
-                    "New suggestion: %s",
-                    original,
-                )
                 # We haven't seen this trial before. Register it.
-                self.registry.register(original)
+                self.register(original)
                 trials.append(original)
 
             # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it
             # itself in its `suggest`.
             # Register the equivalence between these trials.
             self.registry_mapping.register(original, transformed_trial)
-
         return trials
 
     def observe(self, trials: list[Trial]) -> None:
@@ -207,6 +218,30 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 for experiment_info, trials in warm_start_trials
             ]
         )
+
+
+def get_original_parent(
+    registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str
+) -> Trial:
+    """Get the parent trial in original space based on parent id in transformed_space.
+
+    If the parent trial also has a parent, then this function is called recursively
+    to set the proper parent id in original space rather than transformed space.
+    """
+    try:
+        parent = registry[trial_parent_id]
+    except KeyError as e:
+        raise KeyError(f"Parent with id {trial_parent_id} is not registered.") from e
+
+    original_parent = transformed_space.reverse(parent)
+    if original_parent.parent is None:
+        return original_parent
+
+    original_grand_parent = get_original_parent(
+        registry, transformed_space, original_parent.parent
+    )
+    original_parent.parent = original_grand_parent.id
+    return original_parent
 
 
 def _copy_status_and_results(
