@@ -143,3 +143,9 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
                 f"trials from prior experiments."
             )
         self.algorithm.warm_start(warm_start_trials)
+
+    def register(self, trial: Trial) -> None:
+        super().register(trial)
+        # By default, we don't expect any transformation to be required. So we pass down the
+        # registration to the wrapped algorithm as well.
+        self.algorithm.register(trial)
