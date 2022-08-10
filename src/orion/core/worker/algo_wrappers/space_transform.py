@@ -42,13 +42,6 @@ class SpaceTransform(TransformWrapper[AlgoT]):
         super().__init__(space=space, algorithm=algorithm)
 
     @property
-    def original_space(self) -> Space:
-        """The original space (before transformations).
-        This is exposed to the outside, but not to the wrapped algorithm.
-        """
-        return self.space
-
-    @property
     def transformed_space(self) -> TransformedSpace | ReshapedSpace:
         """The transformed space (after transformations).
         This is only exposed to the wrapped algo, not to classes outside of this.
