@@ -60,17 +60,13 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
 
         If it isn't, raises a RuntimeError.
         """
-        if isinstance(self, target_type):
-            return self
-        if isinstance(self.algorithm, target_type):
-            return self.algorithm
         node = self
-        while node is not node.unwrapped:
+        while isinstance(node, AlgoWrapper):
             if isinstance(node, target_type):
                 return node
-            if not isinstance(node, AlgoWrapper):
-                break
             node = node.algorithm
+        if isinstance(node, target_type):
+            return node
         raise RuntimeError(
             f"Unable to find a wrapper or algorithm of type {target_type} in {self}"
         )
