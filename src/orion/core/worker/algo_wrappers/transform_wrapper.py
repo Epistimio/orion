@@ -10,7 +10,7 @@ from typing import Any
 from orion.algo.registry import Registry, RegistryMapping
 from orion.algo.space import Space
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT, AlgoWrapper
-from orion.core.worker.transformer import TransformedSpace
+from orion.core.worker.transformer import ReshapedSpace, TransformedSpace
 from orion.core.worker.trial import Trial
 
 if typing.TYPE_CHECKING:
@@ -79,12 +79,14 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
             original = self.reverse_transform(transformed_trial)
 
             if transformed_trial.parent:
-                # NOTE: This block of code was previously in what is now the SpaceTransform wrapper
-                transformed_space = self.algorithm.space
-                assert isinstance(transformed_space, TransformedSpace)
+                # NOTE: This block of code was previously in what has become the SpaceTransform
+                # wrapper, which assumes the following:
+                assert isinstance(
+                    self.algorithm.space, (TransformedSpace, ReshapedSpace)
+                )
                 original_parent = get_original_parent(
                     registry=self.algorithm.registry,
-                    transformed_space=transformed_space,
+                    transformed_space=self.algorithm.space,
                     trial_parent_id=transformed_trial.parent,
                 )
                 if original_parent.id not in self.registry:
@@ -221,7 +223,9 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
 
 
 def get_original_parent(
-    registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str
+    registry: Registry,
+    transformed_space: TransformedSpace | ReshapedSpace,
+    trial_parent_id: str,
 ) -> Trial:
     """Get the parent trial in original space based on parent id in transformed_space.
 

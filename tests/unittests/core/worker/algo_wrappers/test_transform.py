@@ -105,7 +105,7 @@ class TestSpaceTransformWraps:
         assert not ptrials
         palgo.algorithm.possible_values = [fixed_suggestion]
         del fixed_suggestion._params[-1]
-        with pytest.raises(ValueError, match="not contained in transformed space"):
+        with pytest.raises(ValueError, match="not contained in space"):
             palgo.suggest(1)
 
     def test_observe(self, palgo: SpaceTransform[DumbAlgo], fixed_suggestion: Trial):
