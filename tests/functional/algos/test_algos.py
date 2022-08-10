@@ -14,6 +14,7 @@ from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
 from orion.client import build_experiment, create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.module_import import ImportOptional
+from orion.core.worker.algo_wrappers import AlgoWrapper
 from orion.core.worker.primary_algo import SpaceTransform
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
@@ -508,16 +509,18 @@ def test_branching_algos(
     def build_params_hist(trial: Trial) -> list[str]:
         params = [trial.params_repr()]
         while trial.parent:
+            assert isinstance(exp.algorithms, AlgoWrapper)
             trial = exp.algorithms.registry[trial.parent]
             params.append(trial.params_repr())
         return params[::-1]
 
     for trial in exp.fetch_trials():
-        params = build_params_hist(trial)
+        params_history = build_params_hist(trial)
+        assert isinstance(exp.algorithms, AlgoWrapper)
+        algo = exp.algorithms.unwrapped
         # TODO: This assumes algo.fidelities which may be specific to PBT...
-        assert (
-            len(params)
-            == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
-        )
+        assert hasattr(algo, "fidelities")
+        fidelities: list = algo.fidelities  # type: ignore
+        assert len(params_history) == fidelities.index(trial.params["noise"]) + 1
         with open(os.path.join(trial.working_dir, "hist.txt")) as f:
-            assert "\n".join(params) == f.read().strip("\n")
+            assert "\n".join(params_history) == f.read().strip("\n")
