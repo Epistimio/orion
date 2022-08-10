@@ -102,8 +102,6 @@ def test_warm_starting_helps(
 
     objective_with = _get_objective(best_trial_with)
     objective_without = _get_objective(best_trial_without)
-    # FIXME: This is still somehow not always true, weirdly enough. Perhaps the TPE algo has
-    # n_initial_trials which is too large for us to enter the optimization phase?
     assert objective_with < objective_without
 
 
