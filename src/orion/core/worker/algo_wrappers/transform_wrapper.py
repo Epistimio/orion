@@ -95,7 +95,8 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 )
                 if original_parent.id not in self.registry:
                     raise KeyError(
-                        f"Parent trial {original_parent} is not registered in the algorithm!"
+                        f"Parent trial with id {original_parent.id} is not registered in the "
+                        f"algorithm!"
                     )
                 original.parent = original_parent.id
 
@@ -235,7 +236,13 @@ def get_original_parent(
     If the parent trial also has a parent, then this function is called recursively
     to set the proper parent id in original space rather than transformed space.
     """
-    transformed_parent = transformed_registry[transformed_trial_parent_id]
+    try:
+        transformed_parent = transformed_registry[transformed_trial_parent_id]
+    except KeyError as e:
+        raise KeyError(
+            f"Parent trial with id {transformed_trial_parent_id} is not registered in the "
+            f"algorithm's registry."
+        ) from e
     original_parent = transformed_space.reverse(transformed_parent)
     # NOTE: This 'reverse' copies the parent property.
     assert original_parent.parent == transformed_parent.parent

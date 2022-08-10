@@ -324,9 +324,10 @@ class TestRegistration:
         algo_wrapper = SpaceTransform(algorithm=algo, space=original_space)
 
         with pytest.raises(
-            KeyError, match=f"Parent with id {base_transformed.id} is not registered."
+            KeyError,
+            match=f"Parent trial with id {base_transformed.id} is not registered",
         ):
-            suggested_trials = algo_wrapper.suggest(1)
+            _ = algo_wrapper.suggest(1)
 
     def test_suggest_parents(self):
         original_space = SpaceBuilder().build(
