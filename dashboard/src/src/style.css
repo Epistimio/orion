@@ -46,3 +46,19 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
 .bx--grid.database-page .experiment-word {
   display: inline-block;
 }
+.bx--grid.database-page .header-dnd {
+  cursor: grab;
+}
+.bx--grid.database-page th.no-placeholder.header-unsortable {
+  cursor: default;
+}
+.bx--grid.database-page th.no-placeholder.header-unsortable button {
+  cursor: default;
+}
+.bx--grid.database-page th.no-placeholder.header-unsortable:hover button.bx--table-sort {
+  background-color: inherit;
+}
+.bx--grid.database-page th.is-over button.bx--table-sort {
+  font-style: italic;
+  font-weight: normal;
+}

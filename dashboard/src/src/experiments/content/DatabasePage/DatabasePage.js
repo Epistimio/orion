@@ -106,6 +106,7 @@ class TrialsProvider {
       paramKeys.sort();
       const headers = [
         {
+          id: 'id',
           accessorKey: 'id',
           header: 'ID',
           sortingFn: 'text',
@@ -120,9 +121,10 @@ class TrialsProvider {
         },
         {
           // Grouped parameters columns
+          id: 'parameters',
           header: 'Parameters',
           columns: paramKeys.map(k => {
-            const p = { accessorFn: r => r[k], header: k.substr(7) };
+            const p = { id: k, accessorFn: r => r[k], header: k.substr(7) };
             if (!sortableParamCols[k]) {
               // column not sortable
               p.cell = props => props.getValue();
@@ -132,23 +134,28 @@ class TrialsProvider {
           }),
         },
         {
+          id: 'submitTime',
           accessorKey: 'submitTime',
           header: 'Submit time',
         },
         {
+          id: 'startTime',
           accessorKey: 'startTime',
           header: 'Start time',
         },
         {
+          id: 'endTime',
           accessorKey: 'endTime',
           header: 'End time',
         },
         {
+          id: 'objective',
           accessorKey: 'objective',
           header: 'Objective',
         },
         {
           // not sortable
+          id: 'statistics',
           accessorKey: 'statistics',
           header: 'Statistics',
           cell: props => props.getValue(),
