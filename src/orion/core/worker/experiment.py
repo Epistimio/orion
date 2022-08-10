@@ -258,7 +258,7 @@ class Experiment(Generic[AlgoT]):
 
         return pandas.DataFrame(data, columns=columns)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree=False) -> list[Trial]:
         """Fetch all trials of the experiment"""
         return self._select_evc_call(with_evc_tree, "fetch_trials")
 

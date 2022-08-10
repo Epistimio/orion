@@ -270,7 +270,7 @@ class ExperimentClient:
         """
         return self._experiment.to_pandas(with_evc_tree=with_evc_tree)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree=False) -> list[Trial]:
         """Fetch all trials of the experiment
 
         Parameters

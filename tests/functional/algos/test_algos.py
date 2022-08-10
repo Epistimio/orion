@@ -11,7 +11,7 @@ import numpy
 import pytest
 
 from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
-from orion.client import create_experiment, workon
+from orion.client import build_experiment, create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.module_import import ImportOptional
 from orion.core.worker.primary_algo import SpaceTransform
@@ -392,7 +392,7 @@ def test_with_multidim(algorithm):
 def test_with_evc(algorithm, storage):
     """Test a scenario where algos are warm-started with EVC."""
 
-    base_exp = create_experiment(
+    base_exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
         algorithms=algorithm_configs["random"],
@@ -401,7 +401,7 @@ def test_with_evc(algorithm, storage):
     )
     base_exp.workon(rosenbrock, max_trials=10)
 
-    exp = create_experiment(
+    exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
         algorithms=algorithm,
@@ -495,11 +495,12 @@ def test_branching_algos(
     algorithm: dict[str, dict], storage: BaseStorageProtocol, tmp_path: Path
 ):
 
-    exp = create_experiment(
+    exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
         algorithms=algorithm,
         working_dir=tmp_path,
+        storage=storage,
     )
 
     exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
