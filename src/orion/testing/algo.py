@@ -349,16 +349,14 @@ class BaseAlgoTests:
         Parameters
         ----------
         trials: list of ``orion.core.worker.trial.Trial``
-            Trials formatted as tuples of values
         algo: ``orion.algo.base.BaseAlgorithm``
-            The algorithm used to observe trials.
         rng: ``numpy.random.RandomState``
             Random number generator to generate random objectives.
         """
         backward.algo_observe(
             algo,
             trials,
-            [dict(objective=rng.normal()) for i in range(len(trials))],
+            [dict(objective=rng.normal()) for _ in trials],
         )
 
     @classmethod

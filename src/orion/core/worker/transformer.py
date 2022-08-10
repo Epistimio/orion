@@ -830,11 +830,11 @@ class ReshapedSpace(Space):
         """Original space without reshape or transformations"""
         return self._original_space
 
-    def transform(self, trial):
+    def transform(self, trial: Trial) -> Trial:
         """Transform a point that was in the original space to be in this one."""
         return self.reshape(self.original.transform(trial))
 
-    def reverse(self, transformed_trial):
+    def reverse(self, transformed_trial: Trial) -> Trial:
         """Reverses transformation so that a point from this `ReshapedSpace` to be in the original
         one.
         """
