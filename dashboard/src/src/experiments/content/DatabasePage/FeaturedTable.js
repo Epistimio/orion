@@ -83,6 +83,11 @@ export function FeaturedTable({ columns, data, experiment }) {
   const setCarbonPagination = ({ page, pageSize }) => {
     setPagination({ pageIndex: page - 1, pageSize: pageSize });
   };
+  const experimentWords = experiment.split(/(\W|_)/).map((p, i) => (
+    <span className="experiment-word" key={i}>
+      {p}
+    </span>
+  ));
   return (
     <div className="bx--data-table-container">
       <div className="bx--data-table-header">
@@ -91,10 +96,10 @@ export function FeaturedTable({ columns, data, experiment }) {
             <Column>
               <div>
                 <h4 className="bx--data-table-header__title">
-                  Experiment Trials for "{experiment}"
+                  Experiment Trials for "{experimentWords}"
                 </h4>
                 <p className="bx--data-table-header__description">
-                  {data.length} trial(s) for experiment "{experiment}"
+                  {data.length} trial(s) for experiment "{experimentWords}"
                 </p>
               </div>
             </Column>

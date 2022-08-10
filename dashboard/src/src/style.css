@@ -43,3 +43,6 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
   display: flex;
   align-items: flex-end;
 }
+.bx--grid.database-page .experiment-word {
+  display: inline-block;
+}
