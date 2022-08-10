@@ -152,6 +152,7 @@ class TrialsProvider {
           accessorKey: 'statistics',
           header: 'Statistics',
           cell: props => props.getValue(),
+          enableSorting: false,
         },
       ];
       this.trials[experiment] = {
