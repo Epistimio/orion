@@ -158,8 +158,7 @@ class BaseAlgorithm:
     ) -> str:
         """Return unique hash for a trials based on params
 
-        The trial is assumed to be in the transformed space if the algorithm is working in a
-        transformed space.
+        The trial is assumed to be in the optimization space of the algorithm.
 
         Parameters
         ----------
@@ -176,7 +175,6 @@ class BaseAlgorithm:
         return trial.compute_trial_hash(
             trial,
             ignore_fidelity=ignore_fidelity,
-            ignore_experiment=True,
             ignore_lie=True,
             ignore_parent=ignore_parent,
         )
