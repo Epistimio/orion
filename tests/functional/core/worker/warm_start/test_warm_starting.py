@@ -184,8 +184,8 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
     cold_objective = _get_best_trial_objective(cold_start)
     warm_objective = _get_best_trial_objective(warm_start)
     hot_objective = _get_best_trial_objective(hot_start)
-    assert hot_objective < warm_objective
-    assert warm_objective < cold_objective
+    assert hot_objective <= warm_objective
+    assert warm_objective <= cold_objective
 
 
 P = ParamSpec("P")
