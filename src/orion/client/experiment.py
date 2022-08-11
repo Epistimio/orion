@@ -30,6 +30,8 @@ from orion.storage.base import FailedUpdate
 
 log = logging.getLogger(__name__)
 
+STOPPED_STATUS = {"completed", "interrupted", "suspended"}
+
 
 def reserve_trial(experiment, producer, pool_size, timeout=None):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
@@ -848,8 +850,20 @@ class ExperimentClient:
             raise RuntimeError(f"Reservation for trial {trial.id} has been lost.")
 
     def _maintain_reservation(self, trial):
-        self._pacemakers[trial.id] = TrialPacemaker(trial, self.storage)
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self)
         self._pacemakers[trial.id].start()
+
+    def _update_heardbeat(self, trial):
+        """Try to update the heartbeat, returns true if the Pacemaker should be stopped"""
+        trial = self.storage.get_trial(self.trial)
+
+        if trial.status in STOPPED_STATUS:
+            return True
+        else:
+            if not self.client.update_heartbeat(trial):
+                return True
+
+        return False
 
     def _release_reservation(self, trial, raise_if_unreserved=True):
         if trial.id not in self._pacemakers:

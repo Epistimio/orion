@@ -66,9 +66,13 @@ EOM
 
 function add_user {
     # Create a user for the orion database
+    #
+    #   How to make a group setup
+    #
 
     username=$1
     password=$2
+    token=$3
 
     CMD=$(cat << EOM
     use orion
@@ -78,6 +82,13 @@ function add_user {
         roles: [
             { role: "readWrite", db: "orion" }
         ]
+    })
+
+    use users
+    db.insertOne({
+        username: "$username",
+        password: "$password",
+        token: "$token",
     })
 EOM
     )
@@ -109,9 +120,9 @@ function launch {
     # Start mongodb with access control
     start_mongod
 
-    add_user User1 Pass1
-    add_user User2 Pass2
-    add_user User3 Pass3
+    add_user User1 Pass1 Tok1
+    add_user User2 Pass2 Tok2
+    add_user User3 Pass3 Tok3
 }
 
 export MONGO_RUNNING="${DB_PATH}"

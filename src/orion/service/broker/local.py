@@ -26,7 +26,7 @@ class LocalExperimentBroker(ExperimentBroker):
     Parallel requests will instantiate different clients which might generate race conditions,
     locks are required.
 
-    The everything keeps being reinstantiated.
+    Everything keeps being reinstantiated.
 
     This is easy to scale because nothing is kept between request,
     we can just load balance the request through n servers.
@@ -39,9 +39,23 @@ class LocalExperimentBroker(ExperimentBroker):
         client = build_experiment_client(request)
         euid = str(client._experiment.id)
 
-        return success(dict(experiment_name=str(client.name), euid=euid))
+        return success(
+            dict(
+                experiment_name=str(client.name),
+                euid=euid,
+                space=client._experiment.space,
+                version=client._experiment.version,
+                mode="r",
+                working_dir=client._experiment.working_dir,
+                metadata=client._experiment.metadata,
+            )
+        )
 
-    def suggest(self, request: RequestContext):
+    def suggest(self, request: RequestContext) -> Dict:
+
+        # NOTE: need to fix lost trials here
+        # so reschedule them
+
         storage = get_storage_for_user(request)
         experiment_name = request.data.pop("experiment_name")
 
@@ -54,6 +68,9 @@ class LocalExperimentBroker(ExperimentBroker):
 
         trial = client.suggest(**request.data).to_dict()
 
+        # We only send the minimal amount of information to the client
+        # to force the client the communicate with us
+        # to avoid having invisible issues.
         small_trial = dict()
         small_trial["db_id"] = str(trial["_id"])
         small_trial["params_id"] = str(trial["id"])
@@ -61,7 +78,7 @@ class LocalExperimentBroker(ExperimentBroker):
 
         return success(dict(trials=[small_trial]))
 
-    def observe(self, request: RequestContext):
+    def observe(self, request: RequestContext) -> Dict:
         storage = get_storage_for_user(request)
 
         trial_id = request.data.get("trial_id")
@@ -79,6 +96,7 @@ class LocalExperimentBroker(ExperimentBroker):
             {
                 "_id": ObjectId(trial_id),
                 "experiment": ObjectId(euid),
+                "owner_id": request.username,
                 "status": "reserved",  # This protects us against race conditions
             },  # Trials should be reserved when being worked on
             {
@@ -99,7 +117,7 @@ class LocalExperimentBroker(ExperimentBroker):
 
         return success(dict())
 
-    def is_done(self, request: RequestContext):
+    def is_done(self, request: RequestContext) -> Dict:
         storage = get_storage_for_user(request)
         experiment_name = request.data.pop("experiment_name")
 
@@ -111,14 +129,15 @@ class LocalExperimentBroker(ExperimentBroker):
 
         return success(dict(is_done=client.is_done))
 
-    def heartbeat(self, request: RequestContext):
+    def heartbeat(self, request: RequestContext) -> Dict:
         storage = get_storage_for_user(request)
         trial_id = request.data.get("trial_id")
 
-        storage._db._db["trials"].update_one(
+        results = storage._db._db["trials"].update_one(
             {
                 "_id": ObjectId(trial_id),
                 "status": "reserved",
+                "owner_id": request.username,
             },
             {
                 "$set": {
@@ -126,4 +145,4 @@ class LocalExperimentBroker(ExperimentBroker):
                 }
             },
         )
-        return success(dict())
+        return success(dict(updated=results.modified_count > 0))

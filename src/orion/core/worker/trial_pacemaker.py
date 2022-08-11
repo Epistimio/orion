@@ -7,8 +7,6 @@ Monitor trials and update their heartbeat
 """
 import threading
 
-STOPPED_STATUS = {"completed", "interrupted", "suspended"}
-
 
 class TrialPacemaker(threading.Thread):
     """Monitor a given trial inside a thread, updating its heartbeat
@@ -21,12 +19,12 @@ class TrialPacemaker(threading.Thread):
 
     """
 
-    def __init__(self, trial, storage, wait_time=60):
+    def __init__(self, trial, client, wait_time=60):
         threading.Thread.__init__(self)
         self.stopped = threading.Event()
         self.trial = trial
         self.wait_time = wait_time
-        self.storage = storage
+        self.client = client
 
     def stop(self):
         """Stop monitoring."""
@@ -39,10 +37,5 @@ class TrialPacemaker(threading.Thread):
             self._monitor_trial()
 
     def _monitor_trial(self):
-        trial = self.storage.get_trial(self.trial)
-
-        if trial.status in STOPPED_STATUS:
+        if self.client._update_heardbeat():
             self.stopped.set()
-        else:
-            if not self.storage.update_heartbeat(trial):
-                self.stopped.set()

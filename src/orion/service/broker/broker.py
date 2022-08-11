@@ -13,20 +13,39 @@ log = logging.getLogger(__file__)
 
 
 def success(values) -> dict:
+    """Create a success response"""
     return dict(status=0, result=values)
 
 
 def error(exception) -> dict:
+    """Create an error response"""
     return dict(status=1, error=str(exception))
+
+
+@dataclass
+class Database:
+    database: str = "orion"
+    host: str = "localhost"
+    port: int = 8123
+
+
+@dataclass
+class Authentication:
+    """Authentication configuration"""
+
+    database: str = "users"
+    host: str = "localhost"
+    port: int = 8123
+    usernane: str = "god"
+    password: str = "god123"
 
 
 @dataclass
 class ServiceContext:
     """Global configuration for the service"""
 
-    database: str = "orion"
-    host: str = "localhost"
-    port: int = 8123
+    database: Database = Database()
+    authentication: Authentication = Authentication()
     broker: ExperimentBroker = None
     auth = AuthenticationService = None
 
@@ -44,11 +63,8 @@ class RequestContext:
     response: falcon.Response = None  # Response to be sent back
 
 
-def trial_to_json(t):
-    pass
-
-
 def get_storage_for_user(request: RequestContext):
+    """Create a mongodb connection for a given user"""
     log.debug("Connecting to database")
 
     assert request.username is not None
@@ -110,8 +126,17 @@ class ExperimentBroker:
     def stop(self):
         pass
 
-    def new_experiment(self, experiment_ctx):
-        pass
+    def new_experiment(self, request: RequestContext):
+        """Create a new experiment"""
 
-    def suggest(self, experiment_ctx):
-        pass
+    def suggest(self, request: RequestContext):
+        """Suggest and reserve a new trial"""
+
+    def observe(self, request: RequestContext):
+        """observe and release a trial"""
+
+    def is_done(self, request: RequestContext):
+        """return true if the experiment is done"""
+
+    def heartbeat(self, request: RequestContext):
+        """update the heartbeat of a trial"""

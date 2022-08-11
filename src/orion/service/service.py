@@ -27,13 +27,16 @@ class QueryRoute:
 
     @property
     def broker(self):
+        """Return orion experiment broker"""
         return self.service.broker
 
     @property
     def auth(self):
+        """returns the authentication service"""
         return self.service.auth
 
     def authenticate(self, token):
+        """Authenticate a user given its API token"""
         if token is None:
             raise AuthenticationError("Missing authentication token")
 
