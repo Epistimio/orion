@@ -15,11 +15,13 @@ import {
 import {
   Column,
   Grid,
+  Modal,
   MultiSelect,
   Pagination,
   Row,
 } from 'carbon-components-react';
 import { useDrag, useDrop } from 'react-dnd';
+import ReactDOM from 'react-dom';
 
 function collectLeafColumnIndices(columDefinitions, output) {
   columDefinitions.forEach(columnDefinition => {
@@ -136,6 +138,28 @@ function DraggableColumnHeader({ header, table }) {
 const sortingIcons = {
   asc: <ArrowUp20 className="bx--table-sort__icon" />,
   desc: <ArrowDown20 className="bx--table-sort__icon" />,
+};
+
+/**
+ * Simple state manager for modals.
+ * Reference: https://react.carbondesignsystem.com/?path=/story/components-modal--with-state-manager
+ */
+const ModalStateManager = ({
+  renderLauncher: LauncherContent,
+  children: ModalContent,
+}) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      {!ModalContent || typeof document === 'undefined'
+        ? null
+        : ReactDOM.createPortal(
+            <ModalContent open={open} setOpen={setOpen} />,
+            document.body
+          )}
+      {LauncherContent && <LauncherContent open={open} setOpen={setOpen} />}
+    </>
+  );
 };
 
 export function FeaturedTable({ columns, data, experiment }) {
@@ -266,13 +290,47 @@ export function FeaturedTable({ columns, data, experiment }) {
           </thead>
           <tbody>
             {table.getRowModel().rows.map(row => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
+              <ModalStateManager
+                key={row.id}
+                renderLauncher={({ setOpen }) => (
+                  <tr className="trial-row" onClick={() => setOpen(true)}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                )}>
+                {({ open, setOpen }) => (
+                  <Modal
+                    modalLabel={`Trial info`}
+                    modalHeading={`${experiment} / ${row.original.id}`}
+                    passiveModal={true}
+                    // primaryButtonText="Add"
+                    // secondaryButtonText="Cancel"
+                    open={open}
+                    onRequestClose={() => setOpen(false)}>
+                    <Grid>
+                      {defaultColumnOrder.map((columnID, index) => (
+                        <Row key={columnID}>
+                          <Column className="modal-trial-key">
+                            <strong>
+                              {columnID.startsWith('params.')
+                                ? 'Parameter '
+                                : null}
+                              {table.getColumn(columnID).columnDef.header}
+                            </strong>
+                          </Column>
+                          <Column>{row.getValue(columnID)}</Column>
+                        </Row>
+                      ))}
+                    </Grid>
+                  </Modal>
+                )}
+              </ModalStateManager>
             ))}
           </tbody>
         </table>
