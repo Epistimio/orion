@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.scss';
 import './style.css';
 import App from './App';
@@ -8,13 +8,12 @@ import { HashRouter as Router } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-ReactDOM.render(
+createRoot(document.getElementById('root')).render(
   <Router>
     <DndProvider backend={HTML5Backend}>
       <App />
     </DndProvider>
-  </Router>,
-  document.getElementById('root')
+  </Router>
 );
 
 // If you want your app to work offline and load faster, you can change
