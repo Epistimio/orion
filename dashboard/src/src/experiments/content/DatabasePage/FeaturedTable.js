@@ -50,15 +50,11 @@ function DraggableColumnHeader({ header, table }) {
   const [{ isOver }, dropRef] = useDrop({
     accept: 'column',
     drop: draggedColumn => {
-      console.log('column', column.id, 'dragged', draggedColumn.id, 'before');
-      console.log(columnOrder);
       const newColumnOrder = reorderColumn(
         draggedColumn.id,
         column.id,
         columnOrder
       );
-      console.log('after');
-      console.log(newColumnOrder);
       setColumnOrder(newColumnOrder);
     },
     collect: monitor => ({
@@ -166,8 +162,6 @@ export function FeaturedTable({ columns, data, experiment }) {
   const defaultColumnOrder = [];
   collectLeafColumnIndices(columns, defaultColumnOrder);
   const [columnOrder, setColumnOrder] = React.useState(defaultColumnOrder);
-  console.log('Default');
-  console.log(columnOrder);
   const [sorting, setSorting] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [{ pageIndex, pageSize }, setPagination] = React.useState({
