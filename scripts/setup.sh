@@ -68,7 +68,8 @@ function add_user {
     # Create a user for the orion database
     #
     #   How to make a group setup
-    #
+    #       - make a Token => Group
+    #       - Token => User => Group
 
     username=$1
     password=$2

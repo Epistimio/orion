@@ -11,6 +11,7 @@ import falcon
 from orion.service.auth import NO_CREDENTIAL, AuthenticationService
 from orion.service.broker.broker import RequestContext, ServiceContext
 from orion.service.broker.local import LocalExperimentBroker
+from orion.service.metrics import initialize_metrics
 
 log = logging.getLogger(__file__)
 
@@ -168,6 +169,8 @@ def main(
         level=logging.DEBUG,
         force=True,
     )
+
+    initialize_metrics(8000)
 
     with OrionService(servicectx) as service:
         service.run(address, port)
