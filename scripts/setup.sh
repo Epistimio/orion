@@ -85,8 +85,7 @@ function add_user {
         ]
     })
 
-    use users
-    db.insertOne({
+    db.users.insertOne({
         username: "$username",
         password: "$password",
         token: "$token",

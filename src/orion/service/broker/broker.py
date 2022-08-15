@@ -26,7 +26,7 @@ def error(exception) -> dict:
 class Database:
     database: str = "orion"
     host: str = "localhost"
-    port: int = 8123
+    port: int = 8124
 
 
 @dataclass
@@ -35,7 +35,7 @@ class Authentication:
 
     database: str = "users"
     host: str = "localhost"
-    port: int = 8123
+    port: int = 8124
     usernane: str = "god"
     password: str = "god123"
 
@@ -69,10 +69,17 @@ def get_storage_for_user(request: RequestContext):
 
     assert request.username is not None
 
+    log.info(
+        "%s, %s, %s",
+        request.service.database.host,
+        request.service.database.port,
+        request.service.database.database,
+    )
+
     db = MongoDB(
-        name=request.service.database,
-        host=request.service.host,
-        port=request.service.port,
+        name=request.service.database.database,
+        host=request.service.database.host,
+        port=request.service.database.port,
         username=request.username,
         password=request.password,
     )

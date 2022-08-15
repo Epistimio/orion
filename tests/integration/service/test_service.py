@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 
 import pytest
+from bson import ObjectId
 
 from orion.core.io.database.mongodb import MongoDB
 from orion.service.broker.broker import ServiceContext
@@ -146,8 +147,10 @@ def test_suggest():
 
         storage = get_mongo_admin()
         mongo = storage._db._db
-        trials = mongo["trials"].find()
+        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id))))
 
+        assert len(client_trials) == 1
+        assert len(trials) == 1
         assert (
             str(trials[0]["_id"]) == client_trials[0].db_id
         ), "Trial exists inside the database"
@@ -167,15 +170,16 @@ def test_observe():
         )
 
         # Suggest a trial using current experiment
-        trials = client.suggest()
+        client_trials = client.suggest()
 
-        print(trials)
-        assert len(trials) > 0
-        client.observe(trials[0], [dict(name="objective", type="objective", value=1)])
+        assert len(client_trials) > 0
+        client.observe(
+            client_trials[0], [dict(name="objective", type="objective", value=1)]
+        )
 
         storage = get_mongo_admin()
         mongo = storage._db._db
-        trials = mongo["trials"].find()
+        trials = mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id)))
 
         assert trials[0].get("results") is not None, "Trial has results"
         assert trials[0]["results"] == [
@@ -198,14 +202,14 @@ def test_heartbeat():
 
         storage = get_mongo_admin()
         mongo = storage._db._db
-        trials = list(mongo["trials"].find())
+        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id))))
 
         old_heartbeat = trials[0]["heartbeat"]
 
         # Update heartbeat
         client.heartbeat(client_trials[0])
 
-        trials = list(mongo["trials"].find())
+        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id))))
         new_heartbeat = trials[0]["heartbeat"]
         assert old_heartbeat != new_heartbeat, "Heartbeat should have changed"
 
@@ -231,6 +235,7 @@ def test_is_done():
         storage = get_mongo_admin()
         mongo = storage._db._db
         trials = list(mongo["trials"].find())
+        print(trials)
         assert len(trials) == 10
 
         print("Done")

@@ -111,7 +111,9 @@ class ClientREST:
         self._post(
             "observe",
             euid=self.experiment_id,
+            experiment_name=experiment_name,
             trial_id=trial.db_id,
+            trial_hash=trial.params_id,
             results=results,
         )
 

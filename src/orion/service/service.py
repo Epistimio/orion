@@ -2,13 +2,16 @@
 
 All the logic is implemented through the broker interface
 """
+import json
 import logging
 import os
 import traceback
 
 import falcon
+from bson import json_util
+from falcon import media
 
-from orion.service.auth import NO_CREDENTIAL, AuthenticationService
+from orion.service.auth import NO_CREDENTIAL, AuthenticationServiceMock
 from orion.service.broker.broker import RequestContext, ServiceContext
 from orion.service.broker.local import LocalExperimentBroker
 from orion.service.metrics import initialize_metrics
@@ -89,9 +92,22 @@ class OrionService:
     def __init__(self, ctx) -> None:
         self.ctx = ctx
         ctx.broker = LocalExperimentBroker(ctx)
-        ctx.auth = AuthenticationService()
+        ctx.auth = AuthenticationServiceMock(ctx)
+
+        # Use bson json hooks to convert standard bson types to json
+        # this includes ObjectId and datetime
+        json_handler = media.JSONHandler(
+            dumps=lambda obj: json.dumps(obj, default=json_util.default),
+            loads=lambda obj: json.loads(obj, object_hook=json_util.object_hook),
+        )
+        extra_handlers = {
+            "application/json": json_handler,
+        }
 
         self.app = falcon.App()
+        self.app.req_options.media_handlers.update(extra_handlers)
+        self.app.resp_options.media_handlers.update(extra_handlers)
+
         OrionService.add_routes(self.app, ctx)
 
     @staticmethod
