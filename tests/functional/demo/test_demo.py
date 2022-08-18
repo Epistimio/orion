@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from collections import defaultdict
 from contextlib import contextmanager
@@ -50,6 +51,28 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     trials = list(storage.fetch_trials(uid=exp["_id"]))
     assert len(trials) <= 10
     assert trials[-1].status == "completed"
+
+
+def test_demo_stdout_stderr():
+    """Check that script output is printed and shown to the end user"""
+
+    dir = os.path.dirname(os.path.abspath(__file__))
+
+    process = subprocess.Popen(
+        [sys.executable, os.path.join(dir, "orion_black_box.py")],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdout, stderr = process.communicate()
+
+    stdout = stdout.decode("utf-8")
+    stderr = stderr.decode("utf-8")
+
+    assert "Start main process" in stdout
+    assert "Start Child Process" in stdout
+
+    assert "Child Error" in stderr
+    assert "Main process Error" in stderr
 
 
 def test_demo(storage, monkeypatch):
