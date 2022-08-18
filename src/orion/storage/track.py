@@ -150,7 +150,7 @@ class TrialAdapter:
         return self.storage.group_id
 
     @property
-    def hearbeat(self):
+    def heartbeat(self):
         """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(
             self.storage.metadata.get("heartbeat", 0)
@@ -310,14 +310,6 @@ class TrialAdapter:
     def end_time(self, value):
         """See `~orion.core.worker.trial.Trial`"""
         self.storage.metadata["end_time"] = value
-
-    @property
-    def heartbeat(self):
-        """Trial Heartbeat"""
-        heartbeat = self.storage.metadata.get("heartbeat")
-        if heartbeat:
-            return datetime.datetime.utcfromtimestamp(heartbeat)
-        return None
 
     @property
     def parents(self):

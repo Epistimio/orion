@@ -3,7 +3,11 @@ Last update August 2nd, 2022
 
 ## Next releases - Short-Term
 
+### v0.2.7
+
 ### v0.2.6
+
+- Fix; make sure stdout from user script is printed back and not captured
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
