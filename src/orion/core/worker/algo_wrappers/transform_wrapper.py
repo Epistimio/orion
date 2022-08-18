@@ -272,6 +272,7 @@ def _copy_status_and_results(*, trial_with_status: Trial, trial: Trial) -> Trial
 
     Returns a new Trial.
     """
+    # TODO: Copy all the attributes of interest explicitly, rather than copying everything.
     new_transformed_trial = copy.deepcopy(trial_with_status)
     new_transformed_trial.parent = trial.parent
     # pylint: disable=protected-access
