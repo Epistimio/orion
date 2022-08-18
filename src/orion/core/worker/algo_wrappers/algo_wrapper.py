@@ -146,6 +146,3 @@ class AlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
 
     def register(self, trial: Trial) -> None:
         super().register(trial)
-        # By default, we don't expect any transformation to be required. So we pass down the
-        # registration to the wrapped algorithm as well.
-        self.algorithm.register(trial)
