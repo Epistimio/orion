@@ -26,7 +26,7 @@ def error(exception) -> dict:
 class Database:
     database: str = "orion"
     host: str = "localhost"
-    port: int = 8124
+    port: int = 8123
 
 
 @dataclass

@@ -18,7 +18,7 @@ from orion.testing.mongod import mongod
 
 TOKEN = "Tok1"
 TOKEN2 = "Tok2"
-ENDPOINT = "http://localhost:8080"
+
 
 log = logging.getLogger(__file__)
 
@@ -64,32 +64,48 @@ def service(port, address, servicectx) -> None:
         p.join()
 
 
-MONGO_DB_PORT = 8124
-MONGO_DB_ADDRESS = "localhost"
+def get_free_ports(number=1):
+    """Get a free port for the mongodb & the http server to allow tests in parallel"""
+    import socket
 
+    sockets = []
+    ports = []
+
+    for _ in range(number):
+        sock = socket.socket()
+        sock.bind(('', 0))
+        ports.append(sock.getsockname()[1])
+        sockets.append(socket)
+
+    for sock in sockets:
+        sock.close()
+
+    return tuple(ports)
+
+MONGO_DB_PORT = None
 
 @contextmanager
 def server():
+    global MONGO_DB_PORT
+
+    MONGO_DB_PORT, HTTP_PORT = get_free_ports(2)
+    MONGO_DB_ADDRESS = "localhost"
+    ENDPOINT = f"http://localhost:{HTTP_PORT}"
+
     servicectx = ServiceContext()
-    servicectx.host = MONGO_DB_ADDRESS
-    servicectx.port = MONGO_DB_PORT
+    servicectx.database.host = MONGO_DB_ADDRESS
+    servicectx.database.port = MONGO_DB_PORT
 
-    with mongod(servicectx.port, servicectx.host):
-        with service(8080, "localhost", servicectx):
-            yield
-
-
-def test_setup():
-    with mongod(MONGO_DB_PORT, MONGO_DB_ADDRESS) as dbpath:
-        print("Starting service")
-        # add_mongo_user(dbpath, "abc", '123')
+    with mongod(servicectx.database.port, servicectx.database.host):
+        with service(HTTP_PORT, "localhost", servicectx):
+            yield ENDPOINT
 
 
-def get_mongo_admin():
+def get_mongo_admin(port=MONGO_DB_PORT):
     db = MongoDB(
         name="orion",
-        host=MONGO_DB_ADDRESS,
-        port=MONGO_DB_PORT,
+        host="localhost",
+        port=port,
         username="god",
         password="god123",
         owner=None,
@@ -99,7 +115,7 @@ def get_mongo_admin():
 
 
 def test_new_experiment():
-    with server():
+    with server() as ENDPOINT:
         client = ClientREST(ENDPOINT, TOKEN)
         expid1 = client.new_experiment(
             name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
@@ -130,7 +146,7 @@ def test_new_experiment():
 
 
 def test_suggest():
-    with server():
+    with server() as ENDPOINT:
         client = ClientREST(ENDPOINT, TOKEN)
 
         # no experiment
@@ -157,7 +173,7 @@ def test_suggest():
 
 
 def test_observe():
-    with server():
+    with server() as ENDPOINT:
         client = ClientREST(ENDPOINT, TOKEN)
 
         # no experiment
@@ -188,7 +204,7 @@ def test_observe():
 
 
 def test_heartbeat():
-    with server():
+    with server() as ENDPOINT:
         client = ClientREST(ENDPOINT, TOKEN)
 
         # create an experiment
@@ -215,7 +231,7 @@ def test_heartbeat():
 
 
 def test_is_done():
-    with server():
+    with server() as ENDPOINT:
         client = ClientREST(ENDPOINT, TOKEN)
 
         # create an experiment
@@ -246,7 +262,7 @@ def test_broken_experiment():
 
 
 def test_authentication():
-    with server():
+    with server() as ENDPOINT:
         client = ClientREST(ENDPOINT, "NOT A TOKEN")
 
         with pytest.raises(RemoteException):

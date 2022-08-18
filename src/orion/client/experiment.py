@@ -625,12 +625,7 @@ class ExperimentClient:
                 f"Reservation for trial {trial.id} has been lost."
             ) from e
         finally:
-            self._release_reservation(
-                trial,
-                raise_if_unreserved=raise_if_unreserved
-                if not self.remote_mode
-                else False,
-            )
+            self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved if not self.remote_mode else False)
 
     @contextmanager
     def tmp_executor(self, executor, **config):
