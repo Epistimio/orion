@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 """Common fixtures and utils for unittests and functional tests."""
+from __future__ import annotations
+
 import getpass
 import os
+from typing import Any
 
 import numpy
 import pytest
@@ -76,7 +79,7 @@ class DumbAlgo(BaseAlgorithm):
         suspend=False,
         done=False,
         seed=None,
-        **nested_algo
+        **nested_algo,
     ):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
@@ -111,7 +114,7 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super().state_dict
+        _state_dict: dict[str, Any] = super().state_dict
         _state_dict.update(
             {
                 "index": self._index,
