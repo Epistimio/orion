@@ -319,13 +319,14 @@ class PBT(BaseAlgorithm):
 
         """
         assert num > 0
-        # Sample points until num is met, or population_size
-        num_random_samples = min(max(self.population_size - self._num_root, 0), num)
         logger.debug(
             "PBT has %s pending or completed trials at root, %s broken trials.",
             self._num_root,
             len(self.lineages) - self._num_root,
         )
+
+        # Sample points until num is met, or population_size
+        num_random_samples = min(max(self.population_size - self._num_root, 0), num)
         logger.debug("Sampling %s new trials", num_random_samples)
         trials = self._sample(num_random_samples)
         logger.debug("Sampled %s new trials", len(trials))

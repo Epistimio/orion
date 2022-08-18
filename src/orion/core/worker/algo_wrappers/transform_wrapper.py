@@ -100,6 +100,9 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                     )
                 original.parent = original_parent.id
 
+            # NOTE: We're setting the original.parent above because `self.has_suggested` uses the
+            # trial id, which itself depends on the parent attribute of the trial.
+
             if self.has_suggested(original):
                 logger.debug(
                     "Already have a trial that matches %s in the registry.",
@@ -107,27 +110,33 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 )
                 # We already have a trial that is equivalent to this one.
                 # Fetch the actual trial (with the status and possibly results)
-                original = self.registry.get_existing(original)
-                logger.debug("Matching trial (with results/status): %s", original)
+                original_with_status = self.registry.get_existing(original)
+                logger.debug(
+                    "Matching trial (with results/status): %s", original_with_status
+                )
 
                 # Copy over the status and results from the original to the transformed trial
                 # and observe it.
                 transformed_trial = _copy_status_and_results(
-                    trial_with_status=original, trial_with_params=transformed_trial
+                    trial_with_status=original_with_status,
+                    trial_with_params=transformed_trial,
                 )
                 logger.debug(
                     "Transformed trial (with results/status): %s", transformed_trial
                 )
                 self.algorithm.observe([transformed_trial])
+
+                # Register the equivalence between these trials.
+                self.registry_mapping.register(original_with_status, transformed_trial)
             else:
                 # We haven't seen this trial before. Register it.
                 self.register(original)
                 trials.append(original)
 
-            # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it
-            # itself in its `suggest`.
-            # Register the equivalence between these trials.
-            self.registry_mapping.register(original, transformed_trial)
+                # NOTE: Here we DON'T register the transformed trial, we let the algorithm do it
+                # itself in its `suggest`.
+                # Register the equivalence between these trials.
+                self.registry_mapping.register(original, transformed_trial)
         return trials
 
     def observe(self, trials: list[Trial]) -> None:
