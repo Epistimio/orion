@@ -71,7 +71,7 @@ def test_fetch_metadata_python_users_script(script_path):
 
 
 def test_fetch_metadata_not_existed_path():
-    """Verfiy the raise of error when user_script path does not exist"""
+    """Verify the raise of error when user_script path does not exist"""
     path = "dummy/path"
     with pytest.raises(OSError) as exc_info:
         resolve_config.fetch_metadata(user_args=[path])
