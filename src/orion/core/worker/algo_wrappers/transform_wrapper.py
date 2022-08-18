@@ -83,14 +83,14 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
             assert original.parent == transformed_trial.parent
             if transformed_trial.parent:
                 # NOTE: This block of code was previously in what has become the SpaceTransform
-                # wrapper, which assumes the following:
+                # wrapper, which assumes the following: (remove if this is unnecessary and holds
+                # otherwise).
                 assert not isinstance(self.algorithm, AlgoWrapper)
                 assert isinstance(
                     self.algorithm.space, (TransformedSpace, ReshapedSpace)
                 )
-                original_parent = get_original_parent(
+                original_parent = self._get_original_parent(
                     transformed_registry=self.algorithm.registry,
-                    transformed_space=self.algorithm.space,
                     transformed_trial_parent_id=transformed_trial.parent,
                 )
                 if original_parent.id not in self.registry:
@@ -234,35 +234,33 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
             ]
         )
 
+    def _get_original_parent(
+        self,
+        transformed_registry: Registry,
+        transformed_trial_parent_id: str,
+    ) -> Trial:
+        """Get the parent trial in original space based on parent id in transformed_space.
 
-def get_original_parent(
-    transformed_registry: Registry,
-    transformed_space: TransformedSpace | ReshapedSpace,
-    transformed_trial_parent_id: str,
-) -> Trial:
-    """Get the parent trial in original space based on parent id in transformed_space.
-
-    If the parent trial also has a parent, then this function is called recursively
-    to set the proper parent id in original space rather than transformed space.
-    """
-    try:
-        transformed_parent = transformed_registry[transformed_trial_parent_id]
-    except KeyError as e:
-        raise KeyError(
-            f"Parent trial with id {transformed_trial_parent_id} is not registered in the "
-            f"algorithm's registry."
-        ) from e
-    original_parent = transformed_space.reverse(transformed_parent)
-    # NOTE: This 'reverse' copies the parent property.
-    assert original_parent.parent == transformed_parent.parent
-    if transformed_parent.parent is not None:
-        original_grand_parent = get_original_parent(
-            transformed_registry=transformed_registry,
-            transformed_space=transformed_space,
-            transformed_trial_parent_id=transformed_parent.parent,
-        )
-        original_parent.parent = original_grand_parent.id
-    return original_parent
+        If the parent trial also has a parent, then this function is called recursively
+        to set the proper parent id in original space rather than transformed space.
+        """
+        try:
+            transformed_parent = transformed_registry[transformed_trial_parent_id]
+        except KeyError as e:
+            raise KeyError(
+                f"Parent trial with id {transformed_trial_parent_id} is not registered in the "
+                f"algorithm's registry."
+            ) from e
+        original_parent = self.reverse_transform(transformed_parent)
+        # NOTE: This 'reverse' copies the parent property.
+        assert original_parent.parent == transformed_parent.parent
+        if transformed_parent.parent is not None:
+            original_grand_parent = self._get_original_parent(
+                transformed_registry=transformed_registry,
+                transformed_trial_parent_id=transformed_parent.parent,
+            )
+            original_parent.parent = original_grand_parent.id
+        return original_parent
 
 
 def _copy_status_and_results(
