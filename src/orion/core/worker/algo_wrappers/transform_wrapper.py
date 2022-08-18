@@ -267,9 +267,13 @@ def _copy_status_and_results(
     trial_with_status: Trial, trial_with_params: Trial
 ) -> Trial:
     """Copies the results, status, and other data from `source_trial` to `original_trial`.
+
+    NOTE: The `.parent` attribute of the resulting trial is `trial_with_params.parent`.
+
     Returns a new Trial.
     """
     new_transformed_trial = copy.deepcopy(trial_with_status)
+    new_transformed_trial.parent = trial_with_params.parent
     # pylint: disable=protected-access
     new_transformed_trial._params = copy.deepcopy(trial_with_params._params)
     return new_transformed_trial
