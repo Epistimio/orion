@@ -253,21 +253,13 @@ class Consumer:
 
         try:
             # pylint: disable = consider-using-with
-            process = subprocess.Popen(
-                command,
-                env=environ,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
+            process = subprocess.Popen(command, env=environ)
         except PermissionError as exc:
             log.debug("Script is not executable")
             raise InexecutableUserScript(" ".join(cmd_args)) from exc
-
-        stdout, _ = process.communicate()
 
         return_code = process.wait()
         log.debug(f"Script finished with return code {return_code}")
 
         if return_code != 0:
-            log.debug("%s", stdout.decode("utf-8"))
             raise ExecutionError(return_code)
