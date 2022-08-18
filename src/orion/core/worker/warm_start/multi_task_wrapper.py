@@ -235,7 +235,7 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         params["task_id"] = task_id
         trial_with_task_id = dict_to_trial(params, self.algorithm.space)
         trial_with_task_id = _copy_status_and_results(
-            trial_with_status=trial, trial_with_params=trial_with_task_id
+            trial_with_status=trial, trial=trial_with_task_id
         )
         return trial_with_task_id
 
@@ -244,6 +244,6 @@ class MultiTaskWrapper(TransformWrapper[AlgoT], WarmStarteable):
         _ = params.pop("task_id")
         trial_without_task_id = dict_to_trial(params, self.space)
         trial_without_task_id = _copy_status_and_results(
-            trial_with_status=trial, trial_with_params=trial_without_task_id
+            trial_with_status=trial, trial=trial_without_task_id
         )
         return trial_without_task_id

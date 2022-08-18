@@ -5,7 +5,7 @@ import copy
 import typing
 from abc import ABC, abstractmethod
 from logging import getLogger as get_logger
-from typing import Any
+from typing import Any, Callable
 
 from orion.algo.registry import Registry, RegistryMapping
 from orion.algo.space import Space
@@ -77,19 +77,18 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                     f"Space: {self.algorithm.space}"
                 )
             original = self.reverse_transform(transformed_trial)
-
+            original.parent = None
             # The parent attribute is copied over from the transformed trial to the original trial.
             # this might be wrong, so we correct any errors if necessary.
-            assert original.parent == transformed_trial.parent
             if transformed_trial.parent:
                 # NOTE: This block of code was previously in what has become the SpaceTransform
                 # wrapper, which assumes the following: (remove if this is unnecessary and holds
                 # otherwise).
-                assert not isinstance(self.algorithm, AlgoWrapper)
                 assert isinstance(
                     self.algorithm.space, (TransformedSpace, ReshapedSpace)
                 )
-                original_parent = self._get_original_parent(
+                original_parent = _get_original_parent(
+                    reverse_transformation=self.reverse_transform,
                     transformed_registry=self.algorithm.registry,
                     transformed_trial_parent_id=transformed_trial.parent,
                 )
@@ -119,7 +118,7 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 # and observe it.
                 transformed_trial = _copy_status_and_results(
                     trial_with_status=original_with_status,
-                    trial_with_params=transformed_trial,
+                    trial=transformed_trial,
                 )
                 logger.debug(
                     "Transformed trial (with results/status): %s", transformed_trial
@@ -155,9 +154,10 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
             transformed_trials = self.registry_mapping.get_trials(trial)
 
             # Also transfer the status and results of `trial` to the equivalent transformed trials.
+            # NOTE: Preserves the .parent attribute of the transformed trials.
             transformed_trials = [
                 _copy_status_and_results(
-                    trial_with_status=trial, trial_with_params=transformed_trial
+                    trial_with_status=trial, trial=transformed_trial
                 )
                 for transformed_trial in transformed_trials
             ]
@@ -167,7 +167,7 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
                 # might happen when an insertion is done according to @bouthilx)
                 transformed_trial = self.transform(trial)
                 transformed_trial = _copy_status_and_results(
-                    trial_with_status=trial, trial_with_params=transformed_trial
+                    trial_with_status=trial, trial=transformed_trial
                 )
                 transformed_trials = [transformed_trial]
                 logger.debug(
@@ -234,46 +234,46 @@ class TransformWrapper(AlgoWrapper[AlgoT], ABC):
             ]
         )
 
-    def _get_original_parent(
-        self,
-        transformed_registry: Registry,
-        transformed_trial_parent_id: str,
-    ) -> Trial:
-        """Get the parent trial in original space based on parent id in transformed_space.
 
-        If the parent trial also has a parent, then this function is called recursively
-        to set the proper parent id in original space rather than transformed space.
-        """
-        try:
-            transformed_parent = transformed_registry[transformed_trial_parent_id]
-        except KeyError as e:
-            raise KeyError(
-                f"Parent trial with id {transformed_trial_parent_id} is not registered in the "
-                f"algorithm's registry."
-            ) from e
-        original_parent = self.reverse_transform(transformed_parent)
-        # NOTE: This 'reverse' copies the parent property.
-        assert original_parent.parent == transformed_parent.parent
-        if transformed_parent.parent is not None:
-            original_grand_parent = self._get_original_parent(
-                transformed_registry=transformed_registry,
-                transformed_trial_parent_id=transformed_parent.parent,
-            )
-            original_parent.parent = original_grand_parent.id
-        return original_parent
-
-
-def _copy_status_and_results(
-    trial_with_status: Trial, trial_with_params: Trial
+def _get_original_parent(
+    reverse_transformation: Callable[[Trial], Trial],
+    transformed_registry: Registry,
+    transformed_trial_parent_id: str,
 ) -> Trial:
-    """Copies the results, status, and other data from `source_trial` to `original_trial`.
+    """Get the parent trial in original space based on parent id in transformed_space.
+
+    If the parent trial also has a parent, then this function is called recursively
+    to set the proper parent id in original space rather than transformed space.
+    """
+    try:
+        transformed_parent = transformed_registry[transformed_trial_parent_id]
+    except KeyError as e:
+        raise KeyError(
+            f"Parent trial with id {transformed_trial_parent_id} is not registered in the "
+            f"algorithm's registry."
+        ) from e
+    original_parent = reverse_transformation(transformed_parent)
+    # NOTE: This 'reverse' copies the parent property.
+    assert original_parent.parent == transformed_parent.parent
+    if transformed_parent.parent is not None:
+        original_grand_parent = _get_original_parent(
+            reverse_transformation=reverse_transformation,
+            transformed_registry=transformed_registry,
+            transformed_trial_parent_id=transformed_parent.parent,
+        )
+        original_parent.parent = original_grand_parent.id
+    return original_parent
+
+
+def _copy_status_and_results(*, trial_with_status: Trial, trial: Trial) -> Trial:
+    """Copies the results, status, and other data from `trial_with_status` onto `trial`.
 
     NOTE: The `.parent` attribute of the resulting trial is `trial_with_params.parent`.
 
     Returns a new Trial.
     """
     new_transformed_trial = copy.deepcopy(trial_with_status)
-    new_transformed_trial.parent = trial_with_params.parent
+    new_transformed_trial.parent = trial.parent
     # pylint: disable=protected-access
-    new_transformed_trial._params = copy.deepcopy(trial_with_params._params)
+    new_transformed_trial._params = copy.deepcopy(trial._params)
     return new_transformed_trial
