@@ -492,7 +492,17 @@ class PBT(BaseAlgorithm):
         for trial in trials:
             if not self.has_suggested(trial):
                 logger.debug("Ignoring unknown trial %s", trial)
-                continue
+                # NOTE: Hacky fix. The trial we observe doesn't have the same parent as when we
+                # suggested it.
+                if any(t.params == trial.params for t in self.registry):
+                    trials_with_same_params = [
+                        t for t in self.registry if t.params == trial.params
+                    ]
+                    assert len(trials_with_same_params) == 1
+                    trial_with_same_params = trials_with_same_params[0]
+                    trial.parent = trial_with_same_params.parent
+                else:
+                    continue
 
             if not self.has_observed(trial) and trial.status in ["completed", "broken"]:
                 logger.debug("Will verify trial %s for queue", trial)
