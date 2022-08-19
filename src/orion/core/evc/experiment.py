@@ -223,7 +223,7 @@ def _adapt_parent_trials(node, parent_trials_node, ids):
     """
     # Ids from children are passed to prioritized them if they are also present in parent nodes.
     node_ids = {
-        trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+        trial.compute_trial_hash(trial, ignore_lie=True)
         for trial in node.item["trials"]
     } | ids
     if parent_trials_node is not None:
@@ -253,7 +253,7 @@ def _adapt_children_trials(node, children_trials_nodes):
 
     """
     ids = {
-        trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+        trial.compute_trial_hash(trial, ignore_lie=True)
         for trial in node.item["trials"]
     }
 
@@ -281,9 +281,7 @@ def adapt_trials(trials_tree):
     ids = set()
     for child in trials_tree.children:
         for trial in child.item["trials"]:
-            ids.add(
-                trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
-            )
+            ids.add(trial.compute_trial_hash(trial, ignore_lie=True))
     trials_tree.map(
         functools.partial(_adapt_parent_trials, ids=ids), trials_tree.parent
     )
