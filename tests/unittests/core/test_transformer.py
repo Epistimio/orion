@@ -198,7 +198,7 @@ class TestCompose:
                     ]
                 )
             )
-            == numpy.array([["ipsi", "asfa"], [2, "ipsi"]], dtype=numpy.object)
+            == numpy.array([["ipsi", "asfa"], [2, "ipsi"]], dtype=object)
         )
 
         t = Compose([Enumerate([2, "asfa"]), OneHotEncode(2)], "categorical")
@@ -206,11 +206,11 @@ class TestCompose:
         assert t.reverse(2.0) == "asfa"
         assert numpy.all(
             t.reverse((0.0, 0.0, 0.0, 1.0))
-            == numpy.array([2, 2, 2, "asfa"], dtype=numpy.object)
+            == numpy.array([2, 2, 2, "asfa"], dtype=object)
         )
         assert numpy.all(
             t.reverse(numpy.array([[0.55, 3.0], [-0.6, 1.0]]))
-            == numpy.array([["asfa", "asfa"], [2, "asfa"]], dtype=numpy.object)
+            == numpy.array([["asfa", "asfa"], [2, "asfa"]], dtype=object)
         )
 
         # for the crazy enough
@@ -221,7 +221,7 @@ class TestCompose:
         assert t.reverse(-0.2) == 2
         assert numpy.all(
             t.reverse([[0.5, 0], [1.0, 55]])
-            == numpy.array([[2, 2], [2, 2]], dtype=numpy.object)
+            == numpy.array([[2, 2], [2, 2]], dtype=object)
         )
 
     def test_infer_target_shape(self):
@@ -376,7 +376,7 @@ class TestEnumerate:
             t.reverse(3)
         assert numpy.all(
             t.reverse([[2, 1], [0, 2]])
-            == numpy.array([["ipsi", "asfa"], [2, "ipsi"]], dtype=numpy.object)
+            == numpy.array([["ipsi", "asfa"], [2, "ipsi"]], dtype=object)
         )
 
         # for the crazy enough
@@ -385,8 +385,7 @@ class TestEnumerate:
         with pytest.raises(IndexError):
             t.reverse(1)
         assert numpy.all(
-            t.reverse([[0, 0], [0, 0]])
-            == numpy.array([[2, 2], [2, 2]], dtype=numpy.object)
+            t.reverse([[0, 0], [0, 0]]) == numpy.array([[2, 2], [2, 2]], dtype=object)
         )
 
     def test_infer_target_shape(self):

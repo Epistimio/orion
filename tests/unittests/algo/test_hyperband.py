@@ -47,7 +47,6 @@ def create_rung_from_points(
         trial_hash = trial.compute_trial_hash(
             trial,
             ignore_fidelity=True,
-            ignore_experiment=True,
         )
         assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
@@ -681,7 +680,6 @@ class TestHyperband:
             trial_hash = trial.compute_trial_hash(
                 trial,
                 ignore_fidelity=True,
-                ignore_experiment=True,
             )
             assert trial.objective is not None
             results[trial_hash] = (trial.objective.value, trial)

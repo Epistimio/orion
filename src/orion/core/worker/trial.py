@@ -6,6 +6,8 @@ Container class for `Trial` entity
 Describe a particular training run, parameters and results.
 
 """
+from __future__ import annotations
+
 import copy
 import hashlib
 import logging
@@ -498,7 +500,7 @@ class Trial:
 
     @staticmethod
     def compute_trial_hash(
-        trial,
+        trial: Trial,
         ignore_fidelity=False,
         ignore_experiment=None,
         ignore_lie=False,
