@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 import orion.core.config
+from orion.storage.base import setup_storage
 
 log = logging.getLogger(__file__)
 
@@ -36,7 +37,12 @@ class RemoteTrial:
 
 
 class ClientREST:
-    """Implements the basic REST client for the experiment"""
+    """Implements the basic REST client for the experiment
+
+    Its goal is limited to communicating to the remote algo,
+    For generic query you should implement the functionality inside the rest storage.
+
+    """
 
     def __init__(self, endpoint, token) -> None:
         self.endpoint = endpoint
@@ -137,10 +143,29 @@ class ClientREST:
 # WIP
 
 from orion.client.experiment import ExperimentClient
+from orion.plotting.base import PlotAccessor
 
 
 class ExperimentClientREST(ExperimentClient):
-    """REST Client for an experiment"""
+    """REST Client for an experiment
+
+    Notes
+    -----
+    The main difference with the REST client is that the algorithm is not running alongside the client;
+    instead it is ran on the server.
+
+    So on this client there are no (Trial) Producer, instead it relies on the rest API to suggest
+    the trials.
+
+    The client is composed of two mains objects; the REST client which is in charge of communicating with the
+    algo running remotely (suggest & observe); and the REST storage which is in charge of fetching information.
+
+    The REST storage is mostly read only as we should not modify the experiment state while it is running.
+
+    To achieve this, the REST client overrides some selected methods from the ExperimentClient which short-circuits
+    the execution of the algorithm to use the rest calls.
+
+    """
 
     @staticmethod
     def create_experiment(
@@ -160,10 +185,11 @@ class ExperimentClientREST(ExperimentClient):
         executor=None,
     ):
         """Instantiate an experiment using the REST API instead of relying on local storage"""
-        endpoint = None
-        token = None
+
+        endpoint, token = storage
 
         rest = ClientREST(endpoint, token)
+        storage_instance = setup_storage(storage)
 
         experiment = rest.new_experiment(
             name,
@@ -181,24 +207,36 @@ class ExperimentClientREST(ExperimentClient):
             debug=debug,
         )
 
-        client = ExperimentClientREST(experiment, executor=executor, heartbeat=heartbeat)
+        client = ExperimentClientREST(
+            experiment,
+            executor=executor,
+            heartbeat=heartbeat,
+        )
+        client.storage = storage
         client.rest = rest
         return client
 
     def __init__(self, experiment, executor=None, heartbeat=None):
+        # Do not call super here; we do not want to instantiate the producer
         self.rest = None
+        self.storage = None
 
-        # Do not call super here
-        # we want to see what is missing
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
 
+        self._experiment = experiment
         self.heartbeat = heartbeat
         self._executor = executor
         self._executor_owner = False
 
+        self.plot = PlotAccessor(self)
+
+    #
+    # REST API overrides
+    #
+
     def is_broken(self):
-        """See `ExperimentClient.is_broken`"""
+        """See `~ExperimentClient.is_broken`"""
         try:
             self.is_done
         except RemoteException as exception:
@@ -206,26 +244,22 @@ class ExperimentClientREST(ExperimentClient):
                 return True
         return False
 
-    #
-    # REST API overrides
-    #
-
     def is_done(self):
-        """See `ExperimentClient.is_done`"""
+        """See `~ExperimentClient.is_done`"""
         return self.rest.is_done()
 
     def suggest(self, pool_size=0):
-        """See `ExperimentClient.suggest`"""
+        """See `~ExperimentClient.suggest`"""
         remote_trial = self.rest.suggest(pool_size=pool_size)
         return remote_trial
 
     def observe(self, trial, results):
-        """See `ExperimentClient.observe`"""
+        """See `~ExperimentClient.observe`"""
         self.rest.observe(trial, results)
 
     def _update_heardbeat(self, trial):
         return not self.rest.heartbeat(trial)
 
     def storage(self):
-        """See `ExperimentClient.storage`"""
+        """See `~ExperimentClient.storage`"""
         raise RuntimeError("Access to storage is forbidden")
