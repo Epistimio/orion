@@ -47,7 +47,6 @@ def create_rung_from_points(
         trial_hash = trial.compute_trial_hash(
             trial,
             ignore_fidelity=True,
-            ignore_experiment=True,
         )
         assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
@@ -681,7 +680,6 @@ class TestHyperband:
             trial_hash = trial.compute_trial_hash(
                 trial,
                 ignore_fidelity=True,
-                ignore_experiment=True,
             )
             assert trial.objective is not None
             results[trial_hash] = (trial.objective.value, trial)
@@ -1088,13 +1086,13 @@ class TestGenericHyperband(BaseAlgoTests):
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = MAX_TRIALS
 
-        objective = 0
+        rng = np.random.RandomState(123456)
+
         while not algo.is_done:
             trials = algo.suggest(num)
             assert trials is not None
             if trials:
-                self.observe_trials(trials, algo, objective)
-                objective += len(trials)
+                self.observe_trials(trials, algo, rng)
 
         # Hyperband should ignore max trials.
         assert algo.n_observed > MAX_TRIALS

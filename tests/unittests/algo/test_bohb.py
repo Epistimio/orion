@@ -1,10 +1,10 @@
 """Perform integration tests for `orion.algo.bohb`."""
 import pytest
 
-from orion.algo.bohb import has_HpBandSter
+from orion.algo.bohb import import_optional
 from orion.testing.algo import BaseAlgoTests
 
-if not has_HpBandSter:
+if import_optional.failed:
     pytest.skip("skipping BOHB tests", allow_module_level=True)
 
 N_INIT = 5

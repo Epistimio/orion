@@ -12,20 +12,6 @@ from orion.algo.space import Space
 from orion.testing.algo import BaseAlgoTests, TestPhase
 
 
-@pytest.fixture(autouse=True)
-def _config(request):
-    """Fixture to xfail test_cat_data for 2nd and 3rd runs."""
-    if "num" not in request.fixturenames:
-        yield
-        return
-
-    test_name, _ = request.node.name.split("[")
-    if test_name == "test_cat_data" and request.getfixturevalue("num") > 0:
-        pytest.xfail("MOFA does not explore well categorical dimensions")
-
-    yield
-
-
 def test_scipy_version():
     try:
         algo = MOFA(Space())
@@ -91,6 +77,11 @@ class TestMOFA(BaseAlgoTests):
         """Tests and invalid threshold of 1"""
         with pytest.raises(ValueError):
             self.create_algo(config={"threshold": 1})
+
+    def test_cat_data(self):
+        if self._current_phase.name == "3rd-run":
+            pytest.xfail("MOFA does not explore well categorical dimensions")
+        super().test_cat_data()
 
     @pytest.mark.skip(
         reason="MOFA converges too fast and does not observe the whole space"

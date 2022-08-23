@@ -152,6 +152,19 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
                         f"Space: {self.transformed_space}"
                     )
                 original = self.transformed_space.reverse(transformed_trial)
+                if transformed_trial.parent:
+
+                    original_parent = get_original_parent(
+                        self.algorithm.registry,
+                        self.transformed_space,
+                        transformed_trial.parent,
+                    )
+                    if original_parent.id not in self.registry:
+                        raise KeyError(
+                            f"Parent with id {original_parent.id} is not registered."
+                        )
+
+                    original.parent = original_parent.id
                 if original in self.registry:
                     logger.debug(
                         "Already have a trial that matches %s in the registry.",
@@ -348,9 +361,35 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
             )
 
 
+def get_original_parent(
+    registry: Registry, transformed_space: TransformedSpace, trial_parent_id: str
+) -> Trial:
+    """Get the parent trial in original space based on parent id in transformed_space.
+
+    If the parent trial also has a parent, then this function is called recursively
+    to set the proper parent id in original space rather than transformed space.
+    """
+    try:
+        parent = registry[trial_parent_id]
+    except KeyError as e:
+        raise KeyError(f"Parent with id {trial_parent_id} is not registered.") from e
+
+    original_parent = transformed_space.reverse(parent)
+    if original_parent.parent is None:
+        return original_parent
+
+    original_grand_parent = get_original_parent(
+        registry, transformed_space, original_parent.parent
+    )
+    original_parent.parent = original_grand_parent.id
+    return original_parent
+
+
 def _copy_status_and_results(original_trial: Trial, transformed_trial: Trial) -> Trial:
     """Copies the results, status, and other data from `transformed_trial` to `original_trial`."""
     new_transformed_trial = copy.deepcopy(original_trial)
     # pylint: disable=protected-access
     new_transformed_trial._params = copy.deepcopy(transformed_trial._params)
+    new_transformed_trial.experiment = None
+    new_transformed_trial.parent = transformed_trial.parent
     return new_transformed_trial

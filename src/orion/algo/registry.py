@@ -167,4 +167,4 @@ def _get_id(trial: Trial) -> str:
     Only to be used internally in this module. This ignores the `experiment`
     attribute of the trial.
     """
-    return Trial.compute_trial_hash(trial, ignore_experiment=True)
+    return Trial.compute_trial_hash(trial)

@@ -649,7 +649,6 @@ class TestASHA:
             trial_hash = trial.compute_trial_hash(
                 trial,
                 ignore_fidelity=True,
-                ignore_experiment=True,
             )
             assert trial.objective is not None
             results[trial_hash] = (trial.objective.value, trial)
@@ -682,7 +681,11 @@ class TestGenericASHA(BaseAlgoTests):
         "num_brackets": 2,
         "repetitions": 3,
     }
-    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+    space = {
+        "x": "uniform(0, 1, precision=15)",
+        "y": "uniform(0, 1, precision=15)",
+        "f": "fidelity(1, 10, base=2)",
+    }
 
     phases: ClassVar[list[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
@@ -691,6 +694,17 @@ class TestGenericASHA(BaseAlgoTests):
         TestPhase("rep2-rung1", BUDGETS[-1] * 2 + 16, "suggest"),
     ]
     _current_phase: TestPhase
+    max_trials: ClassVar[int] = BUDGETS[-1] * 3
+
+    def test_suggest_n(self):
+        """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
+        algo = self.create_algo()
+        trials = algo.suggest(5)
+        assert trials is not None
+        if self._current_phase.name == "rung2":
+            assert len(trials) == 3
+        else:
+            assert len(trials) == 5
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
@@ -738,13 +752,14 @@ class TestGenericASHA(BaseAlgoTests):
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = MAX_TRIALS
 
+        rng = np.random.RandomState(123456)
+
         objective = 0
         while not algo.is_done:
             trials = algo.suggest(1)
             assert trials is not None
             if trials:
-                self.observe_trials(trials, algo, objective)
-                objective += len(trials)
+                self.observe_trials(trials, algo, rng)
 
         # ASHA should ignore max trials.
         assert algo.n_observed > MAX_TRIALS
