@@ -6,26 +6,12 @@ Provide the storae API using orion REST API.
 
 """
 import contextlib
-import datetime
 import logging
-import pickle
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 
-import orion.core
-import orion.core.utils.backward as backward
-from orion.core.io.database import Database, OutdatedDatabaseError, database_factory
-from orion.core.worker.trial import Trial, validate_status
-from orion.storage.base import (
-    BaseStorageProtocol,
-    FailedUpdate,
-    LockAcquisitionTimeout,
-    LockedAlgorithmState,
-    get_trial_uid_and_exp,
-    get_uid,
-)
+from orion.storage.base import BaseStorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -133,7 +119,9 @@ class RESTStorage(BaseStorageProtocol):
             if both experiment and uid are provided and they do not match
 
         """
-        payload = self._post("fetch_trials", experiment=experiment, uid=uid, where=where)
+        payload = self._post(
+            "fetch_trials", experiment=experiment, uid=uid, where=where
+        )
 
     def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
         """Not Implemented for the rest API"""
@@ -172,7 +160,9 @@ class RESTStorage(BaseStorageProtocol):
             if both trial and uid are provided and they do not match
 
         """
-        payload = self._post("get_trial", trial=trial, uid=uid, experiment_uid=experiment_uid)
+        payload = self._post(
+            "get_trial", trial=trial, uid=uid, experiment_uid=experiment_uid
+        )
 
     def fetch_lost_trials(self, experiment):
         """Fetch all trials that have a heartbeat older than
@@ -204,7 +194,9 @@ class RESTStorage(BaseStorageProtocol):
 
     def fetch_trials_by_status(self, experiment, status):
         """Fetch all trials with the given status"""
-        payload = self._post("fetch_trials_by_status", experiment=experiment, status=status)
+        payload = self._post(
+            "fetch_trials_by_status", experiment=experiment, status=status
+        )
 
     def count_completed_trials(self, experiment):
         """Count the number of completed trials"""
