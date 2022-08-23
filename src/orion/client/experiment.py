@@ -625,7 +625,12 @@ class ExperimentClient:
                 f"Reservation for trial {trial.id} has been lost."
             ) from e
         finally:
-            self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved if not self.remote_mode else False)
+            self._release_reservation(
+                trial,
+                raise_if_unreserved=raise_if_unreserved
+                if not self.remote_mode
+                else False,
+            )
 
     @contextmanager
     def tmp_executor(self, executor, **config):
@@ -880,3 +885,42 @@ class ExperimentClient:
     def storage(self):
         """Return the storage currently in use by this client"""
         return self._experiment.storage
+
+    @staticmethod
+    def create_experiment(
+        name,
+        version=None,
+        space=None,
+        algorithms=None,
+        strategy=None,
+        max_trials=None,
+        max_broken=None,
+        storage=None,
+        branching=None,
+        max_idle_time=None,
+        heartbeat=None,
+        working_dir=None,
+        debug=False,
+        executor=None,
+    ):
+        """Build an experiment to be executable.
+
+        This is overridden to support multiple types of storage.
+
+        """
+        return orion.client._build_experiment(
+            name,
+            version=version,
+            space=space,
+            algorithms=algorithms,
+            strategy=strategy,
+            max_trials=max_trials,
+            max_broken=max_broken,
+            storage=storage,
+            branching=branching,
+            max_idle_time=max_idle_time,
+            heartbeat=heartbeat,
+            working_dir=working_dir,
+            debug=debug,
+            executor=executor,
+        )

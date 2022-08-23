@@ -43,7 +43,6 @@ def create_experiment(name, **config):
     return build_experiment(name, **config)
 
 
-# pylint: disable=too-many-arguments
 def build_experiment(
     name,
     version=None,
@@ -200,6 +199,42 @@ def build_experiment(
         If the algorithm or storage specified is not properly installed.
 
     """
+    return ExperimentClient.create_experiment(
+        name,
+        version=version,
+        space=space,
+        algorithms=algorithms,
+        strategy=strategy,
+        max_trials=max_trials,
+        max_broken=max_broken,
+        storage=storage,
+        branching=branching,
+        max_idle_time=max_idle_time,
+        heartbeat=heartbeat,
+        working_dir=working_dir,
+        debug=debug,
+        executor=executor,
+    )
+
+
+# pylint: disable=too-many-arguments
+def _build_experiment(
+    name,
+    version=None,
+    space=None,
+    algorithms=None,
+    strategy=None,
+    max_trials=None,
+    max_broken=None,
+    storage=None,
+    branching=None,
+    max_idle_time=None,
+    heartbeat=None,
+    working_dir=None,
+    debug=False,
+    executor=None,
+):
+
     if max_idle_time:
         log.warning(
             "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."

@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+import orion.core.config
+
 log = logging.getLogger(__file__)
 
 
@@ -135,24 +137,68 @@ class ClientREST:
 # WIP
 
 from orion.client.experiment import ExperimentClient
-from orion.core.worker.experiment import Experiment
 
 
 class ExperimentClientREST(ExperimentClient):
-    @classmethod
-    def create_experiment(cls):
-        pass
+    """REST Client for an experiment"""
 
-    def __init__(self, experiment, executor=None, heartbeat=None):
-
+    @staticmethod
+    def create_experiment(
+        name,
+        version=None,
+        space=None,
+        algorithms=None,
+        strategy=None,
+        max_trials=None,
+        max_broken=None,
+        storage=None,
+        branching=None,
+        max_idle_time=None,
+        heartbeat=None,
+        working_dir=None,
+        debug=False,
+        executor=None,
+    ):
+        """Instantiate an experiment using the REST API instead of relying on local storage"""
         endpoint = None
         token = None
-        self.rest = ClientREST(endpoint, token)
+
+        rest = ClientREST(endpoint, token)
+
+        experiment = rest.new_experiment(
+            name,
+            version=version,
+            space=space,
+            algorithms=algorithms,
+            strategy=strategy,
+            max_trials=max_trials,
+            max_broken=max_broken,
+            storage=storage,
+            branching=branching,
+            max_idle_time=max_idle_time,
+            heartbeat=heartbeat,
+            working_dir=working_dir,
+            debug=debug,
+        )
+
+        client = ExperimentClientREST(experiment, executor=executor, heartbeat=heartbeat)
+        client.rest = rest
+        return client
+
+    def __init__(self, experiment, executor=None, heartbeat=None):
+        self.rest = None
 
         # Do not call super here
         # we want to see what is missing
+        if heartbeat is None:
+            heartbeat = orion.core.config.worker.heartbeat
+
+        self.heartbeat = heartbeat
+        self._executor = executor
+        self._executor_owner = False
 
     def is_broken(self):
+        """See `ExperimentClient.is_broken`"""
         try:
             self.is_done
         except RemoteException as exception:
@@ -165,42 +211,21 @@ class ExperimentClientREST(ExperimentClient):
     #
 
     def is_done(self):
+        """See `ExperimentClient.is_done`"""
         return self.rest.is_done()
 
     def suggest(self, pool_size=0):
+        """See `ExperimentClient.suggest`"""
         remote_trial = self.rest.suggest(pool_size=pool_size)
         return remote_trial
 
     def observe(self, trial, results):
+        """See `ExperimentClient.observe`"""
         self.rest.observe(trial, results)
 
     def _update_heardbeat(self, trial):
         return not self.rest.heartbeat(trial)
 
     def storage(self):
+        """See `ExperimentClient.storage`"""
         raise RuntimeError("Access to storage is forbidden")
-
-
-class Client:
-    def __init__(self, instance=None, **config) -> None:
-        self.config = config
-        self.storage = instance
-
-    @classmethod
-    def from_command_line(cls, args):
-        cmd_config = get_cmd_config(cmdargs)
-
-        instance = setup_storage(cmd_config["storage"])
-
-        return cls(instance, **cmd_config)
-
-    @staticmethod
-    def experiment_class():
-        return Experiment
-
-    @staticmethod
-    def experiment_client_class():
-        return ExperimentClient
-
-    def experiment(self):
-        """Create a new experiment"""

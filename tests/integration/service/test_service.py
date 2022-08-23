@@ -73,7 +73,7 @@ def get_free_ports(number=1):
 
     for _ in range(number):
         sock = socket.socket()
-        sock.bind(('', 0))
+        sock.bind(("", 0))
         ports.append(sock.getsockname()[1])
         sockets.append(socket)
 
@@ -82,7 +82,9 @@ def get_free_ports(number=1):
 
     return tuple(ports)
 
+
 MONGO_DB_PORT = None
+
 
 @contextmanager
 def server():
