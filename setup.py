@@ -117,6 +117,7 @@ setup_args = dict(
         "BaseStorageProtocol": [
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",
+            "rest = orion.storage.rest:RESTStorage",
         ],
         "BaseExecutor": [
             "singleexecutor = orion.executor.single_backend:SingleExecutor",

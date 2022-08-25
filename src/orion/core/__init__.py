@@ -106,6 +106,20 @@ def define_storage_config(config):
         "type", option_type=str, default="legacy", env_var="ORION_STORAGE_TYPE"
     )
 
+    storage_config.add_option(
+        "endpoint",
+        option_type=str,
+        default=None,
+        env_var="ORION_ENDPOINT",
+    )
+
+    storage_config.add_option(
+        "token",
+        option_type=str,
+        default=None,
+        env_var="ORION_TOKEN",
+    )
+
     config.storage = storage_config
 
     define_database_config(config.storage)

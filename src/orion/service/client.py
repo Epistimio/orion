@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-import orion.core.config
 from orion.storage.base import setup_storage
 
 log = logging.getLogger(__file__)
@@ -186,7 +185,7 @@ class ExperimentClientREST(ExperimentClient):
     ):
         """Instantiate an experiment using the REST API instead of relying on local storage"""
 
-        endpoint, token = storage
+        endpoint, token = storage["endpoint"], storage["token"]
 
         rest = ClientREST(endpoint, token)
         storage_instance = setup_storage(storage)
@@ -212,7 +211,7 @@ class ExperimentClientREST(ExperimentClient):
             executor=executor,
             heartbeat=heartbeat,
         )
-        client.storage = storage
+        client.storage = storage_instance
         client.rest = rest
         return client
 
