@@ -1,18 +1,30 @@
 import contextlib
-import logging
 import datetime
+import logging
 import pickle
 
 import sqlalchemy
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer, JSON
-from sqlalchemy import String, DateTime, select, delete, update
-from sqlalchemy.orm import declarative_base, Session
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    delete,
+    select,
+    update,
+)
+from sqlalchemy.orm import Session, declarative_base
 
 import orion.core
 from orion.core.worker.trial import validate_status
-from orion.storage.base import BaseStorageProtocol, LockedAlgorithmState, get_trial_uid_and_exp, get_uid
+from orion.storage.base import (
+    BaseStorageProtocol,
+    LockedAlgorithmState,
+    get_trial_uid_and_exp,
+    get_uid,
+)
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +82,6 @@ class Algo:
 # fmt: on
 
 
-
 class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
@@ -84,6 +95,20 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
     """
 
     def __init__(self, uri):
+        # dialect+driver://username:password@host:port/database
+        #
+        # postgresql://scott:tiger@localhost/mydatabase
+        # postgresql+psycopg2://scott:tiger@localhost/mydatabase
+        # postgresql+pg8000://scott:tiger@localhost/mydatabase
+        #
+        # mysql://scott:tiger@localhost/foo
+        # mysql+mysqldb://scott:tiger@localhost/foo
+        # mysql+pymysql://scott:tiger@localhost/foo
+        #
+        # sqlite:///foo.db
+        # sqlite://             # in memory
+
+        # engine_from_config
         self.engine = sqlalchemy.create_engine("", echo=True, future=True)
 
         # Create the schema
@@ -93,7 +118,6 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             stmt = select(User).where(User.token == self.token)
             self.user = session.scalars(stmt).one()
 
-
     # Experiment Operations
     # =====================
 
@@ -102,10 +126,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         with Session(self.engine) as session:
             experiment = Experiment(
-                name=config['name'],
-                config=config,
-                onwer_id=self.user.uid,
-                version=0
+                name=config["name"], config=config, onwer_id=self.user.uid, version=0
             )
             session.add(experiment)
             session.commit()
@@ -141,13 +162,12 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             experiments = session.scalars(stmt).all()
 
         if selection is not None:
-            assert False, 'Not Implemented'
+            assert False, "Not Implemented"
 
         return experiments
 
     # Benchmarks
     # ==========
-
 
     # Trials
     # ======
@@ -194,12 +214,14 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
 
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.experiment_id == experiment_uid and Trial.uid == trial_uid)
+            stmt = select(Trial).where(
+                Trial.experiment_id == experiment_uid and Trial.uid == trial_uid
+            )
             return session.scalars(stmt).one()
 
     def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
         uid = get_uid(experiment, uid)
-        query = Trial.uid == trial._id and self._to_query(Trial, where)
+        query = Experiment.uid == uid and self._to_query(Trial, where)
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(query)
@@ -211,11 +233,15 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         return trial
 
     def update_trial(
-            self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
-        ):
+        self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
+    ):
 
         trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
-        query = Trial.uid == trial_uid and Trial.experiment_id == experiment_uid and self._to_query(where)
+        query = (
+            Trial.uid == trial_uid
+            and Trial.experiment_id == experiment_uid
+            and self._to_query(where)
+        )
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(query)
@@ -232,12 +258,20 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         )
 
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.experiment_id == experiment._id and Trial.status == 'reserved' and Trial.heartbeat < threshold)
+            stmt = select(Trial).where(
+                Trial.experiment_id == experiment._id
+                and Trial.status == "reserved"
+                and Trial.heartbeat < threshold
+            )
             return session.scalars(stmt).all()
 
     def push_trial_results(self, trial):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.experiment_id == trial.experiment and Trial.uid == trial.id and Trial.status == 'reserved')
+            stmt = select(Trial).where(
+                Trial.experiment_id == trial.experiment
+                and Trial.uid == trial.id
+                and Trial.status == "reserved"
+            )
             trial = session.scalars(stmt).one()
             self._set_from_dict(trial, trial.to_dict())
             session.commit()
@@ -248,13 +282,13 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         validate_status(status)
         validate_status(was)
 
-        query = Trial.uid == trial.id # and Trial.experiment_id == trial.experiment
+        query = Trial.uid == trial.id  # and Trial.experiment_id == trial.experiment
         if was:
             query = query and Trial.status == was
 
         values = dict(status=status, experiment=trial.experiment)
         if heartbeat:
-            values['heartbeat'] = heartbeat
+            values["heartbeat"] = heartbeat
 
         with Session(self.engine) as session:
             update(Trial).where(query).values(**values)
@@ -262,7 +296,10 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     def fetch_pending_trials(self, experiment):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.status.in_("interrupted", "new", "suspended") and Trial.experiment_id == experiment._id)
+            stmt = select(Trial).where(
+                Trial.status.in_("interrupted", "new", "suspended")
+                and Trial.experiment_id == experiment._id
+            )
             return session.scalars(stmt).all()
 
     def reserve_trial(self, experiment):
@@ -270,41 +307,54 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
             with session.begin():
                 # not sure it prevents other worker from reserving the same trial
-                stmt = select(Trial).where(Trial.status.in_("interrupted", "new", "suspended") and Trial.experiment_id == experiment._id)
+                stmt = select(Trial).where(
+                    Trial.status.in_("interrupted", "new", "suspended")
+                    and Trial.experiment_id == experiment._id
+                )
                 trial = session.scalars(stmt).one()
 
                 now = datetime.datetime.utcnow()
-                trial.status = 'reserved'
+                trial.status = "reserved"
                 trial.start_time = now
-                trial.heartbeat= now
+                trial.heartbeat = now
 
         return trial
 
     def fetch_trials_by_status(self, experiment, status):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.status == status and Trial.experiment_id == experiment._id)
+            stmt = select(Trial).where(
+                Trial.status == status and Trial.experiment_id == experiment._id
+            )
             return session.scalars(stmt).all()
 
     def fetch_noncompleted_trials(self, experiment):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.status != 'completed' and Trial.experiment_id == experiment._id)
+            stmt = select(Trial).where(
+                Trial.status != "completed" and Trial.experiment_id == experiment._id
+            )
             return session.scalars(stmt).all()
 
     def count_completed(self, experiment):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.status == 'completed' and Trial.experiment_id == experiment._id)
+            stmt = select(Trial).where(
+                Trial.status == "completed" and Trial.experiment_id == experiment._id
+            )
             return session.query(stmt).count()
 
     def count_broken_trials(self, experiment):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.status == 'broken' and Trial.experiment_id == experiment._id)
+            stmt = select(Trial).where(
+                Trial.status == "broken" and Trial.experiment_id == experiment._id
+            )
             return session.query(stmt).count()
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
 
         with Session(self.engine) as session:
-            update(Trial).where(Trial.uid == trial.id, Trial.status == 'reserved').values(heartbeat=datetime.datetime.utcnow())
+            update(Trial).where(
+                Trial.uid == trial.id, Trial.status == "reserved"
+            ).values(heartbeat=datetime.datetime.utcnow())
             session.commit()
 
     # Algorithm
@@ -316,7 +366,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 onwer_id=self.user.uid,
                 configuration=algorithm_config,
                 locked=0,
-                heartbeat=datetime.datetime.utcnow()
+                heartbeat=datetime.datetime.utcnow(),
             )
             session.add(algo)
             session.commit()
@@ -332,17 +382,16 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             values["state"] = pickle.dumps(new_state)
 
         with Session(self.engine) as session:
-            update(Algo).where(
-                Algo.experiment_id == uid and
-                Algo.locked == 1
-            ).values(**values)
+            update(Algo).where(Algo.experiment_id == uid and Algo.locked == 1).values(
+                **values
+            )
 
     def get_algorithm_lock_info(self, experiment=None, uid=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.get_algorithm_lock_info`"""
         uid = get_uid(experiment, uid)
 
         with Session(self.engine) as session:
-            stmt = select(Algo).where(Algo.experiment_id==uid)
+            stmt = select(Algo).where(Algo.experiment_id == uid)
             algo = session.scalar(stmt).one()
 
         return LockedAlgorithmState(
@@ -356,18 +405,21 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         uid = get_uid(experiment, uid)
 
         with Session(self.engine) as session:
-            stmt = delete(Algo).where(Algo.experiment_id==uid)
+            stmt = delete(Algo).where(Algo.experiment_id == uid)
             session.execute(stmt)
             session.commit()
 
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, experiment=None, uid=None, timeout=60, retry_interval=1):
+    def acquire_algorithm_lock(
+        self, experiment=None, uid=None, timeout=60, retry_interval=1
+    ):
         uid = get_uid(experiment, uid)
 
         with Session(self.engine) as session:
-            stmt = update(Algo).where(Algo.experiment_id==uid, Algo.locked==0).values(
-                locked=1,
-                heartbeat=datetime.datetime.utcnow()
+            stmt = (
+                update(Algo)
+                .where(Algo.experiment_id == uid, Algo.locked == 0)
+                .values(locked=1, heartbeat=datetime.datetime.utcnow())
             )
             algo = session.scalar(stmt).one()
             session.commit()
@@ -384,7 +436,6 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         yield algo_state
 
         self.release_algorithm_lock(uid, new_state=algo_state.state)
-
 
     # Utilities
     # =========
