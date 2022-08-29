@@ -40,6 +40,7 @@ extras_require = {
     ],
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
+    "sqlalchemy": ["sqlalchemy"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
     "configspace": ["ConfigSpace"],
     "ax": [

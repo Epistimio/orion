@@ -1,7 +1,10 @@
 import contextlib
 import datetime
+import getpass
 import logging
 import pickle
+import uuid
+from copy import deepcopy
 
 import sqlalchemy
 from sqlalchemy import (
@@ -11,16 +14,21 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     delete,
     select,
     update,
 )
+from sqlalchemy.exc import DBAPIError, NoResultFound
 from sqlalchemy.orm import Session, declarative_base
 
 import orion.core
+from orion.core.io.database import DuplicateKeyError
+from orion.core.worker.trial import Trial as OrionTrial
 from orion.core.worker.trial import validate_status
 from orion.storage.base import (
     BaseStorageProtocol,
+    FailedUpdate,
     LockedAlgorithmState,
     get_trial_uid_and_exp,
     get_uid,
@@ -35,9 +43,9 @@ class User(Base):
     """Defines the User table"""
     __tablename__ = "users"
 
-    uid         = Column(Integer, primary_key=True)
+    _id         = Column(Integer, primary_key=True, autoincrement=True)
     name        = Column(String(30))
-    token       = Column(String(30))
+    token       = Column(String(32))
     created_at  = Column(DateTime)
     last_seen   = Column(DateTime)
 
@@ -46,35 +54,52 @@ class Experiment(Base):
     """Defines the Experiment table"""
     __tablename__ = "experiments"
 
-    uid         = Column(Integer, primary_key=True)
+    _id         = Column(Integer, primary_key=True, autoincrement=True)
     name        = Column(String(30))
-    config      = Column(JSON)
+    meta        = Column(JSON)          # metadata field is reserved
     version     = Column(Integer)
-    owner_id    = Column(Integer, ForeignKey("user.uid"), nullable=False)
+    owner_id    = Column(Integer, ForeignKey("users._id"), nullable=False)
     datetime    = Column(DateTime)
+    algorithms  = Column(JSON)
+    remaining   = Column(JSON)
+    space       = Column(JSON)
+
+    __table_args__ = (
+        UniqueConstraint('name', 'owner_id', name='_one_name_per_owner'),
+    )
 
 
-class Trial:
+class Trial(Base):
     """Defines the Trial table"""
-    __tablename__ = "trial"
+    __tablename__ = "trials"
 
-    uid             = Column(Integer, primary_key=True)
-    experiment_id   = Column(Integer, ForeignKey("experiment.uid"), nullable=False)
-    owner_id        = Column(Integer, ForeignKey("user.uid"), nullable=False)
+    _id             = Column(Integer, primary_key=True, autoincrement=True)
+    experiment_id   = Column(Integer, ForeignKey("experiments._id"), nullable=False)
+    owner_id        = Column(Integer, ForeignKey("users._id"), nullable=False)
     status          = Column(String(30))
     results         = Column(JSON)
     start_time      = Column(DateTime)
     end_time        = Column(DateTime)
     heartbeat       = Column(DateTime)
+    parent          = Column(Integer, ForeignKey("experiments._id"))
+    params          = Column(JSON)
+    worker          = Column(JSON)
+    submit_time     = Column(String(30))
+    exp_working_dir = Column(String(30))
+    id              = Column(String(30))
+
+    __table_args__ = (
+        UniqueConstraint('experiment_id', 'id', name='_one_trial_hash_per_experiment'),
+    )
 
 
-class Algo:
+class Algo(Base):
     """Defines the Algo table"""
     __tablename__ = "algo"
 
-    uid             = Column(Integer, primary_key=True)
-    experiment_id   = Column(Integer, ForeignKey("experiment.uid"), nullable=False)
-    owner_id        = Column(Integer, ForeignKey("user.uid"), nullable=False)
+    _id             = Column(Integer, primary_key=True, autoincrement=True)
+    experiment_id   = Column(Integer, ForeignKey("experiments._id"), nullable=False)
+    owner_id        = Column(Integer, ForeignKey("users._id"), nullable=False)
     configuration   = Column(JSON)
     locked          = Column(Integer)
     state           = Column(JSON)
@@ -94,7 +119,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     """
 
-    def __init__(self, uri):
+    def __init__(self, uri, token=None, **kwargs):
         # dialect+driver://username:password@host:port/database
         #
         # postgresql://scott:tiger@localhost/mydatabase
@@ -108,34 +133,91 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         # sqlite:///foo.db
         # sqlite://             # in memory
 
+        self.uri = uri
+        if uri == "":
+            uri = "sqlite://"
+
         # engine_from_config
-        self.engine = sqlalchemy.create_engine("", echo=True, future=True)
+        self.engine = sqlalchemy.create_engine(uri, echo=True, future=True)
 
         # Create the schema
         Base.metadata.create_all(self.engine)
 
-        with Session(self.engine) as session:
-            stmt = select(User).where(User.token == self.token)
-            self.user = session.scalars(stmt).one()
+        self.token = token
+        self.user_id = None
+        self.user = None
+        self._connect(token)
+
+    def _connect(self, token):
+        if token is not None and token != "":
+            with Session(self.engine) as session:
+                stmt = select(User).where(User.token == self.token)
+                self.user = session.scalars(stmt).one()
+
+                self.user_id = self.user._id
+        else:
+            # Local database, create a default user
+            user = getpass.getuser()
+            now = datetime.datetime.utcnow()
+
+            with Session(self.engine) as session:
+                self.user = User(
+                    name=user,
+                    token=uuid.uuid5(uuid.NAMESPACE_OID, user).hex,
+                    created_at=now,
+                    last_seen=now,
+                )
+                session.add(self.user)
+                session.commit()
+
+                assert self.user._id > 0
+                self.user_id = self.user._id
+
+    def __getstate__(self):
+        return dict(
+            uri=self.uri,
+            token=self.token,
+        )
+
+    def __setstate__(self, state):
+        self.uri = state["uri"]
+        self.token = state["token"]
+        self.engine = sqlalchemy.create_engine(self.uri, echo=True, future=True)
+        self._connect(self.token)
 
     # Experiment Operations
     # =====================
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
+        config = deepcopy(config)
 
-        with Session(self.engine) as session:
-            experiment = Experiment(
-                name=config["name"], config=config, onwer_id=self.user.uid, version=0
-            )
-            session.add(experiment)
-            session.commit()
+        try:
+            with Session(self.engine) as session:
+                experiment = Experiment(
+                    owner_id=self.user_id,
+                    version=0,
+                )
 
-    def delete_experiment(self, experiment, uid):
+                config["meta"] = config.pop("metadata")
+
+                # old way
+                # if 'space' not in config:
+                #    config['space'] = config['meta'].pop('priors', dict())
+
+                self._set_from_dict(experiment, config, "remaining")
+
+                session.add(experiment)
+                session.commit()
+
+        except DBAPIError:
+            raise DuplicateKeyError()
+
+    def delete_experiment(self, experiment=None, uid=None):
         uid = get_uid(experiment, uid)
 
         with Session(self.engine) as session:
-            stmt = delete(Experiment).where(Experiment.uid == uid)
+            stmt = delete(Experiment).where(Experiment._id == uid)
             session.execute(stmt)
             session.commit()
 
@@ -143,28 +225,35 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         uid = get_uid(experiment, uid)
 
         query = True
-        if uid is not None:
-            query = Experiment.uid == uid
+        if where is None:
+            where = dict()
 
-        query = query and self._to_query(Experiment, where)
+        if uid is not None:
+            where["_id"] = uid
+
+        query = self._to_query(Experiment, where)
 
         with Session(self.engine) as session:
-            stmt = select(Experiment).where(query)
+            stmt = select(Experiment).where(*query)
             experiment = session.scalars(stmt).one()
-            experiment.config = kwargs
+
+            metadata = kwargs.pop("metadata", dict())
+            self._set_from_dict(experiment, kwargs, "remaining")
+            experiment.meta.update(metadata)
+
             session.commit()
 
     def fetch_experiments(self, query, selection=None):
-        query = self._to_query(query)
+        query = self._to_query(Experiment, query)
 
         with Session(self.engine) as session:
-            stmt = select(Experiment).where(query)
+            stmt = select(Experiment).where(*query)
             experiments = session.scalars(stmt).all()
 
         if selection is not None:
             assert False, "Not Implemented"
 
-        return experiments
+        return [self._to_experiment(exp) for exp in experiments]
 
     # Benchmarks
     # ==========
@@ -174,38 +263,55 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
     def fetch_trials(self, experiment=None, uid=None, where=None):
         uid = get_uid(experiment, uid)
 
-        query = True
-        if uid is not None:
-            query = Trial.experiment_id == uid
+        if where is None:
+            where = dict()
 
-        query = query and self._to_query(Trial, where)
+        if uid is not None:
+            where["experiment_id"] = uid
+
+        query = self._to_query(Trial, where)
 
         with Session(self.engine) as session:
-            stmt = select(Trial).where(query)
+            stmt = select(Trial).where(*query)
             return session.scalars(stmt).all()
 
     def register_trial(self, trial):
         config = trial.to_dict()
 
-        with Session(self.engine) as session:
-            stmt = select(Trial).where(Trial.uid == trial._id)
-            trial = session.scalars(stmt).one()
-            self._set_from_dict(trial, config)
-            session.commit()
+        try:
+            with Session(self.engine) as session:
+                experiment_id = config.pop("experiment", None)
+
+                db_trial = Trial(experiment_id=experiment_id, owner_id=self.user_id)
+
+                self._set_from_dict(db_trial, config)
+
+                session.add(db_trial)
+                session.commit()
+
+                session.refresh(db_trial)
+
+                return OrionTrial(**self._to_trial(db_trial))
+        except DBAPIError:
+            raise DuplicateKeyError()
 
     def delete_trials(self, experiment=None, uid=None, where=None):
         uid = get_uid(experiment, uid)
 
-        query = True
-        if uid is not None:
-            query = Trial.experiment_id == uid
+        if where is None:
+            where = dict()
 
-        query = query and self._to_query(Trial, where)
+        if uid is not None:
+            where["experiment_id"] = uid
+
+        query = self._to_query(Trial, where)
 
         with Session(self.engine) as session:
-            stmt = delete(Trial).where(query)
-            session.execute(stmt)
+            stmt = delete(Trial).where(*query)
+            count = session.execute(stmt)
             session.commit()
+
+            return count.rowcount
 
     def retrieve_result(self, trial, **kwargs):
         return trial
@@ -215,37 +321,55 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.experiment_id == experiment_uid and Trial.uid == trial_uid
+                Trial.experiment_id == experiment_uid,
+                Trial.id == trial_uid,
             )
-            return session.scalars(stmt).one()
+            trial = session.scalars(stmt).one()
+
+        return OrionTrial(**self._to_trial(trial))
 
     def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
         uid = get_uid(experiment, uid)
-        query = Experiment.uid == uid and self._to_query(Trial, where)
+
+        if where is None:
+            where = dict()
+
+        where["experiment_id"] = uid
+        query = self._to_query(Trial, where)
 
         with Session(self.engine) as session:
-            stmt = select(Trial).where(query)
+            stmt = select(Trial).where(*query)
             trials = session.scalars(stmt).all()
+
             for trial in trials:
                 self._set_from_dict(trial, kwargs)
+
             session.commit()
 
-        return trial
+            return len(trials)
 
     def update_trial(
         self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
     ):
 
         trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
-        query = (
-            Trial.uid == trial_uid
-            and Trial.experiment_id == experiment_uid
-            and self._to_query(where)
-        )
+
+        if where is None:
+            where = dict()
+
+        # THIS IS NOT THE UNIQUE ID OF THE TRIAL
+        where["id"] = trial_uid
+        where["experiment_id"] = experiment_uid
+        query = self._to_query(Trial, where)
+
+        print()
+        print(query)
+        print()
 
         with Session(self.engine) as session:
-            stmt = select(Trial).where(query)
+            stmt = select(Trial).where(*query)
             trial = session.scalars(stmt).one()
+
             self._set_from_dict(trial, kwargs)
             session.commit()
 
@@ -259,18 +383,18 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.experiment_id == experiment._id
-                and Trial.status == "reserved"
-                and Trial.heartbeat < threshold
+                Trial.experiment_id == experiment._id,
+                Trial.status == "reserved",
+                Trial.heartbeat < threshold,
             )
             return session.scalars(stmt).all()
 
     def push_trial_results(self, trial):
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.experiment_id == trial.experiment
-                and Trial.uid == trial.id
-                and Trial.status == "reserved"
+                Trial.experiment_id == trial.experiment,
+                Trial._id == trial.id,
+                Trial.status == "reserved",
             )
             trial = session.scalars(stmt).one()
             self._set_from_dict(trial, trial.to_dict())
@@ -279,26 +403,37 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         return trial
 
     def set_trial_status(self, trial, status, heartbeat=None, was=None):
+        heartbeat = heartbeat or datetime.datetime.utcnow()
+        was = was or trial.status
+
         validate_status(status)
         validate_status(was)
 
-        query = Trial.uid == trial.id  # and Trial.experiment_id == trial.experiment
-        if was:
-            query = query and Trial.status == was
+        query = [
+            Trial.id == trial.id,
+            Trial.experiment_id == trial.experiment,
+            Trial.status == was,
+        ]
 
-        values = dict(status=status, experiment=trial.experiment)
+        values = dict(status=status)
         if heartbeat:
             values["heartbeat"] = heartbeat
 
         with Session(self.engine) as session:
-            update(Trial).where(query).values(**values)
+            stmt = update(Trial).where(*query).values(**values)
+            result = session.execute(stmt)
             session.commit()
+
+            if result.rowcount == 1:
+                trial.status = status
+            else:
+                raise FailedUpdate()
 
     def fetch_pending_trials(self, experiment):
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.status.in_("interrupted", "new", "suspended")
-                and Trial.experiment_id == experiment._id
+                Trial.status.in_(("interrupted", "new", "suspended")),
+                Trial.experiment_id == experiment._id,
             )
             return session.scalars(stmt).all()
 
@@ -310,9 +445,8 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             stmt = (
                 update(Trial)
                 .where(
-                    True
-                    and Trial.status.in_("interrupted", "new", "suspended")
-                    and Trial.experiment_id == experiment._id
+                    Trial.status.in_(("interrupted", "new", "suspended")),
+                    Trial.experiment_id == experiment._id,
                 )
                 .values(
                     status="reserved",
@@ -333,18 +467,20 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.status.in_("interrupted", "new", "suspended")
-                and Trial.experiment_id == experiment._id
+                Trial.status.in_(("interrupted", "new", "suspended")),
+                Trial.experiment_id == experiment._id,
             )
-            trial = session.scalars(stmt).one()
+            try:
+                trial = session.scalars(stmt).one()
+            except NoResultFound:
+                return None
 
             # Update the trial iff the status has not been changed yet
             stmt = (
                 update(Trial)
                 .where(
-                    True
-                    and Trial.status == trial.status
-                    and Trial.experiment_id == experiment._id
+                    Trial.status == trial.status,
+                    Trial.experiment_id == experiment._id,
                 )
                 .values(
                     status="reserved",
@@ -369,37 +505,59 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             stmt = select(Trial).where(
                 Trial.status == status and Trial.experiment_id == experiment._id
             )
-            return session.scalars(stmt).all()
+            return [
+                OrionTrial(**self._to_trial(trial))
+                for trial in session.scalars(stmt).all()
+            ]
 
     def fetch_noncompleted_trials(self, experiment):
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.status != "completed" and Trial.experiment_id == experiment._id
+                Trial.status != "completed",
+                Trial.experiment_id == experiment._id,
             )
             return session.scalars(stmt).all()
 
-    def count_completed(self, experiment):
+    def count_completed_trials(self, experiment):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(
-                Trial.status == "completed" and Trial.experiment_id == experiment._id
+            return (
+                session.query(Trial)
+                .filter(
+                    Trial.status == "completed",
+                    Trial.experiment_id == experiment._id,
+                )
+                .count()
             )
-            return session.query(stmt).count()
 
     def count_broken_trials(self, experiment):
         with Session(self.engine) as session:
-            stmt = select(Trial).where(
-                Trial.status == "broken" and Trial.experiment_id == experiment._id
+            return (
+                session.query(Trial)
+                .filter(
+                    Trial.status == "broken",
+                    Trial.experiment_id == experiment._id,
+                )
+                .count()
             )
-            return session.query(stmt).count()
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
 
         with Session(self.engine) as session:
-            update(Trial).where(
-                Trial.uid == trial.id, Trial.status == "reserved"
-            ).values(heartbeat=datetime.datetime.utcnow())
+            stmt = (
+                update(Trial)
+                .where(
+                    Trial._id == trial.id_override,
+                    Trial.status == "reserved",
+                )
+                .values(heartbeat=datetime.datetime.utcnow())
+            )
+
+            cursor = session.execute(stmt)
             session.commit()
+
+            if cursor.rowcount <= 0:
+                raise FailedUpdate()
 
     # Algorithm
     # =========
@@ -407,7 +565,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         with Session(self.engine) as session:
             algo = Algo(
                 experiment_id=experiment_id,
-                onwer_id=self.user.uid,
+                owner_id=self.user._id,
                 configuration=algorithm_config,
                 locked=0,
                 heartbeat=datetime.datetime.utcnow(),
@@ -415,8 +573,8 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             session.add(algo)
             session.commit()
 
-    def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
-        uid = get_uid(experiment, uid)
+    def release_algorithm_lock(self, experiment=None, _id=None, new_state=None):
+        _id = get_uid(experiment, _id)
 
         values = dict(
             locked=0,
@@ -426,13 +584,13 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             values["state"] = pickle.dumps(new_state)
 
         with Session(self.engine) as session:
-            update(Algo).where(Algo.experiment_id == uid and Algo.locked == 1).values(
+            update(Algo).where(Algo.experiment_id == _id and Algo.locked == 1).values(
                 **values
             )
 
     def get_algorithm_lock_info(self, experiment=None, uid=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.get_algorithm_lock_info`"""
-        uid = get_uid(experiment, uid)
+        _id = get_uid(experiment, uid)
 
         with Session(self.engine) as session:
             stmt = select(Algo).where(Algo.experiment_id == uid)
@@ -472,25 +630,27 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     @contextlib.contextmanager
     def acquire_algorithm_lock(
-        self, experiment=None, uid=None, timeout=60, retry_interval=1
+        self, experiment=None, _id=None, timeout=60, retry_interval=1
     ):
-        uid = get_uid(experiment, uid)
+        _id = get_uid(experiment, _id)
 
         with Session(self.engine) as session:
             now = datetime.datetime.utcnow()
 
             stmt = (
                 update(Algo)
-                .where(Algo.experiment_id == uid, Algo.locked == 0)
+                .where(Algo.experiment_id == _id, Algo.locked == 0)
                 .values(locked=1, heartbeat=now)
             )
 
             session.execute(stmt)
             session.commit()
 
-            algo = select(Algo).where(Algo.experiment_id == uid, Algo.locked == 1)
+            stmt = select(Algo).where(Algo.experiment_id == _id, Algo.locked == 1)
+            algo = session.scalar(stmt)
 
-        if algo is None or algo.heartbead != now:
+        if algo is None or algo.heartbeat != now:
+            yield None
             return
 
         algo_state = LockedAlgorithmState(
@@ -501,14 +661,18 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         yield algo_state
 
-        self.release_algorithm_lock(uid, new_state=algo_state.state)
+        self.release_algorithm_lock(_id, new_state=algo_state.state)
 
     # Utilities
     # =========
     def _set_from_dict(self, obj, data, rest=None):
+        data = deepcopy(data)
         meta = dict()
         while data:
             k, v = data.popitem()
+
+            if v is None:
+                continue
 
             if hasattr(obj, k):
                 setattr(obj, k, v)
@@ -523,12 +687,42 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             log.warning("Data was discarded %s", meta)
 
     def _to_query(self, table, where):
-        query = True
-        for k, v in where.items():
+        query = []
 
-            if hash(table, k):
-                query = query and getattr(k) == v
+        for k, v in where.items():
+            if hasattr(table, k):
+                query.append(getattr(table, k) == v)
             else:
                 log.warning("constrained ignored %s = %s", k, v)
 
         return query
+
+    def _to_experiment(self, experiment):
+        exp = deepcopy(experiment.__dict__)
+        exp["metadata"] = exp.pop("meta", {})
+        exp.pop("_sa_instance_state")
+        exp.pop("owner_id")
+        exp.pop("datetime")
+
+        none_keys = []
+        for k, v in exp.items():
+            if v is None:
+                none_keys.append(k)
+
+        for k in none_keys:
+            exp.pop(k)
+
+        rest = exp.pop("remaining", {})
+        if rest is None:
+            rest = {}
+
+        exp.update(rest)
+
+        return exp
+
+    def _to_trial(self, trial):
+        trial = deepcopy(trial.__dict__)
+        trial.pop("_sa_instance_state")
+        trial["experiment"] = trial.pop("experiment_id")
+        trial.pop("owner_id")
+        return trial

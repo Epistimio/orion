@@ -28,7 +28,10 @@ from orion.testing import OrionState, base_experiment
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
 
-storage_backends = [None]  # defaults to legacy with PickleDB
+storage_backends = [
+    None,
+    dict(type="sqlalchemy", uri="sqlite://"),
+]  # defaults to legacy with PickleDB
 
 if not HAS_TRACK:
     log.warning("Track is not tested because: %s!", REASON)
@@ -282,9 +285,16 @@ class TestStorage:
 
     def test_register_trial(self, storage):
         """Test register trial"""
+        global base_trial
+
+        new_trial = base_trial
+        if storage and storage["type"] == "sqlalchemy":
+            new_trial = copy.deepcopy(base_trial)
+            new_trial["experiment"] = 1
+
         with OrionState(experiments=[base_experiment], storage=storage) as cfg:
             storage = cfg.storage
-            trial1 = storage.register_trial(Trial(**base_trial))
+            trial1 = storage.register_trial(Trial(**new_trial))
             trial2 = storage.get_trial(trial1)
 
             assert (
@@ -298,8 +308,11 @@ class TestStorage:
         ) as cfg:
             storage = cfg.storage
 
+            # Get the trial with its experiment_id populated
+            trial = cfg.trials[0]
+
             with pytest.raises(DuplicateKeyError):
-                storage.register_trial(Trial(**base_trial))
+                storage.register_trial(Trial(**trial))
 
     def test_update_trials(self, storage):
         """Test update many trials"""
@@ -414,21 +427,29 @@ class TestStorage:
         trial_from_other_exp = copy.deepcopy(trials[0])
         trial_from_other_exp["experiment"] = "other"
         trials.append(trial_from_other_exp)
+
+        other_experiment = copy.deepcopy(base_experiment)
+        other_experiment["name"] = "other"
+
         with OrionState(
-            experiments=[base_experiment], trials=trials, storage=storage
+            experiments=[base_experiment, other_experiment],
+            trials=trials,
+            storage=storage,
         ) as cfg:
             storage = cfg.storage
+            experiment_uid = cfg.expname_to_uid.get("default_name", "default_name")
 
             # Make sure we have sufficient trials to test deletion
-            trials = storage.fetch_trials(uid="default_name")
+            trials = storage.fetch_trials(uid=experiment_uid)
             assert len(trials) > 2
 
-            count = storage.delete_trials(uid="default_name")
+            count = storage.delete_trials(uid=experiment_uid)
             assert count == len(trials)
-            assert storage.fetch_trials(uid="default_name") == []
+            assert storage.fetch_trials(uid=experiment_uid) == []
 
             # Make sure trials from other experiments were not deleted
-            assert len(storage.fetch_trials(uid="other")) == 1
+            other_uid = cfg.expname_to_uid.get("other", "other")
+            assert len(storage.fetch_trials(uid=other_uid)) == 1
 
     def test_delete_trials_with_query(self, storage):
         """Test delete experiment trials matching a query"""
@@ -439,8 +460,14 @@ class TestStorage:
         trial_from_other_exp = copy.deepcopy(trials[0])
         trial_from_other_exp["experiment"] = "other"
         trials.append(trial_from_other_exp)
+
+        other_experiment = copy.deepcopy(base_experiment)
+        other_experiment["name"] = "other"
+
         with OrionState(
-            experiments=[base_experiment], trials=trials, storage=storage
+            experiments=[base_experiment, other_experiment],
+            trials=trials,
+            storage=storage,
         ) as cfg:
             storage = cfg.storage
             experiment = cfg.get_experiment("default_name")
@@ -453,7 +480,8 @@ class TestStorage:
             assert len(trials) > len(trials_with_status)
 
             # Test deletion
-            count = storage.delete_trials(uid="default_name", where={"status": status})
+            experiment_uid = cfg.expname_to_uid.get("default_name", "default_name")
+            count = storage.delete_trials(uid=experiment_uid, where={"status": status})
             assert count == len(trials_with_status)
             assert storage.fetch_trials_by_status(experiment, status) == []
             assert len(storage.fetch_trials(experiment)) == len(trials) - len(
@@ -461,7 +489,8 @@ class TestStorage:
             )
 
             # Make sure trials from other experiments were not deleted
-            assert len(storage.fetch_trials(uid="other")) == 1
+            other_uid = cfg.expname_to_uid.get("other", "other")
+            assert len(storage.fetch_trials(uid=other_uid)) == 1
 
     def test_get_trial(self, storage):
         """Test get trial"""
@@ -512,15 +541,15 @@ class TestStorage:
             with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage
             ) as cfg:
-                trial = setup_storage().get_trial(cfg.get_trial(0))
+                trial = cfg.storage.get_trial(cfg.get_trial(0))
                 assert trial is not None, "was not able to retrieve trial for test"
 
-                setup_storage().set_trial_status(trial, status=new_status)
+                cfg.storage.set_trial_status(trial, status=new_status)
                 assert (
                     trial.status == new_status
                 ), "Trial status should have been updated locally"
 
-                trial = setup_storage().get_trial(trial)
+                trial = cfg.storage.get_trial(trial)
                 assert (
                     trial.status == new_status
                 ), "Trial status should have been updated in the storage"
@@ -537,11 +566,11 @@ class TestStorage:
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:
-            trial = setup_storage().get_trial(cfg.get_trial(0))
+            trial = cfg.storage.get_trial(cfg.get_trial(0))
             assert trial is not None, "Was not able to retrieve trial for test"
 
             with pytest.raises(ValueError) as exc:
-                setup_storage().set_trial_status(trial, status="moo")
+                cfg.storage.set_trial_status(trial, status="moo")
 
             assert exc.match("Given status `moo` not one of")
 
@@ -561,7 +590,7 @@ class TestStorage:
 
                 with pytest.raises(FailedUpdate):
                     trial.status = new_status
-                    setup_storage().set_trial_status(trial, status=new_status)
+                    cfg.storage.set_trial_status(trial, status=new_status)
 
         check_status_change("completed")
         check_status_change("broken")
@@ -589,9 +618,9 @@ class TestStorage:
                 trial.status = "broken"
                 assert correct_status != "broken"
                 with pytest.raises(FailedUpdate):
-                    setup_storage().set_trial_status(trial, status=new_status)
+                    cfg.storage.set_trial_status(trial, status=new_status)
 
-                setup_storage().set_trial_status(
+                cfg.storage.set_trial_status(
                     trial, status=new_status, was=correct_status
                 )
 
