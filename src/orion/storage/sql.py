@@ -302,23 +302,67 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             )
             return session.scalars(stmt).all()
 
-    def reserve_trial(self, experiment):
-        with Session(self.engine) as session:
+    def _reserve_trial_postgre(self, experiment):
+        now = datetime.datetime.utcnow()
 
-            with session.begin():
-                # not sure it prevents other worker from reserving the same trial
-                stmt = select(Trial).where(
-                    Trial.status.in_("interrupted", "new", "suspended")
+        with Session(self.engine) as session:
+            # In PostgrerSQL we can do single query
+            stmt = (
+                update(Trial)
+                .where(
+                    True
+                    and Trial.status.in_("interrupted", "new", "suspended")
                     and Trial.experiment_id == experiment._id
                 )
-                trial = session.scalars(stmt).one()
+                .values(
+                    status="reserved",
+                    start_time=now,
+                    heartbeat=now,
+                )
+                .limit(1)
+                .returning()
+            )
+            trial = session.scalar(stmt)
+            return trial
 
-                now = datetime.datetime.utcnow()
-                trial.status = "reserved"
-                trial.start_time = now
-                trial.heartbeat = now
+    def reserve_trial(self, experiment):
+        if False:
+            return self._reserve_trial_postgre(experiment)
 
-        return trial
+        now = datetime.datetime.utcnow()
+
+        with Session(self.engine) as session:
+            stmt = select(Trial).where(
+                Trial.status.in_("interrupted", "new", "suspended")
+                and Trial.experiment_id == experiment._id
+            )
+            trial = session.scalars(stmt).one()
+
+            # Update the trial iff the status has not been changed yet
+            stmt = (
+                update(Trial)
+                .where(
+                    True
+                    and Trial.status == trial.status
+                    and Trial.experiment_id == experiment._id
+                )
+                .values(
+                    status="reserved",
+                    start_time=now,
+                    heartbeat=now,
+                )
+            )
+
+            session.execute(stmt)
+
+            stmt = select(Trial).where(Trial.experiment_id == experiment._id)
+            trial = session.scalars(stmt).one()
+
+            # time needs to match, could have been reserved by another worker
+            if trial.status == "reserved" and trial.heartbeat == now:
+                return trial
+
+            return None
 
     def fetch_trials_by_status(self, experiment, status):
         with Session(self.engine) as session:
@@ -409,6 +453,23 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             session.execute(stmt)
             session.commit()
 
+    def _acquire_algorithm_lock_postgre(
+        self, experiment=None, uid=None, timeout=60, retry_interval=1
+    ):
+        with Session(self.engine) as session:
+            now = datetime.datetime.utcnow()
+
+            stmt = (
+                update(Algo)
+                .where(Algo.experiment_id == uid, Algo.locked == 0)
+                .values(locked=1, heartbeat=now)
+                .returning()
+            )
+
+            algo = session.scalar(stmt).one()
+            session.commit()
+            return algo
+
     @contextlib.contextmanager
     def acquire_algorithm_lock(
         self, experiment=None, uid=None, timeout=60, retry_interval=1
@@ -416,15 +477,20 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         uid = get_uid(experiment, uid)
 
         with Session(self.engine) as session:
+            now = datetime.datetime.utcnow()
+
             stmt = (
                 update(Algo)
                 .where(Algo.experiment_id == uid, Algo.locked == 0)
-                .values(locked=1, heartbeat=datetime.datetime.utcnow())
+                .values(locked=1, heartbeat=now)
             )
-            algo = session.scalar(stmt).one()
+
+            session.execute(stmt)
             session.commit()
 
-        if algo is None:
+            algo = select(Algo).where(Algo.experiment_id == uid, Algo.locked == 1)
+
+        if algo is None or algo.heartbead != now:
             return
 
         algo_state = LockedAlgorithmState(
