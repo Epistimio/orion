@@ -63,6 +63,10 @@ extras_require = {
         "pymoo==0.5.0",
         "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
     ],
+    "hpobench": [
+        "openml",
+        "hpobench @ git+https://github.com/automl/HPOBench.git@master#egg=hpobench",
+    ],
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 

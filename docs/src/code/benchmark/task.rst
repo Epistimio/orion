@@ -16,3 +16,4 @@ Task modules
    task/rosenbrock
    task/forrester
    task/profet
+   task/hpobench

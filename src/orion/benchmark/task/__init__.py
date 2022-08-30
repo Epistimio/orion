@@ -8,6 +8,7 @@ from .branin import Branin
 from .carromtable import CarromTable
 from .eggholder import EggHolder
 from .forrester import Forrester
+from .hpobench import HPOBench
 from .rosenbrock import RosenBrock
 
 try:
@@ -25,6 +26,7 @@ __all__ = [
     "EggHolder",
     "Forrester",
     "profet",
+    "HPOBench",
     # "ProfetSvmTask",
     # "ProfetFcNetTask",
     # "ProfetForresterTask",

@@ -23,6 +23,7 @@ try:
         IntegerHyperparameter,
         NormalFloatHyperparameter,
         NormalIntegerHyperparameter,
+        OrdinalHyperparameter,
         UniformFloatHyperparameter,
         UniformIntegerHyperparameter,
     )
@@ -44,6 +45,7 @@ except ImportError as err:
     UniformIntegerHyperparameter = DummyType
     NormalIntegerHyperparameter = DummyType
     CategoricalHyperparameter = DummyType
+    OrdinalHyperparameter = DummyType
 
 
 class UnsupportedPrior(Exception):
@@ -182,6 +184,13 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
 def _from_categorical(dim: CategoricalHyperparameter) -> Categorical:
     """Builds a categorical dimension from a categorical hyperparameter"""
     choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
+    return Categorical(dim.name, choices)
+
+
+@to_oriondim.register(OrdinalHyperparameter)
+def _from_ordinal(dim: OrdinalHyperparameter) -> Categorical:
+    """Builds a categorical dimension from a categorical hyperparameter"""
+    choices = list(dim.sequence)
     return Categorical(dim.name, choices)
 
 
