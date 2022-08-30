@@ -12,12 +12,12 @@ import cmd
 import functools
 import io
 import os
-import readline
 import shlex
 import traceback
 
 from orion.algo.space import Dimension
 from orion.core.evc import adapters, conflicts
+from orion.core.utils.compat import readline
 from orion.core.utils.diff import green, red
 
 readline.set_completer_delims(" ")

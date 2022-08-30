@@ -4,6 +4,7 @@ import os
 import random
 import time
 import traceback
+from collections import OrderedDict
 from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
@@ -14,6 +15,114 @@ from orion.core.io.database import DatabaseTimeout
 from orion.core.utils.exceptions import ReservationTimeout
 
 DB_FILE = "stress.pkl"
+SQLITE_FILE = "db.sqlite"
+
+ADDRESS = "192.168.0.16"
+
+#
+#   Create the stress test user
+#
+# MongoDB
+#
+#  mongosh
+#  > use admin
+#  > db.createUser({
+#       user: "user",
+#       pwd: "pass",
+#       roles: [
+#           {role: 'readWrite', db: 'stress'},
+#       ]
+#    })
+#
+# PostgreSQL -- DO NOT USE THIS IN PROD - TESTING ONLY
+#
+#  # Switch to the user running the database
+#  sudo su postgres
+#
+#  # open an interactive connection to the server
+#  psql
+#  > CREATE USER username WITH PASSWORD 'pass';
+#  > CREATE ROLE orion_database_admin;
+#  > CREATE ROLE orion_database_user LOGIN;
+#  > GRANT orion_database_user, orion_database_user TO username;
+#  >
+#  > GRANT pg_write_all_data, pg_read_all_data TO username;
+#  > CREATE DATABASE stress OWNER orion_database_admin;
+#  \q
+#
+# >
+
+
+BACKENDS_CONFIGS = OrderedDict(
+    [
+        # ("pickleddb", {"type": "legacy", "database": {"type": "pickleddb", "host": DB_FILE}}),
+        # ("sqlite", {"type": "sqlalchemy", "uri": f"sqlite:///{SQLITE_FILE}"}),
+        (
+            "postgresql",
+            {
+                "type": "sqlalchemy",
+                "uri": f"postgresql://username:pass@{ADDRESS}/stress",
+            },
+        ),
+        (
+            "mongodb",
+            {
+                "type": "legacy",
+                "database": {
+                    "type": "mongodb",
+                    "name": "stress",
+                    "host": f"mongodb://user:pass@{ADDRESS}",
+                },
+            },
+        ),
+    ]
+)
+
+
+def cleanup_storage(backend):
+    if backend == "pickleddb":
+        if os.path.exists(DB_FILE):
+            os.remove(DB_FILE)
+
+    elif backend == "sqlite":
+        if os.path.exists(SQLITE_FILE):
+            os.remove(SQLITE_FILE)
+
+    elif backend == "postgresql":
+        import sqlalchemy
+        from sqlalchemy.orm import Session
+
+        from orion.storage.sql import get_tables
+
+        engine = sqlalchemy.create_engine(
+            f"postgresql://username:pass@{ADDRESS}/stress",
+            echo=True,
+            future=True,
+        )
+
+        # if the tables are missing just skip
+        for table in get_tables():
+            try:
+                with Session(engine) as session:
+                    session.execute(f"DROP TABLE {table.__tablename__} CASCADE;")
+                    session.commit()
+            except:
+                traceback.print_exc()
+
+    elif backend == "mongodb":
+        client = MongoClient(
+            host=ADDRESS, username="user", password="pass", authSource="stress"
+        )
+        database = client.stress
+        database.experiments.drop()
+        database.lying_trials.drop()
+        database.trials.drop()
+        database.workers.drop()
+        database.resources.drop()
+        client.close()
+
+    else:
+        raise RuntimeError("You need to cleam your backend")
 
 
 def f(x, worker):
@@ -40,14 +149,7 @@ def get_experiment(storage, space_type, size):
         This defines `max_trials`, and the size of the search space (`uniform(0, size)`).
 
     """
-    if storage == "pickleddb":
-        storage_config = {"type": "pickleddb", "host": DB_FILE}
-    elif storage == "mongodb":
-        storage_config = {
-            "type": "mongodb",
-            "name": "stress",
-            "host": "mongodb://user:pass@localhost",
-        }
+    storage_config = BACKENDS_CONFIGS[storage]
 
     discrete = space_type == "discrete"
     high = size  # * 2
@@ -58,7 +160,7 @@ def get_experiment(storage, space_type, size):
         max_trials=size,
         max_idle_time=60 * 5,
         algorithms={"random": {"seed": None if space_type == "real" else 1}},
-        storage={"type": "legacy", "database": storage_config},
+        storage=storage_config,
     )
 
 
@@ -130,18 +232,7 @@ def stress_test(storage, space_type, workers, size):
         List of all trials at the end of the stress test
 
     """
-    if storage == "pickleddb":
-        if os.path.exists(DB_FILE):
-            os.remove(DB_FILE)
-    elif storage == "mongodb":
-        client = MongoClient(username="user", password="pass", authSource="stress")
-        database = client.stress
-        database.experiments.drop()
-        database.lying_trials.drop()
-        database.trials.drop()
-        database.workers.drop()
-        database.resources.drop()
-        client.close()
+    cleanup_storage(storage)
 
     print("Worker  |  Point")
 
@@ -170,18 +261,7 @@ def stress_test(storage, space_type, workers, size):
 
     trials = experiment.fetch_trials()
 
-    if storage == "pickleddb":
-        os.remove(DB_FILE)
-    elif storage == "mongodb":
-        client = MongoClient(username="user", password="pass", authSource="stress")
-        database = client.stress
-        database.experiments.drop()
-        database.lying_trials.drop()
-        database.trials.drop()
-        database.workers.drop()
-        database.resources.drop()
-        client.close()
-
+    cleanup_storage(storage)
     return trials
 
 
@@ -246,8 +326,10 @@ def benchmark(workers, size):
 
     """
     results = {}
-    for backend in ["mongodb", "pickleddb"]:
+    for backend in BACKENDS_CONFIGS.keys():
         for space_type in ["discrete", "real", "real-seeded"]:
+            print(backend, space_type)
+
             trials = stress_test(backend, space_type, workers, size)
             results[(backend, space_type)] = get_timestamps(trials, size, space_type)
 
@@ -274,7 +356,7 @@ def main():
 
         results[workers] = benchmark(workers, size)
 
-        for backend in ["mongodb", "pickleddb"]:
+        for backend in BACKENDS_CONFIGS.keys():
             for space_type in ["discrete", "real", "real-seeded"]:
                 x, y = results[workers][(backend, space_type)]
                 axis[i].plot(x, y, label=f"{backend}-{space_type}")

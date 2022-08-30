@@ -29,9 +29,10 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
 
 storage_backends = [
-    None,
-    dict(type="sqlalchemy", uri="sqlite://"),
-]  # defaults to legacy with PickleDB
+    None,  # defaults to legacy with PickleDB
+    dict(type="sqlalchemy", uri="sqlite:///${file}"),  # Temporary file
+    dict(type="sqlalchemy", uri="sqlite://"),  # In-memory
+]
 
 if not HAS_TRACK:
     log.warning("Track is not tested because: %s!", REASON)
@@ -781,6 +782,14 @@ class TestStorage:
 
     def test_serializable(self, storage):
         """Test storage can be serialized"""
+        if (
+            storage
+            and storage["type"] == "sqlalchemy"
+            and storage["uri"] == "sqlite://"
+        ):
+            # Cannot serialize an in-memory database
+            return
+
         with OrionState(
             experiments=[base_experiment], trials=generate_trials(), storage=storage
         ) as cfg:

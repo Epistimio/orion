@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 """Common fixtures and utils for unittests and functional tests."""
-import getpass
 import os
 
 import numpy
@@ -10,6 +9,7 @@ from pymongo import MongoClient
 
 import orion.core
 import orion.core.utils.backward as backward
+import orion.core.utils.compat as getpass
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io import resolve_config

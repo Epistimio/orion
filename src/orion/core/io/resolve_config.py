@@ -4,7 +4,6 @@ Configuration parsing and resolving
 
 """
 import copy
-import getpass
 import hashlib
 import logging
 import os
@@ -16,6 +15,7 @@ from numpy import inf as infinity
 import orion
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
+from orion.core.utils.compat import getuser
 from orion.core.utils.flatten import unflatten
 
 
@@ -267,7 +267,7 @@ def fetch_env_vars():
 
 def fetch_metadata(user=None, user_args=None, user_script_config=None):
     """Infer rest information about the process + versioning"""
-    metadata = {"user": user if user else getpass.getuser()}
+    metadata = {"user": user if user else getuser()}
 
     metadata["orion_version"] = orion.core.__version__
 
@@ -300,7 +300,7 @@ def fetch_metadata(user=None, user_args=None, user_script_config=None):
 
 def update_metadata(metadata):
     """Update information about the process + versioning"""
-    metadata.setdefault("user", getpass.getuser())
+    metadata.setdefault("user", getuser())
     metadata["orion_version"] = orion.core.__version__
 
     if not metadata.get("user_args"):

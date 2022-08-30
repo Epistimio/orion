@@ -143,6 +143,8 @@ class BaseOrionState:
             exp = self.storage.fetch_experiments(dict(name=exp["name"]))[0]
             self.expname_to_uid[exp["name"]] = exp["_id"]
 
+            self.storage.initialize_algorithm_lock(exp["_id"], exp.get("algorithms"))
+
         for trial in self._trials:
             exp_id = self.expname_to_uid.get(trial["experiment"], None)
 

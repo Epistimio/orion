@@ -100,8 +100,13 @@ class ExperimentNode(TreeNode):
 
         """
         if self._parent is None and self._no_parent_lookup:
+            parent_id = self.item.refers.get("parent_id")
+
+            if parent_id is None:
+                return self._parent
+
             self._no_parent_lookup = False
-            query = {"_id": self.item.refers.get("parent_id")}
+            query = {"_id": parent_id}
             selection = {"name": 1, "version": 1}
             experiments = self.storage.fetch_experiments(query, selection)
 
@@ -113,6 +118,7 @@ class ExperimentNode(TreeNode):
                     storage=self.storage,
                 )
                 self.set_parent(exp_node)
+
         return self._parent
 
     @property

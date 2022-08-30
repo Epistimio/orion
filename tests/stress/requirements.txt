@@ -1,1 +1,4 @@
 matplotlib
+psycopg2
+readline
+sqlalchemy

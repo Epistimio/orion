@@ -2,7 +2,6 @@
 """Common fixtures and utils for tests."""
 
 import copy
-import getpass
 import os
 
 import pytest
@@ -10,6 +9,7 @@ import yaml
 
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
+import orion.core.utils.compat as getpass
 from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter

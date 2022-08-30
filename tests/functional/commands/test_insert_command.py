@@ -5,6 +5,7 @@ import os
 import pytest
 
 import orion.core.cli
+import orion.core.utils.compat as getpass
 
 
 def get_user_corneau():
@@ -15,7 +16,7 @@ def get_user_corneau():
 def test_insert_invalid_experiment(storage, monkeypatch, capsys):
     """Test the insertion of an invalid experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     returncode = orion.core.cli.main(
         [
@@ -40,7 +41,7 @@ def test_insert_invalid_experiment(storage, monkeypatch, capsys):
 def test_insert_single_trial(storage, monkeypatch, script_path):
     """Try to insert a single trial"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     orion.core.cli.main(
         [
@@ -74,7 +75,7 @@ def test_insert_single_trial(storage, monkeypatch, script_path):
 def test_insert_single_trial_default_value(storage, monkeypatch):
     """Try to insert a single trial using a default value"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     orion.core.cli.main(
         [
@@ -106,7 +107,7 @@ def test_insert_single_trial_default_value(storage, monkeypatch):
 def test_insert_with_no_default_value(monkeypatch):
     """Try to insert a single trial by omitting a namespace with no default value"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(
@@ -127,7 +128,7 @@ def test_insert_with_no_default_value(monkeypatch):
 def test_insert_with_incorrect_namespace(monkeypatch):
     """Try to insert a single trial with a namespace not inside the experiment space"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(
@@ -149,7 +150,7 @@ def test_insert_with_incorrect_namespace(monkeypatch):
 def test_insert_with_outside_bound_value(monkeypatch):
     """Try to insert a single trial with value outside the distribution's interval"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(
@@ -171,7 +172,7 @@ def test_insert_with_outside_bound_value(monkeypatch):
 def test_insert_two_hyperparameters(storage, monkeypatch):
     """Try to insert a single trial with two hyperparameters"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
     orion.core.cli.main(
         [
             "insert",
