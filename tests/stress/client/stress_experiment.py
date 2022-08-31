@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 """Perform a stress tests on python API."""
+import logging
 import os
 import random
 import time
 import traceback
 from collections import OrderedDict
+from contextlib import contextmanager
 from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
@@ -18,6 +20,12 @@ DB_FILE = "stress.pkl"
 SQLITE_FILE = "db.sqlite"
 
 ADDRESS = "192.168.0.16"
+
+NUM_TRIALS = 500
+
+NUM_WORKERS = [1, 4, 16, 32, 64, 128]
+
+LOG_LEVEL = logging.WARNING
 
 #
 #   Create the stress test user
@@ -50,31 +58,36 @@ ADDRESS = "192.168.0.16"
 #  > CREATE DATABASE stress OWNER orion_database_admin;
 #  \q
 #
-# >
+#  > \l                             # list all the database
+#  > \c stress                      # Use the datatabase
+#  > select * from experiments;
 
 
 BACKENDS_CONFIGS = OrderedDict(
     [
-        # ("pickleddb", {"type": "legacy", "database": {"type": "pickleddb", "host": DB_FILE}}),
-        # ("sqlite", {"type": "sqlalchemy", "uri": f"sqlite:///{SQLITE_FILE}"}),
         (
-            "postgresql",
-            {
-                "type": "sqlalchemy",
-                "uri": f"postgresql://username:pass@{ADDRESS}/stress",
-            },
+            "pickleddb",
+            {"type": "legacy", "database": {"type": "pickleddb", "host": DB_FILE}},
         ),
-        (
-            "mongodb",
-            {
-                "type": "legacy",
-                "database": {
-                    "type": "mongodb",
-                    "name": "stress",
-                    "host": f"mongodb://user:pass@{ADDRESS}",
-                },
-            },
-        ),
+        ("sqlite", {"type": "sqlalchemy", "uri": f"sqlite:///{SQLITE_FILE}"}),
+        # (
+        #     "postgresql",
+        #     {
+        #         "type": "sqlalchemy",
+        #         "uri": f"postgresql://username:pass@{ADDRESS}/stress",
+        #     },
+        # ),
+        # (
+        #     "mongodb",
+        #     {
+        #         "type": "legacy",
+        #         "database": {
+        #             "type": "mongodb",
+        #             "name": "stress",
+        #             "host": f"mongodb://user:pass@{ADDRESS}",
+        #         },
+        #     },
+        # ),
     ]
 )
 
@@ -127,7 +140,6 @@ def cleanup_storage(backend):
 
 def f(x, worker):
     """Sleep and return objective equal to param"""
-    print(f"{worker: 6d}   {x: 5f}")
     time.sleep(max(0, random.gauss(1, 0.2)))
     return [dict(name="objective", value=x, type="objective")]
 
@@ -196,8 +208,11 @@ def worker(worker_id, storage, space_type, size):
             if trial is None:
                 break
 
-            results = f(trial.params["x"], worker_id)
+            x = trial.params["x"]
+            results = f(x, worker_id)
+
             num_trials += 1
+            print(f"    - {worker_id: 6d} {num_trials: 6d}  {x: 5f}")
             experiment.observe(trial, results=results)
 
         print(f"{worker_id: 6d} leaves | is done? {experiment.is_done}")
@@ -210,6 +225,13 @@ def worker(worker_id, storage, space_type, size):
         return None
 
     return num_trials
+
+
+@contextmanager
+def always_clean(storage):
+    cleanup_storage(storage)
+    yield
+    # cleanup_storage(storage)
 
 
 def stress_test(storage, space_type, workers, size):
@@ -232,8 +254,6 @@ def stress_test(storage, space_type, workers, size):
         List of all trials at the end of the stress test
 
     """
-    cleanup_storage(storage)
-
     print("Worker  |  Point")
 
     with Pool(workers) as p:
@@ -261,7 +281,6 @@ def stress_test(storage, space_type, workers, size):
 
     trials = experiment.fetch_trials()
 
-    cleanup_storage(storage)
     return trials
 
 
@@ -291,14 +310,17 @@ def get_timestamps(trials, size, space_type):
     start_time = None
     for i, trial in enumerate(trials):
         hparams.add(trial.params["x"])
+
         assert trial.objective.value == trial.params["x"]
+
         if start_time is None:
             start_time = trial.submit_time
+
         x.append((trial.submit_time - start_time).total_seconds())
         y.append(i)
 
     if space_type in ["discrete", "real-seeded"]:
-        assert len(hparams) == size
+        assert len(hparams) == size, f"{len(hparams)} == {size}"
     else:
         assert len(hparams) >= size
 
@@ -330,17 +352,26 @@ def benchmark(workers, size):
         for space_type in ["discrete", "real", "real-seeded"]:
             print(backend, space_type)
 
-            trials = stress_test(backend, space_type, workers, size)
-            results[(backend, space_type)] = get_timestamps(trials, size, space_type)
+            # Initialize the storage once before parallel work
+            get_experiment(backend, space_type, size)
+
+            with always_clean(backend):
+                trials = stress_test(backend, space_type, workers, size)
+
+                results[(backend, space_type)] = get_timestamps(
+                    trials, size, space_type
+                )
 
     return results
 
 
 def main():
     """Run all stress tests and render the plot"""
-    size = 500
+    size = NUM_TRIALS
 
-    num_workers = [1, 4, 16, 32, 64, 128]
+    logging.basicConfig(level=LOG_LEVEL)
+
+    num_workers = NUM_WORKERS
 
     fig, axis = plt.subplots(
         len(num_workers),

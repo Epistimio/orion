@@ -60,7 +60,7 @@ class User(Base):
     __tablename__ = "users"
 
     _id         = Column(Integer, primary_key=True, autoincrement=True)
-    name        = Column(String(30))
+    name        = Column(String(30), unique=True)
     token       = Column(String(32))
     created_at  = Column(DateTime)
     last_seen   = Column(DateTime)
@@ -79,6 +79,7 @@ class Experiment(Base):
     algorithms  = Column(JSON)
     remaining   = Column(JSON)
     space       = Column(JSON)
+    parent_id   = Column(Integer)
 
     __table_args__ = (
         UniqueConstraint('name', 'owner_id', name='_one_name_per_owner'),
@@ -101,7 +102,7 @@ class Trial(Base):
     parent          = Column(Integer, ForeignKey("trials._id"), nullable=True)
     params          = Column(JSON)
     worker          = Column(JSON)
-    submit_time     = Column(String(30))
+    submit_time     = Column(DateTime)
     exp_working_dir = Column(String(30))
     id              = Column(String(30))
 
@@ -174,7 +175,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         # engine_from_config
         self.engine = sqlalchemy.create_engine(
             uri,
-            echo=True,
+            echo=False,
             future=True,
             json_serializer=to_json,
             json_deserializer=from_json,
@@ -189,29 +190,44 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         self._connect(token)
 
     def _connect(self, token):
+        name = getuser()
+
+        user = self._find_user(name, token)
+
+        if user is None:
+            user = self._create_user(name)
+
+        assert user is not None
+
+        self.user_id = user._id
+        self.user = user
+        self.token = user.token
+
+    def _find_user(self, name, token) -> User:
+        query = [User.name == name]
         if token is not None and token != "":
-            with Session(self.engine) as session:
-                stmt = select(User).where(User.token == self.token)
-                self.user = session.scalars(stmt).one()
+            query.append(User.token == token)
 
-                self.user_id = self.user._id
-        else:
-            # Local database, create a default user
-            user = getuser()
-            now = datetime.datetime.utcnow()
+        with Session(self.engine) as session:
+            stmt = select(User).where(*query)
 
-            with Session(self.engine) as session:
-                self.user = User(
-                    name=user,
-                    token=uuid.uuid5(uuid.NAMESPACE_OID, user).hex,
-                    created_at=now,
-                    last_seen=now,
-                )
-                session.add(self.user)
-                session.commit()
+            return session.execute(stmt).scalar()
 
-                assert self.user._id > 0
-                self.user_id = self.user._id
+    def _create_user(self, name) -> User:
+        now = datetime.datetime.utcnow()
+
+        with Session(self.engine) as session:
+            user = User(
+                name=name,
+                token=uuid.uuid5(uuid.NAMESPACE_OID, name).hex,
+                created_at=now,
+                last_seen=now,
+            )
+            session.add(user)
+            session.commit()
+
+            assert user._id > 0
+            return user
 
     def __getstate__(self):
         return dict(
@@ -244,6 +260,11 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                     version=0,
                 )
 
+                if "refers" in config:
+                    ref = config.get("refers")
+                    if "parent_id" in ref:
+                        config["parent_id"] = ref.pop("parent_id")
+
                 cpy["meta"] = cpy.pop("metadata")
                 self._set_from_dict(experiment, cpy, "remaining")
 
@@ -252,6 +273,9 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
                 session.refresh(experiment)
                 config.update(self._to_experiment(experiment))
+
+            # Alreadyc reate the algo lock as well
+            self.initialize_algorithm_lock(config["_id"], config.get("algorithms", {}))
         except DBAPIError:
             raise DuplicateKeyError()
 
@@ -267,6 +291,9 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`orion.storage.base.BaseStorageProtocol.update_experiment`"""
         uid = get_uid(experiment, uid)
+
+        if where and "refers.parent_id" in where:
+            where["parent_id"] = where.pop("refers.parent_id")
 
         where = self._get_query(where)
 
@@ -308,6 +335,9 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     def fetch_experiments(self, query, selection=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_experiments`"""
+        if "refers.parent_id" in query:
+            query["parent_id"] = query.pop("refers.parent_id")
+
         if selection:
             return self._fetch_experiments_with_select(query, selection)
 
@@ -320,7 +350,6 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             experiments = session.scalars(stmt).all()
 
         r = [self._to_experiment(exp) for exp in experiments]
-        print("RESULT", r)
         return r
 
     # Benchmarks
@@ -332,16 +361,18 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
         uid = get_uid(experiment, uid)
 
-        where = self._get_query(where)
+        query = self._get_query(where)
 
         if uid is not None:
-            where["experiment_id"] = uid
+            query["experiment_id"] = uid
 
-        query = self._to_query(Trial, where)
+        query = self._to_query(Trial, query)
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(*query)
-            return session.scalars(stmt).all()
+            results = session.scalars(stmt).all()
+
+            return [OrionTrial(**self._to_trial(t)) for t in results]
 
     def register_trial(self, trial):
         """See :func:`orion.storage.base.BaseStorageProtocol.register_trial`"""
@@ -359,6 +390,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 session.commit()
 
                 session.refresh(db_trial)
+                trial.id_override = db_trial._id
 
                 return OrionTrial(**self._to_trial(db_trial))
         except DBAPIError:
@@ -384,8 +416,6 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     def retrieve_result(self, trial, **kwargs):
         """Updates the results array"""
-        new_trial = self.get_trial(trial)
-        trial.results = new_trial.results
         return trial
 
     def get_trial(self, trial=None, uid=None, experiment_uid=None):
@@ -440,7 +470,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             self._set_from_dict(trial, kwargs)
             session.commit()
 
-        return trial
+        return OrionTrial(*self._to_trial(trial))
 
     def fetch_lost_trials(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_lost_trials`"""
@@ -455,21 +485,32 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 Trial.status == "reserved",
                 Trial.heartbeat < threshold,
             )
-            return session.scalars(stmt).all()
+            results = session.scalars(stmt).all()
+
+            return [OrionTrial(*self._to_trial(t)) for t in results]
 
     def push_trial_results(self, trial):
         """See :func:`orion.storage.base.BaseStorageProtocol.push_trial_results`"""
+
+        log.debug("push trial to storage")
+        original = trial
+        config = trial.to_dict()
+
+        # Don't need to set that one
+        config.pop("experiment")
+
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.experiment_id == trial.experiment,
-                Trial._id == trial.id,
+                # Trial.experiment_id == trial.experiment,
+                # Trial.id == trial.id,
+                Trial._id == trial.id_override,
                 Trial.status == "reserved",
             )
             trial = session.scalars(stmt).one()
-            self._set_from_dict(trial, trial.to_dict())
+            self._set_from_dict(trial, config)
             session.commit()
 
-        return trial
+            return original
 
     def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.set_trial_status`"""
@@ -506,7 +547,10 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 Trial.status.in_(("interrupted", "new", "suspended")),
                 Trial.experiment_id == experiment._id,
             )
-            return session.scalars(stmt).all()
+            results = session.scalars(stmt).all()
+            trials = OrionTrial.build([self._to_trial(t) for t in results])
+
+            return trials
 
     def _reserve_trial_postgre(self, experiment):
         now = datetime.datetime.utcnow()
@@ -528,13 +572,14 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 .returning()
             )
             trial = session.scalar(stmt)
-            return trial
+            return OrionTrial(**self._to_trial(trial))
 
     def reserve_trial(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.reserve_trial`"""
         if False:
             return self._reserve_trial_postgre(experiment)
 
+        log.debug("reserve trial")
         now = datetime.datetime.utcnow()
 
         with Session(self.engine) as session:
@@ -542,6 +587,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 Trial.status.in_(("interrupted", "new", "suspended")),
                 Trial.experiment_id == experiment._id,
             )
+
             try:
                 trial = session.scalars(stmt).one()
             except NoResultFound:
@@ -552,7 +598,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 update(Trial)
                 .where(
                     Trial.status == trial.status,
-                    Trial.experiment_id == experiment._id,
+                    Trial._id == trial._id,
                 )
                 .values(
                     status="reserved",
@@ -561,14 +607,13 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 )
             )
 
-            session.execute(stmt)
-
-            stmt = select(Trial).where(Trial.experiment_id == experiment._id)
-            trial = session.scalars(stmt).one()
+            result = session.execute(stmt)
 
             # time needs to match, could have been reserved by another worker
-            if trial.status == "reserved" and trial.heartbeat == now:
-                return trial
+            if result.rowcount == 1:
+                session.commit()
+                session.refresh(trial)
+                return OrionTrial(**self._to_trial(trial))
 
             return None
 
@@ -576,12 +621,11 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials_by_status`"""
         with Session(self.engine) as session:
             stmt = select(Trial).where(
-                Trial.status == status and Trial.experiment_id == experiment._id
+                Trial.status == status, Trial.experiment_id == experiment._id
             )
-            return [
-                OrionTrial(**self._to_trial(trial))
-                for trial in session.scalars(stmt).all()
-            ]
+            results = session.scalars(stmt).all()
+
+            return [OrionTrial(**self._to_trial(trial)) for trial in results]
 
     def fetch_noncompleted_trials(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_noncompleted_trials`"""
@@ -590,7 +634,9 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 Trial.status != "completed",
                 Trial.experiment_id == experiment._id,
             )
-            return session.scalars(stmt).all()
+            results = session.scalars(stmt).all()
+
+            return [OrionTrial(**self._to_trial(trial)) for trial in results]
 
     def count_completed_trials(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.count_completed_trials`"""
@@ -642,7 +688,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         with Session(self.engine) as session:
             algo = Algo(
                 experiment_id=experiment_id,
-                owner_id=self.user._id,
+                owner_id=self.user_id,
                 configuration=algorithm_config,
                 locked=0,
                 heartbeat=datetime.datetime.utcnow(),
@@ -720,7 +766,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             return algo
 
     def _acquire_algorithm_lock(
-        self, experiment=None, uid=None, timeout=60, retry_interval=1
+        self, experiment=None, uid=None, timeout=1, retry_interval=1
     ):
         uid = get_uid(experiment, uid)
         algo_state_lock = None
@@ -772,12 +818,14 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         )
 
         try:
+            log.debug("lock algo")
             yield locked_algo_state
         except Exception:
             # Reset algo to state fetched lock time
             locked_algo_state.reset()
             raise
         finally:
+            log.debug("unlock algo")
             uid = get_uid(experiment, uid)
             self.release_algorithm_lock(uid=uid, new_state=locked_algo_state.state)
 
@@ -819,6 +867,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         if meta:
             log.warning("Data was discarded %s", meta)
+            assert False
 
     def _to_query(self, table, where):
         query = []

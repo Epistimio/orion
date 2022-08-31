@@ -18,6 +18,7 @@ from filelock import FileLock, SoftFileLock, Timeout
 import orion.core
 from orion.core.io.database import Database, DatabaseTimeout
 from orion.core.io.database.ephemeraldb import EphemeralDB
+from orion.core.utils.compat import replace
 
 log = logging.getLogger(__name__)
 
@@ -225,7 +226,7 @@ class PickledDB(Database):
             log.error("because (value %s) in (field: %s) is not pickable", value, key)
             raise
 
-        os.rename(tmp_file, self.host)
+        replace(tmp_file, self.host)
 
     @contextmanager
     def locked_database(self, write=True):
