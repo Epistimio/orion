@@ -182,7 +182,12 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         )
 
         # Create the schema
-        Base.metadata.create_all(self.engine)
+        # sqlite3 can fail on table if it already exist
+        # the doc says it shouldnt but it does
+        try:
+            Base.metadata.create_all(self.engine)
+        except DBAPIError:
+            pass
 
         self.token = token
         self.user_id = None
@@ -214,20 +219,23 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             return session.execute(stmt).scalar()
 
     def _create_user(self, name) -> User:
-        now = datetime.datetime.utcnow()
+        try:
+            now = datetime.datetime.utcnow()
 
-        with Session(self.engine) as session:
-            user = User(
-                name=name,
-                token=uuid.uuid5(uuid.NAMESPACE_OID, name).hex,
-                created_at=now,
-                last_seen=now,
-            )
-            session.add(user)
-            session.commit()
+            with Session(self.engine) as session:
+                user = User(
+                    name=name,
+                    token=uuid.uuid5(uuid.NAMESPACE_OID, name).hex,
+                    created_at=now,
+                    last_seen=now,
+                )
+                session.add(user)
+                session.commit()
 
-            assert user._id > 0
-            return user
+                assert user._id > 0
+                return user
+        except DBAPIError:
+            return self._find_user(name, self.token)
 
     def __getstate__(self):
         return dict(
@@ -583,9 +591,13 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         now = datetime.datetime.utcnow()
 
         with Session(self.engine) as session:
-            stmt = select(Trial).where(
-                Trial.status.in_(("interrupted", "new", "suspended")),
-                Trial.experiment_id == experiment._id,
+            stmt = (
+                select(Trial)
+                .where(
+                    Trial.status.in_(("interrupted", "new", "suspended")),
+                    Trial.experiment_id == experiment._id,
+                )
+                .limit(1)
             )
 
             try:

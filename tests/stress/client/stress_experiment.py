@@ -14,18 +14,29 @@ from pymongo import MongoClient
 
 from orion.client import create_experiment
 from orion.core.io.database import DatabaseTimeout
-from orion.core.utils.exceptions import ReservationTimeout
+from orion.core.utils.exceptions import (
+    CompletedExperiment,
+    ReservationRaceCondition,
+    ReservationTimeout,
+    WaitingForTrials,
+)
 
 DB_FILE = "stress.pkl"
 SQLITE_FILE = "db.sqlite"
 
 ADDRESS = "192.168.0.16"
 
-NUM_TRIALS = 500
+NUM_TRIALS = 1000
 
-NUM_WORKERS = [1, 4, 16, 32, 64, 128]
+NUM_WORKERS = [32, 64]
 
 LOG_LEVEL = logging.WARNING
+
+SPACE = ["discrete", "real", "real-seeded"]
+SPACE = ["real-seeded"]
+
+# raw_worker or runner_worker
+METHOD = "runner_worker"
 
 #
 #   Create the stress test user
@@ -65,11 +76,11 @@ LOG_LEVEL = logging.WARNING
 
 BACKENDS_CONFIGS = OrderedDict(
     [
+        ("sqlite", {"type": "sqlalchemy", "uri": f"sqlite:///{SQLITE_FILE}"}),
         (
             "pickleddb",
             {"type": "legacy", "database": {"type": "pickleddb", "host": DB_FILE}},
         ),
-        ("sqlite", {"type": "sqlalchemy", "uri": f"sqlite:///{SQLITE_FILE}"}),
         # (
         #     "postgresql",
         #     {
@@ -138,9 +149,9 @@ def cleanup_storage(backend):
         raise RuntimeError("You need to cleam your backend")
 
 
-def f(x, worker):
+def f(x, worker=-1):
     """Sleep and return objective equal to param"""
-    time.sleep(max(0, random.gauss(1, 0.2)))
+    time.sleep(max(0, random.gauss(0.1, 1)))
     return [dict(name="objective", value=x, type="objective")]
 
 
@@ -164,7 +175,7 @@ def get_experiment(storage, space_type, size):
     storage_config = BACKENDS_CONFIGS[storage]
 
     discrete = space_type == "discrete"
-    high = size  # * 2
+    high = size * 2
 
     return create_experiment(
         "stress-test",
@@ -176,7 +187,7 @@ def get_experiment(storage, space_type, size):
     )
 
 
-def worker(worker_id, storage, space_type, size):
+def raw_worker(worker_id, storage, space_type, size, pool_size):
     """Run trials until experiment is done
 
     Parameters
@@ -201,7 +212,13 @@ def worker(worker_id, storage, space_type, size):
         num_trials = 0
         while not experiment.is_done:
             try:
-                trial = experiment.suggest()
+                trial = experiment.suggest(pool_size=pool_size)
+            except WaitingForTrials:
+                continue
+            except CompletedExperiment:
+                continue
+            except ReservationRaceCondition:
+                continue
             except ReservationTimeout:
                 trial - None
 
@@ -212,15 +229,15 @@ def worker(worker_id, storage, space_type, size):
             results = f(x, worker_id)
 
             num_trials += 1
-            print(f"    - {worker_id: 6d} {num_trials: 6d}  {x: 5f}")
+            print(f"\r    - {worker_id: 6d} {num_trials: 6d}  {x: 5.0f}", end="")
             experiment.observe(trial, results=results)
 
-        print(f"{worker_id: 6d} leaves | is done? {experiment.is_done}")
+        print(f"\n{worker_id: 6d} leaves | is done? {experiment.is_done}")
     except DatabaseTimeout as e:
-        print(f"{worker_id: 6d} timeouts and leaves")
+        print(f"\n{worker_id: 6d} timeouts and leaves")
         return num_trials
     except Exception as e:
-        print(f"{worker_id: 6d} crashes")
+        print(f"\n{worker_id: 6d} crashes")
         traceback.print_exc()
         return None
 
@@ -231,10 +248,10 @@ def worker(worker_id, storage, space_type, size):
 def always_clean(storage):
     cleanup_storage(storage)
     yield
-    # cleanup_storage(storage)
+    cleanup_storage(storage)
 
 
-def stress_test(storage, space_type, workers, size):
+def stress_test_raw_worker(storage, space_type, workers, size, pool_size):
     """Spawn workers and run stress test with verifications
 
     Parameters
@@ -258,12 +275,13 @@ def stress_test(storage, space_type, workers, size):
 
     with Pool(workers) as p:
         results = p.starmap(
-            worker,
+            raw_worker,
             zip(
                 range(workers),
                 [storage] * workers,
                 [space_type] * workers,
                 [size] * workers,
+                [pool_size] * workers,
             ),
         )
 
@@ -272,16 +290,41 @@ def stress_test(storage, space_type, workers, size):
     ), "A worker crashed unexpectedly. See logs for the error messages."
     assert all(n > 0 for n in results), "A worker could not execute any trial."
 
-    if space_type in ["discrete", "real-seeded"]:
-        assert sum(results) == size, results
-    else:
-        assert sum(results) >= size, results
+    assert sum(results) >= size, f"sum({results}) = {sum(results)} != {size}"
 
     experiment = get_experiment(storage, space_type, size)
 
-    trials = experiment.fetch_trials()
+    trials = experiment.fetch_trials_by_status("completed")
 
     return trials
+
+
+def stress_test_runner(storage, space_type, workers, size, pool_size):
+    """Spawn workers and run stress test with verifications
+
+    Parameters
+    ----------
+    storage: str
+        See `get_experiment`.
+    space_type: str
+        See `get_experiment`.
+    workers: int
+        Number of workers to run in parallel.
+    size: int
+        See `get_experiment`.
+
+    Returns
+    -------
+    `list` of `orion.core.worker.trial.Trial`
+        List of all trials at the end of the stress test
+
+    """
+
+    experiment = get_experiment(storage, space_type, size)
+
+    experiment.workon(fct=f, n_workers=workers, pool_size=pool_size, max_trials=size)
+
+    return experiment.fetch_trials()
 
 
 def get_timestamps(trials, size, space_type):
@@ -307,9 +350,15 @@ def get_timestamps(trials, size, space_type):
     x = []
     y = []
 
+    empty_trial = []
+
     start_time = None
     for i, trial in enumerate(trials):
         hparams.add(trial.params["x"])
+
+        if trial.objective is None:
+            empty_trial.append(trial)
+            continue
 
         assert trial.objective.value == trial.params["x"]
 
@@ -319,15 +368,12 @@ def get_timestamps(trials, size, space_type):
         x.append((trial.submit_time - start_time).total_seconds())
         y.append(i)
 
-    if space_type in ["discrete", "real-seeded"]:
-        assert len(hparams) == size, f"{len(hparams)} == {size}"
-    else:
-        assert len(hparams) >= size
-
+    print(f"Found empty trials {empty_trial}")
+    assert len(hparams) >= size, f"{len(hparams)} == {size}"
     return x[:size], y[:size]
 
 
-def benchmark(workers, size):
+def benchmark(workers, size, pool_size):
     """Get start timestamps of the trials
 
     Parameters
@@ -348,15 +394,24 @@ def benchmark(workers, size):
 
     """
     results = {}
+
+    stres_test_method = None
+    if METHOD == "raw_worker":
+        stres_test_method = stress_test_raw_worker
+    else:
+        stres_test_method = stress_test_runner
+
     for backend in BACKENDS_CONFIGS.keys():
-        for space_type in ["discrete", "real", "real-seeded"]:
+        for space_type in SPACE:
             print(backend, space_type)
 
             # Initialize the storage once before parallel work
             get_experiment(backend, space_type, size)
 
             with always_clean(backend):
-                trials = stress_test(backend, space_type, workers, size)
+                trials = stres_test_method(
+                    backend, space_type, workers, size, pool_size
+                )
 
                 results[(backend, space_type)] = get_timestamps(
                     trials, size, space_type
@@ -385,10 +440,10 @@ def main():
 
     for i, workers in enumerate(num_workers):
 
-        results[workers] = benchmark(workers, size)
+        results[workers] = benchmark(workers, size, pool_size=workers)
 
         for backend in BACKENDS_CONFIGS.keys():
-            for space_type in ["discrete", "real", "real-seeded"]:
+            for space_type in SPACE:
                 x, y = results[workers][(backend, space_type)]
                 axis[i].plot(x, y, label=f"{backend}-{space_type}")
 
