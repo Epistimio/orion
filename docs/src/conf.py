@@ -129,6 +129,9 @@ html_theme_options = {
     "left_sidebar_end": ["sidebar-ethical-ads"],
 }
 
+html_favicon = "_static/logo/orion_logo_bow_only_no_string.png"
+html_logo = "_static/logo/orion_logo_nogrid_72ppi.png"
+
 #     "canonical_url": "",
 #     "analytics_id": "",
 #     "logo_only": False,

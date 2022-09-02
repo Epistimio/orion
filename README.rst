@@ -1,6 +1,6 @@
-*****
-Oríon
-*****
+.. image:: _static/logo/orion_logo_grid_150ppi.png
+  :width: 400
+  :alt: Oríon
 
 |pypi| |py_versions| |license| |doi|
 |rtfd| |codecov| |github-actions|
