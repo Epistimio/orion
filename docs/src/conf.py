@@ -115,22 +115,34 @@ default_role = "autolink"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 html_theme_options = {
-    "canonical_url": "",
-    "analytics_id": "",
-    "logo_only": False,
-    "display_version": True,
-    "prev_next_buttons_location": "both",
-    #  'style_external_links': False,
-    #  'vcs_pageview_mode': '',
-    # Toc options
-    "collapse_navigation": False,
-    "sticky_navigation": True,
-    "navigation_depth": 4,
-    #  'includehidden': False,
-    #  'titles_only': False
+    "logo": {},  # TODO
+    "github_url": "https://github.com/Epistimio/orion",
+    "collapse_navigation": True,
+    "show_nav_level": 2,
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links.html"],
+    "switcher": {  # TODO in another PR. We need the version json file
+        "version_match": "v0.2.4",
+        "json_url": "https://numpy.org/doc/_static/versions.json",  # TODO
+    },
+    "left_sidebar_end": ["sidebar-ethical-ads"],
 }
+
+#     "canonical_url": "",
+#     "analytics_id": "",
+#     "logo_only": False,
+#     "display_version": True,
+#     "prev_next_buttons_location": "both",
+#     #  'style_external_links': False,
+#     #  'vcs_pageview_mode': '',
+#     # Toc options
+#     "collapse_navigation": False,
+#     "sticky_navigation": True,
+#     "navigation_depth": 4,
+#     #  'includehidden': False,
+#     #  'titles_only': False
+# }
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -150,8 +162,10 @@ html_static_path = ["_static"]
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
     "**": [
-        "relations.html",  # needs 'show_related': True theme option to display
-        "searchbox.html",
+        "search-field",
+        "sidebar-nav-bs",
+        # "relations.html",  # needs 'show_related': True theme option to display
+        # "sidebar-ethical-ads.html",
     ]
 }
 
@@ -254,7 +268,7 @@ intersphinx_mapping = {
     "plotly": ("https://plotly.com/python-api-reference/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
-    "pandas": ("https://pandas.pydata.org/docs/", None)
+    "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 
 

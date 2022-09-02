@@ -1,6 +1,19 @@
-********
-Overview
-********
+************
+Contributing
+************
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   .. overview
+   installing
+   standards
+   testing
+   documenting
+   ci
+   release
+
 
 Welcome to the project. We're excited you decided to improve Oríon!
 

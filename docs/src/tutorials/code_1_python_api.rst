@@ -1,0 +1,1 @@
+.. include:: ../auto_tutorials/code_1_python_api.rst
