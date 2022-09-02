@@ -1,10 +1,28 @@
-********
-Overview
-********
+**********
+User Guide
+**********
 
 .. The goal of this document is to provide an overview of the content present in the user guide.
 .. It is not meant to replace the general getting started or duplicate the content in the user guide
 .. sections.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   .. overview
+   script
+   api
+   algorithms
+   searchspace
+   monitoring
+   visualisations
+   benchmark
+   evc
+   storage
+   config
+   parallel
+
 
 In this guide, we explain the concepts of Oríon in depth. A light weight introduction is available
 in :doc:`/install/gettingstarted` to familiarize yourself with the project and its concepts.

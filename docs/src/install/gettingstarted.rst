@@ -2,6 +2,13 @@
 Getting Started
 ***************
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   core
+   database
+
 Welcome! In this chapter, we give a quick overview of Oríon's main features and how it can help you
 streamline your machine learning workflow whether you are a researcher or engineer.
 

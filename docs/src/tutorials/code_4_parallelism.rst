@@ -1,0 +1,1 @@
+.. include:: ../auto_tutorials/code_4_parallelism.rst
