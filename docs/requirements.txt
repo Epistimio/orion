@@ -1,5 +1,6 @@
 sphinx
 sphinx_rtd_theme
+pydata-sphinx-theme
 sphinxcontrib.httpdomain
 sphinx-autoapi
 sphinx_gallery
