@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from orion.core.utils.flatten import unflatten
 from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ class RemoteTrial:
     # Populated by the worker locally
     exp_working_dir: Optional[str] = None
     working_dir: Optional[str] = None
+
+    # This is used to copy the parent
+    parent = None
 
 
 class ClientREST:
@@ -101,7 +105,12 @@ class ClientREST:
 
         trials = []
         for trial in result["trials"]:
-            trials.append(RemoteTrial(**trial))
+            trial["params"] = unflatten(
+                {param["name"]: param["value"] for param in trial["params"]}
+            )
+            trials.append(
+                RemoteTrial(**trial, exp_working_dir=self.experiment.working_dir)
+            )
 
         # Currently we only return a single trial
         return trials[0]
@@ -114,6 +123,9 @@ class ClientREST:
 
         if experiment_name is None:
             raise ExperiementIsNotSetup("experiment_name is not set")
+
+        assert isinstance(results, list)
+        log.debug(f"OBSERVE {trial} {results}")
 
         self._post(
             "observe",

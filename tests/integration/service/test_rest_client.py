@@ -5,7 +5,7 @@ from orion.service.testing import server
 
 
 def function(a, b):
-    return a + b
+    return [dict(value=a + b, type="objective", name="wahtever")]
 
 
 TOKEN = "Tok1"
@@ -39,7 +39,7 @@ def test_one_rest_client():
         )
 
         assert count > 10
-        assert client.is_done()
+        assert client.is_done
 
 
 def test_n_client(n=2):

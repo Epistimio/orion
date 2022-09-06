@@ -67,15 +67,17 @@ class LocalExperimentBroker(ExperimentBroker):
         if client.is_broken:
             raise BrokenExperiment()
 
-        trial = client.suggest(**request.data).to_dict()
+        trial = client.suggest(**request.data)
+        data = trial.to_dict()
 
         # We only send the minimal amount of information to the client
         # to force the client the communicate with us
         # to avoid having invisible issues.
         small_trial = dict()
-        small_trial["db_id"] = str(trial["_id"])
-        small_trial["params_id"] = str(trial["id"])
-        small_trial["params"] = str(trial["params"])
+        small_trial["db_id"] = str(data["_id"])
+        small_trial["params_id"] = str(data["id"])
+        small_trial["params"] = data["params"]
+        small_trial["working_dir"] = str(trial.get_working_dir())
 
         return success(dict(trials=[small_trial]))
 
