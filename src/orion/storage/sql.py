@@ -478,7 +478,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             self._set_from_dict(trial, kwargs)
             session.commit()
 
-        return OrionTrial(*self._to_trial(trial))
+        return OrionTrial(**self._to_trial(trial))
 
     def fetch_lost_trials(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_lost_trials`"""
@@ -495,7 +495,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             )
             results = session.scalars(stmt).all()
 
-            return [OrionTrial(*self._to_trial(t)) for t in results]
+            return [OrionTrial(**self._to_trial(t)) for t in results]
 
     def push_trial_results(self, trial):
         """See :func:`orion.storage.base.BaseStorageProtocol.push_trial_results`"""
