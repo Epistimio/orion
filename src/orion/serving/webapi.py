@@ -110,7 +110,7 @@ class WebApi(falcon.API):
         # Create our resources
         root_resource = RuntimeResource(self.storage)
         experiments_resource = ExperimentsResource(self.storage)
-        benchmarks_resource = BenchmarksResource()
+        benchmarks_resource = BenchmarksResource(self.storage)
         trials_resource = TrialsResource(self.storage)
         plots_resource = PlotsResource(self.storage)
 
