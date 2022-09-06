@@ -1,6 +1,3 @@
-
-
-
 from threading import Thread
 from orion.service.client import ExperimentClientREST
 from orion.service.testing import server, get_mongo_admin
@@ -12,10 +9,11 @@ def function(a, b):
 
 TOKEN = "Tok1"
 
+
 def test_one_rest_client():
-    with server() as endpoint:
+    with server() as (endpoint, port):
         client = ExperimentClientREST.create_experiment(
-            'MyExperiment',
+            "MyExperiment",
             version=None,
             space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
             algorithms=None,
@@ -23,7 +21,7 @@ def test_one_rest_client():
             max_trials=None,
             max_broken=None,
             storage=dict(
-                type='reststorage',
+                type="reststorage",
                 endpoint=endpoint,
                 token=TOKEN,
             ),
@@ -38,7 +36,6 @@ def test_one_rest_client():
             fct=function,
             n_workers=2,
         )
-
 
 
 def test_n_client(n=2):

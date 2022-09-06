@@ -6,7 +6,7 @@ import requests
 
 from orion.storage.base import setup_storage
 
-log = logging.getLogger(__file__)
+log = logging.getLogger(__name__)
 
 
 class ExperiementIsNotSetup(Exception):
@@ -82,7 +82,7 @@ class ClientREST:
             name=name,
             space=payload.get("space"),
             version=payload.get("version"),
-            mode=payload.get("mode"),
+            mode=payload.get("mode", "x"),
             working_dir=payload.get("working_dir"),
             metadata=payload.get("metadata"),
         )
@@ -141,6 +141,7 @@ class ClientREST:
 
 # WIP
 
+import orion.core
 from orion.client.experiment import ExperimentClient
 from orion.plotting.base import PlotAccessor
 

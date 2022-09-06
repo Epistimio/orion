@@ -16,7 +16,7 @@ from orion.service.broker.broker import RequestContext, ServiceContext
 from orion.service.broker.local import LocalExperimentBroker
 from orion.service.metrics import initialize_metrics
 
-log = logging.getLogger(__file__)
+log = logging.getLogger(__name__)
 
 
 class AuthenticationError(Exception):

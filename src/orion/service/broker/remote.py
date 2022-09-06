@@ -11,7 +11,7 @@ from orion.service.broker.broker import (
     build_experiment_client,
 )
 
-log = logging.getLogger(__file__)
+log = logging.getLogger(__name__)
 
 
 @dataclass

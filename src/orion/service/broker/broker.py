@@ -9,7 +9,7 @@ from orion.client import ExperimentClient, build_experiment
 from orion.core.io.database.mongodb import MongoDB
 from orion.storage.legacy import Legacy
 
-log = logging.getLogger(__file__)
+log = logging.getLogger(__name__)
 
 
 def success(values) -> dict:
@@ -69,8 +69,8 @@ def get_storage_for_user(request: RequestContext):
 
     assert request.username is not None
 
-    log.info(
-        "%s, %s, %s",
+    print(
+        "Mongo %s, %s, %s",
         request.service.database.host,
         request.service.database.port,
         request.service.database.database,
@@ -84,8 +84,6 @@ def get_storage_for_user(request: RequestContext):
         password=request.password,
     )
 
-    # this bypass the setup logic
-    log.debug("Initializing storage")
     storage = Legacy(
         database_instance=db,
         # Skip setup, this is a shared database
@@ -103,6 +101,9 @@ def build_experiment_client(request: RequestContext) -> ExperimentClient:
     storage = get_storage_for_user(request)
 
     log.debug("Building experiment")
+
+    # ignore the storage config
+    _ = request.data.pop("storage", None)
 
     client = build_experiment(
         **request.data,

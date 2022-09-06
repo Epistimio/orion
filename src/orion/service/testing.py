@@ -12,7 +12,7 @@ from orion.service.broker.broker import ServiceContext
 from orion.storage.legacy import Legacy
 from orion.testing.mongod import mongod
 
-log = logging.getLogger(__file__)
+log = logging.getLogger(__name__)
 
 
 def wait(p):
@@ -28,6 +28,7 @@ def service(port, address, servicectx) -> None:
 
     from orion.service.service import main
 
+    log.debug("Launching service port: %d", port)
     p = multiprocessing.Process(target=main, args=(address, port, servicectx))
     p.start()
 
@@ -77,6 +78,7 @@ def get_free_ports(number=1):
 
 MONGO_DB_PORT = None
 
+
 @contextmanager
 def server():
     global MONGO_DB_PORT
@@ -89,9 +91,11 @@ def server():
     servicectx.database.host = MONGO_DB_ADDRESS
     servicectx.database.port = MONGO_DB_PORT
 
+    log.debug("Launching mongodb port: %d", servicectx.database.port)
+
     with mongod(servicectx.database.port, servicectx.database.host):
         with service(HTTP_PORT, "localhost", servicectx):
-            yield ENDPOINT
+            yield ENDPOINT, MONGO_DB_PORT
 
 
 def get_mongo_admin(port=MONGO_DB_PORT):
