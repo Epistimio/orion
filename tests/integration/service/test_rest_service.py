@@ -1,11 +1,12 @@
 """Integration testing between the REST service and the client"""
 
 import logging
+
 import pytest
 from bson import ObjectId
 
 from orion.service.client import ClientREST, ExperiementIsNotSetup, RemoteException
-from orion.service.testing import server, get_mongo_admin
+from orion.service.testing import get_mongo_admin, server
 
 TOKEN = "Tok1"
 TOKEN2 = "Tok2"

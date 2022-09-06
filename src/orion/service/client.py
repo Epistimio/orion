@@ -26,6 +26,7 @@ class RemoteExperiment:
     mode: str
     working_dir: str
     metadata: dict
+    max_trials: int
 
 
 @dataclass
@@ -33,6 +34,10 @@ class RemoteTrial:
     db_id: str
     params_id: str
     params: List[Dict[str, Any]]
+
+    # Populated by the worker locally
+    exp_working_dir: Optional[str] = None
+    working_dir: Optional[str] = None
 
 
 class ClientREST:
@@ -77,15 +82,9 @@ class ClientREST:
         """Create a new experiment"""
         payload = self._post("experiment", name=name, **config)
 
-        self.experiment = RemoteExperiment(
-            euid=payload.get("euid"),
-            name=name,
-            space=payload.get("space"),
-            version=payload.get("version"),
-            mode=payload.get("mode", "x"),
-            working_dir=payload.get("working_dir"),
-            metadata=payload.get("metadata"),
-        )
+        payload.pop("experiment_name", None)
+        payload["name"] = name
+        self.experiment = RemoteExperiment(**payload)
         return self.experiment
 
     def suggest(self, pool_size: int = 1, experiment_name=None) -> List[RemoteTrial]:
@@ -104,7 +103,8 @@ class ClientREST:
         for trial in result["trials"]:
             trials.append(RemoteTrial(**trial))
 
-        return trials
+        # Currently we only return a single trial
+        return trials[0]
 
     def observe(
         self, trial: RemoteTrial, results: List[Dict], experiment_name=None
@@ -231,10 +231,14 @@ class ExperimentClientREST(ExperimentClient):
 
         self.plot = PlotAccessor(self)
 
+    def release(self, trial, status):
+        pass
+
     #
     # REST API overrides
     #
 
+    @property
     def is_broken(self):
         """See `~ExperimentClient.is_broken`"""
         try:
@@ -244,6 +248,7 @@ class ExperimentClientREST(ExperimentClient):
                 return True
         return False
 
+    @property
     def is_done(self):
         """See `~ExperimentClient.is_done`"""
         return self.rest.is_done()

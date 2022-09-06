@@ -69,7 +69,7 @@ def get_storage_for_user(request: RequestContext):
 
     assert request.username is not None
 
-    print(
+    log.debug(
         "Mongo %s, %s, %s",
         request.service.database.host,
         request.service.database.port,

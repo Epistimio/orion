@@ -796,6 +796,7 @@ class ExperimentClient:
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
         with SetupWorkingDir(self):
+
             runner = Runner(
                 self,
                 fct,
@@ -812,8 +813,10 @@ class ExperimentClient:
 
             if self._executor is None or self._executor_owner:
                 with self.executor:
+                    log.debug("Starting runner with client's own runner")
                     rval = runner.run()
             else:
+                log.debug("Starting runner")
                 rval = runner.run()
 
         return rval

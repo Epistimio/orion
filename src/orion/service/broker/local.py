@@ -45,7 +45,8 @@ class LocalExperimentBroker(ExperimentBroker):
                 euid=euid,
                 space=client._experiment.space.configuration,
                 version=client._experiment.version,
-                mode="r",
+                mode="x",
+                max_trials=client._experiment.max_trials,
                 working_dir=client._experiment.working_dir,
                 metadata=client._experiment.metadata,
             )

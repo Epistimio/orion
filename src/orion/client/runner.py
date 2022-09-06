@@ -273,6 +273,31 @@ class Runner:
         """Returns true if we are still running trials."""
         return len(self.pending_trials) > 0 or (self.has_remaining and not self.is_done)
 
+    def explain_stop(self):
+        reasons = []
+
+        n = len(self.pending_trials)
+        if n == 0:
+            reasons.append("No pending trials remains")
+        else:
+            reasons.append(f"Waiting on {n} trials")
+
+        can_work_on = self.max_trials_per_worker - self.trials
+        done = self.is_done
+
+        if self.has_remaining:
+            reasons.append(f"Worker can work on {can_work_on} more trials")
+
+        else:
+            reasons.append("Worker finished all its allocated trials")
+
+        if done:
+            reasons.append("Experiment is finished")
+        else:
+            reasons.append("Experiment is not finished")
+
+        return "\n- " + "\n- ".join(reasons)
+
     def run(self):
         """Run the optimizing process until completion.
 
@@ -333,6 +358,7 @@ class Runner:
                 self._release_all()
                 raise
 
+        log.debug("Runner stopped because: %s", self.explain_stop())
         return self.trials
 
     def should_sample(self):

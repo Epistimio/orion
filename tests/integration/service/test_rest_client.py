@@ -1,6 +1,7 @@
 from threading import Thread
+
 from orion.service.client import ExperimentClientREST
-from orion.service.testing import server, get_mongo_admin
+from orion.service.testing import server
 
 
 def function(a, b):
@@ -18,7 +19,7 @@ def test_one_rest_client():
             space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
             algorithms=None,
             strategy=None,
-            max_trials=None,
+            max_trials=10,
             max_broken=None,
             storage=dict(
                 type="reststorage",
@@ -32,10 +33,13 @@ def test_one_rest_client():
             debug=False,
         )
 
-        client.workon(
+        count = client.workon(
             fct=function,
             n_workers=2,
         )
+
+        assert count > 10
+        assert client.is_done()
 
 
 def test_n_client(n=2):
