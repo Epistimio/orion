@@ -121,6 +121,7 @@ def retrieve_trial(experiment: Experiment, trial_id: str):
 
 
 def retrieve_benchmark(
+    storage,
     benchmark_name: str,
     assessment: Optional[str] = None,
     task: Optional[str] = None,
@@ -149,7 +150,7 @@ def retrieve_benchmark(
         When the benchmark doesn't exist
     """
     try:
-        benchmark = get_or_create_benchmark(benchmark_name)
+        benchmark = get_or_create_benchmark(storage, benchmark_name)
         benchmark.validate_assessment(assessment)
         benchmark.validate_task(task)
         benchmark.validate_algorithms(algorithms)
