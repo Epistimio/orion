@@ -44,7 +44,7 @@ class BenchmarksResource(object):
         task = req.get_param("task")
         algorithms = req.get_param_as_list("algorithms")
         benchmark = retrieve_benchmark(
-            name, assessment=assessment, task=task, algorithms=algorithms
+            self.storage, name, assessment=assessment, task=task, algorithms=algorithms,
         )
 
         response = build_benchmark_response(benchmark, assessment, task, algorithms)
