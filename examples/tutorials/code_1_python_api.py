@@ -52,13 +52,13 @@ experiment = build_experiment(
 # a ``ValueError`` will be raised. At least one of the results must have the type ``objective``,
 # the metric that is minimized by the algorithm.
 
+if __name__ == '__main__':
+    def rosenbrock(x, noise=None):
+        """Evaluate partial information of a quadratic."""
+        y = x - 34.56789
+        z = 4 * y**2 + 23.4
 
-def rosenbrock(x, noise=None):
-    """Evaluate partial information of a quadratic."""
-    y = x - 34.56789
-    z = 4 * y**2 + 23.4
-
-    return [{"name": "objective", "type": "objective", "value": z}]
+        return [{"name": "objective", "type": "objective", "value": z}]
 
 
 #%%
@@ -67,12 +67,12 @@ def rosenbrock(x, noise=None):
 # will iteratively try new sets of hyperparameters suggested by the optimization algorithm
 # until it reaches 20 trials.
 
-experiment.workon(rosenbrock, max_trials=20)
+    experiment.workon(rosenbrock, max_trials=20)
 
 #%%
 # Now let's plot the regret curve to see how well went the optimization.
 
-experiment.plot.regret().show()
+    experiment.plot.regret().show()
 
 #%%
 # .. This file is produced by docs/scripts/build_database_and_plots.py
@@ -98,19 +98,19 @@ experiment.plot.regret().show()
 # that can easily find the optimal solution. We specify the algorithm configuration t
 # :func:`build experiment <orion.client.build_experiment>`
 
-experiment = build_experiment(
-    "tpe-rosenbrock",
-    space=space,
-    algorithms={"tpe": {"n_initial_points": 5}},
-    storage=storage,
-)
+    experiment = build_experiment(
+        "tpe-rosenbrock",
+        space=space,
+        algorithms={"tpe": {"n_initial_points": 5}},
+        storage=storage,
+    )
 
-#%%
-# We then again run the optimization for 20 trials and plot the regret.
+    #%%
+    # We then again run the optimization for 20 trials and plot the regret.
 
-experiment.workon(rosenbrock, max_trials=20)
+    experiment.workon(rosenbrock, max_trials=20)
 
-experiment.plot.regret().show()
+    experiment.plot.regret().show()
 
 # sphinx_gallery_thumbnail_path = '_static/python.png'
 

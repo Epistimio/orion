@@ -55,7 +55,7 @@ be called only once because Oríon only looks at 1 ``'objective'`` value per run
 
 .. code-block:: python
 
-        test_error_rate = test(args, model, device, test_loader)
+        test_error_rate = test(model, device, test_loader)
 
     report_objective(test_error_rate)
 

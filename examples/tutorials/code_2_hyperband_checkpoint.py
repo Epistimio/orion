@@ -122,7 +122,7 @@ def build_data_loaders(batch_size, split_seed=1):
 # Next, we write the function to save checkpoints. It is important to include
 # not only the model in the checkpoint, but also the optimizer and the learning rate
 # schedule when using one. In this example we will use the exponential learning rate schedule,
-# so we checkpoint it. We save the current epoch as well so that we now where we resume from.
+# so we checkpoint it. We save the current epoch as well so that we know where we resume from.
 
 
 def save_checkpoint(checkpoint, model, optimizer, lr_scheduler, epoch):
@@ -259,8 +259,8 @@ def main(
 #%%
 # You can test the training pipeline before working with the hyperparameter optimization.
 
-
-main(epochs=4)
+if __name__ == '__main__':
+    main(epochs=4)
 
 
 #%%
@@ -277,58 +277,58 @@ main(epochs=4)
 # checkpoint file with ``f"{experiment.working_dir}/{trial.hash_params}"``.
 
 
-from orion.client import build_experiment
+    from orion.client import build_experiment
 
 
-def run_hpo():
+    def run_hpo():
 
-    # Specify the database where the experiments are stored. We use a local PickleDB here.
-    storage = {
-        "type": "legacy",
-        "database": {
-            "type": "pickleddb",
-            "host": "./db.pkl",
-        },
-    }
-
-    # Load the data for the specified experiment
-    experiment = build_experiment(
-        "hyperband-cifar10",
-        space={
-            "epochs": "fidelity(1, 120, base=4)",
-            "learning_rate": "loguniform(1e-5, 0.1)",
-            "momentum": "uniform(0, 0.9)",
-            "weight_decay": "loguniform(1e-10, 1e-2)",
-            "gamma": "loguniform(0.97, 1)",
-        },
-        algorithms={
-            "hyperband": {
-                "seed": 1,
-                "repetitions": 5,
+        # Specify the database where the experiments are stored. We use a local PickleDB here.
+        storage = {
+            "type": "legacy",
+            "database": {
+                "type": "pickleddb",
+                "host": "./db.pkl",
             },
-        },
-        storage=storage,
-    )
+        }
 
-    trials = 1
-    while not experiment.is_done:
-        print("trial", trials)
-        trial = experiment.suggest()
-        if trial is None and experiment.is_done:
-            break
-        valid_error_rate = main(
-            **trial.params, checkpoint=f"{experiment.working_dir}/{trial.hash_params}"
+        # Load the data for the specified experiment
+        experiment = build_experiment(
+            "hyperband-cifar10",
+            space={
+                "epochs": "fidelity(1, 120, base=4)",
+                "learning_rate": "loguniform(1e-5, 0.1)",
+                "momentum": "uniform(0, 0.9)",
+                "weight_decay": "loguniform(1e-10, 1e-2)",
+                "gamma": "loguniform(0.97, 1)",
+            },
+            algorithms={
+                "hyperband": {
+                    "seed": 1,
+                    "repetitions": 5,
+                },
+            },
+            storage=storage,
         )
-        experiment.observe(trial, valid_error_rate, name="valid_error_rate")
-        trials += 1
+
+        trials = 1
+        while not experiment.is_done:
+            print("trial", trials)
+            trial = experiment.suggest()
+            if trial is None and experiment.is_done:
+                break
+            valid_error_rate = main(
+                **trial.params, checkpoint=f"{experiment.working_dir}/{trial.hash_params}"
+            )
+            experiment.observe(trial, valid_error_rate, name="valid_error_rate")
+            trials += 1
 
 
-#%%
-# Let's run the optimization now. You may want to reduce the maximum number of epochs in
-# ``fidelity(1, 120, base=4)`` and set the number of ``repetitions`` to 1 to get results more
-# quickly. With current configuration, this example takes 2 days to run on a Titan RTX.
+    #%%
+    # Let's run the optimization now. You may want to reduce the maximum number of epochs in
+    # ``fidelity(1, 120, base=4)`` and set the number of ``repetitions`` to 1 to get results more
+    # quickly. With current configuration, this example takes 2 days to run on a Titan RTX.
 
-experiment = run_hpo()
+    experiment = run_hpo()
 
 #%%
 # Analysis
@@ -340,8 +340,8 @@ experiment = run_hpo()
 # We should first look at the :ref:`sphx_glr_auto_examples_plot_1_regret.py`
 # to verify the optimization with Hyperband.
 
-fig = experiment.plot.regret()
-fig.show()
+    fig = experiment.plot.regret()
+    fig.show()
 
 #%%
 # .. This file is produced by docs/scripts/build_database_and_plots.py
@@ -357,8 +357,8 @@ fig.show()
 # lower than 10%. To see if the search space may be the issue, we first look at the
 # :ref:`sphx_glr_auto_examples_plot_3_lpi.py`.
 
-fig = experiment.plot.lpi()
-fig.show()
+    fig = experiment.plot.lpi()
+    fig.show()
 
 #%%
 # .. raw:: html
@@ -370,8 +370,8 @@ fig.show()
 # it is worth looking at the :ref:`sphx_glr_auto_examples_plot_4_partial_dependencies.py`
 # to see if the search space was perhaps too narrow or too large.
 
-fig = experiment.plot.partial_dependencies(params=["gamma", "learning_rate"])
-fig.show()
+    fig = experiment.plot.partial_dependencies(params=["gamma", "learning_rate"])
+    fig.show()
 
 # sphinx_gallery_thumbnail_path = '_static/restart.png'
 
