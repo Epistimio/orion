@@ -105,10 +105,6 @@ class ExperimentClientREST(ExperimentClient):
     # Workon REST API overrides
     #
 
-    def release(self, trial, status):
-        """See `~ExperimentClient.release`"""
-        pass
-
     @property
     def is_broken(self):
         """See `~ExperimentClient.is_broken`"""
@@ -136,6 +132,42 @@ class ExperimentClientREST(ExperimentClient):
     def _update_heardbeat(self, trial):
         return not self.workon_client.heartbeat(trial)
 
+    def release(self, trial, status):
+        """See `~ExperimentClient.release`"""
+        pass
+
+    def reserve(self, trial):
+        """See `~ExperimentClient.reserve`"""
+        raise NotImplementedError("REST API reserve on suggest")
+
     #
     # Storage REST API
     #
+
+    def insert(self, params, results=None, reserve=False):
+        """See `~ExperimentClient.insert`
+
+        Cannot reserve a trial with the REST API
+
+        """
+        return self.storage_client.insert(params, results, False)
+
+    def fetch_noncompleted_trials(self, with_evc_tree=False):
+        """See `~ExperimentClient.fetch_noncompleted_trials`"""
+        return self.storage_client.fetch_noncompleted_trials(with_evc_tree)
+
+    def fetch_pending_trials(self, with_evc_tree=False):
+        """See `~ExperimentClient.fetch_pending_trials`"""
+        return self.storage_client.fetch_pending_trials(with_evc_tree)
+
+    def fetch_trials_by_status(self, status, with_evc_tree=False):
+        """See `~ExperimentClient.fetch_trials_by_status`"""
+        return self.storage_client.fetch_trials_by_status(status, with_evc_tree)
+
+    def get_trial(self, trial=None, uid=None):
+        """See `~ExperimentClient.get_trial`"""
+        return self.storage_client.get_trial(trial, uid)
+
+    def fetch_trials(self, with_evc_tree=False):
+        """See `~ExperimentClient.fetch_trials`"""
+        return self.storage_client.fetch_trials(with_evc_tree)
