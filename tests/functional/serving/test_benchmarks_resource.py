@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
 """Perform functional tests for the REST endpoint `/experiments`"""
-import copy
-import datetime
 import json
 import os
 
@@ -10,10 +7,9 @@ from falcon import testing
 
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-from orion.benchmark.task import Branin, CarromTable, EggHolder, RosenBrock, profet
+from orion.benchmark.task import Branin, CarromTable, EggHolder
 from orion.serving.webapi import WebApi
 from orion.storage.base import get_storage
-
 
 current_id = 0
 
@@ -232,10 +228,11 @@ class TestItem:
         assert response.json["name"] == "another_benchmark"
         assert response.json["algorithms"] == ["gridsearch", {"random": {"seed": 1}}]
         _assert_plot_contains(
-            "gridsearch", response.json["analysis"]["AverageResult"]["Branin"]['regrets']
+            "gridsearch",
+            response.json["analysis"]["AverageResult"]["Branin"]["regrets"],
         )
         _assert_plot_contains(
-            "random", response.json["analysis"]["AverageResult"]["Branin"]['regrets']
+            "random", response.json["analysis"]["AverageResult"]["Branin"]["regrets"]
         )
 
     # TODO: Test bad task

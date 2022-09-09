@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Module responsible for the benchmarks/ REST endpoint
 =====================================================
@@ -6,7 +5,6 @@ Module responsible for the benchmarks/ REST endpoint
 Serves all the requests made to benchmarks/ REST endpoint.
 
 """
-import time
 import json
 from typing import Optional
 
@@ -15,13 +13,10 @@ from falcon import Request, Response
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.serving.parameters import retrieve_benchmark, verify_query_parameters
-from orion.serving.responses import (
-    build_benchmark_response,
-    build_benchmarks_response,
-)
+from orion.serving.responses import build_benchmark_response, build_benchmarks_response
 
 
-class BenchmarksResource(object):
+class BenchmarksResource:
     """Handle requests for the benchmarks/ REST endpoint"""
 
     def __init__(self, storage):
@@ -44,7 +39,11 @@ class BenchmarksResource(object):
         task = req.get_param("task")
         algorithms = req.get_param_as_list("algorithms")
         benchmark = retrieve_benchmark(
-            self.storage, name, assessment=assessment, task=task, algorithms=algorithms,
+            self.storage,
+            name,
+            assessment=assessment,
+            task=task,
+            algorithms=algorithms,
         )
 
         response = build_benchmark_response(benchmark, assessment, task, algorithms)
