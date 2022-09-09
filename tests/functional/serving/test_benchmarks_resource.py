@@ -9,7 +9,7 @@ from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import Branin, CarromTable, EggHolder
 from orion.serving.webapi import WebApi
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 current_id = 0
 
@@ -22,7 +22,7 @@ def client_with_benchmark():
     delete the benchmark_db.pkl file and return the tests. The file will be recreated automatically.
     The new version of the file should be commit with git.
     """
-    storage = {
+    config_storage = {
         "type": "legacy",
         "database": {
             "type": "pickleddb",
@@ -31,10 +31,10 @@ def client_with_benchmark():
             ),
         },
     }
-    client = testing.TestClient(WebApi({"storage": storage}))
+    storage = setup_storage(config_storage)
+    client = testing.TestClient(WebApi(storage, {"storage": config_storage}))
 
-    if not get_storage().fetch_benchmark({}):
-        _create_benchmark()
+    _create_benchmark(storage)
 
     return client
 
@@ -302,8 +302,9 @@ def _assert_plot_contains(legend_label, plotly_json):
     ]
 
 
-def _create_benchmark():
+def _create_benchmark(storage):
     benchmark = get_or_create_benchmark(
+        storage=storage,
         name="branin_baselines",
         algorithms=["gridsearch", "random"],
         targets=[
@@ -321,6 +322,7 @@ def _create_benchmark():
     pprint.pprint(benchmark.configuration)
 
     benchmark = get_or_create_benchmark(
+        storage=storage,
         name="another_benchmark",
         algorithms=["gridsearch", {"random": {"seed": 1}}],
         targets=[
