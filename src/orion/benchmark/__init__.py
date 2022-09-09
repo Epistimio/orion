@@ -3,7 +3,6 @@
 Benchmark definition
 ======================
 """
-from collections import defaultdict
 import copy
 import itertools
 import time
@@ -12,10 +11,10 @@ from collections import defaultdict
 from tabulate import tabulate
 
 import orion.core
+from orion.algo.base import algo_factory
 from orion.client import create_experiment
 from orion.executor.base import executor_factory
 from orion.storage.base import BaseStorageProtocol
-from orion.algo.base import algo_factory
 
 
 class Benchmark:
@@ -175,7 +174,7 @@ class Benchmark:
     def validate_assessment(self, assessment):
         if assessment is None:
             return
-        assessment_names = set(study.assess_name for study in self.studies)
+        assessment_names = {study.assess_name for study in self.studies}
         if assessment not in assessment_names:
             raise ValueError(
                 f"Invalid assessment name: {assessment}. "
@@ -185,7 +184,7 @@ class Benchmark:
     def validate_task(self, task):
         if task is None:
             return
-        task_names = set(study.task_name for study in self.studies)
+        task_names = {study.task_name for study in self.studies}
         if task not in task_names:
             raise ValueError(
                 f"Invalid task name: {task}. It should be one of {sorted(task_names)}"
@@ -194,10 +193,10 @@ class Benchmark:
     def validate_algorithms(self, algorithms):
         if algorithms is None:
             return
-        algorithm_names = set(
+        algorithm_names = {
             algo if isinstance(algo, str) else next(iter(algo.keys()))
             for algo in self.algorithms
-        )
+        }
 
         for algorithm in algorithms:
             if algorithm not in algorithm_names:

@@ -20,7 +20,6 @@ def client(ephemeral_storage):
     yield testing.TestClient(WebApi(ephemeral_storage.storage, {}))
 
 
-
 @pytest.fixture()
 def client_with_frontends_uri(ephemeral_storage):
     """Mock the falcon.API instance for testing with custom frontend_uri"""

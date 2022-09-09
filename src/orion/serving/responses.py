@@ -7,9 +7,9 @@ Offers functions and attributes to generate response objects according to the AP
 """
 from typing import List
 
+from orion.benchmark import Benchmark
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
-from orion.benchmark import Benchmark
 
 ERROR_EXPERIMENT_NOT_FOUND = "Experiment not found"
 ERROR_INVALID_PARAMETER = "Invalid parameter"
