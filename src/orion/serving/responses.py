@@ -38,7 +38,7 @@ def build_trial_response(trial: Trial) -> dict:
         "startTime": str(trial.start_time),
         "endTime": str(trial.end_time),
         "parameters": trial.params,
-        "objective": trial.objective.value,
+        "objective": trial.objective.value if trial.status == "completed" else None,
         "statistics": {
             statistic.name: statistic.value for statistic in trial.statistics
         },
