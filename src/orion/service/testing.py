@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 
 from orion.core.io.database.mongodb import MongoDB
+from orion.service.auth import NO_CREDENTIAL, AuthenticationServiceInterface
 from orion.service.broker.broker import ServiceContext
 from orion.storage.legacy import Legacy
 from orion.testing.mongod import mongod
@@ -22,11 +23,30 @@ def wait(p):
         time.sleep(0.01)
 
 
+class AuthenticationServiceMock(AuthenticationServiceInterface):
+    """Simple authentication service for testing"""
+
+    def __init__(self, config) -> None:
+        self.tok_to_user = {
+            "Tok1": ("User1", "Pass1"),
+            "Tok2": ("User2", "Pass2"),
+            "Tok3": ("User3", "Pass3"),
+        }
+
+    def authenticate(self, token):
+        username, password = self.tok_to_user.get(token, NO_CREDENTIAL)
+
+        log.debug("Authenticated %s => %s", token, username)
+        return username, password
+
+
 @contextmanager
 def service(port, address, servicectx) -> None:
     import time
 
     from orion.service.service import main
+
+    servicectx.auth = servicectx.auth or AuthenticationServiceMock(servicectx)
 
     log.debug("Launching service port: %d", port)
     p = multiprocessing.Process(target=main, args=(address, port, servicectx))

@@ -17,23 +17,6 @@ class AuthenticationServiceInterface:
         raise NotImplementedError()
 
 
-class AuthenticationServiceMock(AuthenticationServiceInterface):
-    """Simple authentication service for testing"""
-
-    def __init__(self, config) -> None:
-        self.tok_to_user = {
-            "Tok1": ("User1", "Pass1"),
-            "Tok2": ("User2", "Pass2"),
-            "Tok3": ("User3", "Pass3"),
-        }
-
-    def authenticate(self, token):
-        username, password = self.tok_to_user.get(token, NO_CREDENTIAL)
-
-        logger.debug("Authenticated %s => %s", token, username)
-        return username, password
-
-
 class AuthenticationMongoDB(AuthenticationServiceInterface):
     """Authentication service using mongodb"""
 

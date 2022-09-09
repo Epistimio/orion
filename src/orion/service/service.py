@@ -11,7 +11,7 @@ import falcon
 from bson import json_util
 from falcon import media
 
-from orion.service.auth import NO_CREDENTIAL, AuthenticationServiceMock
+from orion.service.auth import NO_CREDENTIAL
 from orion.service.broker.broker import RequestContext, ServiceContext
 from orion.service.broker.local import LocalExperimentBroker
 from orion.service.metrics import initialize_metrics
@@ -91,8 +91,9 @@ class OrionService:
 
     def __init__(self, ctx) -> None:
         self.ctx = ctx
-        ctx.broker = LocalExperimentBroker(ctx)
-        ctx.auth = AuthenticationServiceMock(ctx)
+
+        assert self.ctx.broker is not None
+        assert self.ctx.auth is not None
 
         # Use bson json hooks to convert standard bson types to json
         # this includes ObjectId and datetime
@@ -187,6 +188,8 @@ def main(
     )
 
     initialize_metrics(8000)
+
+    servicectx.broker = servicectx.broker or LocalExperimentBroker(servicectx)
 
     with OrionService(servicectx) as service:
         service.run(address, port)
