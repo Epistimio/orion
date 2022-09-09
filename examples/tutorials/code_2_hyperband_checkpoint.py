@@ -35,6 +35,9 @@ Your script is responsible to take this checkpoint path, resume from checkpoints
 checkpoints.
 We will demonstrate below how this can be done with PyTorch, but using Oríon's Python API.
 
+Note for macos users : You will need to either run this page as a jupyter notebook in order for it to compile, or 
+encapsulate the code in a main function and running it under ``if __name__ == '__main__'``.
+
 Training code
 -------------
 
@@ -259,8 +262,8 @@ def main(
 #%%
 # You can test the training pipeline before working with the hyperparameter optimization.
 
-if __name__ == '__main__':
-    main(epochs=4)
+
+main(epochs=4)
 
 
 #%%
@@ -277,58 +280,58 @@ if __name__ == '__main__':
 # checkpoint file with ``f"{experiment.working_dir}/{trial.hash_params}"``.
 
 
-    from orion.client import build_experiment
+from orion.client import build_experiment
 
 
-    def run_hpo():
+def run_hpo():
 
-        # Specify the database where the experiments are stored. We use a local PickleDB here.
-        storage = {
-            "type": "legacy",
-            "database": {
-                "type": "pickleddb",
-                "host": "./db.pkl",
+    # Specify the database where the experiments are stored. We use a local PickleDB here.
+    storage = {
+        "type": "legacy",
+        "database": {
+            "type": "pickleddb",
+            "host": "./db.pkl",
+        },
+    }
+
+    # Load the data for the specified experiment
+    experiment = build_experiment(
+        "hyperband-cifar10",
+        space={
+            "epochs": "fidelity(1, 120, base=4)",
+            "learning_rate": "loguniform(1e-5, 0.1)",
+            "momentum": "uniform(0, 0.9)",
+            "weight_decay": "loguniform(1e-10, 1e-2)",
+            "gamma": "loguniform(0.97, 1)",
+        },
+        algorithms={
+            "hyperband": {
+                "seed": 1,
+                "repetitions": 5,
             },
-        }
+        },
+        storage=storage,
+    )
 
-        # Load the data for the specified experiment
-        experiment = build_experiment(
-            "hyperband-cifar10",
-            space={
-                "epochs": "fidelity(1, 120, base=4)",
-                "learning_rate": "loguniform(1e-5, 0.1)",
-                "momentum": "uniform(0, 0.9)",
-                "weight_decay": "loguniform(1e-10, 1e-2)",
-                "gamma": "loguniform(0.97, 1)",
-            },
-            algorithms={
-                "hyperband": {
-                    "seed": 1,
-                    "repetitions": 5,
-                },
-            },
-            storage=storage,
+    trials = 1
+    while not experiment.is_done:
+        print("trial", trials)
+        trial = experiment.suggest()
+        if trial is None and experiment.is_done:
+            break
+        valid_error_rate = main(
+            **trial.params, checkpoint=f"{experiment.working_dir}/{trial.hash_params}"
         )
-
-        trials = 1
-        while not experiment.is_done:
-            print("trial", trials)
-            trial = experiment.suggest()
-            if trial is None and experiment.is_done:
-                break
-            valid_error_rate = main(
-                **trial.params, checkpoint=f"{experiment.working_dir}/{trial.hash_params}"
-            )
-            experiment.observe(trial, valid_error_rate, name="valid_error_rate")
-            trials += 1
+        experiment.observe(trial, valid_error_rate, name="valid_error_rate")
+        trials += 1
 
 
-    #%%
-    # Let's run the optimization now. You may want to reduce the maximum number of epochs in
-    # ``fidelity(1, 120, base=4)`` and set the number of ``repetitions`` to 1 to get results more
-    # quickly. With current configuration, this example takes 2 days to run on a Titan RTX.
+#%%
+# Let's run the optimization now. You may want to reduce the maximum number of epochs in
+# ``fidelity(1, 120, base=4)`` and set the number of ``repetitions`` to 1 to get results more
+# quickly. With current configuration, this example takes 2 days to run on a Titan RTX.
 
-    experiment = run_hpo()
+experiment = run_hpo()
 
 #%%
 # Analysis
@@ -340,8 +343,8 @@ if __name__ == '__main__':
 # We should first look at the :ref:`sphx_glr_auto_examples_plot_1_regret.py`
 # to verify the optimization with Hyperband.
 
-    fig = experiment.plot.regret()
-    fig.show()
+fig = experiment.plot.regret()
+fig.show()
 
 #%%
 # .. This file is produced by docs/scripts/build_database_and_plots.py
@@ -357,8 +360,8 @@ if __name__ == '__main__':
 # lower than 10%. To see if the search space may be the issue, we first look at the
 # :ref:`sphx_glr_auto_examples_plot_3_lpi.py`.
 
-    fig = experiment.plot.lpi()
-    fig.show()
+fig = experiment.plot.lpi()
+fig.show()
 
 #%%
 # .. raw:: html
@@ -370,8 +373,8 @@ if __name__ == '__main__':
 # it is worth looking at the :ref:`sphx_glr_auto_examples_plot_4_partial_dependencies.py`
 # to see if the search space was perhaps too narrow or too large.
 
-    fig = experiment.plot.partial_dependencies(params=["gamma", "learning_rate"])
-    fig.show()
+fig = experiment.plot.partial_dependencies(params=["gamma", "learning_rate"])
+fig.show()
 
 # sphinx_gallery_thumbnail_path = '_static/restart.png'
 
