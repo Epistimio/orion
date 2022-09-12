@@ -22,6 +22,8 @@ import {
 } from 'carbon-components-react';
 import { useDrag, useDrop } from 'react-dnd';
 import ReactDOM from 'react-dom';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 function collectLeafColumnIndices(columDefinitions, output) {
   columDefinitions.forEach(columnDefinition => {
@@ -231,104 +233,108 @@ export function FeaturedTable({ columns, data, experiment }) {
     </span>
   ));
   return (
-    <div className="bx--data-table-container">
-      <div className="bx--data-table-header">
-        <Grid>
-          <Row>
-            <Column>
-              <div>
-                <h4 className="bx--data-table-header__title">
-                  Experiment Trials for "{experimentWords}"
-                </h4>
-                <p className="bx--data-table-header__description">
-                  {data.length} trial(s) for experiment "{experimentWords}"
-                </p>
-              </div>
-            </Column>
-            <Column>
-              <Pagination
-                page={pageIndex + 1}
-                pageSize={pageSize}
-                pageSizes={[5, 10, 20, 50, 100]}
-                totalItems={data.length}
-                onChange={setCarbonPagination}
-              />
-            </Column>
-            <Column>
-              <MultiSelect
-                id="multiselect-columns"
-                label="Columns to display"
-                items={selectableColumns}
-                selectedItems={selectedColumns}
-                onChange={columnVisibilitySetter}
-                sortItems={items => items}
-              />
-            </Column>
-          </Row>
-        </Grid>
-      </div>
-      <div className="bx--data-table-content">
-        <table className="bx--data-table bx--data-table--normal bx--data-table--no-border">
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <DraggableColumnHeader
-                    key={header.id}
-                    header={header}
-                    table={table}
-                  />
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map(row => (
-              <ModalStateManager
-                key={row.id}
-                renderLauncher={({ setOpen }) => (
-                  <tr className="trial-row" onClick={() => setOpen(true)}>
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                )}>
-                {({ open, setOpen }) => (
-                  <Modal
-                    modalLabel={`Trial info`}
-                    modalHeading={`${experiment} / ${row.original.id}`}
-                    passiveModal={true}
-                    // primaryButtonText="Add"
-                    // secondaryButtonText="Cancel"
-                    open={open}
-                    onRequestClose={() => setOpen(false)}>
-                    <Grid>
-                      {defaultColumnOrder.map((columnID, index) => (
-                        <Row key={columnID}>
-                          <Column className="modal-trial-key">
-                            <strong>
-                              {columnID.startsWith('params.')
-                                ? 'Parameter '
-                                : null}
-                              {table.getColumn(columnID).columnDef.header}
-                            </strong>
-                          </Column>
-                          <Column>{row.getValue(columnID)}</Column>
-                        </Row>
+    <DndProvider backend={HTML5Backend}>
+      <div className="bx--data-table-container">
+        <div className="bx--data-table-header">
+          <Grid>
+            <Row>
+              <Column>
+                <div>
+                  <h4
+                    className="bx--data-table-header__title"
+                    title={`Experiment Trials for "${experiment}"`}>
+                    Experiment Trials for "{experimentWords}"
+                  </h4>
+                  <p className="bx--data-table-header__description">
+                    {data.length} trial(s) for experiment "{experimentWords}"
+                  </p>
+                </div>
+              </Column>
+              <Column>
+                <Pagination
+                  page={pageIndex + 1}
+                  pageSize={pageSize}
+                  pageSizes={[5, 10, 20, 50, 100]}
+                  totalItems={data.length}
+                  onChange={setCarbonPagination}
+                />
+              </Column>
+              <Column>
+                <MultiSelect
+                  id="multiselect-columns"
+                  label="Columns to display"
+                  items={selectableColumns}
+                  selectedItems={selectedColumns}
+                  onChange={columnVisibilitySetter}
+                  sortItems={items => items}
+                />
+              </Column>
+            </Row>
+          </Grid>
+        </div>
+        <div className="bx--data-table-content">
+          <table className="bx--data-table bx--data-table--normal bx--data-table--no-border">
+            <thead>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <DraggableColumnHeader
+                      key={header.id}
+                      header={header}
+                      table={table}
+                    />
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map(row => (
+                <ModalStateManager
+                  key={row.id}
+                  renderLauncher={({ setOpen }) => (
+                    <tr className="trial-row" onClick={() => setOpen(true)}>
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
                       ))}
-                    </Grid>
-                  </Modal>
-                )}
-              </ModalStateManager>
-            ))}
-          </tbody>
-        </table>
+                    </tr>
+                  )}>
+                  {({ open, setOpen }) => (
+                    <Modal
+                      modalLabel={`Trial info`}
+                      modalHeading={`${experiment} / ${row.original.id}`}
+                      passiveModal={true}
+                      // primaryButtonText="Add"
+                      // secondaryButtonText="Cancel"
+                      open={open}
+                      onRequestClose={() => setOpen(false)}>
+                      <Grid>
+                        {defaultColumnOrder.map((columnID, index) => (
+                          <Row key={columnID}>
+                            <Column className="modal-trial-key">
+                              <strong>
+                                {columnID.startsWith('params.')
+                                  ? 'Parameter '
+                                  : null}
+                                {table.getColumn(columnID).columnDef.header}
+                              </strong>
+                            </Column>
+                            <Column>{row.getValue(columnID)}</Column>
+                          </Row>
+                        ))}
+                      </Grid>
+                    </Modal>
+                  )}
+                </ModalStateManager>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 }
