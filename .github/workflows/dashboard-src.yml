@@ -42,6 +42,7 @@ jobs:
       - run: |
             # Start Orion backend in repository root folder.
             cd ../../
+            mkdir -p gunicorn_tmp_dir
             orion serve -c .github/workflows/orion/orion_config.yaml 2> orion-backend-${{ matrix.node-version }}.log &
             cd dashboard/src/
       # install
