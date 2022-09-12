@@ -1,7 +1,7 @@
 import orion.core
 from orion.client.experiment import ExperimentClient
 from orion.plotting.base import PlotAccessor
-from orion.service.client.storage import StorageClientREST
+from orion.service.client.actions import ClientActionREST
 from orion.service.client.workon import RemoteException, WorkonClientREST
 
 
@@ -56,7 +56,6 @@ class ExperimentClientREST(ExperimentClient):
         endpoint, token = storage["endpoint"], storage["token"]
 
         workon = WorkonClientREST(endpoint, token)
-        storage = StorageClientREST(endpoint, token)
 
         experiment = workon.new_experiment(
             name,
@@ -78,6 +77,9 @@ class ExperimentClientREST(ExperimentClient):
             executor=executor,
             heartbeat=heartbeat,
         )
+
+        storage = ClientActionREST(experiment, endpoint, token)
+
         client.workon_client = workon
         client.storage_client = storage
         return client
@@ -96,10 +98,6 @@ class ExperimentClientREST(ExperimentClient):
         self._executor_owner = False
 
         self.plot = PlotAccessor(self)
-
-    def storage(self):
-        """See `~ExperimentClient.storage`"""
-        raise RuntimeError("Access to storage is forbidden")
 
     #
     # Workon REST API overrides
@@ -136,9 +134,23 @@ class ExperimentClientREST(ExperimentClient):
         """See `~ExperimentClient.release`"""
         pass
 
+    #
+    # Disabled
+    #
+
     def reserve(self, trial):
         """See `~ExperimentClient.reserve`"""
         raise NotImplementedError("REST API reserve on suggest")
+
+    @property
+    def producer(self):
+        """Return the producer configuration of the experiment."""
+        raise NotImplementedError("REST API does not instantiate the producer")
+
+    @property
+    def storage(self):
+        """Return the storage currently in use by this client"""
+        raise NotImplementedError("REST API does not have a storage")
 
     #
     # Storage REST API

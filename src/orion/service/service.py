@@ -114,11 +114,23 @@ class OrionService:
     @staticmethod
     def add_routes(app: falcon.App, ctx) -> None:
         """Add the routes to a given falcon App"""
+
+        # Workon Routes
         app.add_route("/experiment", OrionService.NewExperiment(ctx))
         app.add_route("/suggest", OrionService.Suggest(ctx))
         app.add_route("/observe", OrionService.Observe(ctx))
         app.add_route("/is_done", OrionService.IsDone(ctx))
         app.add_route("/heartbeat", OrionService.Heartbeat(ctx))
+
+        # Action Routes
+        app.add_route("/insert", OrionService.Insert(ctx))
+        app.add_route(
+            "/fetch_noncompleted_trials", OrionService.FetchNoncompletedTrials(ctx)
+        )
+        app.add_route("/fetch_pending_trials", OrionService.FetchPendingTrials(ctx))
+        app.add_route("/fetch_trials_by_status", OrionService.FetchTrialsByStatus(ctx))
+        app.add_route("/get_trial", OrionService.GetTrial(ctx))
+        app.add_route("/fetch_trials", OrionService.FetchTrials(ctx))
 
     def __enter__(self):
         return self
@@ -126,6 +138,10 @@ class OrionService:
     def __exit__(self, *args):
         log.info("Shutting down")
         self.ctx.broker.stop()
+
+    #
+    # Workon Routes
+    #
 
     class NewExperiment(QueryRoute):
         """Create or set the experiment"""
@@ -162,6 +178,52 @@ class OrionService:
 
         def on_post_request(self, ctx: RequestContext) -> None:
             result = self.broker.heartbeat(ctx)
+            ctx.response.media = result
+
+    #
+    # Action Routes
+    #
+
+    class Insert(QueryRoute):
+        """Notify the server than the trial is still running"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.insert(ctx)
+            ctx.response.media = result
+
+    class FetchNoncompletedTrials(QueryRoute):
+        """Notify the server than the trial is still running"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.fetch_noncompleted_trials(ctx)
+            ctx.response.media = result
+
+    class FetchPendingTrials(QueryRoute):
+        """Notify the server than the trial is still running"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.fetch_pending_trials(ctx)
+            ctx.response.media = result
+
+    class FetchTrialsByStatus(QueryRoute):
+        """Notify the server than the trial is still running"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.fetch_trials_by_status(ctx)
+            ctx.response.media = result
+
+    class GetTrial(QueryRoute):
+        """Notify the server than the trial is still running"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.get_trial(ctx)
+            ctx.response.media = result
+
+    class FetchTrials(QueryRoute):
+        """Notify the server than the trial is still running"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.fetch_trials(ctx)
             ctx.response.media = result
 
     def run(self, hostname: str, port: int) -> None:

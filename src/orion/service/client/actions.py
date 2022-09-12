@@ -1,9 +1,14 @@
 from orion.service.client.workon import BaseClientREST
 
 
-class StorageClientREST(BaseClientREST):
-    def __init__(self, endpoint, token) -> None:
+class ClientActionREST(BaseClientREST):
+    def __init__(self, experiment, endpoint, token) -> None:
         super().__init__(endpoint, token)
+        self.experiment = experiment
+
+    @property
+    def experiment_name(self):
+        return self.experiment.name
 
     def insert(self, params, results=None, reserve=False):
         payload = self._post(
@@ -11,7 +16,7 @@ class StorageClientREST(BaseClientREST):
             experiment_name=self.experiment_name,
             params=params,
             results=results,
-            reserve=reserve,
+            reserve=False,
         )
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):

@@ -56,13 +56,7 @@ class LocalExperimentBroker(ExperimentBroker):
 
         # NOTE: need to fix lost trials here
         # so reschedule them
-
-        storage = get_storage_for_user(request)
-        experiment_name = request.data.pop("experiment_name")
-
-        log.debug("Suggest %s", experiment_name)
-        client = build_experiment(name=experiment_name, storage=storage)
-        client.remote_mode = True
+        client = build_experiment_client(request)
 
         if client.is_broken:
             raise BrokenExperiment()
@@ -82,7 +76,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(trials=[small_trial]))
 
     def observe(self, request: RequestContext) -> Dict:
-        storage = get_storage_for_user(request)
+        client = build_experiment_client(request)
+        storage = client.storage
 
         trial_id = request.data.get("trial_id")
         trial_hash = request.data.pop("trial_hash")
@@ -90,8 +85,6 @@ class LocalExperimentBroker(ExperimentBroker):
         euid = request.data.pop("euid")
         results = request.data.get("results")
 
-        client = build_experiment(name=experiment_name, storage=storage)
-        client.remote_mode = True
         trial = storage.get_trial(uid=trial_hash, experiment_uid=client._experiment.id)
 
         assert trial is not None, "Trial not found"
@@ -100,11 +93,7 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict())
 
     def is_done(self, request: RequestContext) -> Dict:
-        storage = get_storage_for_user(request)
-        experiment_name = request.data.pop("experiment_name")
-
-        client = build_experiment(name=experiment_name, storage=storage)
-        client.remote_mode = True
+        client = build_experiment_client(request)
 
         if client.is_broken:
             raise BrokenExperiment()
@@ -128,3 +117,63 @@ class LocalExperimentBroker(ExperimentBroker):
             },
         )
         return success(dict(updated=results.modified_count > 0))
+
+    def insert(self, request: RequestContext) -> Dict:
+        client = build_experiment_client(request)
+
+        params = request.data.pop("params")
+        results = request.data.pop("results")
+        reserve = request.data.pop("reserve")
+
+        results = client.insert(params=params, results=results, reserve=reserve)
+
+        return success(dict(result=results))
+
+    def fetch_noncompleted_trials(self, request: RequestContext) -> Dict:
+        client = build_experiment_client(request)
+
+        with_evc_tree = request.data.pop("with_evc_tree")
+
+        results = client.fetch_noncompleted_trials(with_evc_tree=with_evc_tree)
+
+        return success(dict(result=results))
+
+    def fetch_pending_trials(self, request: RequestContext) -> Dict:
+        client = build_experiment_client(request)
+
+        with_evc_tree = request.data.pop("with_evc_tree")
+
+        results = client.fetch_pending_trials(with_evc_tree=with_evc_tree)
+
+        return success(dict(result=results))
+
+    def fetch_trials_by_status(self, request: RequestContext) -> Dict:
+        client = build_experiment_client(request)
+
+        status = request.data.pop("status")
+        with_evc_tree = request.data.pop("with_evc_tree")
+
+        results = client.fetch_trials_by_status(
+            status=status, with_evc_tree=with_evc_tree
+        )
+
+        return success(dict(result=results))
+
+    def get_trial(self, request: RequestContext) -> Dict:
+        client = build_experiment_client(request)
+
+        trial = request.data.pop("trial")
+        uid = request.data.pop("uid")
+
+        results = client.get_trial(trial=trial, uid=uid)
+
+        return success(dict(result=results))
+
+    def fetch_trials(self, request: RequestContext) -> Dict:
+        client = build_experiment_client(request)
+
+        with_evc_tree = request.data.pop("with_evc_tree")
+
+        results = client.fetch_trials(with_evc_tree=with_evc_tree)
+
+        return success(dict(result=results))
