@@ -118,7 +118,7 @@ class TrialAdapter:
 
     """
 
-    def __init__(self, storage_trial, orion_trial=None, objective=None):
+    def __init__(self, storage_trial, orion_trial=None, objective=None, **kwargs):
         self.storage = copy.deepcopy(storage_trial)
         self.memory = orion_trial
         self.session_group = None

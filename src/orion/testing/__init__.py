@@ -237,7 +237,7 @@ def create_rest_experiment(exp_config, trial_config, statuses=None, builder=None
         statuses = ["new", "interrupted", "suspended", "reserved", "completed"]
 
     with server() as (endpoint, port):
-        storage = get_mongo_admin(port)
+        storage = get_mongo_admin(port, owner="User1")
 
         with OrionState(
             experiments=[exp_config],
@@ -253,7 +253,7 @@ def create_rest_experiment(exp_config, trial_config, statuses=None, builder=None
                     token="Tok1",
                 ),
             )
-            experiment = client._experiement
+            experiment = client._experiment
 
             if cfg.trials:
                 experiment._id = cfg.trials[0]["experiment"]

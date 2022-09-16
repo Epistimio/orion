@@ -87,7 +87,6 @@ class ExperimentClientREST(ExperimentClient):
     def __init__(self, experiment, executor=None, heartbeat=None):
         # Do not call super here; we do not want to instantiate the producer
         self.workon_client = None
-        self.storage = None
 
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
@@ -182,3 +181,6 @@ class ExperimentClientREST(ExperimentClient):
     def fetch_trials(self, with_evc_tree=False):
         """See `~ExperimentClient.fetch_trials`"""
         return self.storage_client.fetch_trials(with_evc_tree)
+
+    def close(self):
+        self._free_executor()

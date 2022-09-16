@@ -118,14 +118,14 @@ def server():
             yield ENDPOINT, MONGO_DB_PORT
 
 
-def get_mongo_admin(port=MONGO_DB_PORT):
+def get_mongo_admin(port=MONGO_DB_PORT, owner=None):
     db = MongoDB(
         name="orion",
         host="localhost",
         port=port,
         username="god",
         password="god123",
-        owner=None,
+        owner=owner,
     )
 
     return Legacy(database_instance=db, setup=False)

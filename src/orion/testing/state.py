@@ -103,9 +103,7 @@ class BaseOrionState:
 
     def init(self, config):
         """Initialize environment before testing"""
-        if self.storage is None:
-            self.setup_storage(config)
-
+        self.setup_storage(config)
         self.load_experience_configuration()
         return self
 
@@ -176,6 +174,9 @@ class BaseOrionState:
         """Iterate over the database configuration and replace ${file}
         by the name of a temporary file
         """
+        if self.storage is not None:
+            return dict()
+
         self.tempfile, self.tempfile_path = tempfile.mkstemp("_orion_test")
         _remove(self.tempfile_path)
 
@@ -207,6 +208,9 @@ class BaseOrionState:
 
     def setup_storage(self, config=None):
         """Return test storage"""
+        if self.storage is not None:
+            return
+
         self.previous_config = orion.core.config.storage.to_dict()
         orion.core.config.storage.from_dict(config)
 
