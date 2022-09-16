@@ -14,7 +14,7 @@ class ExperimentClientREST(ExperimentClient):
     * Storage API, low processing - IO heavy
 
     In production the APIs are handled by different hosts.
-    The split in the code is made so both can be tested separatly and make sure outage in one does not impact the other
+    The split in the code is made so both can be tested separately and make sure outage in one does not impact the other
 
     Notes
     -----
@@ -132,7 +132,6 @@ class ExperimentClientREST(ExperimentClient):
 
     def release(self, trial, status):
         """See `~ExperimentClient.release`"""
-        pass
 
     #
     # Disabled

@@ -17,6 +17,7 @@ import orion
 from orion.core.io import experiment_builder as experiment_builder
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage, storage_factory
+from orion.storage.legacy import Legacy
 
 
 # pylint: disable=no-self-use,protected-access
@@ -72,6 +73,7 @@ class BaseOrionState:
         resources=None,
         from_yaml=None,
         storage=None,
+        storage_instance=None,
     ):
         if from_yaml is not None:
             with open(from_yaml) as f:
@@ -84,7 +86,7 @@ class BaseOrionState:
 
         self.previous_config = copy.deepcopy(orion.core.config.storage.to_dict())
         self.storage_config = _select(storage, _get_default_test_storage())
-        self.storage = None
+        self.storage = storage_instance
 
         self._benchmarks = _select(benchmarks, [])
         self._experiments = _select(experiments, [])
@@ -101,7 +103,9 @@ class BaseOrionState:
 
     def init(self, config):
         """Initialize environment before testing"""
-        self.setup_storage(config)
+        if self.storage is None:
+            self.setup_storage(config)
+
         self.load_experience_configuration()
         return self
 
@@ -225,8 +229,8 @@ class BaseOrionState:
 class LegacyOrionState(BaseOrionState):
     """See :func:`~orion.testing.state.BaseOrionState`"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, storage_instance=None, **kwargs):
+        super().__init__(*args, storage_instance=storage_instance, **kwargs)
         self.initialized = False
 
     @property
@@ -294,6 +298,9 @@ class LegacyOrionState(BaseOrionState):
 def OrionState(*args, **kwargs):
     """Build an orion state in function of the storage type"""
     storage = kwargs.get("storage")
+
+    if storage and isinstance(storage, Legacy):
+        return LegacyOrionState(*args, storage_instance=storage, **kwargs)
 
     if not storage or storage["type"] == "legacy":
         return LegacyOrionState(*args, **kwargs)

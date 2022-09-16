@@ -21,7 +21,7 @@ from orion.core.utils.exceptions import (
 from orion.core.worker.trial import AlreadyReleased, Trial
 from orion.executor.base import ExecutorClosed, executor_factory
 from orion.storage.base import setup_storage
-from orion.testing import create_experiment, mock_space_iterate
+from orion.testing import create_experiment, create_rest_experiment, mock_space_iterate
 
 config = dict(
     name="supernaekei",
@@ -58,6 +58,11 @@ base_trial = {
     "params": [],
 }
 
+factories = [
+    create_experiment,
+    create_rest_experiment,
+]
+
 
 def compare_trials(trials_a, trials_b):
     """Compare two trials by using their configuration"""
@@ -77,59 +82,67 @@ def compare_without_heartbeat(trial_a, trial_b):
     assert trial_a_dict == trial_b_dict
 
 
-def test_plot_is_defined():
+@pytest.mark.parametrize("factory", factories)
+def test_plot_is_defined(factory):
     """Tests plot() method is defined"""
-    with create_experiment(config, base_trial) as (_, _, client):
+    with factory(config, base_trial) as (_, _, client):
         assert client.plot()
 
 
-def test_experiment_fetch_trials():
+@pytest.mark.parametrize("factory", factories)
+def test_experiment_fetch_trials(factory):
     """Test compliance of client and experiment `fetch_trials()`"""
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         assert len(experiment.fetch_trials()) == 5
         compare_trials(experiment.fetch_trials(), client.fetch_trials())
 
 
-def test_experiment_get_trial():
+@pytest.mark.parametrize("factory", factories)
+def test_experiment_get_trial(factory):
     """Test compliance of client and experiment `get_trial()`"""
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         assert experiment.get_trial(uid=0) == client.get_trial(uid=0)
 
 
-def test_experiment_fetch_trials_by_status():
+@pytest.mark.parametrize("factory", factories)
+def test_experiment_fetch_trials_by_status(factory):
     """Test compliance of client and experiment `fetch_trials_by_status()`"""
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         compare_trials(
             experiment.fetch_trials_by_status("completed"),
             client.fetch_trials_by_status("completed"),
         )
 
 
-def test_experiment_fetch_pending_trials():
+@pytest.mark.parametrize("factory", factories)
+def test_experiment_fetch_pending_trials(factory):
     """Test compliance of client and experiment `fetch_pending_trials()`"""
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         compare_trials(experiment.fetch_pending_trials(), client.fetch_pending_trials())
 
 
-def test_experiment_fetch_non_completed_trials():
+@pytest.mark.parametrize("factory", factories)
+def test_experiment_fetch_non_completed_trials(factory):
     """Test compliance of client and experiment `fetch_noncompleted_trials()`"""
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         compare_trials(
             experiment.fetch_noncompleted_trials(), client.fetch_noncompleted_trials()
         )
 
 
-def test_experiment_to_pandas():
+@pytest.mark.parametrize("factory", factories)
+def test_experiment_to_pandas(factory):
     """Test compliance of client and experiment `to_pandas()`"""
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         pandas.testing.assert_frame_equal(experiment.to_pandas(), client.to_pandas())
 
 
+@pytest.mark.parametrize("factory", factories)
 class TestReservationFct:
-    def test_no_sample(self, monkeypatch):
+    def test_no_sample(self, monkeypatch, factory):
         """Test that WaitingForTrials is raised when exp unable to reserve trials."""
 
-        with create_experiment(config, base_trial, ["reserved"]) as (
+        with factory(config, base_trial, ["reserved"]) as (
             cfg,
             experiment,
             client,
@@ -156,10 +169,10 @@ class TestReservationFct:
             with pytest.raises(WaitingForTrials) as exc:
                 reserve_trial(experiment, client._producer, pool_size=1)
 
-    def test_stops_if_exp_done(self, monkeypatch):
+    def test_stops_if_exp_done(self, monkeypatch, factory):
         """Test that reservation attempt is stopped when experiment is done."""
 
-        with create_experiment(config, base_trial, ["reserved"]) as (
+        with factory(config, base_trial, ["reserved"]) as (
             cfg,
             experiment,
             client,
@@ -208,13 +221,14 @@ class TestReservationFct:
             assert len(client.fetch_trials()) == n_trials_before_reserve
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestInsert:
     """Tests for ExperimentClient.insert"""
 
-    def test_insert_params_wo_results(self):
+    def test_insert_params_wo_results(self, factory):
         """Test insertion without results without reservation"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.insert(dict(x=100))
             assert trial.status == "interrupted"
             assert trial.params["x"] == 100
@@ -223,9 +237,9 @@ class TestInsert:
 
             assert client._pacemakers == {}
 
-    def test_insert_params_with_results(self):
+    def test_insert_params_with_results(self, factory):
         """Test insertion with results without reservation"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             timestamp = datetime.datetime.utcnow()
             trial = client.insert(
                 dict(x=100), [dict(name="objective", type="objective", value=101)]
@@ -240,9 +254,9 @@ class TestInsert:
 
             assert client._pacemakers == {}
 
-    def test_insert_params_with_results_and_reserve(self):
+    def test_insert_params_with_results_and_reserve(self, factory):
         """Test insertion with results and reservation"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(ValueError) as exc:
                 client.insert(
                     dict(x=100),
@@ -252,10 +266,10 @@ class TestInsert:
 
             assert "Cannot observe a trial and reserve it" in str(exc.value)
 
-    def test_insert_existing_params(self, monkeypatch):
+    def test_insert_existing_params(self, monkeypatch, factory):
         """Test that duplicated trials cannot be saved in storage"""
         mock_space_iterate(monkeypatch)
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(DuplicateKeyError) as exc:
                 client.insert(dict(x=1))
 
@@ -266,13 +280,13 @@ class TestInsert:
 
             assert client._pacemakers == {}
 
-    def test_insert_partial_params(self):
+    def test_insert_partial_params(self, factory):
         """Test that trial with missing dimension that has a default value can be saved"""
         config_with_default = copy.deepcopy(config)
         config_with_default["space"]["y"] = "uniform(0, 10, default_value=5)"
         trial_with_default = copy.deepcopy(base_trial)
         trial_with_default["params"].append({"name": "y", "type": "real", "value": 1})
-        with create_experiment(config_with_default, trial_with_default) as (
+        with factory(config_with_default, trial_with_default) as (
             _,
             experiment,
             client,
@@ -287,13 +301,13 @@ class TestInsert:
 
             assert client._pacemakers == {}
 
-    def test_insert_partial_params_missing(self):
+    def test_insert_partial_params_missing(self, factory):
         """Test that trial with missing dimension cannot be saved"""
         config_with_default = copy.deepcopy(config)
         config_with_default["space"]["y"] = "uniform(0, 10)"
         trial_with_default = copy.deepcopy(base_trial)
         trial_with_default["params"].append({"name": "y", "type": "real", "value": 1})
-        with create_experiment(config_with_default, trial_with_default) as (
+        with factory(config_with_default, trial_with_default) as (
             _,
             _,
             client,
@@ -306,28 +320,28 @@ class TestInsert:
                 == str(exc.value)
             )
 
-    def test_insert_params_and_reserve(self):
+    def test_insert_params_and_reserve(self, factory):
         """Test that new trial is reserved properly with `reserve=True`"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.insert(dict(x=100), reserve=True)
             assert trial.status == "reserved"
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
-    def test_insert_params_fails_not_reserved(self, monkeypatch):
+    def test_insert_params_fails_not_reserved(self, factory, monkeypatch):
         """Test that failed insertion because of duplicated trials will not reserve the original
         trial
         """
         mock_space_iterate(monkeypatch)
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(DuplicateKeyError):
                 client.insert(dict(x=1), reserve=True)
 
             assert client._pacemakers == {}
 
-    def test_insert_bad_params(self):
+    def test_insert_bad_params(self, factory):
         """Test that bad params cannot be registered in storage"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(ValueError) as exc:
                 client.insert(dict(x="bad bad bad"))
 
@@ -336,9 +350,9 @@ class TestInsert:
             )
             assert client._pacemakers == {}
 
-    def test_insert_params_bad_results(self):
+    def test_insert_params_bad_results(self, factory):
         """Test that results with from format cannot be saved (trial is registered anyhow)"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(ValueError) as exc:
                 client.insert(
                     dict(x=100), [dict(name="objective", type="bad bad bad", value=0)]
@@ -348,13 +362,14 @@ class TestInsert:
             assert client._pacemakers == {}
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestReserve:
     """Tests for ExperimentClient.reserve"""
 
-    def test_reserve(self):
+    def test_reserve(self, factory):
         """Test reservation of registered trials"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
             client.reserve(trial)
@@ -363,9 +378,9 @@ class TestReserve:
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
-    def test_reserve_dont_exist(self):
+    def test_reserve_dont_exist(self, factory):
         """Verify that unregistered trials cannot be reserved."""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(experiment="idontexist", params=cfg.trials[0]["params"])
             with pytest.raises(ValueError) as exc:
                 client.reserve(trial)
@@ -373,9 +388,9 @@ class TestReserve:
             assert f"Trial {trial.id} does not exist in database." == str(exc.value)
             assert client._pacemakers == {}
 
-    def test_reserve_reserved_locally(self, caplog):
+    def test_reserve_reserved_locally(self, caplog, factory):
         """Verify that a trial cannot be reserved twice locally (warning, no exception)"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
             client.reserve(trial)
@@ -389,9 +404,9 @@ class TestReserve:
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
-    def test_reserve_reserved_remotely(self):
+    def test_reserve_reserved_remotely(self, factory):
         """Verify that a trial cannot be reserved if already reserved by another process"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(**cfg.trials[2])
             assert trial.status == "interrupted"
             client.reserve(trial)
@@ -410,11 +425,11 @@ class TestReserve:
             assert client._pacemakers == {}
             remote_pacemaker.stop()
 
-    def test_reserve_race_condition(self):
+    def test_reserve_race_condition(self, factory):
         """Verify that race conditions during `reserve` is detected and raises a comprehensible
         error
         """
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[0]["id"])
             experiment.set_trial_status(trial, "reserved")
             trial.status = "new"  # Let's pretend it is still available
@@ -426,13 +441,14 @@ class TestReserve:
             assert client._pacemakers == {}
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestRelease:
     """Tests for ExperimentClient.release"""
 
-    def test_release(self):
+    def test_release(self, factory):
         """Test releasing (to interrupted)"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
@@ -442,9 +458,9 @@ class TestRelease:
             assert trial.id not in client._pacemakers
             assert not pacemaker.is_alive()
 
-    def test_release_status(self):
+    def test_release_status(self, factory):
         """Test releasing with a specific status"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
@@ -454,9 +470,9 @@ class TestRelease:
             assert trial.id not in client._pacemakers
             assert not pacemaker.is_alive()
 
-    def test_release_invalid_status(self):
+    def test_release_invalid_status(self, factory):
         """Test releasing with a specific status"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             with pytest.raises(ValueError) as exc:
@@ -464,9 +480,9 @@ class TestRelease:
 
             assert exc.match("Given status `mouf mouf` not one of")
 
-    def test_release_dont_exist(self, monkeypatch):
+    def test_release_dont_exist(self, monkeypatch, factory):
         """Verify that unregistered trials cannot be released"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(experiment="idontexist", params=cfg.trials[1]["params"])
 
             def do_nada(trial, **kwargs):
@@ -481,11 +497,11 @@ class TestRelease:
             assert f"Trial {trial.id} does not exist in database." == str(exc.value)
             assert client._pacemakers == {}
 
-    def test_release_race_condition(self):
+    def test_release_race_condition(self, factory):
         """Verify that race conditions during `release` is detected and raises a comprehensible
         error
         """
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
@@ -502,9 +518,9 @@ class TestRelease:
             assert client._pacemakers == {}
             assert not pacemaker.is_alive()
 
-    def test_release_unreserved(self):
+    def test_release_unreserved(self, factory):
         """Verify that unreserved trials cannot be released"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["id"])
             with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
@@ -513,9 +529,9 @@ class TestRelease:
 
             assert client._pacemakers == {}
 
-    def test_release_already_released_but_incorrectly(self):
+    def test_release_already_released_but_incorrectly(self, factory):
         """Verify that incorrectly released trials have its pacemaker stopped properly"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             pacemaker = client._pacemakers[trial.id]
@@ -532,18 +548,19 @@ class TestRelease:
             assert not pacemaker.is_alive()
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestClose:
     """Test close method of the client"""
 
-    def test_close_empty(self):
+    def test_close_empty(self, factory):
         """Test client can close when no trial is reserved"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             client.close()
 
-    def test_close_with_reserved(self):
+    def test_close_with_reserved(self, factory):
         """Test client cannot be closed if trials are reserved."""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with client.suggest() as trial:
                 with pytest.raises(RuntimeError) as exc:
                     client.close()
@@ -551,13 +568,14 @@ class TestClose:
                 assert "There is still reserved trials" in str(exc.value)
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestBroken:
     """Test handling of broken trials"""
 
-    def test_broken_trial(self):
+    def test_broken_trial(self, factory):
         """Test that broken trials are detected"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(RuntimeError):
                 with client.suggest() as trial:
                     assert trial.status == "reserved"
@@ -566,9 +584,9 @@ class TestBroken:
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "broken"
 
-    def test_interrupted_trial(self):
+    def test_interrupted_trial(self, factory):
         """Test that interrupted trials are not set to broken"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(KeyboardInterrupt):
                 with client.suggest() as trial:
                     assert trial.status == "reserved"
@@ -577,9 +595,9 @@ class TestBroken:
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "interrupted"
 
-    def test_completed_then_interrupted_trial(self):
+    def test_completed_then_interrupted_trial(self, factory):
         """Test that interrupted trials are not set to broken"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(KeyboardInterrupt):
                 with client.suggest() as trial:
                     assert trial.status == "reserved"
@@ -596,14 +614,15 @@ class TestBroken:
             assert client.get_trial(trial).status == "completed"
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestSuggest:
     """Tests for ExperimentClient.suggest"""
 
-    def test_suggest(self, monkeypatch):
+    def test_suggest(self, monkeypatch, factory):
         """Verify that suggest reserved available trials."""
         mock_space_iterate(monkeypatch)
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.suggest()
             assert trial.status == "reserved"
             assert trial.params["x"] == 1
@@ -612,9 +631,9 @@ class TestSuggest:
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
-    def test_suggest_new(self):
+    def test_suggest_new(self, factory):
         """Verify that suggest can create, register and reserved new trials."""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             for _ in range(3):
                 trial = client.suggest()
                 assert trial.status == "reserved"
@@ -631,12 +650,12 @@ class TestSuggest:
             for trial_id in list(client._pacemakers.keys()):
                 client._pacemakers.pop(trial_id).stop()
 
-    def test_suggest_race_condition(self, monkeypatch):
+    def test_suggest_race_condition(self, monkeypatch, factory):
         """Verify that race conditions to register new trials is handled"""
         mock_space_iterate(monkeypatch)
         new_value = 50.0
 
-        with create_experiment(config, base_trial, statuses=["completed"]) as (
+        with factory(config, base_trial, statuses=["completed"]) as (
             cfg,
             experiment,
             client,
@@ -656,7 +675,7 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 1
 
-    def test_suggest_algo_opt_out(self, monkeypatch):
+    def test_suggest_algo_opt_out(self, monkeypatch, factory):
         """Verify that None is returned when algo cannot sample new trials (opting opt)"""
 
         def opt_out(num=1):
@@ -665,7 +684,7 @@ class TestSuggest:
 
         monkeypatch.setattr(orion.core.config.worker, "reservation_timeout", -1)
 
-        with create_experiment(config, base_trial, statuses=["completed"]) as (
+        with factory(config, base_trial, statuses=["completed"]) as (
             cfg,
             experiment,
             client,
@@ -678,9 +697,9 @@ class TestSuggest:
             with pytest.raises(WaitingForTrials):
                 client.suggest()
 
-    def test_suggest_is_done(self):
+    def test_suggest_is_done(self, factory):
         """Verify that completed experiments cannot suggest new trials"""
-        with create_experiment(config, base_trial, statuses=["completed"] * 10) as (
+        with factory(config, base_trial, statuses=["completed"] * 10) as (
             cfg,
             experiment,
             client,
@@ -692,9 +711,9 @@ class TestSuggest:
             with pytest.raises(CompletedExperiment):
                 client.suggest()
 
-    def test_suggest_is_done_context_manager(self):
+    def test_suggest_is_done_context_manager(self, factory):
         """Verify that context manager handles None"""
-        with create_experiment(config, base_trial, statuses=["completed"] * 10) as (
+        with factory(config, base_trial, statuses=["completed"] * 10) as (
             cfg,
             experiment,
             client,
@@ -706,9 +725,9 @@ class TestSuggest:
             with pytest.raises(CompletedExperiment):
                 client.suggest()
 
-    def test_suggest_is_broken(self):
+    def test_suggest_is_broken(self, factory):
         """Verify that broken experiments cannot suggest new trials"""
-        with create_experiment(config, base_trial, statuses=["broken"] * 10) as (
+        with factory(config, base_trial, statuses=["broken"] * 10) as (
             cfg,
             experiment,
             client,
@@ -720,11 +739,11 @@ class TestSuggest:
             with pytest.raises(BrokenExperiment):
                 client.suggest()
 
-    def test_suggest_is_done_race_condition(self, monkeypatch):
+    def test_suggest_is_done_race_condition(self, monkeypatch, factory):
         """Verify that inability to suggest because is_done becomes True during produce() is
         handled.
         """
-        with create_experiment(config, base_trial, statuses=["completed"] * 5) as (
+        with factory(config, base_trial, statuses=["completed"] * 5) as (
             cfg,
             experiment,
             client,
@@ -749,12 +768,12 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 5
             assert client.is_done
 
-    def test_suggest_reserve_race_condition(self, monkeypatch):
+    def test_suggest_reserve_race_condition(self, monkeypatch, factory):
         """Verify that when trials are produced and reserved by a different worker an
         exception is raised
 
         """
-        with create_experiment(config, base_trial, statuses=["completed"] * 5) as (
+        with factory(config, base_trial, statuses=["completed"] * 5) as (
             cfg,
             experiment,
             client,
@@ -774,11 +793,11 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 5
 
-    def test_suggest_is_broken_race_condition(self, monkeypatch):
+    def test_suggest_is_broken_race_condition(self, monkeypatch, factory):
         """Verify that experiments that gets broken during local algo.suggest gets properly
         handled
         """
-        with create_experiment(config, base_trial, statuses=["broken"] * 1) as (
+        with factory(config, base_trial, statuses=["broken"] * 1) as (
             cfg,
             experiment,
             client,
@@ -808,16 +827,18 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 1
             assert client.is_broken
 
-    def test_suggest_hierarchical_space(self):
+    def test_suggest_hierarchical_space(self, factory):
         """Verify that suggest returns trial with proper hierarchical parameter."""
         exp_config = copy.deepcopy(config)
         exp_config["space"] = {
             "a": {"x": "uniform(0, 10, discrete=True)"},
             "b": {"y": "loguniform(1e-08, 1)", "z": "choices(['voici', 'voila', 2])"},
         }
-        with create_experiment(
-            exp_config=exp_config, trial_config=base_trial, statuses=[]
-        ) as (cfg, experiment, client):
+        with factory(exp_config=exp_config, trial_config=base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
             trial = client.suggest()
             assert trial.status == "reserved"
             assert len(trial.params) == 2
@@ -829,13 +850,14 @@ class TestSuggest:
             client._pacemakers.pop(trial.id).stop()
 
 
+@pytest.mark.parametrize("factory", factories)
 @pytest.mark.usefixtures("version_XYZ")
 class TestObserve:
     """Tests for ExperimentClient.observe"""
 
-    def test_observe(self):
+    def test_observe(self, factory):
         """Verify that `observe()` will update the storage"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(**cfg.trials[1])
             assert trial.results == []
             client.reserve(trial)
@@ -843,9 +865,9 @@ class TestObserve:
             client.observe(trial, [dict(name="objective", type="objective", value=101)])
             assert setup_storage().get_trial(trial).objective.value == 101
 
-    def test_observe_unreserved(self):
+    def test_observe_unreserved(self, factory):
         """Verify that `observe()` will fail on non-reserved trials"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(**cfg.trials[1])
             with pytest.raises(RuntimeError) as exc:
                 client.observe(
@@ -856,9 +878,9 @@ class TestObserve:
                 trial.id
             ) == str(exc.value)
 
-    def test_observe_dont_exist(self):
+    def test_observe_dont_exist(self, factory):
         """Verify that `observe()` will fail on non-registered trials"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(experiment="idontexist", params=cfg.trials[0]["params"])
             with pytest.raises(ValueError) as exc:
                 client.observe(
@@ -868,9 +890,9 @@ class TestObserve:
             assert f"Trial {trial.id} does not exist in database." == str(exc.value)
             assert client._pacemakers == {}
 
-    def test_observe_bad_results(self):
+    def test_observe_bad_results(self, factory):
         """Verify that bad results type is detected and ValueError is raised"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(**cfg.trials[1])
             client.reserve(trial)
             with pytest.raises(ValueError) as exc:
@@ -882,9 +904,9 @@ class TestObserve:
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
-    def test_observe_race_condition(self):
+    def test_observe_race_condition(self, factory):
         """Verify that race condition during `observe()` is detected and raised"""
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
             experiment.set_trial_status(trial, "interrupted")
@@ -898,8 +920,8 @@ class TestObserve:
             assert f"Reservation for trial {trial.id} has been lost." == str(exc.value)
             assert client._pacemakers == {}
 
-    def test_observe_under_with(self):
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
+    def test_observe_under_with(self, factory):
+        with factory(config, base_trial) as (cfg, experiment, client):
             with client.suggest() as trial:
                 assert trial.status == "reserved"
                 assert trial.results == []
@@ -913,13 +935,14 @@ class TestObserve:
             assert trial.status == "completed"  # Still completed after __exit__
 
 
-def test_executor_receives_correct_worker_count():
+@pytest.mark.parametrize("factory", factories)
+def test_executor_receives_correct_worker_count(factory):
     """Check that the client forwards the current number count to the executor"""
 
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         assert client.executor.n_workers == orion.core.config.worker.n_workers
 
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         with client.tmp_executor("joblib", n_workers=3, backend="threading"):
             assert client.executor.n_workers == 3
 
@@ -928,7 +951,8 @@ def function(a, b):
     return a + b
 
 
-def test_executor_gets_created_if_not_provided():
+@pytest.mark.parametrize("factory", factories)
+def test_executor_gets_created_if_not_provided(factory):
     """Check that executors created by the client are cleanup"""
     global config
     conf = copy.deepcopy(config)
@@ -937,7 +961,7 @@ def test_executor_gets_created_if_not_provided():
     conf.pop("executor", None)
     executor = None
 
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         executor = client.executor
         assert executor is not None, "Client created an executor"
         assert client._executor_owner is True, "Client own the executor"
@@ -950,7 +974,8 @@ def test_executor_gets_created_if_not_provided():
         executor.submit(function, 2, 2)
 
 
-def test_user_executor_is_not_deleted():
+@pytest.mark.parametrize("factory", factories)
+def test_user_executor_is_not_deleted(factory):
     """Check that executors passed to the client are not cleanup"""
 
     global config
@@ -959,7 +984,7 @@ def test_user_executor_is_not_deleted():
     executor = executor_factory.create("joblib", 1)
     conf["executor"] = executor
 
-    with create_experiment(config, base_trial) as (cfg, experiment, client):
+    with factory(config, base_trial) as (cfg, experiment, client):
         assert client.executor is not None, "Client has an executor"
         assert client._executor_owner is True, "Client does not own the executor"
 

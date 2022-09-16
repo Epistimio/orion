@@ -5,20 +5,15 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-
 log = logging.getLogger(__name__)
 
 
 class ExperiementIsNotSetup(Exception):
     """Raised when the API is missing an experiment name"""
 
-    pass
-
 
 class RemoteException(Exception):
     """Raised from a request that failed"""
-
-    pass
 
 
 @dataclass
