@@ -31,11 +31,14 @@ class ExperimentsResource:
 
     def on_get(self, req: Request, resp: Response):
         """Handle the GET requests for experiments/"""
-        logger.info(f"Managing request: {req}")
+        logger.info(f"Managing request, fetch experiments: {req}")
         experiments = self.storage.fetch_experiments({})
+        logger.info(f"_find_latest_versions: {req}")
         leaf_experiments = _find_latest_versions(experiments)
 
+        logger.info(f"build_experiments_response: {req}")
         response = build_experiments_response(leaf_experiments)
+        logger.info(f"json dumps: {req}")
         resp.body = json.dumps(response)
         logger.info(f"Managed request: {req}")
 
