@@ -156,11 +156,13 @@ class PickledDB(Database):
 
         """
         log.info(
-            f"read/locking; collection name: {collection_name}, query: {query}, selection: {selection}"
+            f"read/locking; collection name: {collection_name}, "
+            f"query: {query}, selection: {selection}"
         )
         with self.locked_database(write=False) as database:
             log.info(
-                f"read/locked; collection name: {collection_name}, query: {query}, selection: {selection}"
+                f"read/locked; collection name: {collection_name}, "
+                f"query: {query}, selection: {selection}"
             )
             return database.read(collection_name, query=query, selection=selection)
 
