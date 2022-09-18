@@ -108,6 +108,7 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_benchmark(self, query, selection=None):
         """Fetch all benchmarks that match the query"""
+        log.info(f"Fetch benchmark, query: {query}, selection: {selection}")
         return self._db.read("benchmarks", query, selection)
 
     def create_experiment(self, config):
