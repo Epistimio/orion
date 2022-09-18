@@ -236,11 +236,11 @@ class PickledDB(Database):
     @contextmanager
     def locked_database(self, write=True):
         """Lock database file during wrapped operation call."""
-        lock = _create_lock(self.host + ".lock")
+        lock = _create_lock(self.host + ".lock", timeout=self.timeout)
 
         try:
             log.info("locking database")
-            with lock.acquire(timeout=self.timeout):
+            with lock:
                 log.info("locked database")
                 database = self._get_database()
 
@@ -301,7 +301,7 @@ def _get_fs(path):
     return None
 
 
-def _create_lock(path):
+def _create_lock(path, timeout=None):
     """Create lock based on file system capabilities
 
     Determine if we can rely on the fcntl module for locking files.
@@ -311,7 +311,7 @@ def _create_lock(path):
 
     if _fs_support_globalflock(file_system):
         log.debug("Using flock.")
-        return FileLock(path)
+        return FileLock(path, timeout=timeout)
     else:
         log.debug("Cluster does not support flock. Falling back to softfilelock.")
-        return SoftFileLock(path)
+        return SoftFileLock(path, timeout=timeout)
