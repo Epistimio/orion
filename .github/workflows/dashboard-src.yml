@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-      # Launch an orion server
+      # Launch backend
       - name: Launch Orion server
         uses: actions/setup-python@v2
         with:
