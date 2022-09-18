@@ -243,13 +243,17 @@ class PickledDB(Database):
         try:
             log.info("locking database")
             with lock:
-                log.info("locked database")
+                log.info("locked database, getting database")
                 database = self._get_database()
+                log.info("yield database")
 
                 yield database
 
+                log.info("database yielded")
                 if write:
+                    log.info("writing database")
                     self._dump_database(database)
+                    log.info("database written")
         except Timeout as e:
             raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e
 
