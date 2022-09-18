@@ -28,10 +28,12 @@ class BenchmarksResource:
 
     def on_get(self, req: Request, resp: Response):
         """Handle the GET requests for benchmarks/"""
-        logger.info(f"Managing request: {req}")
+        logger.info(f"Managing request, fetch benchmark: {req}")
         benchmarks = self.storage.fetch_benchmark({})
 
+        logger.info(f"Managing request, build benchmarks response: {req}")
         response = build_benchmarks_response(benchmarks)
+        logger.info(f"Managing request, json dumps: {req}")
         resp.body = json.dumps(response)
         logger.info(f"Managed request: {req}")
 
