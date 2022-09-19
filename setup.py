@@ -146,7 +146,6 @@ setup_args = dict(
         "joblib",
         "pytest>=3.0.0",
         "scikit-optimize",
-        "dill",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],

@@ -12,7 +12,6 @@ import pickle
 from contextlib import contextmanager
 from pickle import PicklingError
 
-import dill
 import psutil
 from filelock import FileLock, SoftFileLock, Timeout
 
@@ -213,10 +212,8 @@ class PickledDB(Database):
                 log.info(f"getting ephemeraldb {self.host}")
                 database = EphemeralDB()
             else:
-                log.info(
-                    f"loading pickle with dill, {len(data) / (1024 * 1024)} Mb: {self.host}"
-                )
-                database = dill.loads(data)
+                log.info(f"loading pickle, {len(data) / (1024 * 1024)} Mb: {self.host}")
+                database = pickle.loads(data)
                 log.info(f"loaded pickle {self.host}")
 
         return database
