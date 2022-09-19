@@ -203,12 +203,18 @@ class PickledDB(Database):
         if not os.path.exists(self.host):
             return EphemeralDB()
 
+        log.info(f"opening database {self.host}")
         with open(self.host, "rb") as f:
+            log.info(f"reading database {self.host}")
             data = f.read()
+            log.info(f"got database {self.host}")
             if not data:
+                log.info(f"getting ephemeraldb {self.host}")
                 database = EphemeralDB()
             else:
+                log.info(f"loading pickle {self.host}")
                 database = pickle.loads(data)
+                log.info(f"loaded pickle {self.host}")
 
         return database
 
