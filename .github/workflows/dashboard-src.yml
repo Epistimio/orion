@@ -51,7 +51,7 @@ jobs:
         with:
           mongodb-version: 4.2
       - name: Configure MongoDB
-        run: mongo orion_dashboard_test --eval 'db.createUser({roles:["readWrite"]});'
+        run: mongo orion_dashboard_test
       - name: Populate MongoDB
         run: |
             cd ../../
