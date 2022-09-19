@@ -253,7 +253,16 @@ def create_rest_experiment(exp_config, trial_config, statuses=None, builder=None
                     token="Tok1",
                 ),
             )
-            experiment = client._experiment
+
+            # This is the REST experiment which does not have access to the storage
+            # but tests are leveraging methods of the real experiment
+            # experiment = client._experiment
+
+            # We are building the experiment as if we had direct access to the mongodb
+            # database, in testing we check that experiment.method == client.method
+            # so we know the API match
+            builder = experiment_builder.ExperimentBuilder(storage=storage)
+            experiment = builder.build(exp_config["name"], version=None, branching=None)
 
             if cfg.trials:
                 experiment._id = cfg.trials[0]["experiment"]

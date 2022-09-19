@@ -98,6 +98,9 @@ class ExperimentClientREST(ExperimentClient):
 
         self.plot = PlotAccessor(self)
 
+    def to_pandas(self, with_evc_tree=False):
+        raise RuntimeError()
+
     #
     # Workon REST API overrides
     #

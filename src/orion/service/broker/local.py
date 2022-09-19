@@ -8,8 +8,9 @@ from orion.core.utils.exceptions import BrokenExperiment
 from orion.service.broker.broker import (
     ExperimentBroker,
     RequestContext,
-    build_experiment_client,
+    create_experiment_client,
     get_storage_for_user,
+    retrieve_experiment_client,
     success,
 )
 
@@ -35,7 +36,7 @@ class LocalExperimentBroker(ExperimentBroker):
     def new_experiment(self, request: RequestContext) -> Dict:
         log.debug("Spawning new experiment")
 
-        client = build_experiment_client(request)
+        client = create_experiment_client(request)
         euid = str(client._experiment.id)
 
         return success(
@@ -55,7 +56,8 @@ class LocalExperimentBroker(ExperimentBroker):
 
         # NOTE: need to fix lost trials here
         # so reschedule them
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         if client.is_broken:
             raise BrokenExperiment()
@@ -66,6 +68,9 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(trials=[small_trial]))
 
     def _make_trial(self, trial):
+        if trial is None:
+            return None
+
         # We only send the minimal amount of information to the client
         # to force the client the communicate with us
         # to avoid having invisible issues.
@@ -75,17 +80,22 @@ class LocalExperimentBroker(ExperimentBroker):
         small_trial["db_id"] = str(data["_id"])
         small_trial["params_id"] = str(data["id"])
         small_trial["params"] = data["params"]
-        small_trial["working_dir"] = str(trial.get_working_dir())
+
+        try:
+            small_trial["working_dir"] = str(trial.get_working_dir())
+        except RuntimeError:
+            small_trial["working_dir"] = None
 
         return small_trial
 
     def observe(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
         storage = client.storage
 
         trial_id = request.data.get("trial_id")
         trial_hash = request.data.pop("trial_hash")
-        experiment_name = request.data.pop("experiment_name")
+
         euid = request.data.pop("euid")
         results = request.data.get("results")
 
@@ -97,7 +107,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict())
 
     def is_done(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         if client.is_broken:
             raise BrokenExperiment()
@@ -123,7 +134,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(updated=results.modified_count > 0))
 
     def insert(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         params = request.data.pop("params")
         results = request.data.pop("results")
@@ -134,7 +146,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(result=results))
 
     def fetch_noncompleted_trials(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         with_evc_tree = request.data.pop("with_evc_tree")
 
@@ -144,7 +157,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(result=results))
 
     def fetch_pending_trials(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         with_evc_tree = request.data.pop("with_evc_tree")
 
@@ -153,7 +167,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(result=results))
 
     def fetch_trials_by_status(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         status = request.data.pop("status")
         with_evc_tree = request.data.pop("with_evc_tree")
@@ -165,7 +180,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(result=results))
 
     def get_trial(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         trial = request.data.pop("trial")
         uid = request.data.pop("uid")
@@ -175,7 +191,8 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(result=results))
 
     def fetch_trials(self, request: RequestContext) -> Dict:
-        client = build_experiment_client(request)
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
 
         with_evc_tree = request.data.pop("with_evc_tree")
 

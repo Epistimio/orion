@@ -64,11 +64,32 @@ factories = [
 ]
 
 
-def compare_trials(trials_a, trials_b):
+def is_rest(factory):
+    return factory is create_rest_experiment
+
+
+def subset_match(a, b):
+    keys = list(a.keys())
+    if len(keys) > len(list(b.keys())):
+        keys = list(b.keys())
+
+    for k in keys:
+        assert a[k] == b[k]
+
+    return True
+
+
+def compare_trials(trials_a, trials_b, factory):
     """Compare two trials by using their configuration"""
 
     def to_dict(trial):
         return trial.to_dict()
+
+    if is_rest(factory):
+        for ta, tb in zip(trials_a, trials_b):
+            assert subset_match(to_dict(ta), to_dict(tb))
+
+        return
 
     assert list(map(to_dict, trials_a)) == list(map(to_dict, trials_b))
 
@@ -85,6 +106,11 @@ def compare_without_heartbeat(trial_a, trial_b):
 @pytest.mark.parametrize("factory", factories)
 def test_plot_is_defined(factory):
     """Tests plot() method is defined"""
+
+    if is_rest(factory):
+        pytest.skip("Not implemented")
+        return
+
     with factory(config, base_trial) as (_, _, client):
         assert client.plot()
 
@@ -93,8 +119,9 @@ def test_plot_is_defined(factory):
 def test_experiment_fetch_trials(factory):
     """Test compliance of client and experiment `fetch_trials()`"""
     with factory(config, base_trial) as (cfg, experiment, client):
+
         assert len(experiment.fetch_trials()) == 5
-        compare_trials(experiment.fetch_trials(), client.fetch_trials())
+        compare_trials(experiment.fetch_trials(), client.fetch_trials(), factory)
 
 
 @pytest.mark.parametrize("factory", factories)
@@ -111,6 +138,7 @@ def test_experiment_fetch_trials_by_status(factory):
         compare_trials(
             experiment.fetch_trials_by_status("completed"),
             client.fetch_trials_by_status("completed"),
+            factory,
         )
 
 
@@ -118,7 +146,9 @@ def test_experiment_fetch_trials_by_status(factory):
 def test_experiment_fetch_pending_trials(factory):
     """Test compliance of client and experiment `fetch_pending_trials()`"""
     with factory(config, base_trial) as (cfg, experiment, client):
-        compare_trials(experiment.fetch_pending_trials(), client.fetch_pending_trials())
+        compare_trials(
+            experiment.fetch_pending_trials(), client.fetch_pending_trials(), factory
+        )
 
 
 @pytest.mark.parametrize("factory", factories)
@@ -126,13 +156,19 @@ def test_experiment_fetch_non_completed_trials(factory):
     """Test compliance of client and experiment `fetch_noncompleted_trials()`"""
     with factory(config, base_trial) as (cfg, experiment, client):
         compare_trials(
-            experiment.fetch_noncompleted_trials(), client.fetch_noncompleted_trials()
+            experiment.fetch_noncompleted_trials(),
+            client.fetch_noncompleted_trials(),
+            factory,
         )
 
 
 @pytest.mark.parametrize("factory", factories)
 def test_experiment_to_pandas(factory):
     """Test compliance of client and experiment `to_pandas()`"""
+    if is_rest(factory):
+        pytest.skip("Not implemented")
+        return
+
     with factory(config, base_trial) as (cfg, experiment, client):
         pandas.testing.assert_frame_equal(experiment.to_pandas(), client.to_pandas())
 
@@ -141,6 +177,10 @@ def test_experiment_to_pandas(factory):
 class TestReservationFct:
     def test_no_sample(self, monkeypatch, factory):
         """Test that WaitingForTrials is raised when exp unable to reserve trials."""
+
+        if is_rest(factory):
+            pytest.skip("cannot patch producer, does not exist for REST API")
+            return
 
         with factory(config, base_trial, ["reserved"]) as (
             cfg,
@@ -171,6 +211,9 @@ class TestReservationFct:
 
     def test_stops_if_exp_done(self, monkeypatch, factory):
         """Test that reservation attempt is stopped when experiment is done."""
+        if is_rest(factory):
+            pytest.skip("cannot patch producer, does not exist for REST API")
+            return
 
         with factory(config, base_trial, ["reserved"]) as (
             cfg,

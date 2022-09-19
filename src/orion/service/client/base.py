@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import requests
+from bson import ObjectId
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +45,12 @@ class RemoteTrial:
 
     # This is used to copy the parent
     parent = None
+
+    def to_dict(self):
+        return dict(
+            _id=ObjectId(self.db_id),
+            id=self.params_id,
+        )
 
 
 class BaseClientREST:

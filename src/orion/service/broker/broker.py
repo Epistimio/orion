@@ -95,8 +95,8 @@ def get_storage_for_user(request: RequestContext):
     return storage
 
 
-def build_experiment_client(request: RequestContext) -> ExperimentClient:
-    """Build an experiment client in a multiuser setting (i.e without relying on singletons)"""
+def create_experiment_client(request: RequestContext) -> ExperimentClient:
+    """Create an experiment client by creating the initial experiment"""
 
     storage = get_storage_for_user(request)
 
@@ -107,6 +107,27 @@ def build_experiment_client(request: RequestContext) -> ExperimentClient:
 
     client = build_experiment(
         **request.data,
+        storage=storage,
+        # if we keep the username on the storage that would prevent
+        # more pervasive modification
+        # username=request.username,
+    )
+    client.remote_mode = True
+    return client
+
+
+def retrieve_experiment_client(request: RequestContext, name) -> ExperimentClient:
+    """Create an experiment client by retrieving an already created experiment"""
+
+    storage = get_storage_for_user(request)
+
+    log.debug("Building experiment")
+
+    # ignore the storage config
+    _ = request.data.pop("storage", None)
+
+    client = build_experiment(
+        name=name,
         storage=storage,
         # if we keep the username on the storage that would prevent
         # more pervasive modification
