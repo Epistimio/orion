@@ -273,12 +273,15 @@ class TestInsert:
         """Test insertion without results without reservation"""
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.insert(dict(x=100))
-            assert trial.status == "interrupted"
+
+            if not is_rest(factory):
+                assert trial.status == "interrupted"
+                compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
+                assert client._pacemakers == {}
+
+            print(trial.params)
             assert trial.params["x"] == 100
             assert trial.id in {trial.id for trial in experiment.fetch_trials()}
-            compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
-
-            assert client._pacemakers == {}
 
     def test_insert_params_with_results(self, factory):
         """Test insertion with results without reservation"""
@@ -287,18 +290,25 @@ class TestInsert:
             trial = client.insert(
                 dict(x=100), [dict(name="objective", type="objective", value=101)]
             )
-            assert trial.status == "completed"
-            assert trial.params["x"] == 100
-            assert trial.objective.value == 101
-            assert trial.end_time >= timestamp
-            assert trial.id in {trial.id for trial in experiment.fetch_trials()}
-            compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
-            assert client.get_trial(uid=trial.id).objective.value == 101
 
-            assert client._pacemakers == {}
+            if not is_rest(factory):
+                assert trial.status == "completed"
+                assert trial.params["x"] == 100
+                assert trial.objective.value == 101
+                assert trial.end_time >= timestamp
+                compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
+                assert client.get_trial(uid=trial.id).objective.value == 101
+                assert client._pacemakers == {}
+
+            assert trial.id in {trial.id for trial in experiment.fetch_trials()}
 
     def test_insert_params_with_results_and_reserve(self, factory):
         """Test insertion with results and reservation"""
+
+        if is_rest(factory):
+            pytest.skip("Cannot reserve inserted trials with REST API")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(ValueError) as exc:
                 client.insert(
@@ -312,7 +322,14 @@ class TestInsert:
     def test_insert_existing_params(self, monkeypatch, factory):
         """Test that duplicated trials cannot be saved in storage"""
         mock_space_iterate(monkeypatch)
+
         with factory(config, base_trial) as (cfg, experiment, client):
+
+            # the mock_space_iterate cannot work for the REST API
+            # just insert the same trial twice
+            if is_rest(factory):
+                client.insert(dict(x=1))
+
             with pytest.raises(DuplicateKeyError) as exc:
                 client.insert(dict(x=1))
 

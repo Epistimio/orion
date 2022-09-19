@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from bson import ObjectId
 
+from orion.core.utils.flatten import unflatten
+
 log = logging.getLogger(__name__)
 
 
@@ -37,7 +39,7 @@ class RemoteTrial:
 
     db_id: str
     params_id: str
-    params: List[Dict[str, Any]]
+    _params: List[Dict[str, Any]]
 
     # Populated by the worker locally
     exp_working_dir: Optional[str] = None
@@ -46,11 +48,47 @@ class RemoteTrial:
     # This is used to copy the parent
     parent = None
 
+    @staticmethod
+    def make_json_from_trial(trial) -> dict:
+        """Encode a trial into a json Remote Trial"""
+        if trial is None:
+            return None
+
+        # We only send the minimal amount of information to the client
+        # to force the client the communicate with us
+        # to avoid having invisible issues.
+        data = trial.to_dict()
+
+        small_trial = dict()
+        small_trial["db_id"] = str(data["_id"])
+        small_trial["params_id"] = str(data["id"])
+        small_trial["_params"] = data["params"]
+
+        try:
+            small_trial["working_dir"] = str(trial.get_working_dir())
+        except RuntimeError:
+            small_trial["working_dir"] = None
+
+        return small_trial
+
+    # Trial API
+    # =========
+
     def to_dict(self):
         return dict(
             _id=ObjectId(self.db_id),
             id=self.params_id,
+            params=self._params
         )
+
+    @property
+    def id(self):
+        return self.params_id
+
+    @property
+    def params(self):
+        """Parameters of the trial"""
+        return unflatten({param["name"]: param["value"] for param in self._params})
 
 
 class BaseClientREST:

@@ -13,6 +13,7 @@ from orion.service.broker.broker import (
     retrieve_experiment_client,
     success,
 )
+from orion.service.client.base import RemoteTrial
 
 log = logging.getLogger(__name__)
 
@@ -68,25 +69,7 @@ class LocalExperimentBroker(ExperimentBroker):
         return success(dict(trials=[small_trial]))
 
     def _make_trial(self, trial):
-        if trial is None:
-            return None
-
-        # We only send the minimal amount of information to the client
-        # to force the client the communicate with us
-        # to avoid having invisible issues.
-        data = trial.to_dict()
-
-        small_trial = dict()
-        small_trial["db_id"] = str(data["_id"])
-        small_trial["params_id"] = str(data["id"])
-        small_trial["params"] = data["params"]
-
-        try:
-            small_trial["working_dir"] = str(trial.get_working_dir())
-        except RuntimeError:
-            small_trial["working_dir"] = None
-
-        return small_trial
+        return RemoteTrial.make_json_from_trial(trial)
 
     def observe(self, request: RequestContext) -> Dict:
         experiment_name = request.data.pop("experiment_name")
@@ -143,7 +126,7 @@ class LocalExperimentBroker(ExperimentBroker):
 
         results = client.insert(params=params, results=results, reserve=reserve)
 
-        return success(dict(result=results))
+        return success(dict(result=self._make_trial(results)))
 
     def fetch_noncompleted_trials(self, request: RequestContext) -> Dict:
         experiment_name = request.data.pop("experiment_name")

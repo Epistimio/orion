@@ -1,7 +1,4 @@
-from orion.service.client.base import (
-    BaseClientREST,
-    RemoteTrial,
-)
+from orion.service.client.base import BaseClientREST, RemoteTrial
 
 
 class ClientActionREST(BaseClientREST):
@@ -22,7 +19,7 @@ class ClientActionREST(BaseClientREST):
             reserve=False,
         )
 
-        return self._to_trials(payload.get("result", []))
+        return self._to_trial(payload.get("result", None))
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         payload = self._post(
@@ -76,14 +73,18 @@ class ClientActionREST(BaseClientREST):
 
         return self._to_trials(payload.get("result", []))
 
+    def _to_trial(self, trial):
+        if trial is None:
+            return None
+
+        return RemoteTrial(**trial, exp_working_dir=self.experiment.working_dir)
+
     def _to_trials(self, results):
         if results is None:
             return []
 
         trials = []
         for trial in results:
-            trials.append(
-                RemoteTrial(**trial, exp_working_dir=self.experiment.working_dir)
-            )
+            trials.append(self._to_trial(trial))
 
         return trials
