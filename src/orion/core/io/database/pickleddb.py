@@ -162,7 +162,7 @@ class PickledDB(Database):
         with self.locked_database(write=False) as database:
             log.info(
                 f"read/locked; collection name: {collection_name}, "
-                f"query: {query}, selection: {selection}"
+                f"query: {query}, selection: {selection}, db type: {type(database)}"
             )
             return database.read(collection_name, query=query, selection=selection)
 
@@ -212,7 +212,7 @@ class PickledDB(Database):
                 log.info(f"getting ephemeraldb {self.host}")
                 database = EphemeralDB()
             else:
-                log.info(f"loading pickle {self.host}")
+                log.info(f"loading pickle, {len(data) / (1024 * 1024)} Mb: {self.host}")
                 database = pickle.loads(data)
                 log.info(f"loaded pickle {self.host}")
 
