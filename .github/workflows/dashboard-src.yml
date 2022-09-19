@@ -45,11 +45,25 @@ jobs:
         run: df -Th
       - name: check filesystem type using fstab
         run: cat /etc/fstab
-      - run: |
+
+      - name: Setup MongoDB
+        uses: supercharge/mongodb-github-action@1.3.0
+        with:
+          mongodb-version: 4.2
+      - name: Configure MongoDB
+        run: mongo orion_dashboard_test --eval 'db.createUser({roles:["readWrite"]});'
+      - name: Populate MongoDB
+        run: |
+            cd ../../
+            python .github/workflows/orion/pickle_to_mongodb.py
+            cd dashboard/src/
+
+      - name: Start Orion backend
+        run: |
             # Start Orion backend in repository root folder.
             cd ../../
             mkdir -p gunicorn_tmp_dir
-            orion -vv serve -c .github/workflows/orion/orion_config.yaml 2> orion-backend-${{ matrix.node-version }}.log &
+            orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml 2> orion-backend-${{ matrix.node-version }}.log &
             cd dashboard/src/
       # install
       - run: yarn
