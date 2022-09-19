@@ -12,12 +12,15 @@ import pickle
 from contextlib import contextmanager
 from pickle import PicklingError
 
+import dill
 import psutil
 from filelock import FileLock, SoftFileLock, Timeout
 
 import orion.core
 from orion.core.io.database import Database, DatabaseTimeout
 from orion.core.io.database.ephemeraldb import EphemeralDB
+
+dill.detect.trace(True)
 
 log = logging.getLogger(__name__)
 
@@ -162,7 +165,7 @@ class PickledDB(Database):
         with self.locked_database(write=False) as database:
             log.info(
                 f"read/locked; collection name: {collection_name}, "
-                f"query: {query}, selection: {selection}, db type: {type(database)}"
+                f"query: {query}, selection: {selection}"
             )
             return database.read(collection_name, query=query, selection=selection)
 
@@ -212,6 +215,15 @@ class PickledDB(Database):
                 log.info(f"getting ephemeraldb {self.host}")
                 database = EphemeralDB()
             else:
+                log.info(
+                    f"loading pickle with dill, {len(data) / (1024 * 1024)} Mb: {self.host}"
+                )
+                db = dill.loads(data)
+                log.info(
+                    f"loaded pickle with dill, {type(db)}, "
+                    f"{len(data) / (1024 * 1024)} Mb: {self.host}"
+                )
+                del db
                 log.info(f"loading pickle, {len(data) / (1024 * 1024)} Mb: {self.host}")
                 database = pickle.loads(data)
                 log.info(f"loaded pickle {self.host}")
