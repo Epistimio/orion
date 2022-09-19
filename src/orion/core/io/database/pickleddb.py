@@ -20,8 +20,6 @@ import orion.core
 from orion.core.io.database import Database, DatabaseTimeout
 from orion.core.io.database.ephemeraldb import EphemeralDB
 
-dill.detect.trace(True)
-
 log = logging.getLogger(__name__)
 
 DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, "orion", "orion_db.pkl")
@@ -218,14 +216,7 @@ class PickledDB(Database):
                 log.info(
                     f"loading pickle with dill, {len(data) / (1024 * 1024)} Mb: {self.host}"
                 )
-                db = dill.loads(data)
-                log.info(
-                    f"loaded pickle with dill, {type(db)}, "
-                    f"{len(data) / (1024 * 1024)} Mb: {self.host}"
-                )
-                del db
-                log.info(f"loading pickle, {len(data) / (1024 * 1024)} Mb: {self.host}")
-                database = pickle.loads(data)
+                database = dill.loads(data)
                 log.info(f"loaded pickle {self.host}")
 
         return database
