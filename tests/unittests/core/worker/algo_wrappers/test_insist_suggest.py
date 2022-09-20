@@ -8,49 +8,32 @@ from pytest import MonkeyPatch
 
 from orion.algo.random import Random
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.format_trials import dict_to_trial
-from orion.core.worker.algo_wrappers import InsistSuggest, SpaceTransform
-from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
-from orion.core.worker.primary_algo import create_algo
+from orion.core.worker.algo_wrappers import InsistSuggest
 from orion.core.worker.trial import Trial
 
 from .base import AlgoWrapperTests
 from .test_transform import FixedSuggestionAlgo
 
-WrappedTestAlgo = InsistSuggest[SpaceTransform[FixedSuggestionAlgo]]
-
 
 class TestInsistSuggestWrapper(AlgoWrapperTests):
     """Tests for the AlgoWrapper that makes suggest try repeatedly until a new trial is returned."""
 
-    Wrapper: ClassVar[type[AlgoWrapper]] = InsistSuggest
-
-    @pytest.fixture()
-    def algo_wrapper(self):
-        """Fixture that creates the setup for the registration tests below."""
-        space = SpaceBuilder().build({"x": "uniform(1, 100, discrete=True)"})
-        # NOTE: important, the transformed space will be the same as the original space in this case,
-        # so the fixed suggestion will fit.
-        return create_algo(
-            algo_type=FixedSuggestionAlgo,
-            space=space,
-            fixed_suggestion=dict_to_trial({"x": 1}, space=space),
-        )
+    Wrapper: ClassVar[type[InsistSuggest]] = InsistSuggest
 
     def test_doesnt_insists_without_wrapper(
         self,
-        algo_wrapper: InsistSuggest[SpaceTransform[FixedSuggestionAlgo]],
+        algo_wrapper: InsistSuggest[FixedSuggestionAlgo],
         monkeypatch: MonkeyPatch,
     ):
         """Test that when the algo can't produce a new trial, and there is no InsistWrapper, the
         SpaceTransform wrapper fails to sample a new trial.
         """
-        algo_without_wrapper: SpaceTransform[FixedSuggestionAlgo]
         algo_without_wrapper = algo_wrapper.algorithm
+        assert isinstance(algo_without_wrapper, FixedSuggestionAlgo)
         calls: int = 0
         # Make the wrapper insist enough so that it actually
         # gets a trial after asking enough times:
-        fixed_suggestion = algo_without_wrapper.unwrapped.space.sample(1)[0]
+        fixed_suggestion = algo_without_wrapper.space.sample(1)[0]
 
         def _suggest(num: int) -> list[Trial]:
             nonlocal calls
@@ -59,14 +42,14 @@ class TestInsistSuggestWrapper(AlgoWrapperTests):
                 return []
             return [fixed_suggestion]
 
-        monkeypatch.setattr(algo_without_wrapper.algorithm, "suggest", _suggest)
+        monkeypatch.setattr(algo_without_wrapper, "suggest", _suggest)
         trials = algo_without_wrapper.suggest(1)
         assert calls == 1
         assert not trials
 
     def test_insists_when_algo_doesnt_suggest_new_trials(
         self,
-        algo_wrapper: InsistSuggest[SpaceTransform[FixedSuggestionAlgo]],
+        algo_wrapper: InsistSuggest[FixedSuggestionAlgo],
         monkeypatch: MonkeyPatch,
     ):
         """Test that when the algo can't produce a new trial, the wrapper insists and asks again."""
@@ -90,7 +73,7 @@ class TestInsistSuggestWrapper(AlgoWrapperTests):
 
     def test_warns_when_unable_to_sample_new_trial(
         self,
-        algo_wrapper: WrappedTestAlgo,
+        algo_wrapper: InsistSuggest[FixedSuggestionAlgo],
         caplog: pytest.LogCaptureFixture,
         monkeypatch: MonkeyPatch,
     ):

@@ -14,7 +14,6 @@ from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
 from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
-from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
 from orion.testing.dummy_algo import FixedSuggestionAlgo
@@ -31,14 +30,17 @@ class TestSpaceTransformWrapper(AlgoWrapperTests):
     Does not test for transformations.
     """
 
+    Wrapper: ClassVar[type[SpaceTransform]] = SpaceTransform
+
     @pytest.fixture()
     def algo_wrapper(
         self, dumbalgo: type[DumbAlgo], space: Space, fixed_suggestion_value: Any
     ) -> SpaceTransform[DumbAlgo]:
         """Set up a SpaceTransform with dumb configuration."""
-        return create_algo(
-            algo_type=dumbalgo, space=space, value=fixed_suggestion_value
-        ).algorithm
+        wrapped_space = self.Wrapper.transform_space(space, algo_type=dumbalgo)
+        algo = dumbalgo(wrapped_space, value=fixed_suggestion_value)
+        wrapper = self.Wrapper(space=space, algorithm=algo)
+        return wrapper
 
     def test_verify_trial(self, algo_wrapper: SpaceTransform[DumbAlgo], space: Space):
         trial = format_trials.tuple_to_trial((["asdfa", 2], 0, 3.5), space)
