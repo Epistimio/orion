@@ -117,17 +117,22 @@ def create_dummy_kb(
         for i, space_i in enumerate(previous_spaces)
     ]
     rngs = [np.random.RandomState((seed or 0) + i) for i in range(len(previous_spaces))]
+
     previous_trials = [
-        (
-            experiment.configuration,
-            [
-                _add_result(trial, (task(**trial.params) if task else j))
-                for j, trial in enumerate(experiment.space.sample(n_trials, seed=rng))
-            ],
-        )
+        experiment.space.sample(n_trials, seed=rng)
         for experiment, n_trials, rng in zip(experiments, n_trials_per_space, rngs)
     ]
-    return DummyKnowledgeBase(storage=None, related_trials=previous_trials)  # type: ignore
+    # add the results
+    previous_trials = [
+        [
+            _add_result(trial, (task(**trial.params) if task else j))
+            for j, trial in enumerate(trials)
+        ]
+        for trials in previous_trials
+    ]
+    experiment_configurations = [experiment.configuration for experiment in experiments]
+    related_trials = list(zip(experiment_configurations, previous_trials))
+    return DummyKnowledgeBase(storage=None, related_trials=related_trials)  # type: ignore
 
 
 from orion.algo.random import Random
