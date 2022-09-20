@@ -10,13 +10,12 @@ from typing import Any, Callable, Iterable
 if typing.TYPE_CHECKING:
     from orion.client import ExperimentClient
     from orion.core.worker.experiment import Experiment
+    from orion.core.worker.experiment_config import ExperimentConfig
     from orion.core.worker.trial import Trial
     from orion.storage.base import BaseStorageProtocol
 
 
 log = getLogger(__file__)
-
-from ..experiment_config import ExperimentConfig
 
 
 class KnowledgeBase:

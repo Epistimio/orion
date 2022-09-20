@@ -21,8 +21,9 @@ from orion.core.worker.algo_wrappers.transform_wrapper import (
     TransformWrapper,
     _copy_status_and_results,
 )
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.trial import Trial
-from orion.core.worker.warm_start.knowledge_base import ExperimentConfig, KnowledgeBase
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
 from orion.core.worker.warm_start.warm_starteable import WarmStarteable
 
 logger = getLogger(__file__)

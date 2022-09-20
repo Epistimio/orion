@@ -9,8 +9,8 @@ from typing_extensions import TypeGuard
 
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.trial import Trial
-from orion.core.worker.warm_start.knowledge_base import ExperimentConfig
 
 
 class WarmStarteable(BaseAlgorithm, ABC):
