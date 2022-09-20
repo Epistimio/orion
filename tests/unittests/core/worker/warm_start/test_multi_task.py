@@ -451,6 +451,25 @@ class TestMultiTaskWrapper:
         assert algo.n_suggested == 0
         assert algo.unwrapped.n_observed == previous_trials
 
+    def test_no_compatible_trials(self):
+        """Test the case where there are no compatible trials in the registry."""
+        previous_trials = 10
+        knowledge_base = create_dummy_kb(
+            previous_spaces=[_space({"x": "uniform(0, 1)"})],
+            n_trials_per_space=previous_trials,
+        )
+        algo = create_algo(
+            Random,
+            space=_space({"y": "choices(['a', 'b', 'c'])"}),
+            knowledge_base=knowledge_base,
+        )
+        assert algo.n_observed == 0
+        assert algo.n_suggested == 0
+        algo.warm_start(knowledge_base.related_trials)
+        assert algo.n_observed == 0
+        assert algo.n_suggested == 0
+        assert algo.unwrapped.n_observed == 0
+
 
 def _set_params(trial: Trial, params: dict[str, Any]) -> None:
     # TODO: It's really hard to set a new value for a hyperparameter in a trial object.
