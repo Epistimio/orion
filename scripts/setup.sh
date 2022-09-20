@@ -97,6 +97,9 @@ EOM
 }
 
 
+ASCENDING=1
+DESCENDING=-1
+
 function ensure_indexes {
     # User will have limited access to the collection
     # so orion's client cannot do this
@@ -104,6 +107,60 @@ function ensure_indexes {
     CMD=$(cat <<EOM
     use orion
 
+    db.experiments.createIndex(
+        {
+            "name": 1,
+            "version": 1
+        },
+        {
+            unique: true
+        }
+    )
+    db.experiments.createIndex(
+        {
+            "metadata.datetime": 1
+        }
+    )
+
+    db.trials.createIndex(
+        {
+            "experiment": 1,
+            "id": 1
+        },
+        {
+            unique: true
+        }
+    )
+    db.trials.createIndex(
+        {
+            "experiment": 1
+        }
+    )
+    db.trials.createIndex(
+        {
+            "status": 1
+        }
+    )
+    db.trials.createIndex(
+        {
+            "results": 1
+        }
+    )
+    db.trials.createIndex(
+        {
+            "start_time": 1
+        }
+    )
+    db.trials.createIndex(
+        {
+            "end_time": -1
+        }
+    )
+    db.algo.createIndex(
+        {
+            "experiment": 1
+        }
+    )
 EOM
     )
 

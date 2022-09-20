@@ -116,6 +116,22 @@ class LocalExperimentBroker(ExperimentBroker):
         )
         return success(dict(updated=results.modified_count > 0))
 
+    def release(self, request: RequestContext):
+        """release a trial"""
+
+        experiment_name = request.data.pop("experiment_name")
+        client = retrieve_experiment_client(request, experiment_name)
+
+        trial_hash = request.data.pop("trial_hash")
+        status = request.data.pop("status")
+        trial = client.get_trial(uid=trial_hash)
+
+        if trial is None:
+            raise ValueError(f"Trial {trial_hash} does not exist in database.")
+
+        client.release(trial, status)
+        return success(dict())
+
     def insert(self, request: RequestContext) -> Dict:
         experiment_name = request.data.pop("experiment_name")
         client = retrieve_experiment_client(request, experiment_name)

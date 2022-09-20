@@ -2,7 +2,8 @@
 import logging
 from typing import Dict, List, Optional
 
-from orion.core.utils.flatten import unflatten
+from orion.core.worker.trial import TrialCM
+from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.service.client.base import (
     BaseClientREST,
     ExperiementIsNotSetup,
@@ -25,6 +26,7 @@ class WorkonClientREST(BaseClientREST):
     def __init__(self, endpoint, token) -> None:
         super().__init__(endpoint, token)
         self.experiment = None
+        self._pacemakers = {}
 
     @property
     def experiment_name(self) -> Optional[str]:
@@ -59,15 +61,47 @@ class WorkonClientREST(BaseClientREST):
 
         trials = []
         for trial in result["trials"]:
-            trial["params"] = unflatten(
-                {param["name"]: param["value"] for param in trial["params"]}
-            )
             trials.append(
                 RemoteTrial(**trial, exp_working_dir=self.experiment.working_dir)
             )
 
         # Currently we only return a single trial
-        return trials[0]
+        trial = trials[0]
+
+        # Create pacemaker for them
+        self._maintain_reservation(trial)
+        return TrialCM(self, trial)
+
+    def _maintain_reservation(self, trial):
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self)
+        self._pacemakers[trial.id].start()
+
+    def release(self, trial, status="interrupted"):
+        experiment_name = self.experiment_name
+
+        if experiment_name is None:
+            raise ExperiementIsNotSetup("experiment_name is not set")
+
+        failed = False
+        try:
+            self._post(
+                "release",
+                euid=self.experiment_id,
+                experiment_name=experiment_name,
+                trial_hash=trial.id,
+                status=status,
+            )
+        except Exception as e:
+            failed = True
+            raise e
+        finally:
+            pacemaker = self._pacemakers.pop(trial.id, None)
+            if pacemaker is not None:
+                pacemaker.stop()
+            elif not failed:
+                raise RuntimeError(
+                    f"Trial {trial.id} had no pacemakers. Was it reserved properly?"
+                )
 
     def observe(
         self, trial: RemoteTrial, results: List[Dict], experiment_name=None
@@ -102,3 +136,14 @@ class WorkonClientREST(BaseClientREST):
         """
         payload = self._post("heartbeat", trial_id=trial.db_id)
         return payload["updated"]
+
+    def _update_heartbeat(self, trial):
+        return not self.heartbeat(trial)
+
+    def close(self):
+        if self._pacemakers:
+            raise RuntimeError(
+                f"There is still reserved trials: {self._pacemakers.keys()}\n"
+                "Release all trials before closing the client, using "
+                "client.release(trial)."
+            )

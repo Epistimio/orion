@@ -6,7 +6,9 @@ from typing import Any, Dict, List, Optional
 import requests
 from bson import ObjectId
 
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import unflatten
+from orion.core.worker.trial import AlreadyReleased
 
 log = logging.getLogger(__name__)
 
@@ -75,11 +77,7 @@ class RemoteTrial:
     # =========
 
     def to_dict(self):
-        return dict(
-            _id=ObjectId(self.db_id),
-            id=self.params_id,
-            params=self._params
-        )
+        return dict(_id=ObjectId(self.db_id), id=self.params_id, params=self._params)
 
     @property
     def id(self):
@@ -89,6 +87,34 @@ class RemoteTrial:
     def params(self):
         """Parameters of the trial"""
         return unflatten({param["name"]: param["value"] for param in self._params})
+
+    @property
+    def status(self):
+        return "reserved"
+
+
+ALLOWED_EXCEPTION = {
+    "orion.core.io.database.DuplicateKeyError": DuplicateKeyError,
+    "orion.core.worker.trial.AlreadyReleased": AlreadyReleased,
+    "builtins.ValueError": ValueError,
+}
+
+
+def raise_remote_exception(typename, args):
+    """Reconstruct the remote exception if it is from a list of known exceptions,
+    else throw a generic RemoteException.
+
+
+    """
+    type = ALLOWED_EXCEPTION.get(typename)
+
+    if type is None:
+        if len(args) == 1:
+            args[0] = typename + ": " + args[0]
+
+        raise RemoteException(*args)
+
+    raise type(*args)
 
 
 class BaseClientREST:
@@ -110,5 +136,4 @@ class BaseClientREST:
         if result.status_code >= 200 and result.status_code < 300 and status == 0:
             return payload.pop("result")
 
-        error = payload.pop("error")
-        raise RemoteException(f"Remote server returned error code {status}: {error}")
+        raise_remote_exception(**payload.pop("exception"))

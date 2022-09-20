@@ -885,7 +885,12 @@ class ExperimentClient:
         return False
 
     def _release_reservation(self, trial, raise_if_unreserved=True):
+        # remote client are not spawning pacemakers
+        if self.remote_mode:
+            return
+
         if trial.id not in self._pacemakers:
+
             if raise_if_unreserved:
                 raise RuntimeError(
                     f"Trial {trial.id} had no pacemakers. Was it reserved properly?"

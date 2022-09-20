@@ -169,3 +169,6 @@ class ExperimentBroker:
 
     def heartbeat(self, request: RequestContext):
         """update the heartbeat of a trial"""
+
+    def release(self, request: RequestContext):
+        """release a trial"""

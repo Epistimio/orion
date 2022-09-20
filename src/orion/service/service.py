@@ -23,6 +23,17 @@ class AuthenticationError(Exception):
     pass
 
 
+def exception_to_dict(exception: Exception):
+    """Convert an exception into a dictionary for the remote client"""
+    cls = exception.__class__
+    module = cls.__module__
+
+    return dict(
+        typename=".".join([module, cls.__name__]),
+        args=exception.args,
+    )
+
+
 class QueryRoute:
     """Base route handling, makes sure status is always set"""
 
@@ -79,7 +90,7 @@ class QueryRoute:
 
             resp.status = falcon.HTTP_200
             resp.media["status"] = 1
-            resp.media["error"] = str(err)
+            resp.media["exception"] = exception_to_dict(err)
 
     def on_post_request(self, ctx: RequestContext) -> None:
         """Request specific handling to implement here"""
@@ -121,6 +132,7 @@ class OrionService:
         app.add_route("/observe", OrionService.Observe(ctx))
         app.add_route("/is_done", OrionService.IsDone(ctx))
         app.add_route("/heartbeat", OrionService.Heartbeat(ctx))
+        app.add_route("/release", OrionService.Release(ctx))
 
         # Action Routes
         app.add_route("/insert", OrionService.Insert(ctx))
@@ -178,6 +190,13 @@ class OrionService:
 
         def on_post_request(self, ctx: RequestContext) -> None:
             result = self.broker.heartbeat(ctx)
+            ctx.response.media = result
+
+    class Release(QueryRoute):
+        """Release a trial after the worker is done with it"""
+
+        def on_post_request(self, ctx: RequestContext) -> None:
+            result = self.broker.release(ctx)
             ctx.response.media = result
 
     #

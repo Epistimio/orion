@@ -95,11 +95,14 @@ class ExperimentClientREST(ExperimentClient):
         self.heartbeat = heartbeat
         self._executor = executor
         self._executor_owner = False
-
         self.plot = PlotAccessor(self)
 
     def to_pandas(self, with_evc_tree=False):
         raise RuntimeError()
+
+    @property
+    def _pacemakers(self):
+        return self.workon_client._pacemakers
 
     #
     # Workon REST API overrides
@@ -129,11 +132,10 @@ class ExperimentClientREST(ExperimentClient):
         """See `~ExperimentClient.observe`"""
         self.workon_client.observe(trial, results)
 
-    def _update_heardbeat(self, trial):
-        return not self.workon_client.heartbeat(trial)
-
-    def release(self, trial, status):
+    def release(self, trial, status="interrupted"):
         """See `~ExperimentClient.release`"""
+        # we probably should not expose this
+        return self.workon_client.release(trial, status)
 
     #
     # Disabled
@@ -187,3 +189,4 @@ class ExperimentClientREST(ExperimentClient):
 
     def close(self):
         self._free_executor()
+        self.workon_client.close()

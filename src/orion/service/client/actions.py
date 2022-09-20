@@ -57,12 +57,7 @@ class ClientActionREST(BaseClientREST):
             uid=uid,
         )
 
-        trials = self._to_trials(payload.get("result", []))
-
-        if trials:
-            return trials[0]
-
-        return None
+        return self._to_trial(payload.get("result"))
 
     def fetch_trials(self, with_evc_tree=False):
         payload = self._post(

@@ -98,8 +98,9 @@ def compare_without_heartbeat(trial_a, trial_b):
     """Compare trials configuration omitting heartbeat"""
     trial_a_dict = trial_a.to_dict()
     trial_b_dict = trial_b.to_dict()
-    trial_a_dict.pop("heartbeat")
-    trial_b_dict.pop("heartbeat")
+
+    trial_a_dict.pop("heartbeat", None)
+    trial_b_dict.pop("heartbeat", None)
     assert trial_a_dict == trial_b_dict
 
 
@@ -325,11 +326,6 @@ class TestInsert:
 
         with factory(config, base_trial) as (cfg, experiment, client):
 
-            # the mock_space_iterate cannot work for the REST API
-            # just insert the same trial twice
-            if is_rest(factory):
-                client.insert(dict(x=1))
-
             with pytest.raises(DuplicateKeyError) as exc:
                 client.insert(dict(x=1))
 
@@ -346,6 +342,7 @@ class TestInsert:
         config_with_default["space"]["y"] = "uniform(0, 10, default_value=5)"
         trial_with_default = copy.deepcopy(base_trial)
         trial_with_default["params"].append({"name": "y", "type": "real", "value": 1})
+
         with factory(config_with_default, trial_with_default) as (
             _,
             experiment,
@@ -353,7 +350,9 @@ class TestInsert:
         ):
             trial = client.insert(dict(x=100))
 
-            assert trial.status == "interrupted"
+            if not is_rest(factory):
+                assert trial.status == "interrupted"
+
             assert trial.params["x"] == 100
             assert trial.params["y"] == 5
             assert trial.id in {trial.id for trial in experiment.fetch_trials()}
@@ -382,8 +381,13 @@ class TestInsert:
 
     def test_insert_params_and_reserve(self, factory):
         """Test that new trial is reserved properly with `reserve=True`"""
+        if is_rest(factory):
+            pytest.skip("API REST does not reserve inserted trials")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.insert(dict(x=100), reserve=True)
+
             assert trial.status == "reserved"
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
@@ -429,6 +433,10 @@ class TestReserve:
 
     def test_reserve(self, factory):
         """Test reservation of registered trials"""
+        if is_rest(factory):
+            pytest.skip("API REST does not reserve individual trials")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
@@ -440,6 +448,10 @@ class TestReserve:
 
     def test_reserve_dont_exist(self, factory):
         """Verify that unregistered trials cannot be reserved."""
+        if is_rest(factory):
+            pytest.skip("API REST does not reserve individual trials")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(experiment="idontexist", params=cfg.trials[0]["params"])
             with pytest.raises(ValueError) as exc:
@@ -450,6 +462,10 @@ class TestReserve:
 
     def test_reserve_reserved_locally(self, caplog, factory):
         """Verify that a trial cannot be reserved twice locally (warning, no exception)"""
+        if is_rest(factory):
+            pytest.skip("API REST does not reserve individual trials")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]["id"])
             assert trial.status != "reserved"
@@ -466,6 +482,10 @@ class TestReserve:
 
     def test_reserve_reserved_remotely(self, factory):
         """Verify that a trial cannot be reserved if already reserved by another process"""
+        if is_rest(factory):
+            pytest.skip("API REST does not reserve individual trials")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(**cfg.trials[2])
             assert trial.status == "interrupted"
@@ -489,6 +509,10 @@ class TestReserve:
         """Verify that race conditions during `reserve` is detected and raises a comprehensible
         error
         """
+        if is_rest(factory):
+            pytest.skip("API REST does not reserve individual trials")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[0]["id"])
             experiment.set_trial_status(trial, "reserved")
@@ -509,32 +533,50 @@ class TestRelease:
     def test_release(self, factory):
         """Test releasing (to interrupted)"""
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
-            client.reserve(trial)
+            if is_rest(factory):
+                trial = client.suggest()
+            else:
+                trial = experiment.get_trial(uid=cfg.trials[1]["id"])
+                client.reserve(trial)
+
             pacemaker = client._pacemakers[trial.id]
             client.release(trial)
-            assert trial.status == "interrupted"
-            assert experiment.get_trial(trial).status == "interrupted"
+
+            if not is_rest(factory):
+                assert trial.status == "interrupted"
+
+            assert experiment.get_trial(uid=trial.id).status == "interrupted"
             assert trial.id not in client._pacemakers
             assert not pacemaker.is_alive()
 
     def test_release_status(self, factory):
         """Test releasing with a specific status"""
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
-            client.reserve(trial)
+            if is_rest(factory):
+                trial = client.suggest()
+            else:
+                trial = experiment.get_trial(uid=cfg.trials[1]["id"])
+                client.reserve(trial)
+
             pacemaker = client._pacemakers[trial.id]
             client.release(trial, "broken")
-            assert trial.status == "broken"
-            assert experiment.get_trial(trial).status == "broken"
+
+            if not is_rest(factory):
+                assert trial.status == "broken"
+
+            assert experiment.get_trial(uid=trial.id).status == "broken"
             assert trial.id not in client._pacemakers
             assert not pacemaker.is_alive()
 
     def test_release_invalid_status(self, factory):
         """Test releasing with a specific status"""
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = experiment.get_trial(uid=cfg.trials[1]["id"])
-            client.reserve(trial)
+            if is_rest(factory):
+                trial = client.suggest()
+            else:
+                trial = experiment.get_trial(uid=cfg.trials[1]["id"])
+                client.reserve(trial)
+
             with pytest.raises(ValueError) as exc:
                 client.release(trial, "mouf mouf")
 
@@ -543,7 +585,10 @@ class TestRelease:
     def test_release_dont_exist(self, monkeypatch, factory):
         """Verify that unregistered trials cannot be released"""
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = Trial(experiment="idontexist", params=cfg.trials[1]["params"])
+            params = copy.deepcopy(cfg.trials[1]["params"])
+            params[0]["value"] += 12.12
+
+            trial = Trial(experiment="idontexist", params=params)
 
             def do_nada(trial, **kwargs):
                 """Don't do anything"""
@@ -561,13 +606,24 @@ class TestRelease:
         """Verify that race conditions during `release` is detected and raises a comprehensible
         error
         """
+        if is_rest(factory):
+            # REST API does not have the Trial object with its previous status
+            pytest.skip("REST API release always works")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["id"])
-            client.reserve(trial)
+            if not is_rest(factory):
+                trial = client.get_trial(uid=cfg.trials[1]["id"])
+                client.reserve(trial)
+            else:
+                # trial is now reserved
+                trial = client.suggest()
+
             pacemaker = client._pacemakers[trial.id]
             # Woops! Trial got failed over from another process.
-            experiment.set_trial_status(trial, "interrupted")
-            trial.status = "reserved"  # Let's pretend we don't know.
+            server_trial = experiment.get_trial(uid=trial.id)
+            experiment.set_trial_status(server_trial, "interrupted")
+            server_trial.status = "reserved"  # Let's pretend we don't know.
 
             with pytest.raises(RuntimeError) as exc:
                 client.release(trial)
@@ -592,12 +648,18 @@ class TestRelease:
     def test_release_already_released_but_incorrectly(self, factory):
         """Verify that incorrectly released trials have its pacemaker stopped properly"""
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = client.get_trial(uid=cfg.trials[1]["id"])
-            client.reserve(trial)
+            if not is_rest(factory):
+                trial = client.get_trial(uid=cfg.trials[1]["id"])
+                client.reserve(trial)
+            else:
+                trial = client.suggest()
+
             pacemaker = client._pacemakers[trial.id]
-            assert trial.status == "reserved"
-            experiment.set_trial_status(trial, "interrupted")
-            assert trial.status == "interrupted"
+
+            ref_trial = experiment.get_trial(uid=trial.id)
+            assert ref_trial.status == "reserved"
+            experiment.set_trial_status(ref_trial, "interrupted")
+            assert ref_trial.status == "interrupted"
 
             with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
@@ -638,40 +700,53 @@ class TestBroken:
         with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(RuntimeError):
                 with client.suggest() as trial:
+                    trial = experiment.get_trial(uid=trial.id)
                     assert trial.status == "reserved"
                     raise RuntimeError("Dummy failure!")
 
             assert client._pacemakers == {}
-            assert client.get_trial(trial).status == "broken"
+            trial = experiment.get_trial(uid=trial.id)
+            assert trial.status == "broken"
 
     def test_interrupted_trial(self, factory):
         """Test that interrupted trials are not set to broken"""
         with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(KeyboardInterrupt):
                 with client.suggest() as trial:
+                    trial = experiment.get_trial(uid=trial.id)
                     assert trial.status == "reserved"
                     raise KeyboardInterrupt
 
             assert client._pacemakers == {}
-            assert client.get_trial(trial).status == "interrupted"
+            trial = experiment.get_trial(uid=trial.id)
+            assert trial.status == "interrupted"
 
     def test_completed_then_interrupted_trial(self, factory):
         """Test that interrupted trials are not set to broken"""
+
         with factory(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(KeyboardInterrupt):
                 with client.suggest() as trial:
-                    assert trial.status == "reserved"
-                    assert trial.results == []
-                    assert setup_storage().get_trial(trial).objective is None
+
+                    ref_trial = experiment.get_trial(uid=trial.id)
+                    assert ref_trial.status == "reserved"
+                    assert ref_trial.results == []
+                    assert ref_trial.objective is None
+
                     client.observe(
                         trial, [dict(name="objective", type="objective", value=101)]
                     )
-                    assert setup_storage().get_trial(trial).objective.value == 101
-                    assert trial.status == "completed"
+
+                    ref_trial = experiment.get_trial(uid=trial.id)
+                    assert ref_trial.objective.value == 101
+                    assert ref_trial.status == "completed"
+
                     raise KeyboardInterrupt
 
             assert client._pacemakers == {}
-            assert client.get_trial(trial).status == "completed"
+
+            trial = experiment.get_trial(uid=trial.id)
+            assert trial.status == "completed"
 
 
 @pytest.mark.parametrize("factory", factories)
