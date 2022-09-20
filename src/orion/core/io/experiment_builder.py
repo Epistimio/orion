@@ -218,7 +218,7 @@ def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
     kb_type_name = list(kb_config.keys())[0]
     kb_types_with_name = [
         subclass
-        for subclass in KnowledgeBase.__subclasses__()
+        for subclass in (KnowledgeBase.__subclasses__() + [KnowledgeBase])
         if subclass.__qualname__ == kb_type_name
     ]
     if len(kb_types_with_name) == 0:
@@ -231,6 +231,11 @@ def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
         )
     kb_type = kb_types_with_name[0]
     kb_kwargs = kb_config[kb_type_name]
+    # Instantiate the storage that is required for the KB.
+    storage_config = kb_kwargs["storage"]
+    if isinstance(storage_config, dict):
+        storage = setup_storage(storage_config)
+        kb_kwargs["storage"] = storage
     return kb_type(**kb_kwargs)
 
 
