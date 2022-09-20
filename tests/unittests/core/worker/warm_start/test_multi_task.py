@@ -475,6 +475,30 @@ class TestMultiTaskWrapper:
         assert algo.n_suggested == 0
         assert algo.unwrapped.n_observed == 0
 
+    def test_cant_warm_start_twice(self):
+        """Test that we can't call `warm_start` twice."""
+        previous_trials = 10
+        target_space = _space({"x": "uniform(0, 1)"})
+        knowledge_base = create_dummy_kb(
+            previous_spaces=[target_space],
+            n_trials_per_space=previous_trials,
+        )
+        algo = create_algo(
+            Random,
+            space=target_space,
+            knowledge_base=knowledge_base,
+        )
+        assert algo.n_observed == 0
+        assert algo.n_suggested == 0
+        algo.warm_start(knowledge_base.related_trials)
+        assert algo.n_observed == 0
+        assert algo.n_suggested == 0
+        assert algo.unwrapped.n_observed == previous_trials
+        with pytest.raises(
+            RuntimeError, match="The algorithm can only be warm-started once"
+        ):
+            algo.warm_start(knowledge_base.related_trials)
+
 
 def _set_params(trial: Trial, params: dict[str, Any]) -> None:
     # TODO: It's really hard to set a new value for a hyperparameter in a trial object.
