@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
+from __future__ import annotations
+
 import copy
 import datetime
 import logging
@@ -10,11 +12,13 @@ import pytest
 import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.config import ConfigurationError
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
@@ -1233,6 +1237,70 @@ class TestBuild:
                     "baz": 123,
                 },
             )
+
+
+@pytest.fixture
+def space_obj(space: dict[str, str]):
+    # todo: Rename `space` above to `space_config` and rename this to just `space`.
+    return SpaceBuilder().build(space)
+
+
+class TestInstantiateAlgo:
+    """Tests for the `_instantiate_algo` function."""
+
+    @pytest.mark.parametrize("algo_class_name", ["Random", "TPE"])
+    @pytest.mark.parametrize("lowercase", [True, False])
+    @pytest.mark.parametrize("max_trials", [None, 10])
+    def test_with_class_name(
+        self,
+        algo_class_name: str,
+        space_obj: Space,
+        lowercase: bool,
+        max_trials: int | None,
+    ):
+        """Test instantiating an algorithm by passing the class name as a config."""
+        algo = experiment_builder._instantiate_algo(
+            space=space_obj,
+            max_trials=max_trials,
+            config=algo_class_name.lower() if lowercase else algo_class_name,
+        )
+        assert isinstance(algo, BaseAlgorithm)
+        assert type(algo.unwrapped).__qualname__ == algo_class_name
+        assert algo.max_trials == max_trials
+
+    from orion.algo.random import Random
+    from orion.algo.tpe import TPE
+
+    @pytest.mark.parametrize("algo_class", [Random, TPE])
+    @pytest.mark.parametrize("max_trials", [None, 10])
+    def test_with_algo_class(
+        self, algo_class: type[BaseAlgorithm], space_obj: Space, max_trials: int | None
+    ):
+        """Test instantiating an algorithm by passing the class as a config."""
+
+        algo = experiment_builder._instantiate_algo(
+            space=space_obj,
+            max_trials=max_trials,
+            config=algo_class,
+        )
+        assert isinstance(algo, BaseAlgorithm)
+        assert isinstance(algo.unwrapped, algo_class)
+        assert algo.max_trials == max_trials
+
+    @pytest.mark.parametrize("algo_class", [Random, TPE])
+    @pytest.mark.parametrize("max_trials", [None, 10])
+    def test_with_dict(
+        self, algo_class: type[BaseAlgorithm], space_obj: Space, max_trials: int | None
+    ):
+        """Test instantiating an algorithm using a config dictionary."""
+        algo = experiment_builder._instantiate_algo(
+            space=space_obj,
+            max_trials=max_trials,
+            config={algo_class.__qualname__.lower(): {}},
+        )
+        assert isinstance(algo, BaseAlgorithm)
+        assert isinstance(algo.unwrapped, algo_class)
+        assert algo.max_trials == max_trials
 
 
 def test_load_unavailable_algo(algo_unavailable_config, capsys):
