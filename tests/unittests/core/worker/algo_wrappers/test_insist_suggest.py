@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import pytest
 from pytest import MonkeyPatch
-from test_transform import FixedSuggestionAlgo
 
 from orion.algo.random import Random
 from orion.core.io.space_builder import SpaceBuilder
@@ -14,47 +14,28 @@ from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 
+from .base import AlgoWrapperTests
+from .test_transform import FixedSuggestionAlgo
+
 WrappedTestAlgo = InsistSuggest[SpaceTransform[FixedSuggestionAlgo]]
 
 
-@pytest.fixture()
-def algo_wrapper():
-    """Fixture that creates the setup for the registration tests below."""
-    space = SpaceBuilder().build({"x": "uniform(1, 100, discrete=True)"})
-    # NOTE: important, the transformed space will be the same as the original space in this case,
-    # so the fixed suggestion will fit.
-    return create_algo(
-        algo_type=FixedSuggestionAlgo,
-        space=space,
-        fixed_suggestion=dict_to_trial({"x": 1}, space=space),
-    )
-
-
-class TestAlgoWrapper:
-    """Tests for AlgoWrapper subclasses in general."""
-
-    def test_unwrap(self, algo_wrapper: AlgoWrapper[AlgoWrapper[FixedSuggestionAlgo]]):
-        """Test the `unwrap` method."""
-        assert algo_wrapper.unwrap(FixedSuggestionAlgo) is algo_wrapper.unwrapped
-        assert algo_wrapper.unwrap(type(algo_wrapper)) is algo_wrapper
-
-        class _FooWrapper(AlgoWrapper):
-            ...
-
-        with pytest.raises(
-            RuntimeError, match="Unable to find a wrapper or algorithm of type"
-        ):
-            algo_wrapper.unwrap(_FooWrapper)
-
-    def test_repr(self, algo_wrapper: AlgoWrapper[AlgoWrapper[FixedSuggestionAlgo]]):
-        """Test the `__repr__` method contains the `repr` of the wrapped algo."""
-
-        assert str(algo_wrapper.algorithm) in str(algo_wrapper)
-        assert str(algo_wrapper.unwrapped) in str(algo_wrapper)
-
-
-class TestInsistSuggestWrapper(TestAlgoWrapper):
+class TestInsistSuggestWrapper(AlgoWrapperTests):
     """Tests for the AlgoWrapper that makes suggest try repeatedly until a new trial is returned."""
+
+    Wrapper: ClassVar[type[AlgoWrapper]] = InsistSuggest
+
+    @pytest.fixture()
+    def algo_wrapper(self):
+        """Fixture that creates the setup for the registration tests below."""
+        space = SpaceBuilder().build({"x": "uniform(1, 100, discrete=True)"})
+        # NOTE: important, the transformed space will be the same as the original space in this case,
+        # so the fixed suggestion will fit.
+        return create_algo(
+            algo_type=FixedSuggestionAlgo,
+            space=space,
+            fixed_suggestion=dict_to_trial({"x": 1}, space=space),
+        )
 
     def test_doesnt_insists_without_wrapper(
         self,
