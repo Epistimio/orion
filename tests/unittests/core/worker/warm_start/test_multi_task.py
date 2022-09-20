@@ -499,6 +499,13 @@ class TestMultiTaskWrapper:
         ):
             algo.warm_start(knowledge_base.related_trials)
 
+    def test_transform_space_already_has_taskid(self, knowledge_base: KnowledgeBase):
+        with pytest.raises(RuntimeError, match="Space already has a task_id dimension"):
+            MultiTaskWrapper.transform_space(
+                _space({"task_id": "uniform(0, 10, discrete=True)"}),
+                knowledge_base=knowledge_base,
+            )
+
 
 def _set_params(trial: Trial, params: dict[str, Any]) -> None:
     # TODO: It's really hard to set a new value for a hyperparameter in a trial object.
