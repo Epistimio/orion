@@ -105,12 +105,12 @@ class KnowledgeBase:
         total_trials_so_far = 0
         for experiment_config in experiment_configs:
             experiment_id = experiment_config["_id"]
-            if experiment_id is None:
-                continue
+            # NOTE: experiments were just fetched from storage, so they *always* have an ID and
+            # fetch_trials will never return None.
+            assert experiment_id is not None
 
             trials = self.storage.fetch_trials(uid=experiment_id)
-            if trials is None:
-                continue
+            assert trials is not None
 
             if max_trials is not None:
                 remaining = max_trials - total_trials_so_far
