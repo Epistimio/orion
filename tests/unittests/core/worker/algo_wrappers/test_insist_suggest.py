@@ -1,33 +1,20 @@
 from __future__ import annotations
 
-import typing
-from typing import Any
+import logging
 
 import pytest
 from pytest import MonkeyPatch
 from test_transform import FixedSuggestionAlgo
 
-from orion.algo.space import Space
+from orion.algo.random import Random
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils.format_trials import dict_to_trial
 from orion.core.worker.algo_wrappers import InsistSuggest, SpaceTransform
+from orion.core.worker.algo_wrappers.algo_wrapper import AlgoWrapper
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 
-if typing.TYPE_CHECKING:
-    from tests.conftest import DumbAlgo
-
-
-@pytest.fixture()
-def palgo(
-    dumbalgo: type[DumbAlgo], space: Space, fixed_suggestion_value: Any
-) -> InsistSuggest[SpaceTransform[DumbAlgo]]:
-    """Set up a SpaceTransform with dumb configuration."""
-    return create_algo(algo_type=dumbalgo, space=space, value=fixed_suggestion_value)
-
-
-import logging
-
-from orion.core.utils.format_trials import dict_to_trial
+WrappedTestAlgo = InsistSuggest[SpaceTransform[FixedSuggestionAlgo]]
 
 
 @pytest.fixture()
@@ -43,7 +30,30 @@ def algo_wrapper():
     )
 
 
-class TestInsistSuggestWrapper:
+class TestAlgoWrapper:
+    """Tests for AlgoWrapper subclasses in general."""
+
+    def test_unwrap(self, algo_wrapper: AlgoWrapper[AlgoWrapper[FixedSuggestionAlgo]]):
+        """Test the `unwrap` method."""
+        assert algo_wrapper.unwrap(FixedSuggestionAlgo) is algo_wrapper.unwrapped
+        assert algo_wrapper.unwrap(type(algo_wrapper)) is algo_wrapper
+
+        class _FooWrapper(AlgoWrapper):
+            ...
+
+        with pytest.raises(
+            RuntimeError, match="Unable to find a wrapper or algorithm of type"
+        ):
+            algo_wrapper.unwrap(_FooWrapper)
+
+    def test_repr(self, algo_wrapper: AlgoWrapper[AlgoWrapper[FixedSuggestionAlgo]]):
+        """Test the `__repr__` method contains the `repr` of the wrapped algo."""
+
+        assert str(algo_wrapper.algorithm) in str(algo_wrapper)
+        assert str(algo_wrapper.unwrapped) in str(algo_wrapper)
+
+
+class TestInsistSuggestWrapper(TestAlgoWrapper):
     """Tests for the AlgoWrapper that makes suggest try repeatedly until a new trial is returned."""
 
     def test_doesnt_insists_without_wrapper(
@@ -54,9 +64,8 @@ class TestInsistSuggestWrapper:
         """Test that when the algo can't produce a new trial, and there is no InsistWrapper, the
         SpaceTransform wrapper fails to sample a new trial.
         """
-        algo_without_wrapper: SpaceTransform[
-            FixedSuggestionAlgo
-        ] = algo_wrapper.algorithm
+        algo_without_wrapper: SpaceTransform[FixedSuggestionAlgo]
+        algo_without_wrapper = algo_wrapper.algorithm
         calls: int = 0
         # Make the wrapper insist enough so that it actually
         # gets a trial after asking enough times:
@@ -91,7 +100,7 @@ class TestInsistSuggestWrapper:
             calls += 1
             if calls < 5:
                 return []
-            return [algo_wrapper.unwrapped.fixed_suggestion]
+            return [algo_wrapper.unwrap(FixedSuggestionAlgo).fixed_suggestion]
 
         monkeypatch.setattr(algo_wrapper.unwrapped, "suggest", _suggest)
         trial = algo_wrapper.suggest(1)[0]
@@ -100,7 +109,7 @@ class TestInsistSuggestWrapper:
 
     def test_warns_when_unable_to_sample_new_trial(
         self,
-        algo_wrapper: InsistSuggest[SpaceTransform[FixedSuggestionAlgo]],
+        algo_wrapper: WrappedTestAlgo,
         caplog: pytest.LogCaptureFixture,
         monkeypatch: MonkeyPatch,
     ):
@@ -115,7 +124,7 @@ class TestInsistSuggestWrapper:
             calls += 1
             if calls < 5:
                 return []
-            return [algo_wrapper.unwrapped.fixed_suggestion]
+            return [algo_wrapper.unwrap(FixedSuggestionAlgo).fixed_suggestion]
 
         monkeypatch.setattr(algo_wrapper.algorithm, "suggest", _suggest)
 
@@ -130,3 +139,18 @@ class TestInsistSuggestWrapper:
             assert log_record[1] == logging.WARNING and log_record[2].startswith(
                 "Unable to sample a new trial"
             )
+
+    def test_doesnt_insist_when_wrapped_algo_is_done(self):
+        """Test that when the wrapped algo reaches the `done` stage, the `InsistSuggest` wrapper
+        stops asking for new trials.
+        """
+
+        space = SpaceBuilder().build({"x": "uniform(1, 10, discrete=True)"})
+        algo = Random(space=space)
+        algo_wrapper = InsistSuggest(space=space, algorithm=algo)
+        algo.max_trials = 10
+        assert algo_wrapper.max_trials == 10
+        trials = algo_wrapper.suggest(100)
+        assert len(trials) == 10
+        assert algo_wrapper.is_done
+        assert algo_wrapper.n_suggested == 10
