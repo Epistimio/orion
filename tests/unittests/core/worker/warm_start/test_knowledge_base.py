@@ -1,23 +1,18 @@
+""" Tests for the KnowledgeBase. """
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
 
 import pytest
 
-from orion.algo.space import Space
 from orion.benchmark.task import RosenBrock
 from orion.client import build_experiment
 from orion.client.experiment import ExperimentClient
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import BaseStorageProtocol
 from orion.storage.legacy import Legacy
-
-# Function to create a space.
-_space: Callable[[dict], Space] = SpaceBuilder().build
 
 
 @pytest.fixture()
@@ -59,6 +54,8 @@ def create_experiments(
 
 
 class TestKnowledgeBase:
+    """Tests for the KnowledgeBase class."""
+
     def test_empty_kb(self, storage: BaseStorageProtocol):
         knowledge_base = KnowledgeBase(storage)
         assert knowledge_base.n_stored_experiments == 0
