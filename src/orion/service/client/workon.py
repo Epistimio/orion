@@ -123,6 +123,10 @@ class WorkonClientREST(BaseClientREST):
             results=results,
         )
 
+        pacemaker = self._pacemakers.pop(trial.id, None)
+        if pacemaker is not None:
+            pacemaker.stop()
+
     def is_done(self) -> bool:
         """returns true if the experiment is done"""
         payload = self._post(
@@ -147,3 +151,11 @@ class WorkonClientREST(BaseClientREST):
                 "Release all trials before closing the client, using "
                 "client.release(trial)."
             )
+
+    def release_all(self):
+        for k, v in self._pacemakers.items():
+            self.release(k, "interrupted")
+            v.stop()
+
+    def __del__(self):
+        self.release_all()

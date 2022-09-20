@@ -20,7 +20,6 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import AlreadyReleased, Trial
 from orion.executor.base import ExecutorClosed, executor_factory
-from orion.storage.base import setup_storage
 from orion.testing import create_experiment, create_rest_experiment, mock_space_iterate
 
 config = dict(
@@ -275,12 +274,13 @@ class TestInsert:
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.insert(dict(x=100))
 
-            if not is_rest(factory):
-                assert trial.status == "interrupted"
-                compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
-                assert client._pacemakers == {}
+            ref_trial = experiment.get_trial(uid=trial.id)
+            assert ref_trial.status == "interrupted"
 
-            print(trial.params)
+            if not is_rest(factory):
+                compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
+
+            assert client._pacemakers == {}
             assert trial.params["x"] == 100
             assert trial.id in {trial.id for trial in experiment.fetch_trials()}
 
@@ -292,15 +292,17 @@ class TestInsert:
                 dict(x=100), [dict(name="objective", type="objective", value=101)]
             )
 
+            ref_trial = experiment.get_trial(uid=trial.id)
+            assert ref_trial.status == "completed"
+            assert trial.params["x"] == 100
+
             if not is_rest(factory):
-                assert trial.status == "completed"
-                assert trial.params["x"] == 100
                 assert trial.objective.value == 101
                 assert trial.end_time >= timestamp
                 compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
                 assert client.get_trial(uid=trial.id).objective.value == 101
-                assert client._pacemakers == {}
 
+            assert client._pacemakers == {}
             assert trial.id in {trial.id for trial in experiment.fetch_trials()}
 
     def test_insert_params_with_results_and_reserve(self, factory):
@@ -350,14 +352,14 @@ class TestInsert:
         ):
             trial = client.insert(dict(x=100))
 
-            if not is_rest(factory):
-                assert trial.status == "interrupted"
+            ref_trial = experiment.get_trial(uid=trial.id)
+            assert ref_trial.status == "interrupted"
 
             assert trial.params["x"] == 100
             assert trial.params["y"] == 5
+
             assert trial.id in {trial.id for trial in experiment.fetch_trials()}
             compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
-
             assert client._pacemakers == {}
 
     def test_insert_partial_params_missing(self, factory):
@@ -388,7 +390,9 @@ class TestInsert:
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.insert(dict(x=100), reserve=True)
 
-            assert trial.status == "reserved"
+            ref_trial = experiment.get_trial(uid=trial.id)
+            assert ref_trial.status == "reserved"
+
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
@@ -656,10 +660,16 @@ class TestRelease:
 
             pacemaker = client._pacemakers[trial.id]
 
-            ref_trial = experiment.get_trial(uid=trial.id)
-            assert ref_trial.status == "reserved"
-            experiment.set_trial_status(ref_trial, "interrupted")
-            assert ref_trial.status == "interrupted"
+            if is_rest(factory):
+                ref_trial = experiment.get_trial(uid=trial.id)
+                assert ref_trial.status == "reserved"
+                experiment.set_trial_status(ref_trial, "interrupted")
+                assert ref_trial.status == "interrupted"
+
+            else:
+                assert trial.status == "reserved"
+                experiment.set_trial_status(trial, "interrupted")
+                assert trial.status == "interrupted"
 
             with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
@@ -790,6 +800,10 @@ class TestSuggest:
         mock_space_iterate(monkeypatch)
         new_value = 50.0
 
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial, statuses=["completed"]) as (
             cfg,
             experiment,
@@ -812,6 +826,10 @@ class TestSuggest:
 
     def test_suggest_algo_opt_out(self, monkeypatch, factory):
         """Verify that None is returned when algo cannot sample new trials (opting opt)"""
+
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
 
         def opt_out(num=1):
             """Never suggest a new trial"""
@@ -878,6 +896,10 @@ class TestSuggest:
         """Verify that inability to suggest because is_done becomes True during produce() is
         handled.
         """
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial, statuses=["completed"] * 5) as (
             cfg,
             experiment,
@@ -908,6 +930,10 @@ class TestSuggest:
         exception is raised
 
         """
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial, statuses=["completed"] * 5) as (
             cfg,
             experiment,
@@ -932,6 +958,10 @@ class TestSuggest:
         """Verify that experiments that gets broken during local algo.suggest gets properly
         handled
         """
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial, statuses=["broken"] * 1) as (
             cfg,
             experiment,
@@ -993,17 +1023,27 @@ class TestObserve:
     def test_observe(self, factory):
         """Verify that `observe()` will update the storage"""
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = Trial(**cfg.trials[1])
-            assert trial.results == []
-            client.reserve(trial)
-            assert setup_storage().get_trial(trial).objective is None
+
+            if not is_rest(factory):
+                trial = Trial(**cfg.trials[1])
+                assert trial.results == []
+                client.reserve(trial)
+            else:
+                trial = client.suggest()
+
+            assert experiment.get_trial(uid=trial.id).objective is None
             client.observe(trial, [dict(name="objective", type="objective", value=101)])
-            assert setup_storage().get_trial(trial).objective.value == 101
+            assert experiment.get_trial(uid=trial.id).objective.value == 101
 
     def test_observe_unreserved(self, factory):
         """Verify that `observe()` will fail on non-reserved trials"""
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(**cfg.trials[1])
+
             with pytest.raises(RuntimeError) as exc:
                 client.observe(
                     trial, [dict(name="objective", type="objective", value=101)]
@@ -1015,6 +1055,10 @@ class TestObserve:
 
     def test_observe_dont_exist(self, factory):
         """Verify that `observe()` will fail on non-registered trials"""
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = Trial(experiment="idontexist", params=cfg.trials[0]["params"])
             with pytest.raises(ValueError) as exc:
@@ -1027,9 +1071,15 @@ class TestObserve:
 
     def test_observe_bad_results(self, factory):
         """Verify that bad results type is detected and ValueError is raised"""
+
         with factory(config, base_trial) as (cfg, experiment, client):
-            trial = Trial(**cfg.trials[1])
-            client.reserve(trial)
+
+            if is_rest(factory):
+                trial = client.suggest()
+            else:
+                trial = Trial(**cfg.trials[1])
+                client.reserve(trial)
+
             with pytest.raises(ValueError) as exc:
                 client.observe(
                     trial, [dict(name="objective", type="bad bad bad", value=101)]
@@ -1041,6 +1091,10 @@ class TestObserve:
 
     def test_observe_race_condition(self, factory):
         """Verify that race condition during `observe()` is detected and raised"""
+        if is_rest(factory):
+            pytest.skip("This test cannot work on the REST API")
+            return
+
         with factory(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["id"])
             client.reserve(trial)
@@ -1058,16 +1112,23 @@ class TestObserve:
     def test_observe_under_with(self, factory):
         with factory(config, base_trial) as (cfg, experiment, client):
             with client.suggest() as trial:
-                assert trial.status == "reserved"
-                assert trial.results == []
-                assert setup_storage().get_trial(trial).objective is None
+
+                ref_trial = experiment.get_trial(uid=trial.id)
+
+                assert ref_trial.status == "reserved"
+                assert ref_trial.results == []
+                assert ref_trial.objective is None
+
                 client.observe(
                     trial, [dict(name="objective", type="objective", value=101)]
                 )
-                assert setup_storage().get_trial(trial).objective.value == 101
-                assert trial.status == "completed"
 
-            assert trial.status == "completed"  # Still completed after __exit__
+                ref_trial = experiment.get_trial(uid=trial.id)
+                assert ref_trial.objective.value == 101
+                assert ref_trial.status == "completed"
+
+            if not is_rest(factory):
+                assert trial.status == "completed"  # Still completed after __exit__
 
 
 @pytest.mark.parametrize("factory", factories)

@@ -7,6 +7,7 @@ import requests
 from bson import ObjectId
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.exceptions import BrokenExperiment, CompletedExperiment
 from orion.core.utils.flatten import unflatten
 from orion.core.worker.trial import AlreadyReleased
 
@@ -96,6 +97,8 @@ class RemoteTrial:
 ALLOWED_EXCEPTION = {
     "orion.core.io.database.DuplicateKeyError": DuplicateKeyError,
     "orion.core.worker.trial.AlreadyReleased": AlreadyReleased,
+    "orion.core.utils.exceptions.CompletedExperiment": CompletedExperiment,
+    "orion.core.utils.exceptions.BrokenExperiment": BrokenExperiment,
     "builtins.ValueError": ValueError,
 }
 

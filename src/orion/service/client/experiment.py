@@ -1,8 +1,9 @@
 import orion.core
 from orion.client.experiment import ExperimentClient
+from orion.core.utils.exceptions import BrokenExperiment
 from orion.plotting.base import PlotAccessor
 from orion.service.client.actions import ClientActionREST
-from orion.service.client.workon import RemoteException, WorkonClientREST
+from orion.service.client.workon import WorkonClientREST
 
 
 class ExperimentClientREST(ExperimentClient):
@@ -113,9 +114,8 @@ class ExperimentClientREST(ExperimentClient):
         """See `~ExperimentClient.is_broken`"""
         try:
             self.is_done
-        except RemoteException as exception:
-            if exception == "BrokenExperiment":
-                return True
+        except BrokenExperiment:
+            return True
         return False
 
     @property
