@@ -3,6 +3,7 @@
 import copy
 import datetime
 import logging
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +12,7 @@ import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
+from orion.core.io.config import ConfigurationError
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import (
@@ -20,6 +22,7 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
 )
 from orion.core.worker.algo_wrappers import AlgoWrapper
+from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -1193,6 +1196,43 @@ class TestBuild:
                     branching={"enable": True},
                 )
             assert "There was a race condition during branching." in str(exc_info.value)
+
+    def test_build_experiment_with_kb(self, tmp_path: Path):
+        """Test that passing a configuration for the KB to `create_experiment` works."""
+        exp_storage_file = str(tmp_path / "db.pkl")
+        kb_storage_file = str(tmp_path / "kb.pkl")
+        experiment = experiment_builder.build(
+            "test",
+            space={"x": "uniform(0, 10)"},
+            storage={
+                "type": "legacy",
+                "database": {"type": "pickleddb", "host": exp_storage_file},
+            },
+            knowledge_base={
+                KnowledgeBase.__qualname__: {
+                    "storage": {
+                        "type": "legacy",
+                        "database": {"type": "pickleddb", "host": kb_storage_file},
+                    }
+                }
+            },
+        )
+        assert experiment.knowledge_base is not None
+        assert isinstance(experiment.knowledge_base, KnowledgeBase)
+
+    def test_build_experiment_with_bad_kb_config(self):
+        """Test that passing a bad configuration for the KB raises an error."""
+        with pytest.raises(ConfigurationError):
+            experiment_builder.build(
+                "test",
+                space={"x": "uniform(0, 10)"},
+                knowledge_base={
+                    "fooooobar": {
+                        "storage": {"type": "legacy", "database": {"type": "bad"}}
+                    },
+                    "baz": 123,
+                },
+            )
 
 
 def test_load_unavailable_algo(algo_unavailable_config, capsys):
