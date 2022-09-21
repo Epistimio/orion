@@ -6,7 +6,6 @@ Serves all the requests made to benchmarks/ REST endpoint.
 
 """
 import json
-import logging
 from typing import Optional
 
 from falcon import Request, Response
@@ -15,9 +14,6 @@ from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.serving.parameters import retrieve_benchmark, verify_query_parameters
 from orion.serving.responses import build_benchmark_response, build_benchmarks_response
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class BenchmarksResource:
@@ -28,21 +24,16 @@ class BenchmarksResource:
 
     def on_get(self, req: Request, resp: Response):
         """Handle the GET requests for benchmarks/"""
-        logger.info(f"Managing request, fetch benchmark: {req}")
         benchmarks = self.storage.fetch_benchmark({})
 
-        logger.info(f"Managing request, build benchmarks response: {req}")
         response = build_benchmarks_response(benchmarks)
-        logger.info(f"Managing request, json dumps: {req}")
         resp.body = json.dumps(response)
-        logger.info(f"Managed request: {req}")
 
     def on_get_benchmark(self, req: Request, resp: Response, name: str):
         """
         Handle GET requests for benchmarks/:name where `name` is
         the user-defined name of the benchmark
         """
-        logger.info(f"Managing request: {req}")
         verify_query_parameters(req.params, ["assessment", "task", "algorithms"])
         assessment = req.get_param("assessment")
         task = req.get_param("task")
@@ -57,7 +48,6 @@ class BenchmarksResource:
 
         response = build_benchmark_response(benchmark, assessment, task, algorithms)
         resp.body = json.dumps(response)
-        logger.info(f"Managed request: {req}")
 
 
 def _find_latest_versions(experiments):
