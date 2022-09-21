@@ -3,12 +3,8 @@ Represent the '/' REST endpoint
 ===============================
 """
 import json
-import logging
 
 import orion.core
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class RuntimeResource:
@@ -27,7 +23,6 @@ class RuntimeResource:
         resp
             The response to send back
         """
-        logger.info(f"Managing request: {req}")
         database = self.storage._db.__class__.__name__
         response = {
             "orion": orion.core.__version__,
@@ -36,4 +31,3 @@ class RuntimeResource:
         }
 
         resp.body = json.dumps(response, indent=4)
-        logger.info(f"Managed request: {req}")

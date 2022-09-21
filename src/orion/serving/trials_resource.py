@@ -3,7 +3,6 @@ Module responsible for the trials/ REST endpoint
 ================================================
 """
 import json
-import logging
 
 from falcon import Request, Response
 
@@ -14,10 +13,6 @@ from orion.serving.parameters import (
     verify_status,
 )
 from orion.serving.responses import build_trial_response, build_trials_response
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 
 SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 
@@ -35,7 +30,6 @@ class TrialsResource:
         Handle GET requests for trials/:experiment where ``experiment`` is
         the user-defined name of the experiment.
         """
-        logger.info(f"Managing request: {req}")
         verify_query_parameters(req.params, SUPPORTED_PARAMETERS)
 
         status = req.get_param("status", default=None)
@@ -51,7 +45,6 @@ class TrialsResource:
 
         response = build_trials_response(trials)
         resp.body = json.dumps(response)
-        logger.info(f"Managed request: {req}")
 
     def on_get_trial_in_experiment(
         self, req: Request, resp: Response, experiment_name: str, trial_id: str
@@ -60,10 +53,8 @@ class TrialsResource:
         Handle GET requests for trials/:experiment/:trial_id where ``experiment`` is
         the user-defined name of the experiment and ``trial_id`` the id of the trial.
         """
-        logger.info(f"Managing request: {req}")
         experiment = retrieve_experiment(self.storage, experiment_name)
         trial = retrieve_trial(experiment, trial_id)
 
         response = build_trial_response(trial)
         resp.body = json.dumps(response)
-        logger.info(f"Managed request: {req}")

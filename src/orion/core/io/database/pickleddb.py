@@ -155,15 +155,7 @@ class PickledDB(Database):
         .. seealso:: :meth:`orion.core.io.database.Database.read` for argument documentation.
 
         """
-        log.info(
-            f"read/locking; collection name: {collection_name}, "
-            f"query: {query}, selection: {selection}"
-        )
         with self.locked_database(write=False) as database:
-            log.info(
-                f"read/locked; collection name: {collection_name}, "
-                f"query: {query}, selection: {selection}"
-            )
             return database.read(collection_name, query=query, selection=selection)
 
     def read_and_write(self, collection_name, query, data, selection=None):
@@ -203,18 +195,14 @@ class PickledDB(Database):
         if not os.path.exists(self.host):
             return EphemeralDB()
 
-        log.info(f"opening database {self.host}")
         with open(self.host, "rb") as f:
-            log.info(f"reading database {self.host}")
             data = f.read()
-            log.info(f"got database {self.host}")
             if not data:
-                log.info(f"getting ephemeraldb {self.host}")
                 database = EphemeralDB()
             else:
-                log.info(f"loading pickle, {len(data) / (1024 * 1024)} Mb: {self.host}")
+                # TODO: This call seems to block sometimes on Github CI
+                # when running dashboard tests
                 database = pickle.loads(data)
-                log.info(f"loaded pickle {self.host}")
 
         return database
 
@@ -244,22 +232,16 @@ class PickledDB(Database):
     @contextmanager
     def locked_database(self, write=True):
         """Lock database file during wrapped operation call."""
-        lock = _create_lock(self.host + ".lock", timeout=self.timeout)
+        lock = _create_lock(self.host + ".lock")
 
         try:
-            log.info("locking database")
-            with lock:
-                log.info("locked database, getting database")
+            with lock.acquire(timeout=self.timeout):
                 database = self._get_database()
-                log.info("yield database")
 
                 yield database
 
-                log.info("database yielded")
                 if write:
-                    log.info("writing database")
                     self._dump_database(database)
-                    log.info("database written")
         except Timeout as e:
             raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e
 
@@ -313,7 +295,7 @@ def _get_fs(path):
     return None
 
 
-def _create_lock(path, timeout=None):
+def _create_lock(path):
     """Create lock based on file system capabilities
 
     Determine if we can rely on the fcntl module for locking files.
@@ -323,7 +305,7 @@ def _create_lock(path, timeout=None):
 
     if _fs_support_globalflock(file_system):
         log.debug("Using flock.")
-        return FileLock(path, timeout=timeout)
+        return FileLock(path)
     else:
         log.debug("Cluster does not support flock. Falling back to softfilelock.")
-        return SoftFileLock(path, timeout=timeout)
+        return SoftFileLock(path)
