@@ -219,14 +219,14 @@ def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
     kb_types_with_name = [
         subclass
         for subclass in (KnowledgeBase.__subclasses__() + [KnowledgeBase])
-        if subclass.__qualname__ == kb_type_name
+        if subclass.__name__ == kb_type_name
     ]
     if len(kb_types_with_name) == 0:
-        raise RuntimeError(
+        raise ConfigurationError(
             f"Unable to find a subclass of KnowledgeBase with the given name: {kb_type_name}"
         )
     if len(kb_types_with_name) > 1:
-        raise RuntimeError(
+        raise ConfigurationError(
             f"Multiple subclasses of KnowledgeBase with the given name: {kb_type_name}"
         )
     kb_type = kb_types_with_name[0]

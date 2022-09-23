@@ -10,15 +10,17 @@ from pathlib import Path
 import pytest
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm
+from orion.algo.random import Random
 from orion.algo.space import Space
+from orion.algo.tpe import TPE
 from orion.core.evc.adapters import BaseAdapter
+from orion.core.io import experiment_builder
 from orion.core.io.config import ConfigurationError
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
@@ -1224,18 +1226,68 @@ class TestBuild:
         assert experiment.knowledge_base is not None
         assert isinstance(experiment.knowledge_base, KnowledgeBase)
 
+
+class TestInstantiateKB:
     def test_build_experiment_with_bad_kb_config(self):
         """Test that passing a bad configuration for the KB raises an error."""
-        with pytest.raises(ConfigurationError):
-            experiment_builder.build(
-                "test",
-                space={"x": "uniform(0, 10)"},
-                knowledge_base={
+        with pytest.raises(
+            ConfigurationError,
+            match="The configuration for the KB should only have one key",
+        ):
+            experiment_builder._instantiate_knowledge_base(
+                {
                     "fooooobar": {
                         "storage": {"type": "legacy", "database": {"type": "bad"}}
                     },
                     "baz": 123,
+                }
+            )
+
+    def test_kb_class_not_found(self):
+        with pytest.raises(
+            ConfigurationError,
+            match="Unable to find a subclass of KnowledgeBase with the given name",
+        ):
+            experiment_builder._instantiate_knowledge_base(
+                {
+                    "NonExistentKB": {
+                        "storage": {"type": "legacy", "database": {"type": "bad"}}
+                    },
+                }
+            )
+
+    def test_finds_kb_subclass_and_uses_it(self, tmp_path: Path):
+        class MyKB(KnowledgeBase):
+            pass
+
+        path = tmp_path / "db.pkl"
+        kb = experiment_builder._instantiate_knowledge_base(
+            {
+                "MyKB": {
+                    "storage": {
+                        "type": "legacy",
+                        "database": {"type": "pickleddb", "host": str(path)},
+                    }
                 },
+            }
+        )
+        assert isinstance(kb, MyKB)
+
+    def test_multiple_subclasses_match_name(self):
+        class KB(KnowledgeBase):  # noqa
+            pass
+
+        class KB(KnowledgeBase):  # noqa
+            pass
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Multiple subclasses of KnowledgeBase with the given name",
+        ):
+            experiment_builder._instantiate_knowledge_base(
+                {
+                    "KB": {"storage": {"type": "legacy", "database": {"type": "bad"}}},
+                }
             )
 
 
@@ -1267,9 +1319,6 @@ class TestInstantiateAlgo:
         assert isinstance(algo, BaseAlgorithm)
         assert type(algo.unwrapped).__qualname__ == algo_class_name
         assert algo.max_trials == max_trials
-
-    from orion.algo.random import Random
-    from orion.algo.tpe import TPE
 
     @pytest.mark.parametrize("algo_class", [Random, TPE])
     @pytest.mark.parametrize("max_trials", [None, 10])
