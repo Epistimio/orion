@@ -78,7 +78,6 @@ from __future__ import annotations
 import copy
 import datetime
 import getpass
-import inspect
 import logging
 import pprint
 import sys
@@ -259,13 +258,12 @@ def _instantiate_algo(
 
     """
     config = config or orion.core.config.experiment.algorithms
-
+    assert config is not None
     try:
+        algo_type: type[BaseAlgorithm]
+        algo_config: dict
         if isinstance(config, str):
             algo_type = algo_factory.get_class(config)
-            algo_config = {}
-        elif inspect.isclass(config) and issubclass(config, BaseAlgorithm):
-            algo_type: type[BaseAlgorithm] = config
             algo_config = {}
         elif isinstance(config, dict):
             backported_config = backward.port_algo_config(config)
@@ -273,7 +271,9 @@ def _instantiate_algo(
             algo_type = algo_factory.get_class(algo_name)
             algo_config = backported_config
         else:
-            raise ValueError(f"Invalid algorithm configuration: {config}")
+            assert issubclass(config, BaseAlgorithm)
+            algo_type = config
+            algo_config = {}
 
         wrapped_algo = create_algo(
             space=space,
