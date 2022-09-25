@@ -1,6 +1,11 @@
 import React from 'react';
 import App from '../App';
-import { render, screen, queryByText } from '@testing-library/react';
+import {
+  render,
+  screen,
+  queryByText,
+  queryByRole,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 /* Use MemoryRouter to isolate history for each test */
 import { MemoryRouter } from 'react-router-dom';
@@ -321,7 +326,7 @@ test('Test pagination - change page', async () => {
 test('Test (de)select columns', async () => {
   const user = userEvent.setup();
   // Load page
-  render(<App />, { wrapper: MemoryRouter });
+  const { container } = render(<App />, { wrapper: MemoryRouter });
   // Switch to database page
   await user.click(screen.queryByTitle(/Go to experiments database/));
   // Select an experiment
@@ -329,7 +334,58 @@ test('Test (de)select columns', async () => {
     await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
   );
   await waitForExperimentToBeLoaded('2-dim-shape-exp');
-  // TODO
+  // Check first row for ID, submit time, start time and objective
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    queryByText(container, '2019-11-19 15:41:16.985075')
+  ).toBeInTheDocument();
+  expect(
+    queryByText(container, '2019-11-19 15:41:16.996319')
+  ).toBeInTheDocument();
+  expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
+  // Locate options `submit time`, `objective` and 'select all'
+  const multiSelect = document.getElementById('multiselect-columns');
+  await user.click(multiSelect.querySelector('button.bx--list-box__field'));
+  const optionSubmitTime = queryByText(multiSelect, 'Submit time');
+  const optionObjective = queryByText(multiSelect, 'Objective');
+  const optionSelectAll = queryByText(multiSelect, '(select all)');
+  expect(optionSubmitTime).toBeInTheDocument();
+  expect(optionObjective).toBeInTheDocument();
+  expect(optionSelectAll).toBeInTheDocument();
+  // Deselect column Submit time and check first row
+  await user.click(optionSubmitTime);
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(queryByText(container, '2019-11-19 15:41:16.985075')).toBeNull();
+  expect(
+    queryByText(container, '2019-11-19 15:41:16.996319')
+  ).toBeInTheDocument();
+  expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
+  // Deselect column objective and check first row
+  await user.click(optionObjective);
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(queryByText(container, '2019-11-19 15:41:16.985075')).toBeNull();
+  expect(
+    queryByText(container, '2019-11-19 15:41:16.996319')
+  ).toBeInTheDocument();
+  expect(queryByText(container, '-0.7881121864177159')).toBeNull();
+  // Click to 'select all' and check that all columns are now visible in first row
+  await user.click(optionSelectAll);
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    queryByText(container, '2019-11-19 15:41:16.985075')
+  ).toBeInTheDocument();
+  expect(
+    queryByText(container, '2019-11-19 15:41:16.996319')
+  ).toBeInTheDocument();
+  expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
 });
 
 test('Test sort columns', async () => {
