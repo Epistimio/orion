@@ -4,7 +4,7 @@ import {
   render,
   screen,
   queryByText,
-  queryByRole,
+  queryByTitle,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 /* Use MemoryRouter to isolate history for each test */
@@ -399,7 +399,86 @@ test('Test sort columns', async () => {
     await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
   );
   await waitForExperimentToBeLoaded('2-dim-shape-exp');
-  // TODO
+  // Get sort button from ID column header
+  // ID column header is first column from second tr element in table
+  // (first tr contains Parameters column and placeholders)
+  const sortButton = document
+    .querySelectorAll('.bx--data-table-content thead tr')[1]
+    .querySelector('th button.bx--table-sort');
+  // Click once to activate sorting (sort ascending)
+  await user.click(sortButton);
+  // Click again to sort descending
+  await user.click(sortButton);
+  // Check expected rows
+  let rows = document.querySelectorAll('.bx--data-table-content tbody tr');
+  expect(rows).toHaveLength(10);
+  expect(
+    queryByTitle(rows[0], /ff3adfecab4d01a5e8cb1550cc74b695/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[1], /fd5104909823804b299548acbd089ca6/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[2], /fced71d7a9bc1b4fe7c0a4029fe73875/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[3], /fac3d17812d82ebd17bd771eae2802bb/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[4], /f584840e70e38f0cd0cfc4ff1b0e5f2b/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[5], /f1f350224ae041550658149b55f6c72a/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[6], /d669de51fe55d524decf50bf5f5819df/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[7], /d2bc2590825ca06cb88e4c54c1142530/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[8], /c315d0d996290d5d5342cfce3e6d6c9e/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[9], /b551c6ff4c4d816cdf93b844007eb707/)
+  ).toBeInTheDocument();
+  // Click again to deactivate sorting (back to default order)
+  await user.click(sortButton);
+  // Click again to sort ascending
+  await user.click(sortButton);
+  // Check expected rows
+  rows = document.querySelectorAll('.bx--data-table-content tbody tr');
+  expect(rows).toHaveLength(10);
+  expect(
+    queryByTitle(rows[0], /0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[1], /13c04ed294010cecf4491b84837d8402/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[2], /1dec3f2f7b72bc707500258d829a7762/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[3], /227a7b2e5e9520d577b4c69c64a212c0/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[4], /4262e3b56f7974e46c5ff5d40c4dc1a6/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[5], /582ba78a94a7fbc3e632a0fc40dc99eb/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[6], /5fa4a08bdbafd9a9b57753569b369c62/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[7], /6479b23d62db27f4563295e68f7aefe1/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[8], /85aa9dcbf825d3fcc90ca11c01fe90e4/)
+  ).toBeInTheDocument();
+  expect(
+    queryByTitle(rows[9], /a7d1729852ebc0bebdbc2db1e9396fc1/)
+  ).toBeInTheDocument();
 });
 
 test('Test drag-and-drop columns', async () => {
