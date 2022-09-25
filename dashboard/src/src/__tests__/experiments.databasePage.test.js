@@ -340,10 +340,10 @@ test('Test (de)select columns', async () => {
     screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
   ).toBeInTheDocument();
   expect(
-    queryByText(container, '2019-11-19 15:41:16.985075')
+    queryByText(container, '2019-11-19 15:41:16.985000')
   ).toBeInTheDocument();
   expect(
-    queryByText(container, '2019-11-19 15:41:16.996319')
+    queryByText(container, '2019-11-19 15:41:16.996000')
   ).toBeInTheDocument();
   expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
   // Locate options `submit time`, `objective` and 'select all'
@@ -360,9 +360,9 @@ test('Test (de)select columns', async () => {
   expect(
     screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
   ).toBeInTheDocument();
-  expect(queryByText(container, '2019-11-19 15:41:16.985075')).toBeNull();
+  expect(queryByText(container, '2019-11-19 15:41:16.985000')).toBeNull();
   expect(
-    queryByText(container, '2019-11-19 15:41:16.996319')
+    queryByText(container, '2019-11-19 15:41:16.996000')
   ).toBeInTheDocument();
   expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
   // Deselect column objective and check first row
@@ -370,9 +370,9 @@ test('Test (de)select columns', async () => {
   expect(
     screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
   ).toBeInTheDocument();
-  expect(queryByText(container, '2019-11-19 15:41:16.985075')).toBeNull();
+  expect(queryByText(container, '2019-11-19 15:41:16.985000')).toBeNull();
   expect(
-    queryByText(container, '2019-11-19 15:41:16.996319')
+    queryByText(container, '2019-11-19 15:41:16.996000')
   ).toBeInTheDocument();
   expect(queryByText(container, '-0.7881121864177159')).toBeNull();
   // Click to 'select all' and check that all columns are now visible in first row
@@ -381,10 +381,10 @@ test('Test (de)select columns', async () => {
     screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
   ).toBeInTheDocument();
   expect(
-    queryByText(container, '2019-11-19 15:41:16.985075')
+    queryByText(container, '2019-11-19 15:41:16.985000')
   ).toBeInTheDocument();
   expect(
-    queryByText(container, '2019-11-19 15:41:16.996319')
+    queryByText(container, '2019-11-19 15:41:16.996000')
   ).toBeInTheDocument();
   expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
 });
