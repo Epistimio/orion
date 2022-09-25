@@ -112,7 +112,7 @@ test('Test if experiment trials are loaded', async () => {
   ).toBeInTheDocument();
 });
 
-test('Test pagination', async () => {
+test('Test pagination - select items per page', async () => {
   const user = userEvent.setup();
   // Load page
   render(<App />, { wrapper: MemoryRouter });
@@ -123,7 +123,199 @@ test('Test pagination', async () => {
     await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
   );
   await waitForExperimentToBeLoaded('2-dim-shape-exp');
-  // TODO
+  // Items per page is 10 by default. Check expected trials.
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/13c04ed294010cecf4491b84837d8402/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/1dec3f2f7b72bc707500258d829a7762/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/227a7b2e5e9520d577b4c69c64a212c0/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/4262e3b56f7974e46c5ff5d40c4dc1a6/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/582ba78a94a7fbc3e632a0fc40dc99eb/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/5fa4a08bdbafd9a9b57753569b369c62/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/6479b23d62db27f4563295e68f7aefe1/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/85aa9dcbf825d3fcc90ca11c01fe90e4/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/a7d1729852ebc0bebdbc2db1e9396fc1/)
+  ).toBeInTheDocument();
+  // Change items per page to 5 and check expected trials.
+  const selectItemsPerPage = document.getElementById(
+    'bx-pagination-select-trials-pagination'
+  );
+  expect(selectItemsPerPage).toBeInTheDocument();
+  await user.selectOptions(selectItemsPerPage, '5');
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/13c04ed294010cecf4491b84837d8402/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/1dec3f2f7b72bc707500258d829a7762/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/227a7b2e5e9520d577b4c69c64a212c0/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/4262e3b56f7974e46c5ff5d40c4dc1a6/)
+  ).toBeInTheDocument();
+  expect(screen.queryByTitle(/582ba78a94a7fbc3e632a0fc40dc99eb/)).toBeNull();
+  expect(screen.queryByTitle(/5fa4a08bdbafd9a9b57753569b369c62/)).toBeNull();
+  expect(screen.queryByTitle(/6479b23d62db27f4563295e68f7aefe1/)).toBeNull();
+  expect(screen.queryByTitle(/85aa9dcbf825d3fcc90ca11c01fe90e4/)).toBeNull();
+  expect(screen.queryByTitle(/a7d1729852ebc0bebdbc2db1e9396fc1/)).toBeNull();
+});
+
+test('Test pagination - change page', async () => {
+  const user = userEvent.setup();
+  // Load page
+  render(<App />, { wrapper: MemoryRouter });
+  // Switch to database page
+  await user.click(screen.queryByTitle(/Go to experiments database/));
+  // Select an experiment
+  await user.click(
+    await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
+  );
+  await waitForExperimentToBeLoaded('2-dim-shape-exp');
+  // We are in first page by default. Check expected trials.
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/13c04ed294010cecf4491b84837d8402/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/1dec3f2f7b72bc707500258d829a7762/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/227a7b2e5e9520d577b4c69c64a212c0/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/4262e3b56f7974e46c5ff5d40c4dc1a6/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/582ba78a94a7fbc3e632a0fc40dc99eb/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/5fa4a08bdbafd9a9b57753569b369c62/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/6479b23d62db27f4563295e68f7aefe1/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/85aa9dcbf825d3fcc90ca11c01fe90e4/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/a7d1729852ebc0bebdbc2db1e9396fc1/)
+  ).toBeInTheDocument();
+  // Select 2nd page and check expected trials.
+  const selectPage = document.getElementById(
+    'bx-pagination-select-trials-pagination-right'
+  );
+  expect(selectPage).toBeInTheDocument();
+  await user.selectOptions(selectPage, '2');
+  expect(screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)).toBeNull();
+  expect(screen.queryByTitle(/13c04ed294010cecf4491b84837d8402/)).toBeNull();
+  expect(screen.queryByTitle(/1dec3f2f7b72bc707500258d829a7762/)).toBeNull();
+  expect(screen.queryByTitle(/227a7b2e5e9520d577b4c69c64a212c0/)).toBeNull();
+  expect(screen.queryByTitle(/4262e3b56f7974e46c5ff5d40c4dc1a6/)).toBeNull();
+  expect(screen.queryByTitle(/582ba78a94a7fbc3e632a0fc40dc99eb/)).toBeNull();
+  expect(screen.queryByTitle(/5fa4a08bdbafd9a9b57753569b369c62/)).toBeNull();
+  expect(screen.queryByTitle(/6479b23d62db27f4563295e68f7aefe1/)).toBeNull();
+  expect(screen.queryByTitle(/85aa9dcbf825d3fcc90ca11c01fe90e4/)).toBeNull();
+  expect(screen.queryByTitle(/a7d1729852ebc0bebdbc2db1e9396fc1/)).toBeNull();
+  expect(
+    screen.queryByTitle(/b551c6ff4c4d816cdf93b844007eb707/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/c315d0d996290d5d5342cfce3e6d6c9e/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/d2bc2590825ca06cb88e4c54c1142530/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/d669de51fe55d524decf50bf5f5819df/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/f1f350224ae041550658149b55f6c72a/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/f584840e70e38f0cd0cfc4ff1b0e5f2b/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/fac3d17812d82ebd17bd771eae2802bb/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/fced71d7a9bc1b4fe7c0a4029fe73875/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/fd5104909823804b299548acbd089ca6/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/ff3adfecab4d01a5e8cb1550cc74b695/)
+  ).toBeInTheDocument();
+  // Click to previous page button and check expected trials.
+  const buttonsPreviousPage = document.getElementsByClassName(
+    'bx--pagination__button--backward'
+  );
+  expect(buttonsPreviousPage).toHaveLength(1);
+  await user.click(buttonsPreviousPage[0]);
+  expect(
+    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/13c04ed294010cecf4491b84837d8402/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/1dec3f2f7b72bc707500258d829a7762/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/227a7b2e5e9520d577b4c69c64a212c0/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/4262e3b56f7974e46c5ff5d40c4dc1a6/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/582ba78a94a7fbc3e632a0fc40dc99eb/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/5fa4a08bdbafd9a9b57753569b369c62/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/6479b23d62db27f4563295e68f7aefe1/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/85aa9dcbf825d3fcc90ca11c01fe90e4/)
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByTitle(/a7d1729852ebc0bebdbc2db1e9396fc1/)
+  ).toBeInTheDocument();
+  expect(screen.queryByTitle(/b551c6ff4c4d816cdf93b844007eb707/)).toBeNull();
+  expect(screen.queryByTitle(/c315d0d996290d5d5342cfce3e6d6c9e/)).toBeNull();
+  expect(screen.queryByTitle(/d2bc2590825ca06cb88e4c54c1142530/)).toBeNull();
+  expect(screen.queryByTitle(/d669de51fe55d524decf50bf5f5819df/)).toBeNull();
+  expect(screen.queryByTitle(/f1f350224ae041550658149b55f6c72a/)).toBeNull();
+  expect(screen.queryByTitle(/f584840e70e38f0cd0cfc4ff1b0e5f2b/)).toBeNull();
+  expect(screen.queryByTitle(/fac3d17812d82ebd17bd771eae2802bb/)).toBeNull();
+  expect(screen.queryByTitle(/fced71d7a9bc1b4fe7c0a4029fe73875/)).toBeNull();
+  expect(screen.queryByTitle(/fd5104909823804b299548acbd089ca6/)).toBeNull();
+  expect(screen.queryByTitle(/ff3adfecab4d01a5e8cb1550cc74b695/)).toBeNull();
 });
 
 test('Test (de)select columns', async () => {

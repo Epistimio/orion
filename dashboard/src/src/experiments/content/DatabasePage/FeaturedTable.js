@@ -252,6 +252,7 @@ export function FeaturedTable({ columns, data, experiment }) {
               </Column>
               <Column>
                 <Pagination
+                  id="trials-pagination"
                   page={pageIndex + 1}
                   pageSize={pageSize}
                   pageSizes={[5, 10, 20, 50, 100]}
