@@ -5,6 +5,7 @@ import {
   screen,
   queryByText,
   queryByTitle,
+  fireEvent,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 /* Use MemoryRouter to isolate history for each test */
@@ -492,7 +493,41 @@ test('Test drag-and-drop columns', async () => {
     await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
   );
   await waitForExperimentToBeLoaded('2-dim-shape-exp');
-  // TODO
+  // Get column ID to drag.
+  const draggableColumnID = document
+    .querySelectorAll('.bx--data-table-content thead tr')[1]
+    .querySelector('th .header-dnd');
+  // Get column /dropout to drop into.
+  const droppableColumnDropout = document
+    .querySelectorAll('.bx--data-table-content thead tr')[1]
+    .querySelectorAll('th')[1];
+  // Check default first row.
+  // ID in first column, /dropout in second column.
+  let firstRowCols = document.querySelectorAll(
+    '.bx--data-table-content tbody tr td'
+  );
+  expect(
+    queryByTitle(firstRowCols[0], /0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
+  expect(queryByText(firstRowCols[1], '0.2')).toBeInTheDocument();
+  // Drag-and-drop column ID to column /dropout.
+  fireEvent.dragStart(draggableColumnID);
+  fireEvent.dragEnter(droppableColumnDropout);
+  fireEvent.dragOver(droppableColumnDropout);
+  fireEvent.drop(droppableColumnDropout);
+  // Check first row after drag-and-drop.
+  // /dropout in first column, ID in second column.
+  firstRowCols = document.querySelectorAll(
+    '.bx--data-table-content tbody tr td'
+  );
+  expect(
+    queryByTitle(firstRowCols[0], /0f886905874af10a6db412885341ae0b/)
+  ).toBeNull();
+  expect(queryByText(firstRowCols[1], '0.2')).toBeNull();
+  expect(queryByText(firstRowCols[0], '0.2')).toBeInTheDocument();
+  expect(
+    queryByTitle(firstRowCols[1], /0f886905874af10a6db412885341ae0b/)
+  ).toBeInTheDocument();
 });
 
 test('Test display trial info in a dialog', async () => {
