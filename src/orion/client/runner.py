@@ -274,13 +274,14 @@ class Runner:
         return len(self.pending_trials) > 0 or (self.has_remaining and not self.is_done)
 
     def explain_stop(self):
+        """Debug function that explain why the runner stopped working on trials"""
         reasons = []
 
-        n = len(self.pending_trials)
-        if n == 0:
+        num = len(self.pending_trials)
+        if num == 0:
             reasons.append("No pending trials remains")
         else:
-            reasons.append(f"Waiting on {n} trials")
+            reasons.append(f"Waiting on {num} trials")
 
         can_work_on = self.max_trials_per_worker - self.trials
         done = self.is_done

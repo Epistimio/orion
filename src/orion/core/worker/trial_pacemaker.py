@@ -37,5 +37,6 @@ class TrialPacemaker(threading.Thread):
             self._monitor_trial()
 
     def _monitor_trial(self):
+        # pylint: disable=protected-access
         if self.client._update_heardbeat():
             self.stopped.set()

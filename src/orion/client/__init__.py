@@ -43,6 +43,7 @@ def create_experiment(name, **config):
     return build_experiment(name, **config)
 
 
+# pylint: disable=too-many-arguments
 def build_experiment(
     name,
     version=None,

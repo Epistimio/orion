@@ -927,6 +927,7 @@ class ExperimentClient:
         This is overridden to support multiple types of storage.
 
         """
+        # pylint: disable=protected-access
         return orion.client._build_experiment(
             name,
             version=version,
