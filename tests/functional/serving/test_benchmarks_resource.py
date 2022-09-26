@@ -235,10 +235,6 @@ class TestItem:
             "random", response.json["analysis"]["AverageResult"]["Branin"]["regrets"]
         )
 
-    # TODO: Test bad task
-    #       bad assessment
-    #       bad algorithm (no algorithm)
-
     def test_benchmark_bad_assessment(self, client_with_benchmark):
         response = client_with_benchmark.simulate_get(
             "/benchmarks/another_benchmark?assessment=idontexist"
@@ -275,6 +271,18 @@ class TestItem:
             "description": (
                 "Invalid algorithm: idontexist. "
                 "It should be one of ['gridsearch', 'random']"
+            ),
+        }
+
+    def test_benchmark_bad_algorithms_no_algorithm(self, client_with_benchmark):
+        response = client_with_benchmark.simulate_get(
+            "/benchmarks/branin_baselines?algorithms="
+        )
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "title": "Benchmark study not found",
+            "description": (
+                "Invalid algorithm: . It should be one of ['gridsearch', 'random']"
             ),
         }
 
