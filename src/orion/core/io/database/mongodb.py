@@ -108,8 +108,6 @@ class MongoDB(Database):
             host = "localhost"
         self.uri = None
 
-        assert port is not None
-
         if port is not None:
             port = int(port)
         else:
