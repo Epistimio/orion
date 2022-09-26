@@ -5,7 +5,8 @@ import logging
 import pytest
 from bson import ObjectId
 
-from orion.service.client import ClientREST, ExperiementIsNotSetup, RemoteException
+from orion.service.client.base import ExperiementIsNotSetup, RemoteException
+from orion.service.client.workon import WorkonClientREST
 from orion.service.testing import get_mongo_admin, server
 
 TOKEN = "Tok1"
@@ -29,13 +30,13 @@ def with_logs(caplog):
 
 def test_new_experiment(with_logs):
     with server() as (endpoint, port):
-        client = ClientREST(endpoint, TOKEN)
+        client = WorkonClientREST(endpoint, TOKEN)
         expid1 = client.new_experiment(
             name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
         )
 
         # same experiment should be no problem
-        client2 = ClientREST(endpoint, TOKEN2)
+        client2 = WorkonClientREST(endpoint, TOKEN2)
         expid2 = client2.new_experiment(
             name="MyExperiment", space=dict(a="uniform(0, 1)", c="uniform(0, 1)")
         )
@@ -49,7 +50,7 @@ def test_new_experiment(with_logs):
 
 def test_suggest(with_logs):
     with server() as (endpoint, port):
-        client = ClientREST(endpoint, TOKEN)
+        client = WorkonClientREST(endpoint, TOKEN)
 
         # no experiment
         with pytest.raises(ExperiementIsNotSetup):
@@ -76,7 +77,7 @@ def test_suggest(with_logs):
 
 def test_observe(with_logs):
     with server() as (endpoint, port):
-        client = ClientREST(endpoint, TOKEN)
+        client = WorkonClientREST(endpoint, TOKEN)
 
         # no experiment
         with pytest.raises(ExperiementIsNotSetup):
@@ -107,7 +108,7 @@ def test_observe(with_logs):
 
 def test_heartbeat(with_logs):
     with server() as (endpoint, port):
-        client = ClientREST(endpoint, TOKEN)
+        client = WorkonClientREST(endpoint, TOKEN)
 
         # create an experiment
         client.new_experiment(
@@ -134,7 +135,7 @@ def test_heartbeat(with_logs):
 
 def test_is_done(with_logs):
     with server() as (endpoint, port):
-        client = ClientREST(endpoint, TOKEN)
+        client = WorkonClientREST(endpoint, TOKEN)
 
         # create an experiment
         client.new_experiment(
@@ -165,7 +166,7 @@ def test_broken_experiment():
 
 def test_authentication(with_logs):
     with server() as (endpoint, port):
-        client = ClientREST(endpoint, "NOT A TOKEN")
+        client = WorkonClientREST(endpoint, "NOT A TOKEN")
 
         with pytest.raises(RemoteException):
             client.new_experiment(name="MyExperiment")
