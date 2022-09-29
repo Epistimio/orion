@@ -53,6 +53,18 @@ class TestSpaceTransformAlgoWrapperWraps:
             )
             palgo._verify_trial(invalid_trial)
 
+        with pytest.raises(ValueError, match="has additional parameters"):
+            invalid_trial = Trial(
+                params=[
+                    dict(name="yolo", value=("asdfa", 2), type="real"),
+                    dict(name="yolo2", value=0, type="real"),
+                    dict(name="yolo3", value=3.5, type="real"),
+                    dict(name="yolo4", value=0, type="real"),
+                ],
+                status="new",
+            )
+            palgo._verify_trial(invalid_trial)
+
         with pytest.raises(ValueError, match="does not belong to the dimension"):
             invalid_trial = format_trials.tuple_to_trial((("asdfa", 2), 10, 3.5), space)
             palgo._verify_trial(invalid_trial)
@@ -64,6 +76,7 @@ class TestSpaceTransformAlgoWrapperWraps:
         # transform point
         ttrial = tspace.transform(trial)
 
+        tspace.assert_contains(ttrial)
         assert ttrial in tspace
 
         # Transformed point is not in original space

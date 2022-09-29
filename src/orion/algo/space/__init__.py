@@ -1096,7 +1096,7 @@ class Space(dict):
         super().__setitem__(key, value)
 
     def assert_contains(self, trial):
-        """Same as __contains__ but instead of return true or false it will raise an exception
+        """Same as __contains__ but instead of returning true or false it will raise an exception
         with the exact causes of the mismatch.
 
         Raises
@@ -1142,19 +1142,10 @@ class Space(dict):
             If str, test if the string is a dimension part of the search space.
             If a Trial, test if trial's hyperparameters fit the current search space.
         """
-        if isinstance(key_or_trial, str):
-            return super().__contains__(key_or_trial)
-
-        trial = key_or_trial
-        flattened_params = flatten(trial.params)
-        keys = set(flattened_params.keys())
-        for dim_name, dim in self.items():
-            if dim_name not in keys or flattened_params[dim_name] not in dim:
-                return False
-
-            keys.remove(dim_name)
-
-        return len(keys) == 0
+        try:
+            return self.assert_contains(key_or_trial)
+        except ValueError:
+            return False
 
     def __repr__(self):
         """Represent as a string the space and the dimensions it contains."""
