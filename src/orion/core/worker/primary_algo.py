@@ -145,12 +145,8 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
             transformed_trials = transformed_trials or []
 
             for transformed_trial in transformed_trials:
-                if transformed_trial not in self.transformed_space:
-                    raise ValueError(
-                        f"Trial {transformed_trial.id} not contained in space:\n"
-                        f"Params: {transformed_trial.params}\n"
-                        f"Space: {self.transformed_space}"
-                    )
+                self.transformed_space.assert_contains(transformed_trial)
+
                 original = self.transformed_space.reverse(transformed_trial)
                 if transformed_trial.parent:
 
@@ -354,11 +350,7 @@ class SpaceTransformAlgoWrapper(BaseAlgorithm, Generic[AlgoT]):
         if space is None:
             space = self.space
 
-        if trial not in space:
-            raise ValueError(
-                f"Trial {trial.id} not contained in space:"
-                f"\nParams: {trial.params}\nSpace: {space}"
-            )
+        space.assert_contains(trial)
 
 
 def get_original_parent(

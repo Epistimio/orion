@@ -1095,6 +1095,43 @@ class Space(dict):
             )
         super().__setitem__(key, value)
 
+    def assert_contains(self, trial):
+        """Same as __contains__ but instead of return true or false it will raise an exception
+        with the exact causes of the mismatch.
+
+        Raises
+        ------
+        ValueError is the trial has parameters that are not contained by the space.
+
+        """
+        if isinstance(trial, str):
+            return super().__contains__(trial)
+
+        flattened_params = flatten(trial.params)
+        keys = set(flattened_params.keys())
+        errors = []
+
+        for dim_name, dim in self.items():
+            if dim_name not in keys:
+                errors.append(f"{dim_name} is missing")
+                continue
+
+            value = flattened_params[dim_name]
+            if value not in dim:
+                errors.append(f"{value} does not belong to the dimension {dim}")
+
+            keys.remove(dim_name)
+
+        if len(errors) > 0:
+            errors = "\n - ".join(errors)
+            raise ValueError(f"Trial {trial.id} is not contained in space:\n{errors}")
+
+        if len(keys) != 0:
+            errors = "\n - ".join(keys)
+            raise ValueError(f"Trial {trial.id} has additional parameters:\n{errors}")
+
+        return True
+
     def __contains__(self, key_or_trial):
         """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
