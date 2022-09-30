@@ -162,6 +162,7 @@ class PBT(BaseAlgorithm):
         explore: dict | None = None,
         fork_timeout: int = 60,
     ):
+        super().__init__(space)
         if exploit is None:
             exploit = {
                 "of_type": "PipelineExploit",
@@ -217,7 +218,6 @@ class PBT(BaseAlgorithm):
 
         self.lineages = Lineages()
 
-        super().__init__(space)
         self.seed = seed
         self.population_size = population_size
         self.generations = generations
@@ -318,14 +318,15 @@ class PBT(BaseAlgorithm):
             A list of trials representing values suggested by the algorithm.
 
         """
-
-        # Sample points until num is met, or population_size
-        num_random_samples = min(max(self.population_size - self._num_root, 0), num)
+        assert num > 0
         logger.debug(
             "PBT has %s pending or completed trials at root, %s broken trials.",
             self._num_root,
             len(self.lineages) - self._num_root,
         )
+
+        # Sample points until num is met, or population_size
+        num_random_samples = min(max(self.population_size - self._num_root, 0), num)
         logger.debug("Sampling %s new trials", num_random_samples)
         trials = self._sample(num_random_samples)
         logger.debug("Sampled %s new trials", len(trials))

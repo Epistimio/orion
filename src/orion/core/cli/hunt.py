@@ -6,6 +6,7 @@ Module running the optimization command
 Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
+from __future__ import annotations
 
 import logging
 
