@@ -15,7 +15,7 @@ Make sure Oríon is installed (:doc:`/install/core`).
 Then install SpeechBrain using ``$ pip install speechbrain``
 
 Adapting the Speechbrain for Oríon
-=======================
+==================================
 
 The Adaptation for using Oríon is quite simple.
 
@@ -25,15 +25,18 @@ The Adaptation for using Oríon is quite simple.
 
     from orion.client import report_objective
 
-2) We then need to change the evaluation from the training data to the validation data. The evaluation method should look like this. It returns the validation loss.
+2) We then need to change the evaluation from the training data to the validation data. 
+The evaluation method should look like this. It returns the validation loss.
 
 .. literalinclude:: /../../examples/speechbrain_tutorial/main.py
    :language: python
    :lines: 75-80
 
-3) Finally, we call ``report_objective`` at the end to return the final objective value, the validation loss, to Oríon.
+3) Finally, we call ``report_objective`` at the end to return the final objective value,
+the validation loss, to Oríon.
 
 .. code-block:: python
+
     report_objective(valid_stats)
 
 The code is now adapted and ready to be used with Oríon.
@@ -41,23 +44,28 @@ The code is now adapted and ready to be used with Oríon.
 Execution
 =========
 
-We are now going to call the orion hunt function. Notice that we still need to give the train.yaml file to speechbrain, since the general configuration is in there.
-However, we are going to specify the hyper-parameters that we want to optimize after that, which will automatically overrides the ones set in the train.yaml.
+We are now going to call the orion hunt function. Notice that we still need to give the train.yaml 
+file to speechbrain, since the general configuration is in there. However, we are going to specify 
+the hyper-parameters that we want to optimize after that, which will automatically overrides the ones 
+set in the train.yaml.
 
-orion hunt \
-  --enable-evc -n <experiment_name> \ 
-  python main.py train.yaml \
-    --lr~'loguniform(0.05, 0.2)' \
-    --ctc_weight~'loguniform(0.25, 0.75)' \
-    --label_smoothing~'loguniform(1e-10, 10e-5)' \
-    --coverage_penalty~'loguniform(1.0, 2.0)' \
-    --temperature~'loguniform(1.0, 1.5)' \
-    --temperature_lm~'loguniform(1.0, 1.5)'
+.. code-block:: bash
+
+    orion hunt \
+      --enable-evc -n <experiment_name> \ 
+      python main.py train.yaml \
+        --lr~'loguniform(0.05, 0.2)' \
+        --ctc_weight~'loguniform(0.25, 0.75)' \
+        --label_smoothing~'loguniform(1e-10, 10e-5)' \
+        --coverage_penalty~'loguniform(1.0, 2.0)' \
+        --temperature~'loguniform(1.0, 1.5)' \
+        --temperature_lm~'loguniform(1.0, 1.5)'
 
 Results
 =======
 
-When an experiment reaches its termination criterion, basically ``max-trials``, you can see the results using the command
+When an experiment reaches its termination criterion, basically ``max-trials``, 
+you can see the results using the command
 
 .. code-block:: bash
 
@@ -67,20 +75,20 @@ This outputs the following statistics
 
 .. code-block:: bash
 
-Stats
-=====
-completed: True
-trials completed: 209
-best trial:
-  id: 8675cfcfba768243e1ed1ac7825c69b6
-  evaluation: 0.13801406680803444
-  params:
-    /coverage_penalty: 1.396
-    /ctc_weight: 0.389
-    /label_smoothing: 2.044e-10
-    /lr: 0.06462
-    /temperature: 1.175
-    /temperature_lm: 1.087
-start time: 2022-09-29 14:37:41.048314
-finish time: 2022-09-30 20:08:07.384765
-duration: 1 day, 5:30:26.336451
+    Stats
+    =====
+    completed: True
+    trials completed: 209
+    best trial:
+      id: 8675cfcfba768243e1ed1ac7825c69b6
+      evaluation: 0.13801406680803444
+      params:
+        /coverage_penalty: 1.396
+        /ctc_weight: 0.389
+        /label_smoothing: 2.044e-10
+        /lr: 0.06462
+        /temperature: 1.175
+        /temperature_lm: 1.087
+    start time: 2022-09-29 14:37:41.048314
+    finish time: 2022-09-30 20:08:07.384765
+    duration: 1 day, 5:30:26.336451
