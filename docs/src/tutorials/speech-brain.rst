@@ -53,3 +53,34 @@ orion hunt \
     --coverage_penalty~'loguniform(1.0, 2.0)' \
     --temperature~'loguniform(1.0, 1.5)' \
     --temperature_lm~'loguniform(1.0, 1.5)'
+
+Results
+=======
+
+When an experiment reaches its termination criterion, basically ``max-trials``, you can see the results using the command
+
+.. code-block:: bash
+
+    $ orion info -n <experiment_name>
+
+This outputs the following statistics
+
+.. code-block:: bash
+
+Stats
+=====
+completed: True
+trials completed: 209
+best trial:
+  id: 8675cfcfba768243e1ed1ac7825c69b6
+  evaluation: 0.13801406680803444
+  params:
+    /coverage_penalty: 1.396
+    /ctc_weight: 0.389
+    /label_smoothing: 2.044e-10
+    /lr: 0.06462
+    /temperature: 1.175
+    /temperature_lm: 1.087
+start time: 2022-09-29 14:37:41.048314
+finish time: 2022-09-30 20:08:07.384765
+duration: 1 day, 5:30:26.336451
