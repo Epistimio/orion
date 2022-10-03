@@ -46,7 +46,7 @@ However, we are going to specify the hyper-parameters that we want to optimize a
 
 orion hunt \
   --enable-evc -n <experiment_name> \ 
-  python train.py train.yaml \
+  python main.py train.yaml \
     --lr~'loguniform(0.05, 0.2)' \
     --ctc_weight~'loguniform(0.25, 0.75)' \
     --label_smoothing~'loguniform(1e-10, 10e-5)' \
