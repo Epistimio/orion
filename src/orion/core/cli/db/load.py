@@ -10,7 +10,6 @@ Import database content from a file.
 import argparse
 import logging
 import os
-import pprint
 
 from orion.core.io import experiment_builder
 from orion.core.io.database.mongodb import MongoDB
@@ -91,8 +90,7 @@ def main(args):
             assert "experiments" in src_collection_names
             src_experiments = {
                 d["_id"]: d
-                for d in src_database.read("experiments")
-                if d["name"] == experiment
+                for d in src_database.read("experiments", {"name": experiment})
             }
             if not src_experiments:
                 logger.info(f"Experiment not found in src: {experiment}")
@@ -176,7 +174,6 @@ def main(args):
             # Add experiment to data to insert
             # Keep "_id" as it is already updated
             src_related_data["experiments"] = list(src_experiments.values())
-            pprint.pprint(src_related_data)
             for collection_name, collection_data in src_related_data.items():
                 logger.info(
                     f"Load {len(collection_data)} data "

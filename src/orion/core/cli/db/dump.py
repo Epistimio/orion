@@ -57,7 +57,7 @@ def _dump(src_db, dst_db, collection_names, experiment=None):
     else:
         # Get experiments with given name
         assert "experiments" in collection_names
-        experiments = [d for d in src_db.read("experiments") if d["name"] == experiment]
+        experiments = src_db.read("experiments", {"name": experiment})
         logger.info(f"Found {len(experiments)} experiment(s) named {experiment}")
         # Dump selected experiments
         logger.info(f"Dumping experiment {experiment}")
