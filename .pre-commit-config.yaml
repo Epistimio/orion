@@ -37,8 +37,8 @@ repos:
 
   # BUG: Appears not to not always work properly! Enable locally if you want, but the CI will use
   # the tox variant for now.
-  - repo: https://github.com/PyCQA/doc8
-    rev: 0.8.1
-    hooks:
-      - id: doc8
-        args: ["--max-line-length=100", "--file-encoding=utf-8"]
+  # - repo: https://github.com/PyCQA/doc8
+  #   rev: 0.8.1
+  #   hooks:
+  #     - id: doc8
+  #       args: ["--max-line-length=100", "--file-encoding=utf-8"]
