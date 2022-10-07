@@ -7,10 +7,10 @@ Storage export tool
 Export database content into a file.
 
 """
-import argparse
 import logging
 import os
 
+from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
@@ -22,27 +22,60 @@ logger.setLevel(logging.DEBUG)
 DESCRIPTION = "Export storage"
 
 
-def dump_database(orig_db, dump_host, experiment=None):
+def add_subparser(parser):
+    """Add the subparser that needs to be used for this command"""
+    dump_parser = parser.add_parser("dump", help=DESCRIPTION, description=DESCRIPTION)
+
+    cli.get_basic_args_group(dump_parser)
+
+    dump_parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default="dump.pkl",
+        help="Output file path (default: dump.pkl)",
+    )
+
+    dump_parser.set_defaults(func=main)
+
+    return dump_parser
+
+
+def main(args):
+    """Script to dump storage"""
+    config = experiment_builder.get_cmd_config(args)
+    storage = setup_storage(config.get("storage"))
+    orig_db = storage._db
+    logger.info(f"Loaded {orig_db}")
+    dump_database(
+        orig_db,
+        args["output"],
+        experiment=config.get("name"),
+        version=config.get("version"),
+    )
+
+
+def dump_database(orig_db, dump_host, experiment=None, version=None):
     dump_host = os.path.abspath(dump_host)
     if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(orig_db.host):
         logger.info("Cannot dump pickleddb to itself.")
-        return 0
+        return
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
     db = dst_storage._db
     logger.info(f"Dump to {db}")
     if isinstance(orig_db, PickledDB):
         with orig_db.locked_database(write=False) as database:
             collection_names = set(database._db.keys())
-            _dump(database, db, collection_names, experiment)
+            _dump(database, db, collection_names, experiment, version)
     else:
         if isinstance(orig_db, MongoDB):
             collection_names = (data["name"] for data in orig_db._db.list_collections())
         else:
             collection_names = orig_db._db.keys()
-        _dump(orig_db, db, set(collection_names), experiment)
+        _dump(orig_db, db, set(collection_names), experiment, version)
 
 
-def _dump(src_db, dst_db, collection_names, experiment=None):
+def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
     """
     Dump data from database to db.
     :param src_db: input database
@@ -61,8 +94,14 @@ def _dump(src_db, dst_db, collection_names, experiment=None):
     else:
         # Get experiments with given name
         assert "experiments" in collection_names
-        experiments = src_db.read("experiments", {"name": experiment})
-        logger.info(f"Found {len(experiments)} experiment(s) named {experiment}")
+        query = {"name": experiment}
+        if version is not None:
+            query["version"] = version
+        experiments = src_db.read("experiments", query)
+        logger.info(f"Found {len(experiments)} experiment(s) with query: {query}")
+        if not experiments:
+            logger.info("Nothing to dump.")
+            return
         # Dump selected experiments
         logger.info(f"Dumping experiment {experiment}")
         dst_db.write("experiments", experiments)
@@ -71,7 +110,6 @@ def _dump(src_db, dst_db, collection_names, experiment=None):
         # Dump data related to selected experiments
         exp_indices = {exp["_id"] for exp in experiments}
         for collection_name in sorted(collection_names):
-            logger.info(f"Dumping collection {collection_name}")
             filtered_data = [
                 element
                 for element in src_db.read(collection_name)
@@ -82,44 +120,3 @@ def _dump(src_db, dst_db, collection_names, experiment=None):
                 f"Written {len(filtered_data)} filtered data "
                 f"for collection {collection_name}"
             )
-
-
-def add_subparser(parser):
-    """Add the subparser that needs to be used for this command"""
-    serve_parser = parser.add_parser("dump", help=DESCRIPTION, description=DESCRIPTION)
-
-    serve_parser.add_argument(
-        "-c",
-        "--config",
-        type=argparse.FileType("r"),
-        metavar="path-to-config",
-        help="Orion config file, used to open database",
-    )
-
-    serve_parser.add_argument(
-        "-e",
-        "--exp",
-        type=str,
-        default=None,
-        help="Experiment to dump (default: all experiments are exported)",
-    )
-
-    serve_parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default="dump.pkl",
-        help="Output file path (default: dump.pkl)",
-    )
-
-    serve_parser.set_defaults(func=main)
-
-    return serve_parser
-
-
-def main(args):
-    """Script to dump storage"""
-    storage = setup_storage(experiment_builder.get_cmd_config(args).get("storage"))
-    orig_db = storage._db
-    logger.info(f"Loaded {orig_db}")
-    dump_database(orig_db, args["output"], experiment=args["exp"])
