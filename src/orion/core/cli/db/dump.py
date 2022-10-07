@@ -12,7 +12,6 @@ import os
 
 from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
-from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.storage.base import setup_storage
 
@@ -20,6 +19,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 DESCRIPTION = "Export storage"
+
+COLLECTIONS = {"experiments", "algo", "benchmarks", "trials"}
 
 
 def add_subparser(parser):
@@ -65,14 +66,9 @@ def dump_database(orig_db, dump_host, experiment=None, version=None):
     logger.info(f"Dump to {db}")
     if isinstance(orig_db, PickledDB):
         with orig_db.locked_database(write=False) as database:
-            collection_names = set(database._db.keys())
-            _dump(database, db, collection_names, experiment, version)
+            _dump(database, db, COLLECTIONS, experiment, version)
     else:
-        if isinstance(orig_db, MongoDB):
-            collection_names = (data["name"] for data in orig_db._db.list_collections())
-        else:
-            collection_names = orig_db._db.keys()
-        _dump(orig_db, db, set(collection_names), experiment, version)
+        _dump(orig_db, db, COLLECTIONS, experiment, version)
 
 
 def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
