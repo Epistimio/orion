@@ -17,25 +17,29 @@ from orion.core.io.database.pickleddb import PickledDB
 from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 DESCRIPTION = "Export storage"
 
 
-def _dump_pickledb(orig_db, db, experiment=None):
-    """Dump data from a PickledDB orig_db to db"""
-    with orig_db.locked_database(write=False) as database:
-        collection_names = set(database._db.keys())
-        _dump(database, db, collection_names, experiment)
-
-
-def _dump_other_db(orig_db, db, experiment=None):
-    """Dump data from a non-PickledDB orig_db to db"""
-    if isinstance(orig_db, MongoDB):
-        collection_names = (data["name"] for data in orig_db._db.list_collections())
+def dump_database(orig_db, dump_host, experiment=None):
+    dump_host = os.path.abspath(dump_host)
+    if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(orig_db.host):
+        logger.info("Cannot dump pickleddb to itself.")
+        return 0
+    dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
+    db = dst_storage._db
+    logger.info(f"Dump to {db}")
+    if isinstance(orig_db, PickledDB):
+        with orig_db.locked_database(write=False) as database:
+            collection_names = set(database._db.keys())
+            _dump(database, db, collection_names, experiment)
     else:
-        collection_names = orig_db._db.keys()
-    _dump(orig_db, db, set(collection_names), experiment)
+        if isinstance(orig_db, MongoDB):
+            collection_names = (data["name"] for data in orig_db._db.list_collections())
+        else:
+            collection_names = orig_db._db.keys()
+        _dump(orig_db, db, set(collection_names), experiment)
 
 
 def _dump(src_db, dst_db, collection_names, experiment=None):
@@ -115,17 +119,7 @@ def add_subparser(parser):
 
 def main(args):
     """Script to dump storage"""
-    dump_host = os.path.abspath(args["output"])
     storage = setup_storage(experiment_builder.get_cmd_config(args).get("storage"))
     orig_db = storage._db
     logger.info(f"Loaded {orig_db}")
-    if isinstance(orig_db, PickledDB):
-        orig_host = os.path.abspath(orig_db.host)
-        if dump_host != orig_host:
-            logger.info(f"Dump to {dump_host}")
-            db = PickledDB(host=dump_host)
-            _dump_pickledb(orig_db, db, experiment=args["exp"])
-    else:
-        logger.info(f"Dump to {dump_host}")
-        db = PickledDB(host=dump_host)
-        _dump_other_db(orig_db, db, experiment=args["exp"])
+    dump_database(orig_db, args["output"], experiment=args["exp"])
