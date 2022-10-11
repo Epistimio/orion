@@ -28,6 +28,11 @@ def exp_config():
 
 
 @pytest.fixture
+def empty_database(storage):
+    """Empty database"""
+
+
+@pytest.fixture
 def only_experiments_db(storage, exp_config):
     """Clean the database and insert only experiments."""
     for exp in exp_config[0]:

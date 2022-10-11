@@ -1,0 +1,324 @@
+#!/usr/bin/env python
+"""Perform functional tests for db load."""
+
+import os
+
+import orion.core.cli
+from orion.storage.base import setup_storage
+
+LOAD_DATA = os.path.join(os.path.dirname(__file__), "orion_db_load_test_data.pickled")
+
+
+def execute(command, assert_code=0):
+    """Execute orion command and return returncode"""
+    returncode = orion.core.cli.main(command.split(" "))
+    assert returncode == assert_code
+
+
+def common_indices(data_list1, data_list2):
+    """Return set of common indices from two lists of data"""
+    return {element["_id"] for element in data_list1} & {
+        element["_id"] for element in data_list2
+    }
+
+
+def test_empty_database(empty_database):
+    """Test destination database is empty as expected"""
+    storage = setup_storage()
+    db = storage._db
+    with db.locked_database(write=False) as internal_db:
+        collections = set(internal_db._db.keys())
+    assert collections == {"experiments", "algo", "trials", "benchmarks"}
+    assert len(db.read("experiments")) == 0
+    assert len(db.read("algo")) == 0
+    assert len(db.read("trials")) == 0
+    assert len(db.read("benchmarks")) == 0
+
+
+def test_load_all(empty_database):
+    """Test load all database"""
+    assert os.path.isfile(LOAD_DATA)
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r ignore")
+    with loaded_db.locked_database(write=False) as internal_db:
+        collections = set(internal_db._db.keys())
+    assert collections == {"experiments", "algo", "trials", "benchmarks"}
+
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 3
+    assert len(loaded_db.read("trials")) == 24
+    # TODO: We should expect 6 algorithms, but only 3 are returned
+    # It seems config `three_experiments_family_same_name` contains 3 supplementary algorithms
+    # that are not related to experiments registered in the database. So, when dumping from this config
+    # then loading from dumped data, only algorithms related to available experiments are loaded,
+    # and there are only 3 such algorithms (1 per experiment)
+    assert len(loaded_db.read("algo")) == 3
+
+
+def test_load_ignore(empty_database):
+    """Test load all database with --resolve ignore"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r ignore")
+    benchmarks = loaded_db.read("benchmarks")
+    experiments = loaded_db.read("experiments")
+    trials = loaded_db.read("trials")
+    algos = loaded_db.read("algo")
+    assert len(benchmarks) == 0
+    assert len(experiments) == 3
+    assert len(trials) == 24
+    assert len(algos) == 3
+
+    execute(f"db load {LOAD_DATA} -r ignore")
+    # Duplicated data should be ignored, so we must expect same number of data and same IDs.
+    new_benchmarks = loaded_db.read("benchmarks")
+    new_experiments = loaded_db.read("experiments")
+    new_trials = loaded_db.read("trials")
+    new_algos = loaded_db.read("algo")
+    assert len(new_benchmarks) == 0
+    assert len(new_experiments) == 3
+    assert len(new_trials) == 24
+    assert len(new_algos) == 3
+    assert len(common_indices(experiments, new_experiments)) == 3
+    assert len(common_indices(trials, new_trials)) == 24
+    assert len(common_indices(algos, new_algos)) == 3
+
+
+def test_load_overwrite(empty_database):
+    """Test load all database with --resolve overwrite"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r overwrite")
+    benchmarks = loaded_db.read("benchmarks")
+    experiments = loaded_db.read("experiments")
+    trials = loaded_db.read("trials")
+    algos = loaded_db.read("algo")
+    assert len(benchmarks) == 0
+    assert len(experiments) == 3
+    assert len(trials) == 24
+    assert len(algos) == 3
+
+    execute(f"db load {LOAD_DATA} -r overwrite")
+    # Duplicated data should be overwritten, so we must expect same number of data
+    new_benchmarks = loaded_db.read("benchmarks")
+    new_experiments = loaded_db.read("experiments")
+    new_trials = loaded_db.read("trials")
+    new_algos = loaded_db.read("algo")
+    assert len(new_benchmarks) == 0
+    assert len(new_experiments) == 3
+    assert len(new_trials) == 24
+    assert len(new_algos) == 3
+
+    # New IDs are computed based on existing ones in destination database.
+    # As experiments are inserted one by one, each insertion will overwrite 1 previous experiment
+    # and compute new IDs based on all other data not overwritten, so that
+    # we will ultimately have completely new IDs for all overwritten data.
+    assert not common_indices(experiments, new_experiments)
+    assert not common_indices(trials, new_trials)
+    assert not common_indices(algos, new_algos)
+
+
+def test_load_bump(empty_database):
+    """Test load all database with --resolve --bump"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r bump")
+    benchmarks = loaded_db.read("benchmarks")
+    experiments = loaded_db.read("experiments")
+    trials = loaded_db.read("trials")
+    algos = loaded_db.read("algo")
+    assert len(benchmarks) == 0
+    assert len(experiments) == 3
+    assert len(trials) == 24
+    assert len(algos) == 3
+
+    execute(f"db load {LOAD_DATA} -r bump")
+    # Duplicated data should be bumped, so we must expect twice quantity of data.
+    new_benchmarks = loaded_db.read("benchmarks")
+    new_experiments = loaded_db.read("experiments")
+    new_trials = loaded_db.read("trials")
+    new_algos = loaded_db.read("algo")
+    assert len(new_benchmarks) == 0
+    assert len(new_experiments) == 3 * 2
+    assert len(new_trials) == 24 * 2
+    assert len(new_algos) == 3 * 2
+
+    execute(f"db load {LOAD_DATA} -r bump")
+    # Duplicated data should be bumped, so we must expect thrice quantity of data.
+    third_benchmarks = loaded_db.read("benchmarks")
+    third_experiments = loaded_db.read("experiments")
+    third_trials = loaded_db.read("trials")
+    third_algos = loaded_db.read("algo")
+    assert len(third_benchmarks) == 0
+    assert len(third_experiments) == 3 * 3
+    assert len(third_trials) == 24 * 3
+    assert len(third_algos) == 3 * 3
+
+
+def test_load_one_experiment(empty_database):
+    """Test load experiment test_single_exp"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp")
+    experiments = loaded_db.read("experiments")
+    algos = loaded_db.read("algo")
+    trials = loaded_db.read("trials")
+    assert len(experiments) == 1
+    (exp_data,) = experiments
+    # We must have dumped version 1
+    assert exp_data["name"] == "test_single_exp"
+    assert exp_data["version"] == 1
+    assert len(algos) == len(exp_data["algorithms"]) == 1
+    # This experiment must have 12 trials (children included)
+    assert len(trials) == 12
+    assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
+    assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+
+
+def test_load_one_experiment_other_version(empty_database):
+    """Test load version 2 of experiment test_single_exp"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp -v 2")
+    experiments = loaded_db.read("experiments")
+    algos = loaded_db.read("algo")
+    trials = loaded_db.read("trials")
+    assert len(experiments) == 1
+    (exp_data,) = experiments
+    assert exp_data["name"] == "test_single_exp"
+    assert exp_data["version"] == 2
+    assert len(algos) == len(exp_data["algorithms"]) == 1
+    # This experiment must have only 6 trials
+    assert len(trials) == 6
+    assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
+    assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+
+
+def test_load_one_experiment_ignore(empty_database):
+    """Test load experiment test_single_exp with --resolve ignore"""
+
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp")
+    experiments = loaded_db.read("experiments")
+    algos = loaded_db.read("algo")
+    trials = loaded_db.read("trials")
+    assert len(experiments) == 1
+    assert len(algos) == 1
+    assert len(trials) == 12
+
+    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp")
+    new_experiments = loaded_db.read("experiments")
+    new_algos = loaded_db.read("algo")
+    new_trials = loaded_db.read("trials")
+    assert len(new_experiments) == 1
+    assert len(new_algos) == 1
+    assert len(new_trials) == 12
+
+    # IDs should have not changed
+    assert len(common_indices(experiments, new_experiments)) == 1
+    assert len(common_indices(algos, new_algos)) == 1
+    assert len(common_indices(new_trials, trials)) == 12
+
+
+def test_load_one_experiment_overwrite(empty_database):
+    """Test load experiment test_single_exp with --resolve overwrite"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r overwrite -n test_single_exp")
+    experiments = loaded_db.read("experiments")
+    algos = loaded_db.read("algo")
+    trials = loaded_db.read("trials")
+    assert len(experiments) == 1
+    assert len(algos) == 1
+    assert len(trials) == 12
+
+    execute(f"db load {LOAD_DATA} -r overwrite -n test_single_exp")
+    new_experiments = loaded_db.read("experiments")
+    new_algos = loaded_db.read("algo")
+    new_trials = loaded_db.read("trials")
+    assert len(new_experiments) == 1
+    assert len(new_algos) == 1
+    assert len(new_trials) == 12
+
+    # NB: As destination contains only 1 experiment which is overwritten,
+    # old experiment is deleted before new one is inserted, so that
+    # we may get again same IDs (e.g. ID `1` for experiment).
+    # So, we won't check IDs here.
+
+
+def test_load_one_experiment_bump(empty_database):
+    """Test load experiment test_single_exp with --resolve bump"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA} -r bump -n test_single_exp")
+    experiments = loaded_db.read("experiments")
+    trials = loaded_db.read("trials")
+    algos = loaded_db.read("algo")
+    assert len(experiments) == 1
+    assert len(algos) == 1
+    assert len(trials) == 12
+
+    execute(f"db load {LOAD_DATA} -r bump -n test_single_exp")
+    # Duplicated data should be bumped, so we must expect twice quantity of data.
+    new_experiments = loaded_db.read("experiments")
+    new_trials = loaded_db.read("trials")
+    new_algos = loaded_db.read("algo")
+    assert len(new_experiments) == 1 * 2
+    assert len(new_algos) == 1 * 2
+    assert len(new_trials) == 12 * 2
+
+    execute(f"db load {LOAD_DATA} -r bump -n test_single_exp")
+    # Duplicated data should be bumped, so we must expect thrice quantity of data.
+    third_experiments = loaded_db.read("experiments")
+    third_trials = loaded_db.read("trials")
+    third_algos = loaded_db.read("algo")
+    assert len(third_experiments) == 1 * 3
+    assert len(third_algos) == 1 * 3
+    assert len(third_trials) == 12 * 3

@@ -12,6 +12,7 @@ import os
 
 from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
+from orion.core.io.database import DatabaseError
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage
 
@@ -82,8 +83,14 @@ def main(args):
             if version is not None:
                 query["version"] = version
             experiments = src_database.read("experiments", query)
+            if not experiments:
+                raise DatabaseError(
+                    f"No experiment found with query {query}. Nothing to dump."
+                )
+            if len(experiments) > 1:
+                experiments = sorted(experiments, key=lambda d: d["version"])[:1]
             logger.info(
-                f"Found {len(experiments)} experiment(s) in src with query: {query}"
+                f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
             )
         # Import experiments
         for experiment in experiments:
@@ -112,7 +119,7 @@ def load_benchmark(dst_db, src_benchmark, resolve):
             logger.info(f'Overwrite benchmark in dst, name: {src_benchmark["name"]}')
             dst_db.remove(collection_name, {"_id": dst_benchmark["_id"]})
         elif resolve == "bump":
-            raise RuntimeError(
+            raise DatabaseError(
                 "Can't bump benchmark version, as benchmarks do not currently support versioning."
             )
     # Delete benchmark database ID so that a new one will be generated on insertion
