@@ -112,7 +112,6 @@ def load_benchmark(dst_db, src_benchmark, resolve):
             logger.info(f'Overwrite benchmark in dst, name: {src_benchmark["name"]}')
             dst_db.remove(collection_name, {"_id": dst_benchmark["_id"]})
         elif resolve == "bump":
-            return
             raise RuntimeError(
                 "Can't bump benchmark version, as benchmarks do not currently support versioning."
             )
