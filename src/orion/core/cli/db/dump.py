@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# pylint: disable=too-few-public-methods
+# pylint: disable=,protected-access
 """
 Storage export tool
 ===================
@@ -58,6 +58,12 @@ def main(args):
 
 
 def dump_database(orig_db, dump_host, experiment=None, version=None):
+    """Dump a database
+    :param orig_db: database to dump
+    :param dump_host: file path to dump into (dumped file will be a pickled file)
+    :param experiment: (optional) name of experiment to dump (by default, full database is dumped)
+    :param version: (optional) version of experiment to dump
+    """
     dump_host = os.path.abspath(dump_host)
     if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(orig_db.host):
         raise DatabaseError("Cannot dump pickleddb to itself.")

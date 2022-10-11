@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# pylint: disable=too-few-public-methods
+# pylint: disable=,protected-access
 """
 Storage import tool
 ===================
@@ -99,6 +99,7 @@ def main(args):
 
 
 def load_benchmarks(src_database, dst_db, resolve):
+    """Export all benchmarks"""
     collection_name = "benchmarks"
     benchmarks = src_database.read(collection_name)
     for src_benchmark in benchmarks:
@@ -107,6 +108,7 @@ def load_benchmarks(src_database, dst_db, resolve):
 
 
 def load_benchmark(dst_db, src_benchmark, resolve):
+    """Export one benchmark into destination database"""
     collection_name = "benchmarks"
     dst_benchmarks = dst_db.read(collection_name, {"name": src_benchmark["name"]})
     if dst_benchmarks:
@@ -129,6 +131,7 @@ def load_benchmark(dst_db, src_benchmark, resolve):
 
 
 def load_experiment(src_database, dst_db, experiment, resolve):
+    """Export one experiment from src to dst database using resolve policy"""
     dst_experiments = dst_db.read(
         "experiments", {"name": experiment["name"], "version": experiment["version"]}
     )
@@ -164,7 +167,8 @@ def load_experiment(src_database, dst_db, experiment, resolve):
             )
             experiment["version"] = new_version
             logger.info(
-                f'Bumped version of src experiment: {experiment["name"]}, from {old_version} to {new_version}'
+                f'Bumped version of src experiment: {experiment["name"]}, '
+                f"from {old_version} to {new_version}"
             )
     else:
         logger.info(f'Import experiment {experiment["name"]}.{experiment["version"]}')
