@@ -12,6 +12,7 @@ import os
 
 from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
+from orion.core.io.database import DatabaseError
 from orion.core.io.database.pickleddb import PickledDB
 from orion.storage.base import setup_storage
 
@@ -59,8 +60,7 @@ def main(args):
 def dump_database(orig_db, dump_host, experiment=None, version=None):
     dump_host = os.path.abspath(dump_host)
     if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(orig_db.host):
-        logger.info("Cannot dump pickleddb to itself.")
-        return
+        raise DatabaseError("Cannot dump pickleddb to itself.")
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
     db = dst_storage._db
     logger.info(f"Dump to {db}")
@@ -94,22 +94,24 @@ def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
         if version is not None:
             query["version"] = version
         experiments = src_db.read("experiments", query)
-        logger.info(f"Found {len(experiments)} experiment(s) with query: {query}")
         if not experiments:
-            logger.info("Nothing to dump.")
-            return
+            raise DatabaseError(
+                f"No experiment found with query {query}. Nothing to dump."
+            )
+        if len(experiments) > 1:
+            exp_data = sorted(experiments, key=lambda d: d["version"])[0]
+        else:
+            (exp_data,) = experiments
+        logger.info(f"Found experiment {exp_data['name']}.{exp_data['version']}")
         # Dump selected experiments
         logger.info(f"Dumping experiment {experiment}")
-        dst_db.write("experiments", experiments)
-        # Do not dump other experiments
-        collection_names.remove("experiments")
-        # Dump data related to selected experiments
-        exp_indices = {exp["_id"] for exp in experiments}
-        for collection_name in sorted(collection_names):
+        dst_db.write("experiments", exp_data)
+        # Dump data related to selected experiments (do not dump other experiments)
+        for collection_name in sorted(collection_names - {"experiments"}):
             filtered_data = [
                 element
                 for element in src_db.read(collection_name)
-                if element.get("experiment", None) in exp_indices
+                if element.get("experiment", None) == exp_data["_id"]
             ]
             dst_db.write(collection_name, filtered_data)
             logger.info(

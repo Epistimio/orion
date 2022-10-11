@@ -441,3 +441,38 @@ def three_experiments_same_name_with_trials(
         orionstate.database.write("trials", trial2.to_dict())
         orionstate.database.write("trials", trial3.to_dict())
         x_value += 1
+
+
+@pytest.fixture
+def three_experiments_family_same_name_with_trials(
+    three_experiments_family_same_name, orionstate, storage
+):
+    """Create three experiments, two of them with the same name but different versions and one
+    with a child, and add trials including children trials.
+    """
+    exp1 = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
+    exp2 = experiment_builder.build(name="test_single_exp", version=2, storage=storage)
+    exp3 = experiment_builder.build(
+        name="test_single_exp_child", version=1, storage=storage
+    )
+
+    x = {"name": "/x", "type": "real"}
+    y = {"name": "/y", "type": "real"}
+    z = {"name": "/z", "type": "real"}
+    x_value = 0.0
+    for status in Trial.allowed_stati:
+        x["value"] = x_value + 0.1  # To avoid duplicates
+        y["value"] = x_value * 10
+        z["value"] = x_value * 100
+        trial1 = Trial(experiment=exp1.id, params=[x], status=status)
+        trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
+        trial3 = Trial(experiment=exp3.id, params=[x, y, z], status=status)
+        # Add a child to a trial from exp1
+        child = trial1.branch(params={"/x": 1})
+        orionstate.database.write("trials", trial1.to_dict())
+        orionstate.database.write("trials", trial2.to_dict())
+        orionstate.database.write("trials", trial3.to_dict())
+        orionstate.database.write("trials", child.to_dict())
+        x_value += 1
+    # exp1 should have 12 trials (including child trials)
+    # exp2 and exp3 should have 6 trials each
