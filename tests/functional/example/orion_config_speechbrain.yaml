@@ -1,0 +1,7 @@
+name: speechbrain-tutorial
+
+max_trials: 1
+
+algorithms:
+  random:
+    seed: 1
