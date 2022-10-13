@@ -22,7 +22,9 @@ The Adaptation for using Oríon is quite simple.
 1) We first need to import orion.report_objective() into the project.
 
 .. code-block:: python
+
     from orion.client import report_objective
+
 2) We then need to change the evaluation from the training data to the validation data.
 The evaluation method should look like this. It returns the validation loss.
 
@@ -34,7 +36,9 @@ The evaluation method should look like this. It returns the validation loss.
 the validation loss, to Oríon.
 
 .. code-block:: python
+
     report_objective(valid_stats)
+
 The code is now adapted and ready to be used with Oríon.
 
 Execution
@@ -46,6 +50,7 @@ the hyper-parameters that we want to optimize after that,
 which will automatically overrides the ones set in the train.yaml.
 
 .. code-block:: bash
+
     orion hunt \
       --enable-evc -n <experiment_name> \
       python main.py train.yaml \
@@ -55,6 +60,7 @@ which will automatically overrides the ones set in the train.yaml.
         --coverage_penalty~'loguniform(1.0, 2.0)' \
         --temperature~'loguniform(1.0, 1.5)' \
         --temperature_lm~'loguniform(1.0, 1.5)'
+
 Results
 =======
 
@@ -62,10 +68,13 @@ When an experiment reaches its termination criterion, basically ``max-trials``,
 you can see the results using the command
 
 .. code-block:: bash
+
     $ orion info -n <experiment_name>
+
 This outputs the following statistics
 
 .. code-block:: bash
+
     Stats
     =====
     completed: True
@@ -83,3 +92,4 @@ This outputs the following statistics
     start time: 2022-09-29 14:37:41.048314
     finish time: 2022-09-30 20:08:07.384765
     duration: 1 day, 5:30:26.336451
+    
