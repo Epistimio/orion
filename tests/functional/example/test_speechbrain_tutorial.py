@@ -36,18 +36,6 @@ def download_data(tmp_path_factory):
     """Calling the script, for downloading the data"""
     script = os.path.abspath("examples/speechbrain_tutorial/download_data.py")
     # Utiliser les commandes et overrides pour les download path
-    dir_var = [
-        "--data_folder",
-        data,
-        "--output_folder",
-        output,
-        "--train_annotation",
-        path,
-        "--valid_annotation",
-        path,
-        "--test_annotation",
-        path,
-    ]
     return_code = subprocess.call(
         [
             "python",
