@@ -73,7 +73,6 @@ def download_data(tmp_path_factory):
 
 def test_script_integrity(capsys, download_data):
     """Verifies the example script can run in standalone via `python ...`."""
-    print(download_data)
     script = os.path.abspath("examples/speechbrain_tutorial/main.py")
     path = download_data
     data = path / "data"
@@ -143,7 +142,7 @@ def test_orion_runs_script(download_data):
         ]
     )
 
-    experiment = create_experiment(name="speechbrain-tutorial1")
+    experiment = create_experiment(name="speechbrain-tutorial")
     assert experiment is not None
     assert experiment.version == 1
 
