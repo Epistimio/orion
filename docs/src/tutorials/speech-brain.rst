@@ -92,4 +92,3 @@ This outputs the following statistics
     start time: 2022-09-29 14:37:41.048314
     finish time: 2022-09-30 20:08:07.384765
     duration: 1 day, 5:30:26.336451
-    
