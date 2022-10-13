@@ -19,13 +19,11 @@ Adapting the Speechbrain for Oríon
 
 The Adaptation for using Oríon is quite simple.
 
-1) We first need to import orion.report_objective() into the project. 
+1) We first need to import orion.report_objective() into the project.
 
 .. code-block:: python
-
     from orion.client import report_objective
-
-2) We then need to change the evaluation from the training data to the validation data. 
+2) We then need to change the evaluation from the training data to the validation data.
 The evaluation method should look like this. It returns the validation loss.
 
 .. literalinclude:: /../../examples/speechbrain_tutorial/main.py
@@ -36,23 +34,20 @@ The evaluation method should look like this. It returns the validation loss.
 the validation loss, to Oríon.
 
 .. code-block:: python
-
     report_objective(valid_stats)
-
 The code is now adapted and ready to be used with Oríon.
 
 Execution
 =========
 
-We are now going to call the orion hunt function. Notice that we still need to give the train.yaml 
-file to speechbrain, since the general configuration is in there. However, we are going to specify 
-the hyper-parameters that we want to optimize after that, which will automatically overrides the ones 
-set in the train.yaml.
+We are now going to call the orion hunt function. Notice that we still need to give the train.yaml
+file to speechbrain, since the general configuration is in there. However, we are going to specify
+the hyper-parameters that we want to optimize after that,
+which will automatically overrides the ones set in the train.yaml.
 
 .. code-block:: bash
-
     orion hunt \
-      --enable-evc -n <experiment_name> \ 
+      --enable-evc -n <experiment_name> \
       python main.py train.yaml \
         --lr~'loguniform(0.05, 0.2)' \
         --ctc_weight~'loguniform(0.25, 0.75)' \
@@ -60,21 +55,17 @@ set in the train.yaml.
         --coverage_penalty~'loguniform(1.0, 2.0)' \
         --temperature~'loguniform(1.0, 1.5)' \
         --temperature_lm~'loguniform(1.0, 1.5)'
-
 Results
 =======
 
-When an experiment reaches its termination criterion, basically ``max-trials``, 
+When an experiment reaches its termination criterion, basically ``max-trials``,
 you can see the results using the command
 
 .. code-block:: bash
-
     $ orion info -n <experiment_name>
-
 This outputs the following statistics
 
 .. code-block:: bash
-
     Stats
     =====
     completed: True
