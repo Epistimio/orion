@@ -142,7 +142,7 @@ def test_orion_runs_script(download_data):
         ]
     )
 
-    experiment = create_experiment(name="speechbrain-tutorial")
+    experiment = create_experiment(name="speechbrain-tutorial-test")
     assert experiment is not None
     assert experiment.version == 1
 
