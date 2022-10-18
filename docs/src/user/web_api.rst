@@ -450,6 +450,24 @@ retrieve individual benchmarks as well as a list of all your benchmarks.
                     or assessment, task or algorithms are not part of the existing benchmark
                     configuration.
 
+
+Database dumping
+----------------
+
+The database dumping resource allows to dump database content into a PickledDB and download it as PKL file.
+
+.. http:get:: /dump
+
+   Return a PKL file containing database content.
+
+   :query name: Optional name of experiment to export. It unspecified, whole database is dumped.
+   :query version: Optional version of the experiment to retrieve.
+      If unspecified and name is specified, the **oldest** version of the experiment is exported.
+      If both name and version are unspecified, whole database is dumped.
+
+   :statuscode 404: When an error occurred during dumping.
+
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
