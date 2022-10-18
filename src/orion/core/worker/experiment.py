@@ -335,10 +335,13 @@ class Experiment:
         the current experiment will only see the new copy of the trial.
         """
         self._check_if_writable()
-        evc_pending_trials = []
         # TODO: break orion as a service
-        exp_pending_trials = self._select_evc_call(
+        evc_pending_trials = []
+        evc_pending_trials = self._select_evc_call(
             with_evc_tree=True, function="fetch_pending_trials"
+        )
+        exp_pending_trials = self._select_evc_call(
+            with_evc_tree=False, function="fetch_pending_trials"
         )
 
         exp_trials_ids = {trial.id for trial in exp_pending_trials}
