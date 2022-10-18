@@ -6,14 +6,7 @@ import pytest
 
 from orion.algo.space import Space
 from orion.benchmark.task import Branin, CarromTable, EggHolder, HPOBench, RosenBrock
-
-try:
-    from hpobench import __version__
-
-    print(__version__)
-    IMPORT_ERROR = None
-except ImportError as err:
-    IMPORT_ERROR = err
+from orion.benchmark.task.hpobench import import_optional
 
 
 class TestBranin:
@@ -116,7 +109,7 @@ class TestRosenBrock:
 
 
 @pytest.mark.skipif(
-    IMPORT_ERROR is not None,
+    import_optional.failed,
     reason="Running without HPOBench",
 )
 class TestHPOBench:
@@ -135,7 +128,7 @@ class TestHPOBench:
             "HPOBench": {
                 "hpo_benchmark_class": "hpobench.benchmarks.ml.tabular_benchmark.TabularBenchmark",
                 "benchmark_kwargs": {"model": "xgb", "task_id": 168912},
-                "objective_function_kwargs": {},
+                "objective_function_kwargs": None,
                 "max_trials": 2,
             }
         }
@@ -147,6 +140,9 @@ class TestHPOBench:
                 max_trials=2,
                 hpo_benchmark_class="hpobench.container.benchmark.ml.tabular_benchmarks.TabularBenchmark",
             )
+        assert "Can not run containerized benchmark without Singularity" in str(
+            ex.value
+        )
 
     def test_call(self):
         """Test to run a local HPOBench benchmark"""

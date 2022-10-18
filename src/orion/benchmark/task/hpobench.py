@@ -4,10 +4,16 @@ Task for HPOBench
 """
 import importlib
 import subprocess
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from orion.algo.space.configspace import to_orionspace
 from orion.benchmark.task.base import BenchmarkTask
+from orion.core.utils.module_import import ImportOptional
+
+with ImportOptional("HPOBench", "hpobench") as import_optional:
+    from hpobench import __version__ as hpobench_version
+
+    print(f"HPOBench version: {hpobench_version}")
 
 
 class HPOBench(BenchmarkTask):
@@ -35,10 +41,11 @@ class HPOBench(BenchmarkTask):
     def __init__(
         self,
         max_trials: int,
-        hpo_benchmark_class: Union[str, None] = None,
-        benchmark_kwargs: dict = dict(),
-        objective_function_kwargs: dict = dict(),
+        hpo_benchmark_class: str = None,
+        benchmark_kwargs: dict = None,
+        objective_function_kwargs: dict = None,
     ):
+        import_optional.ensure()
         super().__init__(
             max_trials=max_trials,
             hpo_benchmark_class=hpo_benchmark_class,
@@ -47,8 +54,10 @@ class HPOBench(BenchmarkTask):
         )
         self._verify_benchmark(hpo_benchmark_class)
         self.hpo_benchmark_cls = self._load_benchmark(hpo_benchmark_class)
-        self.benchmark_kwargs = benchmark_kwargs
-        self.objective_function_kwargs = objective_function_kwargs
+        self.benchmark_kwargs = dict() if benchmark_kwargs is None else benchmark_kwargs
+        self.objective_function_kwargs = (
+            dict() if objective_function_kwargs is None else objective_function_kwargs
+        )
 
     def call(self, **kwargs) -> List[Dict]:
         hpo_benchmark = self.hpo_benchmark_cls(**self.benchmark_kwargs)
@@ -74,7 +83,7 @@ class HPOBench(BenchmarkTask):
             code, message = subprocess.getstatusoutput("singularity -h")
             if code != 0:
                 raise AttributeError(
-                    "Can not run conterized benchmark without Singularity: {}".format(
+                    "Can not run containerized benchmark without Singularity: {}".format(
                         message
                     )
                 )

@@ -32,7 +32,9 @@ to install the extra requirements. HPOBench provides local and containerized ben
 local benchmark could ask for total difference extra requirements. With ``pip install orion[hpobench]``,
 you will be able to run local benchmark ``benchmarks.ml.tabular_benchmark``.
 If you want to run other benchmarks in local, refer HPOBench `Run a Benchmark Locally`_. To run
-containerized benchmarks, you will need to install `singularity`_.
+containerized benchmarks, you will need to install `singularity`_. You can choose to run local
+or containerized benchmarks by providing different `hpo_benchmark_class` parameter for
+:doc:`/code/benchmark/task/hpobench`.
 
 Learn how to get start using benchmark in Orion with this `sample notebook`_.
 
