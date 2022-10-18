@@ -283,7 +283,8 @@ class Experiment:
         self._check_if_executable()
         log.debug("reserving trial with (score: %s)", score_handle)
 
-        self.fix_lost_trials(False)
+        # TODO: break orion as a service
+        self.fix_lost_trials(True)
 
         self.duplicate_pending_trials()
 
@@ -335,11 +336,9 @@ class Experiment:
         """
         self._check_if_writable()
         evc_pending_trials = []
-        # self._select_evc_call(
-        #    with_evc_tree=True, function="fetch_pending_trials"
-        # )
+        # TODO: break orion as a service
         exp_pending_trials = self._select_evc_call(
-            with_evc_tree=False, function="fetch_pending_trials"
+            with_evc_tree=True, function="fetch_pending_trials"
         )
 
         exp_trials_ids = {trial.id for trial in exp_pending_trials}
@@ -551,7 +550,8 @@ class Experiment:
             To be used as a terminating condition in a ``Worker``.
 
         """
-        trials = self.fetch_trials(with_evc_tree=False)
+        # TODO: breaks Orion as a Service
+        trials = self.fetch_trials(with_evc_tree=True)
         num_completed_trials = 0
         num_pending_trials = 0
         for trial in trials:

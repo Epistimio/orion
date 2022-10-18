@@ -874,7 +874,7 @@ class ExperimentClient:
 
     def _update_heardbeat(self, trial):
         """Try to update the heartbeat, returns true if the Pacemaker should be stopped"""
-        trial = self.storage.get_trial(self.trial)
+        # trial = self.storage.get_trial(self.trial)
 
         if trial.status in STOPPED_STATUS:
             return True

@@ -6,6 +6,7 @@ import time
 import pytest
 
 import orion.core.io.experiment_builder as experiment_builder
+from orion.client.experiment import STOPPED_STATUS
 from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.storage.base import setup_storage
@@ -40,12 +41,26 @@ def trial(exp):
     return trial
 
 
+class FakeClient:
+    def __init__(self, storage) -> None:
+        self.storage = storage
+
+    def _update_heardbeat(self, trial):
+        if trial.status in STOPPED_STATUS:
+            return True
+        else:
+            if not self.client.update_heartbeat(trial):
+                return True
+
+        return False
+
+
 def test_trial_update_heartbeat(exp, trial):
     """Test that the heartbeat of a trial has been updated."""
 
     storage = setup_storage()
 
-    trial_monitor = TrialPacemaker(trial, wait_time=1, storage=storage)
+    trial_monitor = TrialPacemaker(trial, wait_time=1, client=FakeClient(storage))
 
     trial_monitor.start()
     time.sleep(2)
@@ -68,7 +83,7 @@ def test_trial_heartbeat_not_updated(exp, trial):
     """Test that the heartbeat of a trial is not updated when trial is not longer reserved."""
     storage = setup_storage()
 
-    trial_monitor = TrialPacemaker(trial, wait_time=1, storage=storage)
+    trial_monitor = TrialPacemaker(trial, wait_time=1, client=FakeClient(storage))
 
     trial_monitor.start()
     time.sleep(2)
@@ -89,7 +104,7 @@ def test_trial_heartbeat_not_updated(exp, trial):
 def test_trial_heartbeat_not_updated_inbetween(exp, trial):
     """Test that the heartbeat of a trial is not updated before wait time."""
     storage = setup_storage()
-    trial_monitor = TrialPacemaker(trial, wait_time=5, storage=storage)
+    trial_monitor = TrialPacemaker(trial, wait_time=5, client=FakeClient(storage))
 
     trial_monitor.start()
     time.sleep(1)

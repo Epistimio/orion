@@ -154,7 +154,7 @@ class WorkonClientREST(BaseClientREST):
 
     def release_all(self):
         for k, v in self._pacemakers.items():
-            self.release(k, "interrupted")
+            self.release(RemoteTrial(None, k, []), "interrupted")
             v.stop()
 
     def __del__(self):
