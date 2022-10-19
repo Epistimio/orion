@@ -1,8 +1,8 @@
 """
-Module responsible for the dump/ REST endpoint
-==============================================
+Module responsible for storage import/export REST endpoints
+===========================================================
 
-Serves all the requests made to dump/ REST endpoint.
+Serves all the requests made to storage import/export REST endpoints.
 
 """
 import logging
@@ -36,13 +36,13 @@ def _gen_dump_host_file():
             continue
 
 
-class DatabaseDumpingResource:
+class StorageResource:
     """Handle requests for the dump/ REST endpoint"""
 
     def __init__(self, storage):
         self.storage = storage
 
-    def on_get(self, req: Request, resp: Response):
+    def on_get_dump(self, req: Request, resp: Response):
         """Handle the GET requests for dump/"""
         name = req.get_param("name")
         version = req.get_param_as_int("version")
@@ -61,3 +61,6 @@ class DatabaseDumpingResource:
         finally:
             os.unlink(dump_host)
             os.unlink(f"{dump_host}.lock")
+
+    def on_post_load(self, req: Request, resp: Response):
+        pass
