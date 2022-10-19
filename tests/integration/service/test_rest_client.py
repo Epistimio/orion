@@ -1,4 +1,4 @@
-from threading import Thread
+from multiprocessing import Process
 
 from orion.service.client.experiment import ExperimentClientREST
 from orion.service.testing import server
@@ -32,6 +32,7 @@ def new_client(endpoint, tok):
         working_dir=None,
         debug=False,
     )
+    return client
 
 
 def test_one_workon_rest_client():
@@ -43,8 +44,22 @@ def test_one_workon_rest_client():
             n_workers=2,
         )
 
-        assert count > 10
+        assert count >= 10
         assert client.is_done
+
+
+def workon(endpoint, tok):
+    print("CONNECTING")
+    client = new_client(endpoint, tok)
+
+    print("WORKING")
+    count = client.workon(
+        fct=function,
+        n_workers=2,
+    )
+
+    assert count >= 10
+    assert client.is_done
 
 
 def test_n_workon_rest_client(tokens=None):
@@ -55,10 +70,15 @@ def test_n_workon_rest_client(tokens=None):
         workers = []
 
         for token in tokens:
-            client = new_client(endpoint, token)
-            worker = Thread(target=client.workon)
-            worker.start()
-            workers.append(worker)
+            print(f"\nSTARTING {endpoint}\n")
+            p = Process(target=workon, args=(endpoint, token))
+            p.start()
+            workers.append(p)
+
+        print("\nWAITING\n")
 
         for worker in workers:
             worker.join()
+            assert worker.exitcode == 0
+
+        print("\nHERE\n")

@@ -110,7 +110,8 @@ function ensure_indexes {
     db.experiments.createIndex(
         {
             "name": 1,
-            "version": 1
+            "version": 1,
+            "owner_id": 1
         },
         {
             unique: true

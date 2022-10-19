@@ -11,6 +11,7 @@ import signal
 from abc import ABCMeta
 from collections import defaultdict
 from contextlib import contextmanager
+from functools import cache
 from glob import glob
 from importlib import import_module
 
@@ -64,6 +65,7 @@ def get_all_types(parent_cls, cls_name):
     return {class_.__name__.lower(): class_ for class_ in types}
 
 
+@cache
 def _import_modules(cls):
     cls.modules = []
     # TODO: remove?

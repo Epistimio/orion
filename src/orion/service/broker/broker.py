@@ -100,7 +100,7 @@ def create_experiment_client(request: RequestContext) -> ExperimentClient:
 
     storage = get_storage_for_user(request)
 
-    log.debug("Building experiment")
+    log.debug("Building experiment %s", request.data)
 
     # ignore the storage config
     _ = request.data.pop("storage", None)

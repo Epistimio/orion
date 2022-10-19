@@ -63,6 +63,7 @@ class QueryRoute:
 
     def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
         """Force status to be set, and send back an error on exception"""
+        log.debug("received request")
         resp.media = dict()
 
         try:
@@ -266,6 +267,7 @@ def main(
         format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
         level=logging.DEBUG,
         force=True,
+        filename="oaas.log",
     )
 
     initialize_metrics(8000)

@@ -84,10 +84,15 @@ class Legacy(BaseStorageProtocol):
         # self._db.index_information("experiment")
         self._db.ensure_index(
             "experiments",
-            [("name", Database.ASCENDING), ("version", Database.ASCENDING)],
+            [
+                ("name", Database.ASCENDING),
+                ("version", Database.ASCENDING),
+                ("onwer_id", Database.ASCENDING),
+            ],
             unique=True,
         )
 
+        self._db.ensure_index("experiments", "onwer_id")
         self._db.ensure_index("experiments", "metadata.datetime")
 
         self._db.ensure_index("benchmarks", "name", unique=True)

@@ -256,6 +256,7 @@ def _build_experiment(
             working_dir=working_dir,
         )
     except RaceCondition:
+        log.debug("Try creating a new experiment aagain")
         # Try again, but if it fails again, raise. Race conditions due to version increment should
         # only occur once in a short window of time unless code version is changing at a crazy pace.
         try:
