@@ -152,7 +152,7 @@ def test_orion_runs_script(download_data):
 
     storage = setup_storage()
     trials = storage.fetch_trials(uid=experiment.id)
-    assert len(trials) == 1
+    assert len(trials) > 0
 
     trial = trials[0]
     assert trial.status == "completed"
