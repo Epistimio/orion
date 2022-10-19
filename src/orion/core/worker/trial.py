@@ -205,11 +205,11 @@ class Trial:
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         kwargs.pop("owner_id", None)
+        self._params: list[Trial.Param] = []
+        self._results: list[Trial.Result] = []
 
         for attrname in self.__slots__:
-            if attrname in ("_results", "_params"):
-                setattr(self, attrname, list())
-            else:
+            if attrname not in ("_results", "_params"):
                 setattr(self, attrname, None)
 
         self.status = "new"

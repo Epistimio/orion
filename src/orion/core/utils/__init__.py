@@ -3,6 +3,7 @@ Package-wide useful routines
 ============================
 
 """
+from __future__ import annotations
 
 import hashlib
 import logging
@@ -11,8 +12,7 @@ import signal
 from abc import ABCMeta
 from collections import defaultdict
 from contextlib import contextmanager
-from functools import cache
-from glob import glob
+from functools import lru_cache
 from importlib import import_module
 
 import pkg_resources
@@ -65,7 +65,7 @@ def get_all_types(parent_cls, cls_name):
     return {class_.__name__.lower(): class_ for class_ in types}
 
 
-@cache
+@lru_cache(maxsize=None)
 def _import_modules(cls):
     cls.modules = []
     # TODO: remove?
@@ -74,6 +74,7 @@ def _import_modules(cls):
     # Get types advertised through entry points!
     for entry_point in pkg_resources.iter_entry_points(cls.__name__):
         entry_point.load()
+        assert entry_point.dist is not None
         log.debug(
             "Found a %s %s from distribution: %s=%s",
             entry_point.name,
@@ -90,7 +91,12 @@ def _set_typenames(cls):
     log.debug("Implementations found: %s", sorted(cls.types.keys()))
 
 
-class GenericFactory:
+from typing import Generic, TypeVar
+
+T = TypeVar("T")  # pylint: disable=invalid-name
+
+
+class GenericFactory(Generic[T]):
     """Factory to create instances of classes inheriting a given ``base`` class.
 
     The factory can instantiate children of the base class at any level of inheritance.
@@ -109,10 +115,10 @@ class GenericFactory:
 
     """
 
-    def __init__(self, base):
+    def __init__(self, base: type[T]):
         self.base = base
 
-    def create(self, of_type, *args, **kwargs):
+    def create(self, of_type: str, *args, **kwargs):
         """Create an object, instance of ``self.base``
 
         Parameters
@@ -121,16 +127,16 @@ class GenericFactory:
             Name of class, subclass of ``self.base``. Capitalization insensitive
 
         args: *
-            Positional arguments to construct the givin class.
+            Positional arguments to construct the given class.
 
         kwargs: **
-            Keyword arguments to construct the givin class.
+            Keyword arguments to construct the given class.
         """
 
         constructor = self.get_class(of_type)
         return constructor(*args, **kwargs)
 
-    def get_class(self, of_type):
+    def get_class(self, of_type: str) -> type[T]:
         """Get the class object (not instantiated)
 
         Parameters
@@ -150,7 +156,7 @@ class GenericFactory:
 
         return constructors[of_type]
 
-    def get_classes(self):
+    def get_classes(self) -> dict[str, type[T]]:
         """Get children classes of ``self.base``"""
         _import_modules(self.base)
         return get_all_types(self.base, self.base.__name__)

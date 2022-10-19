@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import inspect
 import logging
+import typing
 from contextlib import contextmanager
 from typing import Callable
 
 import orion.core
+from orion.algo.space import Space
 from orion.client.runner import Runner, prepare_trial_working_dir
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
@@ -24,19 +26,29 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.working_dir import SetupWorkingDir
+from orion.core.worker.experiment import AlgoT
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.executor.base import executor_factory
+from orion.executor.base import BaseExecutor, executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
+
+if typing.TYPE_CHECKING:
+    from orion.core.worker.experiment import Experiment
+    from orion.core.worker.experiment_config import ExperimentConfig
 
 log = logging.getLogger(__name__)
 
 STOPPED_STATUS = {"completed", "interrupted", "suspended"}
 
 
-def reserve_trial(experiment, producer, pool_size, timeout=None):
+def reserve_trial(
+    experiment: Experiment,
+    producer: Producer,
+    pool_size: int,
+    timeout: int | None = None,
+) -> Trial:
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
 
@@ -86,7 +98,12 @@ class ExperimentClient:
         Experiment object serving for interaction with storage
     """
 
-    def __init__(self, experiment, executor=None, heartbeat=None):
+    def __init__(
+        self,
+        experiment: Experiment[AlgoT],
+        executor: BaseExecutor | None = None,
+        heartbeat: int | None = None,
+    ):
         self._experiment = experiment
         self._producer = Producer(experiment)
         self._pacemakers = {}
@@ -147,9 +164,11 @@ class ExperimentClient:
         return self._experiment.metadata
 
     @property
-    def space(self):
+    def space(self) -> Space:
         """Return problem's parameter `orion.algo.space.Space`."""
-        return self._experiment.space
+        space = self._experiment.space
+        assert space is not None
+        return space
 
     @property
     def algorithms(self):
@@ -162,7 +181,7 @@ class ExperimentClient:
         return self._experiment.refers
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with `max_trials`.
@@ -180,7 +199,7 @@ class ExperimentClient:
         return self._experiment.is_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> ExperimentConfig:
         """Return a copy of an `Experiment` configuration as a dictionary."""
         return self._experiment.configuration
 
@@ -253,7 +272,7 @@ class ExperimentClient:
         """
         return self._experiment.to_pandas(with_evc_tree=with_evc_tree)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree=False) -> list[Trial]:
         """Fetch all trials of the experiment
 
         Parameters
@@ -791,9 +810,12 @@ class ExperimentClient:
 
         # Use worker's max_trials inside `exp.is_done` to reduce chance of
         # race condition for trials creation
+        assert self.max_trials is not None
+        assert max_trials is not None
         if self.max_trials > max_trials:
             self._experiment.max_trials = max_trials
-            self._experiment.algorithms.algorithm.max_trials = max_trials
+            assert self._experiment.algorithms is not None
+            self._experiment.algorithms.max_trials = max_trials
 
         with SetupWorkingDir(self):
 
@@ -920,6 +942,7 @@ class ExperimentClient:
         heartbeat=None,
         working_dir=None,
         debug=False,
+        knowledge_base=None,
         executor=None,
     ):
         """Build an experiment to be executable.
@@ -942,5 +965,6 @@ class ExperimentClient:
             heartbeat=heartbeat,
             working_dir=working_dir,
             debug=debug,
+            knowledge_base=knowledge_base,
             executor=executor,
         )

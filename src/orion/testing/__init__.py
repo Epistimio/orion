@@ -205,7 +205,9 @@ def mock_space_iterate(monkeypatch):
 
 
 @contextmanager
-def create_experiment(exp_config=None, trial_config=None, statuses=None, builder=None):
+def create_experiment(
+    exp_config=None, trial_config=None, statuses=None, builder=None, knowledge_base=None
+):
     """Context manager for the creation of an ExperimentClient and storage init"""
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")

@@ -13,7 +13,9 @@ import copy
 import datetime
 import inspect
 import logging
+import typing
 from dataclasses import dataclass, field
+from typing import Generator, Generic, TypeVar
 
 import pandas
 from typing_extensions import Literal
@@ -25,9 +27,15 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.storage.base import BaseStorageProtocol, FailedUpdate
 
+if typing.TYPE_CHECKING:
+    from orion.core.worker.trial import Trial
+    from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+
 log = logging.getLogger(__name__)
+AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
 Mode = Literal["r", "w", "x"]
 
 
@@ -54,13 +62,13 @@ class ExperimentStats:
     trials_completed: int
     best_trials_id: int
     best_evaluation: float
-    start_time: datetime.datetime = field(default_factory=datetime.datetime)
-    finish_time: datetime.datetime = field(default_factory=datetime.datetime)
+    start_time: datetime.datetime
+    finish_time: datetime.datetime
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
 
 
 # pylint: disable=too-many-public-methods
-class Experiment:
+class Experiment(Generic[AlgoT]):
     """Represents an entry in database/experiments collection.
 
     Attributes
@@ -131,6 +139,7 @@ class Experiment:
         "space",
         "algorithms",
         "working_dir",
+        "knowledge_base",
         "_id",
         "_storage",
         "_node",
@@ -148,10 +157,11 @@ class Experiment:
         _id: str | int | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
-        algorithms: BaseAlgorithm | None = None,
+        algorithms: AlgoT | None = None,
         working_dir: str | None = None,
         metadata: dict | None = None,
         refers: dict | None = None,
+        knowledge_base: KnowledgeBase | None = None,
         storage: BaseStorageProtocol | None = None,
     ):
         self._id = _id
@@ -163,6 +173,7 @@ class Experiment:
         self.metadata = metadata or {}
         self.max_trials = max_trials
         self.max_broken = max_broken
+        self.knowledge_base = knowledge_base
         self.algorithms = algorithms
         self.working_dir = working_dir
 
@@ -247,7 +258,7 @@ class Experiment:
 
         return pandas.DataFrame(data, columns=columns)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree=False) -> list[Trial]:
         """Fetch all trials of the experiment"""
         return self._select_evc_call(with_evc_tree, "fetch_trials")
 
@@ -264,7 +275,7 @@ class Experiment:
         self._check_if_writable()
         return self._storage.set_trial_status(*args, **kwargs)
 
-    def reserve_trial(self, score_handle=None):
+    def reserve_trial(self, score_handle=None) -> Trial | None:
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
@@ -409,7 +420,7 @@ class Experiment:
     @contextlib.contextmanager
     def acquire_algorithm_lock(
         self, timeout: int | float = 60, retry_interval: int | float = 1
-    ):
+    ) -> Generator[AlgoT, None, None]:
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
@@ -445,7 +456,7 @@ class Experiment:
         with self._storage.acquire_algorithm_lock(
             experiment=self, timeout=timeout, retry_interval=retry_interval
         ) as locked_algorithm_state:
-
+            assert self.algorithms is not None
             if locked_algorithm_state.configuration != self.algorithms.configuration:
                 log.warning(
                     "Saved configuration: %s", locked_algorithm_state.configuration
@@ -580,23 +591,24 @@ class Experiment:
         return num_broken_trials >= self.max_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> ExperimentConfig:
         """Return a copy of an `Experiment` configuration as a dictionary."""
+        # TODO: Actually enforce this typeddict.
         config = {}
-        for attrname in self.__slots__:
-            if attrname.startswith("_"):
+        for attribute in self.__slots__:
+            if attribute.startswith("_"):
                 continue
-            attribute = copy.deepcopy(getattr(self, attrname))
-            config[attrname] = attribute
-            if attrname == "space":
-                config[attrname] = attribute.configuration
-            elif attrname == "algorithms" and not isinstance(attribute, dict):
-                config[attrname] = attribute.configuration
-            elif attrname == "refers" and isinstance(
-                attribute.get("adapter"), BaseAdapter
+            value = getattr(self, attribute)
+            if hasattr(value, "configuration"):
+                config[attribute] = value.configuration
+            elif attribute == "refers" and isinstance(
+                value.get("adapter"), BaseAdapter
             ):
-                config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-
+                value = value.copy()
+                value["adapter"] = value["adapter"].configuration
+                config[attribute] = value
+            else:
+                config[attribute] = value
         if self.id is not None:
             config["_id"] = self.id
 

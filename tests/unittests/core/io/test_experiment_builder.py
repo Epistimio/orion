@@ -1,25 +1,34 @@
 #!/usr/bin/env python
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
+from __future__ import annotations
+
 import copy
 import datetime
 import logging
+from pathlib import Path
 
 import pytest
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm
+from orion.algo.random import Random
 from orion.algo.space import Space
+from orion.algo.tpe import TPE
 from orion.core.evc.adapters import BaseAdapter
+from orion.core.io import experiment_builder
+from orion.core.io.config import ConfigurationError
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
     RaceCondition,
     UnsupportedOperation,
 )
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.algo_wrappers import AlgoWrapper
+from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -272,6 +281,7 @@ def test_get_from_args_hit(monkeypatch, raw_config, random_dt, new_config):
     assert exp_view.metadata == new_config["metadata"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
+    assert exp_view.algorithms
     assert exp_view.algorithms.configuration == new_config["algorithms"]
 
 
@@ -305,6 +315,7 @@ def test_get_from_args_hit_no_conf_file(
     assert exp_view.metadata == new_config["metadata"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
+    assert exp_view.algorithms
     assert exp_view.algorithms.configuration == new_config["algorithms"]
 
 
@@ -347,6 +358,7 @@ def test_build_from_args_no_hit(
         assert exp.metadata["user_args"] == cmdargs["user_args"]
         assert exp.max_trials == 100
         assert exp.max_broken == 5
+        assert exp.algorithms
         assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
@@ -382,6 +394,7 @@ def test_build_from_args_hit(monkeypatch, old_config_file, script_path, new_conf
     assert exp.metadata == new_config["metadata"]
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
@@ -487,6 +500,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
         assert exp.max_trials == max_trials
         assert exp.max_broken == max_broken
         assert not exp.is_done
+        assert exp.algorithms
         assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
@@ -517,6 +531,7 @@ def test_build_hit(python_api_config):
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == python_api_config["algorithms"]
 
 
@@ -538,6 +553,7 @@ def test_build_without_config_hit(python_api_config):
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == python_api_config["algorithms"]
 
 
@@ -572,6 +588,7 @@ def test_build_from_args_without_cmd(
     assert exp.metadata == new_config["metadata"]
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
+    assert exp.algorithms
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
@@ -749,6 +766,7 @@ class TestBuild:
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
         new_config.pop("something_to_be_ignored")
+        new_config["knowledge_base"] = None
         assert exp.configuration == new_config
 
     @pytest.mark.usefixtures("mock_infer_versioning_metadata")
@@ -778,6 +796,7 @@ class TestBuild:
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
         new_config["refers"] = {"adapter": [], "parent_id": None, "root_id": _id}
+        new_config["knowledge_base"] = None
         assert found_config[0] == new_config
         assert exp.name == new_config["name"]
         assert exp.configuration["refers"] == new_config["refers"]
@@ -786,6 +805,7 @@ class TestBuild:
         assert exp.max_broken == new_config["max_broken"]
         assert exp.working_dir == new_config["working_dir"]
         assert exp.version == new_config["version"]
+        assert exp.algorithms
         assert exp.algorithms.configuration == new_config["algorithms"]
 
     def test_working_dir_is_correctly_set(self, new_config):
@@ -839,6 +859,7 @@ class TestBuild:
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
         new_config.pop("something_to_be_ignored")
+        new_config["knowledge_base"] = None
         assert exp.configuration == new_config
 
     def test_instantiation_after_init(self, new_config):
@@ -846,7 +867,7 @@ class TestBuild:
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build(**new_config)
 
-        assert isinstance(exp.algorithms, SpaceTransformAlgoWrapper)
+        assert isinstance(exp.algorithms, AlgoWrapper)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 
@@ -1182,6 +1203,154 @@ class TestBuild:
                 )
             assert "There was a race condition during branching." in str(exc_info.value)
 
+    def test_build_experiment_with_kb(self, tmp_path: Path):
+        """Test that passing a configuration for the KB to `create_experiment` works."""
+        exp_storage_file = str(tmp_path / "db.pkl")
+        kb_storage_file = str(tmp_path / "kb.pkl")
+        experiment = experiment_builder.build(
+            "test",
+            space={"x": "uniform(0, 10)"},
+            storage={
+                "type": "legacy",
+                "database": {"type": "pickleddb", "host": exp_storage_file},
+            },
+            knowledge_base={
+                KnowledgeBase.__qualname__: {
+                    "storage": {
+                        "type": "legacy",
+                        "database": {"type": "pickleddb", "host": kb_storage_file},
+                    }
+                }
+            },
+        )
+        assert experiment.knowledge_base is not None
+        assert isinstance(experiment.knowledge_base, KnowledgeBase)
+
+
+class TestInstantiateKB:
+    def test_build_experiment_with_bad_kb_config(self):
+        """Test that passing a bad configuration for the KB raises an error."""
+        with pytest.raises(
+            ConfigurationError,
+            match="The configuration for the KB should only have one key",
+        ):
+            experiment_builder._instantiate_knowledge_base(
+                {
+                    "fooooobar": {
+                        "storage": {"type": "legacy", "database": {"type": "bad"}}
+                    },
+                    "baz": 123,
+                }
+            )
+
+    def test_kb_class_not_found(self):
+        with pytest.raises(
+            ConfigurationError,
+            match="Unable to find a subclass of KnowledgeBase with the given name",
+        ):
+            experiment_builder._instantiate_knowledge_base(
+                {
+                    "NonExistentKB": {
+                        "storage": {"type": "legacy", "database": {"type": "bad"}}
+                    },
+                }
+            )
+
+    def test_finds_kb_subclass_and_uses_it(self, tmp_path: Path):
+        class MyKB(KnowledgeBase):
+            pass
+
+        path = tmp_path / "db.pkl"
+        kb = experiment_builder._instantiate_knowledge_base(
+            {
+                "MyKB": {
+                    "storage": {
+                        "type": "legacy",
+                        "database": {"type": "pickleddb", "host": str(path)},
+                    }
+                },
+            }
+        )
+        assert isinstance(kb, MyKB)
+
+    def test_multiple_subclasses_match_name(self):
+        class KB(KnowledgeBase):  # noqa
+            pass
+
+        class KB(KnowledgeBase):  # noqa
+            pass
+
+        with pytest.raises(
+            ConfigurationError,
+            match="Multiple subclasses of KnowledgeBase with the given name",
+        ):
+            experiment_builder._instantiate_knowledge_base(
+                {
+                    "KB": {"storage": {"type": "legacy", "database": {"type": "bad"}}},
+                }
+            )
+
+
+@pytest.fixture
+def space_obj(space: dict[str, str]):
+    # todo: Rename `space` above to `space_config` and rename this to just `space`.
+    return SpaceBuilder().build(space)
+
+
+class TestInstantiateAlgo:
+    """Tests for the `_instantiate_algo` function."""
+
+    @pytest.mark.parametrize("algo_class_name", ["Random", "TPE"])
+    @pytest.mark.parametrize("lowercase", [True, False])
+    @pytest.mark.parametrize("max_trials", [None, 10])
+    def test_with_class_name(
+        self,
+        algo_class_name: str,
+        space_obj: Space,
+        lowercase: bool,
+        max_trials: int | None,
+    ):
+        """Test instantiating an algorithm by passing the class name as a config."""
+        algo = experiment_builder._instantiate_algo(
+            space=space_obj,
+            max_trials=max_trials,
+            config=algo_class_name.lower() if lowercase else algo_class_name,
+        )
+        assert isinstance(algo, BaseAlgorithm)
+        assert type(algo.unwrapped).__qualname__ == algo_class_name
+        assert algo.max_trials == max_trials
+
+    @pytest.mark.parametrize("algo_class", [Random, TPE])
+    @pytest.mark.parametrize("max_trials", [None, 10])
+    def test_with_algo_class(
+        self, algo_class: type[BaseAlgorithm], space_obj: Space, max_trials: int | None
+    ):
+        """Test instantiating an algorithm by passing the class as a config."""
+
+        algo = experiment_builder._instantiate_algo(
+            space=space_obj,
+            max_trials=max_trials,
+            config=algo_class,
+        )
+        assert isinstance(algo, BaseAlgorithm)
+        assert isinstance(algo.unwrapped, algo_class)
+        assert algo.max_trials == max_trials
+
+    @pytest.mark.parametrize("algo_class", [Random, TPE])
+    @pytest.mark.parametrize("max_trials", [None, 10])
+    def test_with_dict(
+        self, algo_class: type[BaseAlgorithm], space_obj: Space, max_trials: int | None
+    ):
+        """Test instantiating an algorithm using a config dictionary."""
+        algo = experiment_builder._instantiate_algo(
+            space=space_obj,
+            max_trials=max_trials,
+            config={algo_class.__qualname__.lower(): {}},
+        )
+        assert isinstance(algo, BaseAlgorithm)
+        assert isinstance(algo.unwrapped, algo_class)
+        assert algo.max_trials == max_trials
+
 
 def test_load_unavailable_algo(algo_unavailable_config, capsys):
     with OrionState(experiments=[algo_unavailable_config]):
@@ -1199,9 +1368,10 @@ def test_load_unavailable_algo(algo_unavailable_config, capsys):
             == algo_unavailable_config["algorithms"]
         )
 
-        with pytest.raises(NotImplementedError) as exc:
+        with pytest.raises(
+            NotImplementedError, match="Could not find implementation of BaseAlgorithm"
+        ):
             experiment_builder.build("supernaekei")
-        exc.match("Could not find implementation of BaseAlgorithm")
 
 
 class TestInitExperimentReadWrite:

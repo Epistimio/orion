@@ -49,10 +49,8 @@ def test_one_workon_rest_client():
 
 
 def workon(endpoint, tok):
-    print("CONNECTING")
     client = new_client(endpoint, tok)
 
-    print("WORKING")
     count = client.workon(
         fct=function,
         n_workers=2,
@@ -70,15 +68,10 @@ def test_n_workon_rest_client(tokens=None):
         workers = []
 
         for token in tokens:
-            print(f"\nSTARTING {endpoint}\n")
             p = Process(target=workon, args=(endpoint, token))
             p.start()
             workers.append(p)
 
-        print("\nWAITING\n")
-
         for worker in workers:
             worker.join()
             assert worker.exitcode == 0
-
-        print("\nHERE\n")
