@@ -47,7 +47,7 @@ class WorkonClientREST(BaseClientREST):
         self.experiment = RemoteExperiment(**payload)
         return self.experiment
 
-    def suggest(self, pool_size: int = 1, experiment_name=None) -> List[RemoteTrial]:
+    def suggest(self, pool_size: int = 1, experiment_name=None) -> TrialCM:
         """Generate a new trial for the current experiment"""
         experiment_name = experiment_name or self.experiment_name
 

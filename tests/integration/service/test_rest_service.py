@@ -61,17 +61,16 @@ def test_suggest(with_logs):
             space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
         )
 
-        client_trials = client.suggest()
-        assert len(client_trials) > 0, "A trial was generated"
+        client_trial = client.suggest()
+        assert client_trial is not None, "A trial was generated"
 
         storage = get_mongo_admin(port)
         mongo = storage._db._db
-        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id))))
+        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trial.db_id))))
 
-        assert len(client_trials) == 1
         assert len(trials) == 1
         assert (
-            str(trials[0]["_id"]) == client_trials[0].db_id
+            str(trials[0]["_id"]) == client_trial.db_id
         ), "Trial exists inside the database"
 
 
@@ -89,16 +88,16 @@ def test_observe(with_logs):
         )
 
         # Suggest a trial using current experiment
-        client_trials = client.suggest()
+        client_trial = client.suggest()
 
-        assert len(client_trials) > 0
+        assert client_trial is not None
         client.observe(
-            client_trials[0], [dict(name="objective", type="objective", value=1)]
+            client_trial, [dict(name="objective", type="objective", value=1)]
         )
 
         storage = get_mongo_admin(port)
         mongo = storage._db._db
-        trials = mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id)))
+        trials = mongo["trials"].find(dict(_id=ObjectId(client_trial.db_id)))
 
         assert trials[0].get("results") is not None, "Trial has results"
         assert trials[0]["results"] == [
@@ -116,19 +115,19 @@ def test_heartbeat(with_logs):
         )
 
         # Suggest a trial for heartbeat
-        client_trials = client.suggest()
-        assert len(client_trials) > 0
+        client_trial = client.suggest()
+        assert client_trial is not None
 
         storage = get_mongo_admin(port)
         mongo = storage._db._db
-        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id))))
+        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trial.db_id))))
 
         old_heartbeat = trials[0]["heartbeat"]
 
         # Update heartbeat
-        client.heartbeat(client_trials[0])
+        client.heartbeat(client_trial)
 
-        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trials[0].db_id))))
+        trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trial.db_id))))
         new_heartbeat = trials[0]["heartbeat"]
         assert old_heartbeat != new_heartbeat, "Heartbeat should have changed"
 
@@ -145,16 +144,12 @@ def test_is_done(with_logs):
         )
 
         while not client.is_done():
-            trials = client.suggest()
-            client.observe(
-                trials[0], [dict(name="objective", type="objective", value=1)]
-            )
-            print(trials[0])
+            trial = client.suggest()
+            client.observe(trial, [dict(name="objective", type="objective", value=1)])
 
         storage = get_mongo_admin(port)
         mongo = storage._db._db
         trials = list(mongo["trials"].find())
-        print(trials)
         assert len(trials) == 10
 
         print("Done")

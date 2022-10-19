@@ -240,6 +240,8 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     storage_config = config.pop("storage")
     database_config = storage_config.pop("database")
     assert storage_config.pop("type") == orion.core.config.storage.type
+    assert storage_config.pop("endpoint") == orion.core.config.storage.endpoint
+    assert storage_config.pop("token") == orion.core.config.storage.token
     assert storage_config == {}
 
     assert database_config.pop("host") == orion.core.config.storage.database.host

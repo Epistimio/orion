@@ -1,6 +1,7 @@
 import orion.core
 from orion.client.experiment import ExperimentClient
 from orion.core.utils.exceptions import BrokenExperiment
+from orion.core.worker.trial import TrialCM
 from orion.plotting.base import PlotAccessor
 from orion.service.client.actions import ClientActionREST
 from orion.service.client.workon import WorkonClientREST
@@ -123,7 +124,7 @@ class ExperimentClientREST(ExperimentClient):
         """See `~ExperimentClient.is_done`"""
         return self.workon_client.is_done()
 
-    def suggest(self, pool_size=0):
+    def suggest(self, pool_size=0) -> TrialCM:
         """See `~ExperimentClient.suggest`"""
         remote_trial = self.workon_client.suggest(pool_size=pool_size)
         return remote_trial

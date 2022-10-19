@@ -45,11 +45,11 @@ class FakeClient:
     def __init__(self, storage) -> None:
         self.storage = storage
 
-    def _update_heardbeat(self, trial):
+    def _update_heartbeat(self, trial):
         if trial.status in STOPPED_STATUS:
             return True
         else:
-            if not self.client.update_heartbeat(trial):
+            if not self.storage.update_heartbeat(trial):
                 return True
 
         return False
