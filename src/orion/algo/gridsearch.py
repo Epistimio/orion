@@ -133,8 +133,11 @@ class GridSearch(BaseAlgorithm):
             if not isinstance(n_values, dict)
             else n_values
         )
+        max_trials = 10_000 if self.max_trials is None else self.max_trials
         self.grid = self.build_grid(
-            self.space, n_values_dict, getattr(self, "max_trials", 10000)
+            self.space,
+            n_values_dict,
+            max_trials=max_trials,
         )
         self.index = 0
 

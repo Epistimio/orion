@@ -4,7 +4,7 @@ from __future__ import annotations
 import copy
 from collections import defaultdict
 from logging import getLogger as get_logger
-from typing import Any, Container, Iterator, Mapping
+from typing import Any, Container, Iterable, Iterator, Mapping
 
 from orion.core.worker.trial import Trial, TrialCM
 
@@ -12,10 +12,19 @@ logger = get_logger(__name__)
 
 
 class Registry(Container[Trial]):
-    """In-memory container for the trials that the algorithm suggests/observes/etc."""
+    """In-memory container for the trials that the algorithm suggests/observes/etc.
 
-    def __init__(self):
+    This behaves a bit like a managed dictionary, but the "keys" are trials ids, which
+    (at the time of writing) can vary depending on how we chose to compute them.
+    """
+
+    def __init__(self, trials: Iterable[Trial] = ()):
         self._trials: dict[str, Trial] = {}
+        for trial in trials:
+            self.register(trial)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}({list(iter(self))})"
 
     def __contains__(self, trial_or_id: str | Trial | Any) -> bool:
         if isinstance(trial_or_id, TrialCM):
@@ -94,7 +103,7 @@ class Registry(Container[Trial]):
 class RegistryMapping(Mapping[Trial, "list[Trial]"]):
     """A map between the original and transformed registries.
 
-    This object is used in the `SpaceTransformAlgoWrapper` to check if a trial in the original space
+    This object is used in the `SpaceTransform` to check if a trial in the original space
     has equivalent trials in the transformed space.
 
     The goal is to make it so the algorithms don't have to care about the transforms/etc.
@@ -123,10 +132,15 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         self._mapping = copy.deepcopy(statedict["_mapping"])
 
     def __iter__(self) -> Iterator[Trial]:
+        """Iterate over the trials in the original registry."""
         for trial_id in self._mapping:
             yield self.original_registry[trial_id]
 
     def __len__(self) -> int:
+        """Give the number of trials in the mapping.
+
+        This should be the same as the number of trials in the original registry.
+        """
         return len(self._mapping)
 
     def __contains__(self, trial: Trial):
@@ -159,6 +173,9 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         transformed_trial_id = _get_id(transformed_trial)
         self._mapping[original_trial_id].add(transformed_trial_id)
         return original_trial_id
+
+    def __repr__(self) -> str:
+        return f"{type(self).__qualname__}({list((trial, self.get_trials(trial)) for trial in self)})"
 
 
 def _get_id(trial: Trial) -> str:

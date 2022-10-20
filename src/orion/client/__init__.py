@@ -5,10 +5,15 @@ Python API
 Provides functions for communicating with `orion.core`.
 
 """
+from __future__ import annotations
+
 import logging
+import typing
+from typing import Any, Callable
 
 # pylint: disable=consider-using-from-import
 import orion.core.io.experiment_builder as experiment_builder
+from orion.algo.base import BaseAlgorithm
 from orion.client.cli import (
     interrupt_trial,
     report_bad_trial,
@@ -18,7 +23,9 @@ from orion.client.cli import (
 from orion.client.experiment import ExperimentClient
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.worker.producer import Producer
-from orion.storage.base import setup_storage
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+from orion.executor.base import BaseExecutor
+from orion.storage.base import BaseStorageProtocol, setup_storage
 
 __all__ = [
     "interrupt_trial",
@@ -34,7 +41,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def create_experiment(name, **config):
+def create_experiment(name: str, **config):
     """Build an experiment to be executable
 
     This function is deprecated and will be removed in v0.3.0. Use `build_experiment`
@@ -45,21 +52,22 @@ def create_experiment(name, **config):
 
 # pylint: disable=too-many-arguments
 def build_experiment(
-    name,
-    version=None,
-    space=None,
-    algorithms=None,
-    strategy=None,
-    max_trials=None,
-    max_broken=None,
-    storage=None,
-    branching=None,
-    max_idle_time=None,
-    heartbeat=None,
-    working_dir=None,
-    debug=False,
-    executor=None,
-):
+    name: str,
+    version: int | None = None,
+    space: dict[str, Any] | None = None,
+    algorithms: type[BaseAlgorithm] | dict | None = None,
+    strategy: str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    storage: dict | BaseStorageProtocol | None = None,
+    branching: dict | None = None,
+    max_idle_time: int | None = None,
+    heartbeat: int | None = None,
+    working_dir: str | None = None,
+    debug: bool = False,
+    knowledge_base: KnowledgeBase | dict | None = None,
+    executor: BaseExecutor | None = None,
+) -> ExperimentClient:
     """Build an experiment to be executable
 
     Building the experiment can result in branching if there are any changes in the environment.
@@ -134,7 +142,7 @@ def build_experiment(
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
         Number of broken trials for the experiment to be considered broken.
-    storage: dict, optional
+    storage: dict or BaseStorageProtocol, optional
         Configuration of the storage backend.
     working_dir: str, optional
         Working directory created for the experiment inside which a unique folder will be created
@@ -205,7 +213,7 @@ def build_experiment(
             "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
         )
 
-    builder = experiment_builder.ExperimentBuilder(storage, debug)
+    builder = experiment_builder.ExperimentBuilder(storage, debug=debug)
 
     try:
         experiment = builder.build(
@@ -213,11 +221,11 @@ def build_experiment(
             version=version,
             space=space,
             algorithms=algorithms,
-            strategy=strategy,
             max_trials=max_trials,
             max_broken=max_broken,
             branching=branching,
             working_dir=working_dir,
+            knowledge_base=knowledge_base,
         )
     except RaceCondition:
         # Try again, but if it fails again, raise. Race conditions due to version increment should
@@ -233,6 +241,7 @@ def build_experiment(
                 max_broken=max_broken,
                 branching=branching,
                 working_dir=working_dir,
+                knowledge_base=knowledge_base,
             )
         except RaceCondition as e:
             raise RaceCondition(
@@ -243,7 +252,6 @@ def build_experiment(
                 "experiment creation. Make sure your script is not generating files within your "
                 "code repository."
             ) from e
-
     return ExperimentClient(experiment, executor, heartbeat)
 
 
@@ -282,7 +290,13 @@ def get_experiment(name, version=None, mode="r", storage=None):
 
 
 def workon(
-    function, space, name="loop", algorithms=None, max_trials=None, max_broken=None
+    function: Callable,
+    space: dict,
+    name: str = "loop",
+    algorithms: type[BaseAlgorithm] | str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    knowledge_base: KnowledgeBase | None = None,
 ):
     """Optimize a function over a given search space
 
@@ -327,11 +341,10 @@ def workon(
         max_trials=max_trials,
         max_broken=max_broken,
         storage={"type": "legacy", "database": {"type": "EphemeralDB"}},
+        knowledge_base=knowledge_base,
     )
 
-    producer = Producer(experiment)
-
-    experiment_client = ExperimentClient(experiment, producer)
+    experiment_client = ExperimentClient(experiment)
 
     with experiment_client.tmp_executor("singleexecutor", n_workers=1):
         experiment_client.workon(function, n_workers=1, max_trials=max_trials)
