@@ -52,7 +52,7 @@ class StorageResource:
         if download_suffix and version is not None:
             download_suffix = f"{download_suffix}.{version}"
         try:
-            dump_database(self.storage, dump_host, experiment=name, version=version)
+            dump_database(self.storage, dump_host, name=name, version=version)
             resp.downloadable_as = f"dump{download_suffix if download_suffix else ''} ({datetime.now()}).pkl"
             resp.content_type = "application/octet-stream"
             with open(dump_host, "rb") as file:

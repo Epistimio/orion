@@ -47,6 +47,6 @@ def main(args):
     dump_database(
         storage,
         args["output"],
-        experiment=config.get("name"),
+        name=config.get("name"),
         version=config.get("version"),
     )

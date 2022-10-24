@@ -20,11 +20,11 @@ COLLECTIONS = {"experiments", "algo", "benchmarks", "trials"}
 EXPERIMENT_RELATED_COLLECTIONS = {"algo", "trials"}
 
 
-def dump_database(storage, dump_host, experiment=None, version=None):
+def dump_database(storage, dump_host, name=None, version=None):
     """Dump a database
     :param storage: storage of database to dump
     :param dump_host: file path to dump into (dumped file will be a pickled file)
-    :param experiment: (optional) name of experiment to dump (by default, full database is dumped)
+    :param name: (optional) name of experiment to dump (by default, full database is dumped)
     :param version: (optional) version of experiment to dump
     """
     orig_db = storage._db
@@ -36,9 +36,9 @@ def dump_database(storage, dump_host, experiment=None, version=None):
     logger.info(f"Dump to {db}")
     if isinstance(orig_db, PickledDB):
         with orig_db.locked_database(write=False) as database:
-            _dump(database, db, COLLECTIONS, experiment, version)
+            _dump(database, db, COLLECTIONS, name, version)
     else:
-        _dump(orig_db, db, COLLECTIONS, experiment, version)
+        _dump(orig_db, db, COLLECTIONS, name, version)
 
 
 def load_database(storage, load_host, resolve, name=None, version=None):
@@ -86,17 +86,18 @@ def load_database(storage, load_host, resolve, name=None, version=None):
         logger.info(f"Imported collection experiments ({len(experiments)} entries)")
 
 
-def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
+def _dump(src_db, dst_db, collection_names, name=None, version=None):
     """
     Dump data from database to db.
     :param src_db: input database
     :param dst_db: output database
     :param collection_names: set of collection names to dump
-    :param experiment: (optional) if provided, dump only
+    :param name: (optional) if provided, dump only
         data related to experiment with this name
+    :param version: (optional) version of experiment to dump
     """
     # Get collection names in a set
-    if experiment is None:
+    if name is None:
         # Nothing to filter, dump everything
         for collection_name in collection_names:
             logger.info(f"Dumping collection {collection_name}")
@@ -105,7 +106,7 @@ def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
     else:
         # Get experiments with given name
         assert "experiments" in collection_names
-        query = {"name": experiment}
+        query = {"name": name}
         if version is not None:
             query["version"] = version
         experiments = src_db.read("experiments", query)
@@ -119,7 +120,7 @@ def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
             (exp_data,) = experiments
         logger.info(f"Found experiment {exp_data['name']}.{exp_data['version']}")
         # Dump selected experiments
-        logger.info(f"Dumping experiment {experiment}")
+        logger.info(f"Dumping experiment {name}")
         dst_db.write("experiments", exp_data)
         # Dump data related to selected experiments (do not dump other experiments)
         for collection_name in sorted(collection_names - {"experiments"}):
