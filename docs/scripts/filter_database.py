@@ -2,17 +2,14 @@
 Script to turn the database ``examples/plotting/database.pkl`` into a clean
 version ``examples/base_db.pkl`` for the examples.
 """
-import pprint
 import shutil
 
-from orion.client import get_experiment
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
-from orion.storage.base import get_storage, setup_storage
-
+from orion.storage.base import setup_storage
 
 shutil.copy("./examples/plotting/database.pkl", "./examples/base_db.pkl")
 
-setup_storage(
+storage = setup_storage(
     dict(
         type="legacy",
         database=dict(type="pickleddb", host="./examples/base_db.pkl"),
@@ -25,8 +22,6 @@ filter_exps = {
     ("lateral-view-multitask2", 1): "4-dim-cat-shape-exp",
     ("lateral-view-multitask3", 1): "3-dim-cat-shape-exp",
 }
-
-storage = get_storage()
 
 
 def update_dropout(experiment_config):

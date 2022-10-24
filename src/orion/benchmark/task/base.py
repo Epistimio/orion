@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Base definition of Task
 ========================
@@ -49,7 +48,7 @@ class BenchmarkTask(ABC):
 
     @property
     def max_trials(self) -> int:
-        """Return the max number of trials to run for the task. """
+        """Return the max number of trials to run for the task."""
         return self._max_trials
 
     @abstractmethod

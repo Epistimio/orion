@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=too-many-arguments
 # pylint:disable=too-many-instance-attributes
 """
@@ -7,11 +6,17 @@ Runner
 
 Executes the optimization process
 """
+from __future__ import annotations
+
 import logging
+import os
+import shutil
 import signal
 import time
+import typing
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Callable
 
 import orion.core
 from orion.core.utils import backward
@@ -29,15 +34,19 @@ from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
 from orion.storage.base import LockAcquisitionTimeout
 
+if typing.TYPE_CHECKING:
+    from orion.client.experiment import ExperimentClient
+    from orion.core.worker.trial import Trial
+
 log = logging.getLogger(__name__)
 
 
-class Protected(object):
+class Protected:
     """Prevent a signal to be raised during the execution of some code"""
 
     def __init__(self):
         self.signal_received = None
-        self.handlers = dict()
+        self.handlers = {}
         self.start = 0
         self.delayed = 0
         self.signal_installed = False
@@ -113,6 +122,11 @@ def _optimize(trial, fct, trial_arg, **kwargs):
     return fct(**unflatten(kwargs))
 
 
+def delayed_exception(exception: Exception):
+    """Raise exception when called..."""
+    raise exception
+
+
 @dataclass
 class _Stat:
     sample: int = 0
@@ -139,22 +153,64 @@ class _Stat:
         return "\n".join(lines)
 
 
+def prepare_trial_working_dir(
+    experiment_client: ExperimentClient, trial: Trial
+) -> None:
+    """Prepare working directory of a trial.
+
+    This will create a working directory based on ``trial.working_dir`` if not already existing. If
+    the trial has a parent, the ``working_dir`` of the parent will be copied to the ``working_dir``
+    of the current trial.
+
+    Parameters
+    ----------
+    experiment_client: orion.client.experiment.ExperimentClient
+        The experiment client being executed.
+    trial: orion.core.worker.trial.Trial
+        The trial that will be executed.
+
+    Raises
+    ------
+    ``ValueError``
+        If the parent is not found in the storage of ``experiment_client``.
+
+    """
+    backward.ensure_trial_working_dir(experiment_client, trial)
+
+    # TODO: Test that this works when resuming a trial.
+    if os.path.exists(trial.working_dir):
+        return
+
+    if trial.parent:
+        parent_trial = experiment_client.get_trial(uid=trial.parent)
+        if parent_trial is None:
+            raise ValueError(
+                f"Parent id {trial.parent} not available in storage. (From trial {trial.id})"
+            )
+        shutil.copytree(parent_trial.working_dir, trial.working_dir)
+    else:
+        os.makedirs(trial.working_dir)
+
+
 class Runner:
     """Run the optimization process given the current executor"""
 
     def __init__(
         self,
-        client,
-        fct,
-        pool_size,
-        idle_timeout,
-        max_trials_per_worker,
-        max_broken,
-        trial_arg,
-        on_error,
-        interrupt_signal_code=None,
-        gather_timeout=0.01,
-        n_workers=None,
+        client: ExperimentClient,
+        fct: Callable,
+        pool_size: int,
+        idle_timeout: int,
+        max_trials_per_worker: int,
+        max_broken: int,
+        trial_arg: str,
+        on_error: Callable[[ExperimentClient, Exception, int], bool] | None = None,
+        prepare_trial: Callable[
+            [ExperimentClient, Trial], None
+        ] = prepare_trial_working_dir,
+        interrupt_signal_code: int | None = None,
+        gather_timeout: float = 0.01,
+        n_workers: int | None = None,
         **kwargs,
     ):
         self.client = client
@@ -164,6 +220,7 @@ class Runner:
         self.max_broken = max_broken
         self.trial_arg = trial_arg
         self.on_error = on_error
+        self.prepare_trial = prepare_trial
         self.kwargs = kwargs
 
         self.gather_timeout = gather_timeout
@@ -172,7 +229,7 @@ class Runner:
         self.worker_broken_trials = 0
         self.trials = 0
         self.futures = []
-        self.pending_trials = dict()
+        self.pending_trials = {}
         self.stat = _Stat()
         self.n_worker_override = n_workers
 
@@ -202,11 +259,9 @@ class Runner:
         return self.worker_broken_trials >= self.max_broken
 
     @property
-    def has_remaining(self):
+    def has_remaining(self) -> bool:
         """Returns true if the worker can still pick up work"""
-        return (
-            self.max_trials_per_worker - (self.trials - self.worker_broken_trials) > 0
-        )
+        return self.max_trials_per_worker - self.trials > 0
 
     @property
     def is_idle(self):
@@ -312,16 +367,25 @@ class Runner:
         """Schedule new trials to be computed"""
         new_futures = []
         for trial in new_trials:
-            backward.ensure_trial_working_dir(self.client, trial)
+            try:
+                self.prepare_trial(self.client, trial)
+                prepared = True
+            # pylint:disable=broad-except
+            except Exception as e:
+                future = self.client.executor.submit(delayed_exception, e)
+                prepared = False
 
-            future = self.client.executor.submit(
-                _optimize, trial, self.fct, self.trial_arg, **self.kwargs
-            )
+            if prepared:
+                future = self.client.executor.submit(
+                    _optimize, trial, self.fct, self.trial_arg, **self.kwargs
+                )
+
             self.pending_trials[future] = trial
             new_futures.append(future)
 
         self.futures.extend(new_futures)
-        log.debug("Scheduled new trials")
+        if new_futures:
+            log.debug("Scheduled new trials")
         return len(new_futures)
 
     def gather(self):
@@ -331,7 +395,8 @@ class Runner:
         )
 
         to_be_raised = None
-        log.debug(f"Gathered new results {len(results)}")
+        if results:
+            log.debug(f"Gathered new results {len(results)}")
         # register the results
         # NOTE: For Ptera instrumentation
         trials = 0  # pylint:disable=unused-variable
@@ -360,7 +425,7 @@ class Runner:
                     self.client.release(trial, status="interrupted")
                     continue
 
-                # Regular exception, might be caused by the choosen hyperparameters
+                # Regular exception, might be caused by the chosen hyperparameters
                 # themselves rather than the code in particular (like Out of Memory error
                 # for big batch sizes)
                 exception = result.exception
@@ -403,7 +468,7 @@ class Runner:
             except AlreadyReleased:
                 pass
 
-        self.pending_trials = dict()
+        self.pending_trials = {}
 
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""

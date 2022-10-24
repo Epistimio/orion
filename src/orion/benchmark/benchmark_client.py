@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Benchmark client
 =================
@@ -12,19 +11,24 @@ from orion.benchmark.assessment.base import bench_assessment_factory
 from orion.benchmark.task.base import bench_task_factory
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.storage.base import get_storage, setup_storage
 
 logger = logging.getLogger(__name__)
 
 
 def get_or_create_benchmark(
-    name, algorithms=None, targets=None, storage=None, executor=None, debug=False
+    storage,
+    name,
+    algorithms=None,
+    targets=None,
+    executor=None,
 ):
     """
     Create or get a benchmark object.
 
     Parameters
     ----------
+    storage: BaseStorageProtocol
+        Instance of the storage to use
     name: str
         Name of the benchmark
     algorithms: list, optional
@@ -36,30 +40,25 @@ def get_or_create_benchmark(
             Assessment objects
         task: list
             Task objects
-    storage: dict, optional
-        Configuration of the storage backend.
     executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
-    debug: bool, optional
-        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
-        Defaults to False.
 
     Returns
     -------
     An instance of `orion.benchmark.Benchmark`
     """
-    setup_storage(storage=storage, debug=debug)
 
     # fetch benchmark from db
-    db_config = _fetch_benchmark(name)
+    db_config = _fetch_benchmark(storage, name)
 
     benchmark_id = None
     input_configure = None
 
     if db_config:
         if algorithms or targets:
-            input_benchmark = Benchmark(name, algorithms, targets)
+            input_benchmark = Benchmark(storage, name, algorithms, targets)
             input_configure = input_benchmark.configuration
+
         benchmark_id, algorithms, targets = _resolve_db_config(db_config)
 
     if not algorithms or not targets:
@@ -69,19 +68,23 @@ def get_or_create_benchmark(
         )
 
     benchmark = _create_benchmark(
-        name, algorithms, targets, storage=storage, executor=executor
+        storage,
+        name,
+        algorithms,
+        targets,
+        executor=executor,
     )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
-        logger.warn(
-            "Benchmark with same name is found but has different configuration, "
-            "which will be used for this creation.\n{}".format(benchmark.configuration)
+        logger.warning(
+            f"Benchmark with same name is found but has different configuration, "
+            f"which will be used for this creation.\n{benchmark.configuration}"
         )
 
     if benchmark_id is None:
         logger.debug("Benchmark not found in DB. Now attempting registration in DB.")
         try:
-            _register_benchmark(benchmark)
+            _register_benchmark(storage, benchmark)
             logger.debug("Benchmark successfully registered in DB.")
         except DuplicateKeyError:
             logger.info(
@@ -90,7 +93,11 @@ def get_or_create_benchmark(
             )
             benchmark.close()
             benchmark = get_or_create_benchmark(
-                name, algorithms, targets, storage, executor, debug
+                storage,
+                name,
+                algorithms,
+                targets,
+                executor,
             )
 
     return benchmark
@@ -133,9 +140,9 @@ def _resolve_db_config(db_config):
     return benchmark_id, algorithms, targets
 
 
-def _create_benchmark(name, algorithms, targets, storage, executor):
+def _create_benchmark(storage, name, algorithms, targets, executor):
 
-    benchmark = Benchmark(name, algorithms, targets, storage, executor)
+    benchmark = Benchmark(storage, name, algorithms, targets, executor)
     benchmark.setup_studies()
 
     return benchmark
@@ -148,12 +155,8 @@ def _create_study(benchmark, algorithms, assess, task):
     return study
 
 
-def _fetch_benchmark(name):
-
-    if name:
-        configs = get_storage().fetch_benchmark({"name": name})
-    else:
-        configs = get_storage().fetch_benchmark({})
+def _fetch_benchmark(storage, name):
+    configs = storage.fetch_benchmark({"name": name})
 
     if not configs:
         return {}
@@ -161,9 +164,9 @@ def _fetch_benchmark(name):
     return configs[0]
 
 
-def _register_benchmark(benchmark):
+def _register_benchmark(storage, benchmark):
     benchmark.metadata["datetime"] = datetime.datetime.utcnow()
     config = benchmark.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
-    get_storage().create_benchmark(config)
+    storage.create_benchmark(config)

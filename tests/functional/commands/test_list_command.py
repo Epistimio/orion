@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test of the list command."""
 import os
 
 import orion.core.cli
 
 
-def test_no_exp(monkeypatch, setup_pickleddb_database, capsys):
+def test_no_exp(monkeypatch, orionstate, capsys):
     """Test that nothing is printed when there are no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["list"])
@@ -25,7 +24,7 @@ def test_single_exp(one_experiment, capsys):
     assert captured == " test_single_exp-v1\n"
 
 
-def test_no_version_backward_compatible(one_experiment_no_version, capsys):
+def test_no_version_backward_compatible(one_experiment_no_version, capsys, storage):
     """Test status with no experiments."""
     orion.core.cli.main(["list"])
 

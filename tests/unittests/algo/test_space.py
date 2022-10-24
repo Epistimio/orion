@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.space`."""
 
 import sys
@@ -20,7 +19,6 @@ from orion.algo.space import (
     check_random_state,
 )
 from orion.core.utils import format_trials
-from orion.core.worker.transformer import Precision
 from orion.core.worker.trial import Trial
 
 
@@ -56,7 +54,7 @@ class TestCheckRandomState:
         assert "'oh_no_oh_no' cannot be used to seed" in str(exc.value)
 
 
-class TestDimension(object):
+class TestDimension:
     """Test methods of a Dimension object."""
 
     def test_simple_instance(self, seed):
@@ -235,7 +233,7 @@ class TestDimension(object):
         assert dim.prior_name == "choices"
 
 
-class TestReal(object):
+class TestReal:
     """Test methods of a `Real` object."""
 
     def test_get_prior_string_precision(self):
@@ -354,13 +352,13 @@ class TestReal(object):
             ("reciprocal", 1e-4, 1e-2, 2, 90 * 2 + 1),
             ("reciprocal", 1e-5, 1e-2, 2, 90 + 90 * 2 + 1),
             ("reciprocal", 5.234e-3, 1.5908e-2, 2, (90 - 52) + 15 + 1),
-            ("reciprocal", 5.234e-3, 1.5908e-2, 4, (9 * 10 ** 3 - 5234) + 1590 + 1),
+            ("reciprocal", 5.234e-3, 1.5908e-2, 4, (9 * 10**3 - 5234) + 1590 + 1),
             (
                 "reciprocal",
                 5.234e-5,
                 1.5908e-2,
                 4,
-                (9 * 10 ** 3 * 3 - 5234) + 1590 + 1,
+                (9 * 10**3 * 3 - 5234) + 1590 + 1,
             ),
             ("uniform", 1e-5, 1e-2, 2, np.inf),
             ("uniform", -3, 4, 3, np.inf),
@@ -380,7 +378,7 @@ class TestReal(object):
         assert dim.cardinality == cardinality ** (2 * 3)
 
 
-class TestInteger(object):
+class TestInteger:
     """Test methods of a `Integer` object."""
 
     def test_simple_instance(self, seed):
@@ -476,7 +474,7 @@ class TestInteger(object):
         assert dim.get_prior_string() == "uniform(1, 3, discrete=True)"
 
 
-class TestCategorical(object):
+class TestCategorical:
     """Test methods of a `Categorical` object."""
 
     def test_with_tuple(self, seed):
@@ -672,7 +670,7 @@ class TestCategorical(object):
         )
 
 
-class TestFidelity(object):
+class TestFidelity:
     """Test methods of a Fidelity object."""
 
     def test_simple_instance(self):
@@ -755,7 +753,7 @@ class TestFidelity(object):
             dim.cast()
 
 
-class TestSpace(object):
+class TestSpace:
     """Test methods of a `Space` object."""
 
     def test_init(self):
@@ -885,11 +883,11 @@ class TestSpace(object):
         dim = Fidelity("epoch", 1, 9, 3)
         space.register(dim)
 
-        assert space.cardinality == (4 ** 2) * (6 + 1) * 1
+        assert space.cardinality == (4**2) * (6 + 1) * 1
 
         dim = Integer("yolo3", "uniform", -3, 2, shape=(3, 2))
         space.register(dim)
-        assert space.cardinality == (4 ** 2) * (6 + 1) * 1 * ((2 + 1) ** (3 * 2))
+        assert space.cardinality == (4**2) * (6 + 1) * 1 * ((2 + 1) ** (3 * 2))
 
         dim = Real("yolo4", "norm", 0.9)
         space.register(dim)

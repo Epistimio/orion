@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module offering an API to solve conflicts
 =========================================
@@ -55,8 +54,14 @@ class ExperimentBranchBuilder:
     """
 
     def __init__(
-        self, conflicts, enabled=True, manual_resolution=None, **branching_arguments
+        self,
+        conflicts,
+        enabled=True,
+        manual_resolution=None,
+        storage=None,
+        **branching_arguments,
     ):
+        self.storage = storage
         # TODO: handle all other arguments
         if manual_resolution is None:
             manual_resolution = orion.core.config.evc.manual_resolution
@@ -96,9 +101,10 @@ class ExperimentBranchBuilder:
             resolution = self.conflicts.try_resolve(
                 conflict,
                 silence_errors=silence_errors,
+                storage=self.storage,
                 **conflict.get_marked_arguments(
                     self.conflicts, **self.branching_arguments
-                )
+                ),
             )
 
             if resolution and (self.manual_resolution and not resolution.is_marked):
@@ -134,7 +140,7 @@ class ExperimentBranchBuilder:
         if not exp_name_conflicts:
             raise RuntimeError("No experiment name conflict to solve")
 
-        self.conflicts.try_resolve(exp_name_conflicts[0], name)
+        self.conflicts.try_resolve(exp_name_conflicts[0], name, storage=self.storage)
 
     def set_code_change_type(self, change_type):
         """Set code change type
@@ -321,9 +327,7 @@ class ExperimentBranchBuilder:
 
         assert (
             len(potential_conflicts) == 1
-        ), "Many missing dimensions with the same name: " "{}".format(
-            ", ".join(potential_conflicts)
-        )
+        ), f"Many missing dimensions with the same name: {', '.join(potential_conflicts)}"
 
         old_dim_conflict = potential_conflicts[0]
 
@@ -333,9 +337,7 @@ class ExperimentBranchBuilder:
 
         assert (
             len(potential_conflicts) == 1
-        ), "Many new dimensions with the same name: " "{}".format(
-            ", ".join(potential_conflicts)
-        )
+        ), f"Many new dimensions with the same name: {', '.join(potential_conflicts)}"
 
         new_dim_conflict = potential_conflicts[0]
 

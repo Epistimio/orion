@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Python API
 ==========
@@ -6,9 +5,15 @@ Python API
 Provides functions for communicating with `orion.core`.
 
 """
-import logging
+from __future__ import annotations
 
+import logging
+import typing
+from typing import Any, Callable
+
+# pylint: disable=consider-using-from-import
 import orion.core.io.experiment_builder as experiment_builder
+from orion.algo.base import BaseAlgorithm
 from orion.client.cli import (
     interrupt_trial,
     report_bad_trial,
@@ -17,9 +22,10 @@ from orion.client.cli import (
 )
 from orion.client.experiment import ExperimentClient
 from orion.core.utils.exceptions import RaceCondition
-from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
-from orion.storage.base import setup_storage
+from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+from orion.executor.base import BaseExecutor
+from orion.storage.base import BaseStorageProtocol, setup_storage
 
 __all__ = [
     "interrupt_trial",
@@ -35,7 +41,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-def create_experiment(name, **config):
+def create_experiment(name: str, **config):
     """Build an experiment to be executable
 
     This function is deprecated and will be removed in v0.3.0. Use `build_experiment`
@@ -46,21 +52,22 @@ def create_experiment(name, **config):
 
 # pylint: disable=too-many-arguments
 def build_experiment(
-    name,
-    version=None,
-    space=None,
-    algorithms=None,
-    strategy=None,
-    max_trials=None,
-    max_broken=None,
-    storage=None,
-    branching=None,
-    max_idle_time=None,
-    heartbeat=None,
-    working_dir=None,
-    debug=False,
-    executor=None,
-):
+    name: str,
+    version: int | None = None,
+    space: dict[str, Any] | None = None,
+    algorithms: type[BaseAlgorithm] | dict | None = None,
+    strategy: str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    storage: dict | BaseStorageProtocol | None = None,
+    branching: dict | None = None,
+    max_idle_time: int | None = None,
+    heartbeat: int | None = None,
+    working_dir: str | None = None,
+    debug: bool = False,
+    knowledge_base: KnowledgeBase | dict | None = None,
+    executor: BaseExecutor | None = None,
+) -> ExperimentClient:
     """Build an experiment to be executable
 
     Building the experiment can result in branching if there are any changes in the environment.
@@ -75,9 +82,9 @@ def build_experiment(
     raised.
 
     All other arguments (``algorithms``, ``strategy``, ``max_trials``, ``storage``, ``branching``
-    and ``working_dir``) will be replaced by system's defaults if ommited. The system's defaults can
-    also be overriden in global configuration file as described for the database in
-    :ref:`Database Configuration`. We do not recommand overriding the algorithm configuration using
+    and ``working_dir``) will be replaced by system's defaults if omitted. The system's defaults can
+    also be overridden in global configuration file as described for the database in
+    :ref:`Database Configuration`. We do not recommend overriding the algorithm configuration using
     system's default, but overriding the storage configuration can be very convenient if the same
     storage is used for all your experiments.
 
@@ -135,7 +142,7 @@ def build_experiment(
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
         Number of broken trials for the experiment to be considered broken.
-    storage: dict, optional
+    storage: dict or BaseStorageProtocol, optional
         Configuration of the storage backend.
     working_dir: str, optional
         Working directory created for the experiment inside which a unique folder will be created
@@ -150,7 +157,7 @@ def build_experiment(
         This allows restoring lost trials (ex: due to killed worker).
         Defaults to ``orion.core.config.worker.max_idle_time``.
     debug: bool, optional
-        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        If using in debug mode, the storage config is overridden with legacy:EphemeralDB.
         Defaults to False.
     branching: dict, optional
         Arguments to control the branching.
@@ -184,15 +191,12 @@ def build_experiment(
 
     Raises
     ------
-    :class:`orion.core.utils.singleton.SingletonAlreadyInstantiatedError`
-        If the storage is already instantiated and given configuration is different.
-        Storage is a singleton, you may only use one instance per process.
     :class:`orion.core.utils.exceptions.NoConfigurationError`
         The experiment is not in database and no space is provided by the user.
     :class:`orion.core.utils.exceptions.RaceCondition`
-        There was a race condition during branching and new version cannot be infered because of
-        that. Single race conditions are normally handled seemlessly. If this error gets raised, it
-        means that different modifications occured during each race condition resolution. This is
+        There was a race condition during branching and new version cannot be inferred because of
+        that. Single race conditions are normally handled seamlessly. If this error gets raised, it
+        means that different modifications occurred during each race condition resolution. This is
         likely due to quick code change during experiment creation. Make sure your script is not
         generating files within your code repository.
     :class:`orion.core.utils.exceptions.BranchingEvent`
@@ -209,25 +213,25 @@ def build_experiment(
             "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
         )
 
-    setup_storage(storage=storage, debug=debug)
+    builder = experiment_builder.ExperimentBuilder(storage, debug=debug)
 
     try:
-        experiment = experiment_builder.build(
+        experiment = builder.build(
             name,
             version=version,
             space=space,
             algorithms=algorithms,
-            strategy=strategy,
             max_trials=max_trials,
             max_broken=max_broken,
             branching=branching,
             working_dir=working_dir,
+            knowledge_base=knowledge_base,
         )
     except RaceCondition:
         # Try again, but if it fails again, raise. Race conditions due to version increment should
         # only occur once in a short window of time unless code version is changing at a crazy pace.
         try:
-            experiment = experiment_builder.build(
+            experiment = builder.build(
                 name,
                 version=version,
                 space=space,
@@ -237,17 +241,17 @@ def build_experiment(
                 max_broken=max_broken,
                 branching=branching,
                 working_dir=working_dir,
+                knowledge_base=knowledge_base,
             )
         except RaceCondition as e:
             raise RaceCondition(
-                "There was a race condition during branching and new version cannot be infered "
-                "because of that. Single race conditions are normally handled seemlessly. If this "
-                "error gets raised, it means that different modifications occured during each race "
-                "condition resolution. This is likely due to quick code change during experiment "
-                "creation. Make sure your script is not generating files within your code "
-                "repository."
+                "There was a race condition during branching and new version cannot be inferred "
+                "because of that. Single race conditions are normally handled seamlessly. If this "
+                "error gets raised, it means that different modifications occurred during each "
+                "race condition resolution. This is likely due to quick code change during "
+                "experiment creation. Make sure your script is not generating files within your "
+                "code repository."
             ) from e
-
     return ExperimentClient(experiment, executor, heartbeat)
 
 
@@ -279,14 +283,20 @@ def get_experiment(name, version=None, mode="r", storage=None):
     `orion.core.utils.exceptions.NoConfigurationError`
         The experiment is not in the database provided by the user.
     """
-    setup_storage(storage)
     assert mode in set("rw")
-    experiment = experiment_builder.load(name, version, mode)
+
+    experiment = experiment_builder.load(name, version, mode, storage=storage)
     return ExperimentClient(experiment)
 
 
 def workon(
-    function, space, name="loop", algorithms=None, max_trials=None, max_broken=None
+    function: Callable,
+    space: dict,
+    name: str = "loop",
+    algorithms: type[BaseAlgorithm] | str | dict | None = None,
+    max_trials: int | None = None,
+    max_broken: int | None = None,
+    knowledge_base: KnowledgeBase | None = None,
 ):
     """Optimize a function over a given search space
 
@@ -294,7 +304,7 @@ def workon(
     until `max_trials` is reached or the `algorithm` is done
     (some algorithms like random search are never done).
 
-    For informations on how to fetch results, see
+    For information on how to fetch results, see
     :py:class:`orion.client.experiment.ExperimentClient`.
 
     .. note::
@@ -323,29 +333,20 @@ def workon(
         If the algorithm specified is not properly installed.
 
     """
-    # Clear singletons and keep pointers to restore them.
-    singletons = update_singletons()
+    experiment = experiment_builder.build(
+        name,
+        version=1,
+        space=space,
+        algorithms=algorithms,
+        max_trials=max_trials,
+        max_broken=max_broken,
+        storage={"type": "legacy", "database": {"type": "EphemeralDB"}},
+        knowledge_base=knowledge_base,
+    )
 
-    try:
-        setup_storage(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
+    experiment_client = ExperimentClient(experiment)
 
-        experiment = experiment_builder.build(
-            name,
-            version=1,
-            space=space,
-            algorithms=algorithms,
-            max_trials=max_trials,
-            max_broken=max_broken,
-        )
-
-        producer = Producer(experiment)
-
-        experiment_client = ExperimentClient(experiment, producer)
-        with experiment_client.tmp_executor("singleexecutor", n_workers=1):
-            experiment_client.workon(function, n_workers=1, max_trials=max_trials)
-
-    finally:
-        # Restore singletons
-        update_singletons(singletons)
+    with experiment_client.tmp_executor("singleexecutor", n_workers=1):
+        experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 
     return experiment_client

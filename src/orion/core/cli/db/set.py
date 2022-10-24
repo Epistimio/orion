@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the set command
 ==============================
@@ -11,10 +10,10 @@ import argparse
 import logging
 import sys
 
+# pylint:disable=consider-using-from-import
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.core.utils.terminal import confirm_name
-from orion.storage.base import get_storage
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +126,7 @@ VALID_QUERY_ATTRS = ["status", "id"]
 VALID_UPDATE_ATTRS = ["status"]
 
 
-def build_query(query):
+def build_query(experiment, query):
     """Convert query string to dict format
 
     String format must be <attr name>=<value>
@@ -142,10 +141,12 @@ def build_query(query):
             f"Invalid query attribute `{attribute}`. Must be one of {VALID_QUERY_ATTRS}"
         )
 
-    if attribute == "id":
-        attribute = "_id"
+    query = {attribute: value}
 
-    return {attribute: value}
+    if attribute == "id":
+        query["experiment"] = experiment.id
+
+    return query
 
 
 def build_update(update):
@@ -166,15 +167,13 @@ def build_update(update):
 def main(args):
     """Remove the experiment(s) or trial(s)."""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get("storage"))
+    builder = experiment_builder.ExperimentBuilder(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.load(
-        name=args["name"], version=args.get("version", None)
-    ).node
+    root = builder.load(name=args["name"], version=args.get("version", None)).node
 
     try:
-        query = build_query(args["query"])
+        query = build_query(root.item, args["query"])
         update = build_update(args["update"])
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -193,8 +192,6 @@ def main(args):
         print("Confirmation failed, aborting operation.")
         return 1
 
-    storage = get_storage()
-
-    process_updates(storage, root, query, update)
+    process_updates(builder.storage, root, query, update)
 
     return 0

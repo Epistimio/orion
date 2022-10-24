@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.task`."""
 
 from orion.benchmark.task import Branin, CarromTable, EggHolder, RosenBrock

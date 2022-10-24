@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Perform a functional test for branching."""
 
 import logging
@@ -10,7 +9,7 @@ import yaml
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-from orion.storage.base import get_storage
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -20,7 +19,7 @@ def execute(command, assert_code=0):
 
 
 @pytest.fixture
-def init_full_x(setup_pickleddb_database, monkeypatch):
+def init_full_x(orionstate, monkeypatch):
     """Init original experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = "full_x"
@@ -32,7 +31,7 @@ def init_full_x(setup_pickleddb_database, monkeypatch):
         .format(name=name)
         .split(" ")
     )
-    orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=0".split(" "))
 
 
 @pytest.fixture
@@ -51,23 +50,17 @@ def init_no_evc(monkeypatch):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {name} script -x=1 -y=1".format(name=name).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {name} script -x=-1 -y=1".format(name=name).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {name} script -x=1 -y=-1".format(name=name).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {name} script -x=-1 -y=-1".format(name=name).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {name} script -x=1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=-1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=1 -y=-1".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=-1 -y=-1".split(" "))
 
 
 @pytest.fixture
 def init_full_x_full_y(init_full_x):
     """Add y dimension to original"""
+    print("init_full_x_full_y start")
+
     name = "full_x"
     branch = "full_x_full_y"
     orion.core.cli.main(
@@ -81,18 +74,10 @@ def init_full_x_full_y(init_full_x):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1 -y=1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1 -y=1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1 -y=-1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1 -y=-1".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1 -y=1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=1 -y=-1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1 -y=-1".split(" "))
 
 
 @pytest.fixture
@@ -111,12 +96,8 @@ def init_half_x_full_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=2 -y=2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=2 -y=-2".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=2 -y=2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=2 -y=-2".split(" "))
 
 
 @pytest.fixture
@@ -135,12 +116,8 @@ def init_full_x_half_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=3 -y=3".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-3 -y=3".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=3 -y=3".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-3 -y=3".split(" "))
 
 
 @pytest.fixture
@@ -157,18 +134,10 @@ def init_full_x_rename_y_z(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=4 -z=4".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-4 -z=4".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=4 -z=-4".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-4 -z=-4".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=4 -z=4".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-4 -z=4".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=4 -z=-4".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-4 -z=-4".split(" "))
 
 
 @pytest.fixture
@@ -185,12 +154,8 @@ def init_full_x_rename_half_y_half_z(init_full_x_half_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=5 -z=5".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-5 -z=5".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=5 -z=5".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-5 -z=5".split(" "))
 
 
 @pytest.fixture
@@ -209,18 +174,10 @@ def init_full_x_rename_half_y_full_z(init_full_x_half_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=6 -z=6".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-6 -z=6".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=6 -z=-6".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-6 -z=-6".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=6 -z=6".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-6 -z=6".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=6 -z=-6".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-6 -z=-6".split(" "))
 
 
 @pytest.fixture
@@ -238,12 +195,8 @@ def init_full_x_remove_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=7".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-7".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=7".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-7".split(" "))
 
 
 @pytest.fixture
@@ -261,12 +214,8 @@ def init_full_x_full_y_add_z_remove_y(init_full_x_full_y):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=7 -z=2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-7 -z=2".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=7 -z=2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-7 -z=2".split(" "))
 
 
 @pytest.fixture
@@ -284,12 +233,8 @@ def init_full_x_remove_z(init_full_x_rename_y_z):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=8".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-8".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=8".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-8".split(" "))
 
 
 @pytest.fixture
@@ -307,12 +252,8 @@ def init_full_x_remove_z_default_4(init_full_x_rename_y_z):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=9".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-9".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=9".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-9".split(" "))
 
 
 @pytest.fixture
@@ -330,12 +271,8 @@ def init_full_x_new_algo(init_full_x):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1.1".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1.1".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1.1".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1.1".split(" "))
 
 
 @pytest.fixture
@@ -352,12 +289,8 @@ def init_full_x_new_cli(init_full_x):
         .format(name=name, branch=branch)
         .split(" ")
     )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1.2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1.2".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1.2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1.2".split(" "))
 
 
 @pytest.fixture
@@ -374,7 +307,7 @@ def init_full_x_ignore_cli(init_full_x):
         .format(name=name)
         .split(" ")
     )
-    orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=0".split(" "))
 
     orion.core.cli.main(
         (
@@ -387,8 +320,8 @@ def init_full_x_ignore_cli(init_full_x):
         .format(name=name)
         .split(" ")
     )
-    orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
-    orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=1.2".split(" "))
+    orion.core.cli.main(f"insert -n {name} script -x=-1.2".split(" "))
 
 
 @pytest.fixture
@@ -422,12 +355,8 @@ def init_full_x_new_config(init_full_x, tmp_path, caplog):
         # For child experiment
         assert "User script config: custom-config" in caplog.text
 
-    orion.core.cli.main(
-        "insert -n {branch} script -x=1.2 -y=2".format(branch=branch).split(" ")
-    )
-    orion.core.cli.main(
-        "insert -n {branch} script -x=-1.2 -y=3".format(branch=branch).split(" ")
-    )
+    orion.core.cli.main(f"insert -n {branch} script -x=1.2 -y=2".split(" "))
+    orion.core.cli.main(f"insert -n {branch} script -x=-1.2 -y=3".split(" "))
 
 
 @pytest.fixture
@@ -440,11 +369,10 @@ def init_entire(
     init_full_x_remove_z_default_4,
 ):  # 1.1.3.2
     """Initialize all experiments"""
-    pass
 
 
 def get_name_value_pairs(trials):
-    """Turn parameters into pairs for easy comparisions"""
+    """Turn parameters into pairs for easy comparisons"""
     pairs = []
     for trial in trials:
         pairs.append([])
@@ -467,10 +395,10 @@ def test_init(init_full_x):
     assert pairs == ((("/x", 0),),)
 
 
-def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
+def test_no_evc_overwrite(orionstate, init_no_evc):
     """Test that the experiment config is overwritten if --enable-evc is not passed"""
-    storage = get_storage()
-    assert len(get_storage().fetch_experiments({})) == 1
+    storage = setup_storage()
+    assert len(storage.fetch_experiments({})) == 1
     experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
@@ -785,42 +713,40 @@ def test_entire_full_x_full_y(init_entire):
     )
 
     pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
-    assert set(pairs) == set(
-        (
-            (("/x", 0), ("/y", 1)),
-            # full_x_full_y
-            (("/x", 1), ("/y", 1)),
-            (("/x", -1), ("/y", 1)),
-            (("/x", 1), ("/y", -1)),
-            (("/x", -1), ("/y", -1)),
-            # half_x_full_y
-            (("/x", 2), ("/y", 2)),
-            (("/x", 2), ("/y", -2)),
-            # full_x_half_y
-            (("/x", 3), ("/y", 3)),
-            (("/x", -3), ("/y", 3)),
-            # full_x_rename_y_z
-            (("/x", 4), ("/y", 4)),
-            (("/x", -4), ("/y", 4)),
-            (("/x", 4), ("/y", -4)),
-            (("/x", -4), ("/y", -4)),
-            # full_x_rename_half_y_half_z
-            (("/x", 5), ("/y", 5)),
-            (("/x", -5), ("/y", 5)),
-            # full_x_rename_half_y_full_z
-            (("/x", 6), ("/y", 6)),
-            (("/x", -6), ("/y", 6)),
-            # full_x_remove_y
-            (("/x", 7), ("/y", 1)),
-            (("/x", -7), ("/y", 1)),
-            # full_x_remove_z
-            (("/x", 8), ("/y", 1)),
-            (("/x", -8), ("/y", 1)),
-            # full_x_remove_z_default_4
-            (("/x", 9), ("/y", 4)),
-            (("/x", -9), ("/y", 4)),
-        )
-    )
+    assert set(pairs) == {
+        (("/x", 0), ("/y", 1)),
+        # full_x_full_y
+        (("/x", 1), ("/y", 1)),
+        (("/x", -1), ("/y", 1)),
+        (("/x", 1), ("/y", -1)),
+        (("/x", -1), ("/y", -1)),
+        # half_x_full_y
+        (("/x", 2), ("/y", 2)),
+        (("/x", 2), ("/y", -2)),
+        # full_x_half_y
+        (("/x", 3), ("/y", 3)),
+        (("/x", -3), ("/y", 3)),
+        # full_x_rename_y_z
+        (("/x", 4), ("/y", 4)),
+        (("/x", -4), ("/y", 4)),
+        (("/x", 4), ("/y", -4)),
+        (("/x", -4), ("/y", -4)),
+        # full_x_rename_half_y_half_z
+        (("/x", 5), ("/y", 5)),
+        (("/x", -5), ("/y", 5)),
+        # full_x_rename_half_y_full_z
+        (("/x", 6), ("/y", 6)),
+        (("/x", -6), ("/y", 6)),
+        # full_x_remove_y
+        (("/x", 7), ("/y", 1)),
+        (("/x", -7), ("/y", 1)),
+        # full_x_remove_z
+        (("/x", 8), ("/y", 1)),
+        (("/x", -8), ("/y", 1)),
+        # full_x_remove_z_default_4
+        (("/x", 9), ("/y", 4)),
+        (("/x", -9), ("/y", 4)),
+    }
 
 
 def test_run_entire_full_x_full_y(init_entire):
@@ -838,7 +764,7 @@ def test_run_entire_full_x_full_y(init_entire):
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
 
-    orion.core.cli.main(
+    code = orion.core.cli.main(
         (
             "-vv hunt --max-trials 30 --pool-size 1 -n full_x_full_y "
             "./black_box_with_y.py "
@@ -846,7 +772,11 @@ def test_run_entire_full_x_full_y(init_entire):
             "-y~uniform(-10,10,default_value=1)"
         ).split(" ")
     )
+    assert code == 0
 
+    # Current experiments now contains all trials because
+    # trials from parent exps have been duplicated in current exp to reserve them
+    # (See experiment.duplicate_pending_trials)
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 30
     assert len(experiment.fetch_trials(with_evc_tree=False)) == 30
 
@@ -1038,7 +968,7 @@ def test_new_script(init_full_x, monkeypatch):
     metadata["user_script"] = "oh_oh_idontexist.py"
     metadata["user_args"][0] = "oh_oh_idontexist.py"
     metadata["parser"]["parser"]["arguments"][0][1] = "oh_oh_idontexist.py"
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1086,7 +1016,7 @@ def test_missing_config(init_full_x_new_config, monkeypatch):
     metadata["parser"]["file_config_path"] = bad_config_file
     metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
     metadata["user_args"][3] = bad_config_file
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1132,7 +1062,7 @@ def test_missing_and_new_config(init_full_x_new_config, monkeypatch):
             )
         )
 
-    get_storage().update_experiment(experiment, metadata=metadata)
+    setup_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
         (
@@ -1242,9 +1172,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     ]
 
 
-def test_init_w_version_from_parent_w_children(
-    setup_pickleddb_database, monkeypatch, capsys
-):
+def test_init_w_version_from_parent_w_children(orionstate, monkeypatch, capsys):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1271,7 +1199,7 @@ def test_init_w_version_from_parent_w_children(
     assert "Experiment name" in captured.err
 
 
-def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatch):
+def test_init_w_version_from_exp_wout_child(orionstate, monkeypatch):
     """Test that init of experiment from version without child works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1291,11 +1219,11 @@ def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatc
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 3})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 3})
     assert len(list(exp))
 
 
-def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
+def test_init_w_version_gt_max(orionstate, monkeypatch):
     """Test that init of experiment from version higher than max works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1315,11 +1243,11 @@ def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 3})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 3})
     assert len(list(exp))
 
 
-def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
+def test_init_check_increment_w_children(orionstate, monkeypatch):
     """Test that incrementing version works with not same-named children."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1338,11 +1266,11 @@ def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
         "./black_box.py -x~normal(0,1) -z~+normal(0,1)"
     )
 
-    exp = get_storage().fetch_experiments({"name": "experiment", "version": 2})
+    exp = setup_storage().fetch_experiments({"name": "experiment", "version": 2})
     assert len(list(exp))
 
 
-def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
+def test_branch_from_selected_version(orionstate, monkeypatch):
     """Test that branching from a version passed with `--version` works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1362,7 +1290,7 @@ def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
         "-x~normal(0,1) -z~+normal(0,1)"
     )
 
-    storage = get_storage()
+    storage = setup_storage()
     parent = storage.fetch_experiments({"name": "experiment", "version": 1})[0]
     exp = storage.fetch_experiments({"name": "experiment_2"})[0]
     assert exp["refers"]["parent_id"] == parent["_id"]

@@ -1,21 +1,31 @@
-# -*- coding: utf-8 -*-
 """
 Tree-structured Parzen Estimator Approach
 =========================================
 """
+from __future__ import annotations
+
 import logging
+from typing import Any, Callable, ClassVar, Iterable, Sequence, TypeVar
 
 import numpy
 from scipy.stats import norm
+from scipy.stats.distributions import rv_frozen
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.parallel_strategy import strategy_factory
+from orion.algo.parallel_strategy import ParallelStrategy, strategy_factory
+from orion.algo.space import Integer, Real, Space
 from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
-def compute_max_ei_point(points, below_likelis, above_likelis):
+def compute_max_ei_point(
+    points: numpy.ndarray | Sequence[numpy.ndarray],
+    below_likelis: Sequence[float] | numpy.ndarray,
+    above_likelis: Sequence[float] | numpy.ndarray,
+) -> numpy.ndarray:
     """Compute ei among points based on their log likelihood and return the point with max ei.
 
     :param points: list of point with real values.
@@ -32,7 +42,7 @@ def compute_max_ei_point(points, below_likelis, above_likelis):
     return points[point_index]
 
 
-def ramp_up_weights(total_num, flat_num, equal_weight):
+def ramp_up_weights(total_num: int, flat_num: int, equal_weight: bool) -> numpy.ndarray:
     """Adjust weights of observed trials.
 
     :param total_num: total number of observed trials.
@@ -51,8 +61,13 @@ def ramp_up_weights(total_num, flat_num, equal_weight):
 
 # pylint:disable=assignment-from-no-return
 def adaptive_parzen_estimator(
-    mus, low, high, prior_weight=1.0, equal_weight=False, flat_num=25
-):
+    mus: numpy.ndarray | Sequence,
+    low: float,
+    high: float,
+    prior_weight: float = 1.0,
+    equal_weight: bool = False,
+    flat_num: int = 25,
+) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     """Return the sorted mus, the corresponding sigmas and weights with adaptive kernel estimator.
 
     This adaptive parzen window estimator is based on the original papers and also refer the use of
@@ -154,7 +169,7 @@ class TPE(BaseAlgorithm):
         Default: ``20``
     n_ei_candidates: int, optional
         Number of candidates points sampled for ei compute. Larger numbers will lead to more
-        exploitation and lower numbers will lead to more exploration. Be carefull with categorical
+        exploitation and lower numbers will lead to more exploration. Be careful with categorical
         dimension as TPE tend to severily exploit these if n_ei_candidates is larger than 1.
         Default: ``24``
     gamma: real, optional
@@ -181,23 +196,23 @@ class TPE(BaseAlgorithm):
 
     """
 
-    requires_type = None
-    requires_dist = "linear"
-    requires_shape = "flattened"
+    requires_type: ClassVar[str | None] = None
+    requires_dist: ClassVar[str | None] = "linear"
+    requires_shape: ClassVar[str | None] = "flattened"
 
     # pylint:disable=too-many-arguments
     def __init__(
         self,
-        space,
-        seed=None,
-        n_initial_points=20,
-        n_ei_candidates=24,
-        gamma=0.25,
-        equal_weight=False,
-        prior_weight=1.0,
-        full_weight_num=25,
-        max_retry=100,
-        parallel_strategy=None,
+        space: Space,
+        seed: int | Sequence[int] | None = None,
+        n_initial_points: int = 20,
+        n_ei_candidates: int = 24,
+        gamma: float = 0.25,
+        equal_weight: bool = False,
+        prior_weight: float = 1.0,
+        full_weight_num: int = 25,
+        max_retry: int = 100,
+        parallel_strategy: dict | None = None,
     ):
 
         if n_initial_points < 2:
@@ -224,9 +239,9 @@ class TPE(BaseAlgorithm):
                 },
             }
 
-        self.strategy = strategy_factory.create(**parallel_strategy)
+        self.strategy: ParallelStrategy = strategy_factory.create(**parallel_strategy)
 
-        super(TPE, self).__init__(
+        super().__init__(
             space,
             seed=seed,
             n_initial_points=n_initial_points,
@@ -238,20 +253,21 @@ class TPE(BaseAlgorithm):
             max_retry=max_retry,
             parallel_strategy=parallel_strategy,
         )
+        # TODO: Setting the attributes here so their types are registered. Need to get rid of
+        # overlap with super().__init__ somehow.
+        self.seed = seed
+        self.n_initial_points = n_initial_points
+        self.n_ei_candidates = n_ei_candidates
+        self.gamma = gamma
+        self.equal_weight = equal_weight
+        self.prior_weight = prior_weight
+        self.full_weight_num = full_weight_num
+        self.max_retry = max_retry
+        self.parallel_strategy = parallel_strategy
+        self._verify_space()
 
-    @property
-    def space(self):
-        """Return transformed space of TPE"""
-        return self._space
-
-    @space.setter
-    def space(self, space):
-        """Set the space of TPE and initialize it"""
-        self._space = space
-        self._initialize()
-
-    def _initialize(self):
-        """Initialize TPE once the space is transformed"""
+    def _verify_space(self) -> None:
+        """Verify space is supported"""
 
         for dimension in self.space.values():
 
@@ -271,84 +287,82 @@ class TPE(BaseAlgorithm):
             if shape and len(shape) != 1:
                 raise ValueError("TPE now only supports 1D shape.")
 
-    def seed_rng(self, seed):
+    def seed_rng(self, seed: int | Sequence[int] | None) -> None:
         """Seed the state of the random number generator.
 
         :param seed: Integer seed for the random number generator.
         """
+        super().seed_rng(seed)
         self.rng = numpy.random.RandomState(seed)
 
     @property
-    def state_dict(self):
+    def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(TPE, self).state_dict
-
+        _state_dict: dict[str, Any] = super().state_dict
         _state_dict["rng_state"] = self.rng.get_state()
         _state_dict["seed"] = self.seed
         _state_dict["strategy"] = self.strategy.state_dict
         return _state_dict
 
-    def set_state(self, state_dict):
+    def set_state(self, state_dict: dict) -> None:
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(TPE, self).set_state(state_dict)
+        super().set_state(state_dict)
 
         self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])
         self.strategy.set_state(state_dict["strategy"])
 
-    def suggest(self, num=None):
+    def suggest(self, num: int) -> list[Trial] | None:
         """Suggest a `num` of new sets of parameters. Randomly draw samples
         from the import space and return them.
 
         Parameters
         ----------
-        num: int, optional
-            Number of trials to sample. If None, TPE will sample all random trials at once, or a
-            single trial if it is at the Bayesian Optimization stage.
-        :param num: how many sets to be suggested.
+        num: int
+            Number of trials to sample.
 
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
         # Only sample up to `n_initial_points` and after that only sample one at a time.
-        num = min(num, max(self.n_initial_points - self.n_suggested, 1))
+        num_samples = min(num, max(self.n_initial_points - self.n_suggested, 1))
 
-        samples = []
-        candidates = []
-        while len(samples) < num and self.n_suggested < self.space.cardinality:
-            if candidates:
-                candidate = candidates.pop(0)
-                if candidate:
-                    self.register(candidate)
-                    samples.append(candidate)
-            elif self.n_observed < self.n_initial_points:
-                candidates = self._suggest_random(num)
+        samples: list[Trial] = []
+        while len(samples) < num_samples and self.n_suggested < self.space.cardinality:
+            if self.n_observed < self.n_initial_points:
+                candidates = self._suggest_random(num_samples)
+                logger.debug("Random candidates: %s", candidates)
             else:
-                candidates = self._suggest_bo(max(num - len(samples), 0))
+                v = max(num_samples - len(samples), 0)
+                candidates = self._suggest_bo(v)
+                logger.debug("BO candidates: %s", candidates)
 
             if not candidates:
+                # Perhaps the BO algo wasn't able to suggest any points? Break in that case.
                 break
-
+            for candidate in candidates:
+                self.register(candidate)
+                samples.append(candidate)
         return samples
 
-    def _suggest(self, num, function):
-        trials = []
+    def _suggest(
+        self, num: int, function: Callable[[int], Iterable[Trial]]
+    ) -> list[Trial]:
+        trials: list[Trial] = []
 
-        ids = set(self._trials_info.keys())
         retries = 0
         while len(trials) < num and retries < self.max_retry:
             for candidate in function(num - len(trials)):
-                candidate_id = self.get_id(candidate)
-                if candidate_id not in ids:
-                    ids.add(candidate_id)
+                if candidate not in self.registry:
+                    self.register(candidate)
                     trials.append(candidate)
                 else:
                     retries += 1
 
-                if len(ids) >= self.space.cardinality:
+                if len(self.registry) >= self.space.cardinality:
                     return trials
 
         if retries >= self.max_retry:
@@ -360,21 +374,21 @@ class TPE(BaseAlgorithm):
 
         return trials
 
-    def _suggest_random(self, num):
-        def sample(num):
+    def _suggest_random(self, num: int) -> list[Trial]:
+        def sample(num: int) -> list[Trial]:
             return self.space.sample(
                 num, seed=tuple(self.rng.randint(0, 1000000, size=3))
             )
 
         return self._suggest(num, sample)
 
-    def _suggest_bo(self, num):
-        def suggest_bo(num):
+    def _suggest_bo(self, num: int) -> list[Trial]:
+        def suggest_bo(num: int) -> list[Trial]:
             return [self._suggest_one_bo() for _ in range(num)]
 
         return self._suggest(num, suggest_bo)
 
-    def _suggest_one_bo(self):
+    def _suggest_one_bo(self) -> Trial:
 
         params = {}
         below_trials, above_trials = self.split_trials()
@@ -414,9 +428,14 @@ class TPE(BaseAlgorithm):
             params[dimension.name] = dim_samples
 
         trial = format_trials.dict_to_trial(params, self.space)
-        return self.format_trial(trial)
+        return trial
 
-    def _sample_real_dimension(self, dimension, below_points, above_points):
+    def _sample_real_dimension(
+        self,
+        dimension: Real,
+        below_points: Sequence[numpy.ndarray],
+        above_points: Sequence[numpy.ndarray],
+    ) -> numpy.ndarray:
         """Sample values for real dimension"""
         if any(map(dimension.prior_name.endswith, ["uniform", "reciprocal"])):
             return self._sample_real_point(
@@ -429,15 +448,25 @@ class TPE(BaseAlgorithm):
                 f"Prior {dimension.prior_name} is not supported for real values"
             )
 
-    def _sample_loguniform_real_point(self, dimension, below_points, above_points):
+    def _sample_loguniform_real_point(
+        self, dimension: Real, below_points: numpy.ndarray, above_points: numpy.ndarray
+    ) -> numpy.ndarray:
         """Sample one value for real dimension in a loguniform way"""
         return self._sample_real_point(
             dimension, below_points, above_points, is_log=True
         )
 
-    def _sample_real_point(self, dimension, below_points, above_points, is_log=False):
+    def _sample_real_point(
+        self,
+        dimension: Real,
+        below_points: numpy.ndarray | Sequence[numpy.ndarray],
+        above_points: numpy.ndarray | Sequence[numpy.ndarray],
+        is_log: bool = False,
+    ) -> numpy.ndarray:
         """Sample one value for real dimension based on the observed good and bad points"""
         low, high = dimension.interval()
+        below_points = numpy.array(below_points)
+        above_points = numpy.array(above_points)
         if is_log:
             low = numpy.log(low)
             high = numpy.log(high)
@@ -462,10 +491,20 @@ class TPE(BaseAlgorithm):
         )
 
         gmm_sampler_below = GMMSampler(
-            self, below_mus, below_sigmas, low, high, below_weights
+            self,
+            mus=below_mus,
+            sigmas=below_sigmas,
+            low=low,
+            high=high,
+            weights=below_weights,
         )
         gmm_sampler_above = GMMSampler(
-            self, above_mus, above_sigmas, low, high, above_weights
+            self,
+            mus=above_mus,
+            sigmas=above_sigmas,
+            low=low,
+            high=high,
+            weights=above_weights,
         )
 
         candidate_points = gmm_sampler_below.sample(self.n_ei_candidates)
@@ -478,9 +517,16 @@ class TPE(BaseAlgorithm):
 
         return new_point
 
-    def _sample_int_point(self, dimension, below_points, above_points):
+    def _sample_int_point(
+        self,
+        dimension: Integer,
+        below_points: numpy.ndarray | Sequence[numpy.ndarray],
+        above_points: numpy.ndarray | Sequence[numpy.ndarray],
+    ):
         """Sample one value for integer dimension based on the observed good and bad points"""
         low, high = dimension.interval()
+        assert isinstance(low, int)
+        assert isinstance(high, int)
         choices = range(low, high + 1)
 
         below_points = numpy.array(below_points).astype(int) - low
@@ -494,7 +540,9 @@ class TPE(BaseAlgorithm):
         lik_below = sampler_below.get_loglikelis(candidate_points)
         lik_above = sampler_above.get_loglikelis(candidate_points)
 
-        new_point = compute_max_ei_point(candidate_points, lik_below, lik_above)
+        new_point: numpy.ndarray = compute_max_ei_point(
+            candidate_points, lik_below, lik_above
+        )
         new_point = new_point + low
         return new_point
 
@@ -518,18 +566,19 @@ class TPE(BaseAlgorithm):
 
         return new_point
 
-    def split_trials(self):
+    def split_trials(self) -> tuple[list[Trial], list[Trial]]:
         """Split the observed trials into good and bad ones based on the ratio `gamma``"""
 
-        trials = []
-        for trial, _ in self._trials_info.values():
+        trials: list[Trial] = []
+        for trial in self.registry:
             if trial.status != "completed":
                 trial = self.strategy.infer(trial)
 
             if trial is not None:
                 trials.append(trial)
-
-        sorted_trials = sorted(trials, key=lambda trial: trial.objective.value)
+        # NOTE: This assumes that all trials have an objective. Making assumption explicit.
+        assert all(trial.objective is not None for trial in trials)
+        sorted_trials = sorted(trials, key=lambda trial: trial.objective.value)  # type: ignore
 
         split_index = int(numpy.ceil(self.gamma * len(sorted_trials)))
 
@@ -572,15 +621,15 @@ class GMMSampler:
 
     def __init__(
         self,
-        tpe,
-        mus,
-        sigmas,
-        low,
-        high,
-        weights=None,
-        base_attempts=10,
-        attempts_factor=10,
-        max_attempts=10000,
+        tpe: TPE,
+        mus: Sequence[float] | numpy.ndarray,
+        sigmas: Sequence[float] | numpy.ndarray,
+        low: float,
+        high: float,
+        weights: Sequence[float] | numpy.ndarray | None = None,
+        base_attempts: int = 10,
+        attempts_factor: int = 10,
+        max_attempts: int = 10000,
     ):
         self.tpe = tpe
 
@@ -594,32 +643,32 @@ class GMMSampler:
         self.attempts_factor = attempts_factor
         self.max_attempts = max_attempts
 
-        self.pdfs = []
+        self.pdfs: list[rv_frozen] = []
         self._build_mixture()
 
-    def _build_mixture(self):
+    def _build_mixture(self) -> None:
         """Build the Gaussian components in the GMM"""
         for mu, sigma in zip(self.mus, self.sigmas):
             self.pdfs.append(norm(mu, sigma))
 
-    def sample(self, num=1, attempts=None):
+    def sample(self, num: int = 1, attempts: int | None = None) -> list[numpy.ndarray]:
         """Sample required number of points"""
         if attempts is None:
             attempts = self.base_attempts
-
-        point = []
+        point: list[numpy.ndarray] = []
         for _ in range(num):
             pdf = numpy.argmax(self.tpe.rng.multinomial(1, self.weights))
             attempts_tried = 0
+            index: int | None = None
             while attempts_tried < attempts:
-                new_points = self.pdfs[pdf].rvs(
+                new_points: numpy.ndarray = self.pdfs[pdf].rvs(
                     size=attempts, random_state=self.tpe.rng
                 )
                 valid_points = (self.low <= new_points) * (self.high >= new_points)
 
                 if any(valid_points):
                     index = numpy.argmax(valid_points)
-                    point.append(float(new_points[index]))
+                    point.append(new_points[index])
                     break
 
                 index = None
@@ -636,14 +685,16 @@ class GMMSampler:
 
         return point
 
-    def get_loglikelis(self, points):
+    def get_loglikelis(
+        self, points: numpy.ndarray | list[numpy.ndarray] | Sequence[Sequence[float]]
+    ) -> numpy.ndarray:
         """Return the log likelihood for the points"""
         points = numpy.array(points)
-        weight_likelis = [
+        weight_likelis_list = [
             numpy.log(self.weights[i] * pdf.pdf(points))
             for i, pdf in enumerate(self.pdfs)
         ]
-        weight_likelis = numpy.array(weight_likelis)
+        weight_likelis = numpy.array(weight_likelis_list)
         # (num_weights, num_points) => (num_points, num_weights)
         weight_likelis = weight_likelis.transpose()
 
@@ -670,14 +721,20 @@ class CategoricalSampler:
 
     """
 
-    def __init__(self, tpe, observations, choices):
+    def __init__(
+        self,
+        tpe: TPE,
+        observations: Sequence | numpy.ndarray,
+        choices: Sequence | numpy.ndarray,
+    ):
         self.tpe = tpe
         self.obs = observations
         self.choices = choices
 
         self._build_multinomial_weights()
+        self.weights: numpy.ndarray
 
-    def _build_multinomial_weights(self):
+    def _build_multinomial_weights(self) -> None:
         """Build weights for categorical distribution based on observations"""
         weights_obs = ramp_up_weights(
             len(self.obs), self.tpe.full_weight_num, self.tpe.equal_weight
@@ -688,7 +745,7 @@ class CategoricalSampler:
         counts_obs = counts_obs + self.tpe.prior_weight
         self.weights = counts_obs / counts_obs.sum()
 
-    def sample(self, num=1):
+    def sample(self, num: int = 1) -> numpy.ndarray:
         """Sample required number of points"""
         samples = self.tpe.rng.multinomial(n=1, pvals=self.weights, size=num)
 
@@ -699,6 +756,8 @@ class CategoricalSampler:
 
         return samples_index
 
-    def get_loglikelis(self, points):
+    def get_loglikelis(
+        self, points: numpy.ndarray | Sequence[numpy.ndarray]
+    ) -> numpy.ndarray:
         """Return the log likelihood for the points"""
         return numpy.log(numpy.asarray(self.weights)[points])

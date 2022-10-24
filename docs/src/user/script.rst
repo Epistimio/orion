@@ -38,11 +38,6 @@ This should not be confused with the argument ``--config`` of ``orion hunt``,
 which is the configuration of Oríon. We are here referring the configuration of the user script,
 represented with ``my_script_config.txt`` in the previous example.
 
-.. note::
-
-   The value of ``user_script_config`` is only configurable from the global configuration yaml file
-   at the moment. It cannot be set in the local configuration file passed to
-   ``orion hunt --config``.
 
 ``working_dir``
 ---------------
@@ -114,6 +109,8 @@ Templates                  Description
 
 ``trial.id``               Unique ID of the trial
 
+``trial.legacy_id``        Deprecated. Unique ID of the trial prior to v0.2.5.
+
 ``trial.working_dir``      Working dir of the trial
 
 ``trial.hash_params``      md5sum hash for the parameters (w/o fidelity)
@@ -148,6 +145,10 @@ We list them below.
 .. envvar:: ORION_TRIAL_ID
 
    Current trial id that is currently being executed in this process.
+
+.. envvar:: ORION_TRIAL_LECAGY_ID
+
+   Deprecated. Unique ID of the trial prior to v0.2.5.
 
 .. envvar:: ORION_WORKING_DIR
 

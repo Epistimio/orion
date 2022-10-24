@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Presence stage for database checks
 ==================================
@@ -64,4 +63,4 @@ class PresenceStage:
 
     def post_stage(self):
         """Print the current config."""
-        print("Using configuration: {}".format(self.db_config))
+        print(f"Using configuration: {self.db_config}")

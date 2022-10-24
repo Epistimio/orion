@@ -143,7 +143,7 @@ retrieve individual experiments as well as a list of all your experiments.
       version of the experiment is retrieved.
 
    :>json name: The name of the experiment.
-   :>json version: The version fo the experiment.
+   :>json version: The version of the experiment.
    :>json status: The status of the experiment. Can be one of 'done' or 'not done' if there
       is trials remaining.
    :>json trialsCompleted: The number of trials completed.

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Random sampler as optimization algorithm
 ========================================
@@ -6,9 +5,14 @@ Random sampler as optimization algorithm
 Draw and deliver samples from prior defined in problem's domain.
 
 """
+from __future__ import annotations
+
+from typing import Sequence
+
 import numpy
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 
 
 class Random(BaseAlgorithm):
@@ -24,10 +28,12 @@ class Random(BaseAlgorithm):
 
     """
 
-    def __init__(self, space, seed=None):
-        super(Random, self).__init__(space, seed=seed)
+    def __init__(self, space: Space, seed: int | Sequence[int] | None = None):
+        super().__init__(space)
+        self.seed = seed
+        self.seed_rng(seed)
 
-    def seed_rng(self, seed):
+    def seed_rng(self, seed: int | Sequence[int] | None):
         """Seed the state of the random number generator.
 
         :param seed: Integer seed for the random number generator.
@@ -37,7 +43,7 @@ class Random(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(Random, self).state_dict
+        _state_dict = super().state_dict
         _state_dict["rng_state"] = self.rng.get_state()
         return _state_dict
 
@@ -46,7 +52,7 @@ class Random(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(Random, self).set_state(state_dict)
+        super().set_state(state_dict)
         self.seed_rng(0)
         self.rng.set_state(state_dict["rng_state"])
 
@@ -66,8 +72,9 @@ class Random(BaseAlgorithm):
         """
         trials = []
         while len(trials) < num and not self.is_done:
+            # NOTE: space.sample() uses (and modifies) the random state here.
             seed = tuple(self.rng.randint(0, 1000000, size=3))
-            new_trial = self.format_trial(self.space.sample(1, seed=seed)[0])
+            new_trial = self.space.sample(1, seed=seed)[0]
             if not self.has_suggested(new_trial):
                 self.register(new_trial)
                 trials.append(new_trial)

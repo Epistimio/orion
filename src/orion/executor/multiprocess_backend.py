@@ -1,16 +1,11 @@
 import concurrent.futures
-import dataclasses
 import logging
 import multiprocessing
 import pickle
 import traceback
-import uuid
 from concurrent.futures import ThreadPoolExecutor, wait
-from dataclasses import dataclass
-from multiprocessing import Manager, Process, get_context
-from multiprocessing.pool import AsyncResult
+from multiprocessing import Process
 from multiprocessing.pool import Pool as PyPool
-from queue import Empty
 
 import cloudpickle
 
@@ -129,7 +124,7 @@ class _ThreadFuture(Future):
 
 
 class ThreadPool:
-    """Custom pool that creates multiple threads instead of processess"""
+    """Custom pool that creates multiple threads instead of processes"""
 
     def __init__(self, n_workers):
         self.pool = ThreadPoolExecutor(n_workers)

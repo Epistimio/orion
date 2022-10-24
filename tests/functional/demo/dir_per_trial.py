@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple script simulating behaviour of a program that requires inputs
 to determine and interact with a unique directory in local disk.
 """
@@ -12,7 +11,7 @@ from orion.client import report_results
 def function(x):
     """Evaluate partial information of a quadratic."""
     z = x - 34.56789168765984988448213179176
-    return 4 * z ** 2 + 23.4, 8 * z
+    return 4 * z**2 + 23.4, 8 * z
 
 
 def execute():
@@ -26,7 +25,7 @@ def execute():
 
     # That's what is expected to happen
     os.makedirs(
-        os.path.join(inputs.dir, inputs.other_name, "my-exp-{}".format(inputs.name)),
+        os.path.join(inputs.dir, inputs.other_name, f"my-exp-{inputs.name}"),
         exist_ok=False,
     )  # Raise OSError if it exists
 

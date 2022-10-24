@@ -31,13 +31,14 @@ requirements:
     - plotly
     - python-kaleido
     - requests
-    - pandas
+    - pandas <=1.4.4
     - falcon
     - falcon-cors
     - gunicorn
     - scikit-learn
     - psutil
     - pytest >=3.0.0
+    - scikit-optimize
 
 test:
   import:

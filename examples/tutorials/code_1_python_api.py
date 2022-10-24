@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 =================
 Python API basics
@@ -8,9 +7,14 @@ This short tutorial will show you the basics to use Oríon in python. We will op
 1-d ``rosenbrock`` function with random search and TPE and visualize the regret curve to compare
 the algorithms.
 
+Note for macos users : You will need to either run this page as a jupyter notebook in order for it to compile, or 
+encapsulate the code in a main function and running it under ``if __name__ == '__main__'``.
+
 We first import the only function needed, :func:`build experiment <orion.client.build_experiment>`.
 """
 from orion.client import build_experiment
+
+# flake8: noqa: E266
 
 #%%
 # We configure the database with PickledDB so that the results are saved locally on disk. This
@@ -55,7 +59,7 @@ experiment = build_experiment(
 def rosenbrock(x, noise=None):
     """Evaluate partial information of a quadratic."""
     y = x - 34.56789
-    z = 4 * y ** 2 + 23.4
+    z = 4 * y**2 + 23.4
 
     return [{"name": "objective", "type": "objective", "value": z}]
 

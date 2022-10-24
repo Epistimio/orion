@@ -1,7 +1,6 @@
 """ Options and utilities for training the profet meta-model from Emukit. """
 import json
 import pickle
-import typing
 import warnings
 from abc import ABC
 from copy import deepcopy
@@ -33,6 +32,7 @@ except ImportError as err:
     warnings.warn(RuntimeWarning(_ERROR_MSG.format(err)))
     # NOTE: Need to set some garbage dummy values, so that the documentation can be generated without
     # actually having these values.
+
     def get_default_architecture(
         input_dimensionality: int, classification: bool = False, n_hidden: int = 500
     ) -> Any:
@@ -132,7 +132,7 @@ class MetaModelConfig(ABC):
     n_inducing_lvm: int = 50
     """ Passed as the value for the "num_inducing" argument of `BayesianGPLVM` constructor.
 
-    (copied form `GPy.core.sparse_gp_mpi.SparseGP_MPI`):
+    (copied form ``GPy.core.sparse_gp_mpi.SparseGP_MPI``):
     Number of inducing points (optional, default 10. Ignored if Z is not None)
     """
 
@@ -219,7 +219,7 @@ class MetaModelConfig(ABC):
                 raise RuntimeError(
                     f"Download finished, but file {file} still doesn't exist!"
                 )
-        with open(file, "r") as f:
+        with open(file) as f:
             res = json.load(f)
         X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
         if len(X.shape) == 1:

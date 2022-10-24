@@ -19,7 +19,7 @@ Sample script
 
 .. literalinclude:: /../../examples/scikitlearn-iris/main.py
    :language: python
-   :lines: 1-2, 5-9, 13-30
+   :lines: 1-9, 13-30
 
 This very basic script takes in parameter one positional argument for the hyper-parameter *epsilon*
 which control the loss in the script.

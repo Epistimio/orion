@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Package-wide useful routines
 ============================
 
 """
+from __future__ import annotations
 
 import hashlib
 import logging
@@ -29,10 +29,10 @@ def nesteddict():
 
 
 def float_to_digits_list(number):
-    """Convert a float into a list of digits, without conserving exponant"""
-    # Get rid of scientific-format exponant
+    """Convert a float into a list of digits, without conserving exponent"""
+    # Get rid of scientific-format exponent
     str_number = str(number)
-    str_number = str_number.split("e")[0]
+    str_number = str_number.split("e", maxsplit=1)[0]
 
     res = [int(ele) for ele in str_number if ele.isdigit()]
 
@@ -73,6 +73,7 @@ def _import_modules(cls):
     # Get types advertised through entry points!
     for entry_point in pkg_resources.iter_entry_points(cls.__name__):
         entry_point.load()
+        assert entry_point.dist is not None
         log.debug(
             "Found a %s %s from distribution: %s=%s",
             entry_point.name,
@@ -89,7 +90,12 @@ def _set_typenames(cls):
     log.debug("Implementations found: %s", sorted(cls.types.keys()))
 
 
-class GenericFactory:
+from typing import Generic, TypeVar
+
+T = TypeVar("T")  # pylint: disable=invalid-name
+
+
+class GenericFactory(Generic[T]):
     """Factory to create instances of classes inheriting a given ``base`` class.
 
     The factory can instantiate children of the base class at any level of inheritance.
@@ -108,10 +114,10 @@ class GenericFactory:
 
     """
 
-    def __init__(self, base):
+    def __init__(self, base: type[T]):
         self.base = base
 
-    def create(self, of_type, *args, **kwargs):
+    def create(self, of_type: str, *args, **kwargs):
         """Create an object, instance of ``self.base``
 
         Parameters
@@ -120,16 +126,16 @@ class GenericFactory:
             Name of class, subclass of ``self.base``. Capitalization insensitive
 
         args: *
-            Positional arguments to construct the givin class.
+            Positional arguments to construct the given class.
 
         kwargs: **
-            Keyword arguments to construct the givin class.
+            Keyword arguments to construct the given class.
         """
 
         constructor = self.get_class(of_type)
         return constructor(*args, **kwargs)
 
-    def get_class(self, of_type):
+    def get_class(self, of_type: str) -> type[T]:
         """Get the class object (not instantiated)
 
         Parameters
@@ -141,16 +147,15 @@ class GenericFactory:
         constructors = self.get_classes()
 
         if of_type not in constructors:
-            error = "Could not find implementation of {0}, type = '{1}'".format(
-                self.base.__name__, of_type
+            raise NotImplementedError(
+                f"Could not find implementation of {self.base.__name__}, type = '{of_type}'\n"
+                "Currently, there is an implementation for types:\n"
+                f"{sorted(constructors.keys())}"
             )
-            error += "\nCurrently, there is an implementation for types:\n"
-            error += str(sorted(constructors.keys()))
-            raise NotImplementedError(error)
 
         return constructors[of_type]
 
-    def get_classes(self):
+    def get_classes(self) -> dict[str, type[T]]:
         """Get children classes of ``self.base``"""
         _import_modules(self.base)
         return get_all_types(self.base, self.base.__name__)
@@ -160,7 +165,7 @@ class Factory(ABCMeta):
     """Deprecated, will be removed in v0.3.0. See GenericFactory instead"""
 
     def __init__(cls, names, bases, dictionary):
-        super(Factory, cls).__init__(names, bases, dictionary)
+        super().__init__(names, bases, dictionary)
         cls.types = {}
         try:
             _import_modules(cls)
@@ -177,12 +182,11 @@ class Factory(ABCMeta):
             if name == of_type.lower():
                 return inherited_class(*args, **kwargs)
 
-        error = "Could not find implementation of {0}, type = '{1}'".format(
-            cls.__base__.__name__, of_type
+        raise NotImplementedError(
+            f"Could not find implementation of {cls.__base__.__name__}, type = '{of_type}'\n"
+            "Currently, there is an implementation for types:\n"
+            f"{sorted(cls.types.keys())}"
         )
-        error += "\nCurrently, there is an implementation for types:\n"
-        error += str(sorted(cls.types.keys()))
-        raise NotImplementedError(error)
 
 
 def compute_identity(size: int = 16, **sample) -> str:
@@ -219,7 +223,7 @@ def _handler(signum, frame):
 @contextmanager
 def sigterm_as_interrupt():
     """Intercept ``SIGTERM`` signals and raise ``KeyboardInterrupt`` instead"""
-    ## Signal only works inside the main process
+    # Signal only works inside the main process
     previous = signal.signal(signal.SIGTERM, _handler)
 
     yield None

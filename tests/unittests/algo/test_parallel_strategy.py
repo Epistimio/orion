@@ -1,18 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.algo.parallel_strategies`."""
-import logging
 
-import pytest
 
-from orion.algo.parallel_strategy import (
-    MaxParallelStrategy,
-    MeanParallelStrategy,
-    NoParallelStrategy,
-    StubParallelStrategy,
-    strategy_factory,
-)
-from orion.core.utils import backward
 from orion.testing.algo import BaseParallelStrategyTests
 
 strategies = [

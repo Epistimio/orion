@@ -2,7 +2,6 @@
 """Common fixtures and utils for tests."""
 
 import copy
-import datetime
 import getpass
 import os
 
@@ -160,8 +159,8 @@ def with_user_dendi(monkeypatch):
 dendi_exp_config = dict(
     name="supernaedo2-dendi",
     space={
-        "/decoding_layer": f"choices(['rnn', 'lstm_with_attention', 'gru'])",
-        "/encoding_layer": f"choices(['rnn', 'lstm', 'gru'])",
+        "/decoding_layer": "choices(['rnn', 'lstm_with_attention', 'gru'])",
+        "/encoding_layer": "choices(['rnn', 'lstm', 'gru'])",
     },
     metadata={
         "user": "dendi",

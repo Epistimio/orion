@@ -264,8 +264,8 @@ Storage
 
 The storage backend is used by the
 :py:class:`ExperimentClient <orion.client.experiment.ExperimentClient>`
-to read and write persistant records of the experiment and trials.
-Although we recommand using the experiment client,
+to read and write persistent records of the experiment and trials.
+Although we recommend using the experiment client,
 we document the storage backend here for users who may need
 more flexibility.
 

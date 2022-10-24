@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple one dimensional example for a possible user's script."""
 import argparse
 
@@ -11,7 +10,7 @@ from orion.client import report_results
 def function(x):
     """Evaluate partial information of a quadratic."""
     z = x - 34.56789
-    return 4 * z ** 2 + 23.4, 8 * z
+    return 4 * z**2 + 23.4, 8 * z
 
 
 def execute():
@@ -21,7 +20,7 @@ def execute():
     parser.add_argument("--config", required=True)
     inputs = parser.parse_args()
 
-    with open(inputs.config, "r") as f:
+    with open(inputs.config) as f:
         config = yaml.safe_load(f)
 
     # 2. Perform computations

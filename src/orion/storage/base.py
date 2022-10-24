@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Generic Storage Protocol
 ========================
@@ -20,20 +19,38 @@ When retrieving an already initialized Storage object you should use `get_storag
 raises more granular error messages.
 
 """
+from __future__ import annotations
+
 import contextlib
 import copy
-import functools
-import inspect
 import logging
+import typing
+from datetime import datetime
+
+from typing_extensions import Literal
 
 import orion.core
 from orion.core.io import resolve_config
-from orion.core.utils.singleton import GenericSingletonFactory
+from orion.core.utils import GenericFactory
+
+if typing.TYPE_CHECKING:
+    from typing_extensions import Unpack
+
+    from orion.core.worker.experiment import Experiment
+    from orion.core.worker.experiment_config import (
+        ExperimentConfig,
+        PartialExperimentConfig,
+    )
+    from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
 
-def get_uid(item=None, uid=None, force_uid=True):
+def get_uid(
+    item: Experiment | Trial | None = None,
+    uid: str | int | None = None,
+    force_uid: bool = True,
+):
     """Return uid either from `item` or directly uid.
 
     Parameters
@@ -41,7 +58,7 @@ def get_uid(item=None, uid=None, force_uid=True):
     item: Experiment or Trial, optional
        Object with .id attribute
 
-    uid: str, optional
+    uid: str or int, optional
         str id representation
 
     force_uid: bool, optional
@@ -62,27 +79,67 @@ def get_uid(item=None, uid=None, force_uid=True):
         if item is None and force_uid:
             raise MissingArguments("Either `item` or `uid` should be set")
         elif item is not None:
-            uid = item.id
+            return item.id
 
     return uid
+
+
+def get_trial_uid_and_exp(
+    trial: Trial | None = None,
+    uid: str | None = None,
+    experiment_uid: str | int | None = None,
+):
+    """Return trial and experiment uid either from `trial` or directly uids.
+
+    Parameters
+    ----------
+    trial: Trial, optional
+       Object with .id attribute
+
+    uid: str, optional
+        str id representation of the trial
+
+    experiment_uid: str or int, optional
+        Id of the experiment.
+
+    Raises
+    ------
+    UndefinedCall
+        if both trial and (uid or experiment_uid) are not set
+
+    AssertionError
+        if both trial and (uid or experiment_uid) are provided and they do not match
+
+    Returns
+    -------
+    (trial uid, experiment uid)
+    """
+
+    if trial is None and experiment_uid is None:
+        raise MissingArguments(
+            "Either `trial` or (`uid` and `experiment_uid`) should be set"
+        )
+
+    if trial is not None and experiment_uid:
+        assert trial.experiment == experiment_uid
+    elif trial is not None:
+        experiment_uid = trial.experiment
+
+    trial_uid = get_uid(trial, uid)
+
+    return trial_uid, experiment_uid
 
 
 class FailedUpdate(Exception):
     """Exception raised when we are unable to update a trial' status"""
 
-    pass
-
 
 class MissingArguments(Exception):
     """Raised when calling a function without the minimal set of parameters"""
 
-    pass
-
 
 class LockAcquisitionTimeout(Exception):
     """Raised when the lock acquisition timeout (not lock is granted)."""
-
-    pass
 
 
 class LockedAlgorithmState:
@@ -101,22 +158,22 @@ class LockedAlgorithmState:
         Whether the algorithm is locked or not. Default: True
     """
 
-    def __init__(self, state, configuration, locked=True):
+    def __init__(self, state: dict, configuration: dict, locked: bool = True):
         self._original_state = state
         self.configuration = configuration
         self._state = state
         self.locked = locked
 
     @property
-    def state(self):
+    def state(self) -> dict:
         """State of the algorithm"""
         return self._state
 
-    def set_state(self, state):
+    def set_state(self, state: dict) -> None:
         """Update the state of the algorithm that should be saved back in storage."""
         self._state = state
 
-    def reset(self):
+    def reset(self) -> None:
         """Set back algorithm state to original state found in storage."""
         self._state = self._original_state
 
@@ -127,19 +184,21 @@ class BaseStorageProtocol:
 
     """
 
-    def create_benchmark(self, config):
+    def create_benchmark(self, config: dict):
         """Insert a new benchmark inside the database"""
         raise NotImplementedError()
 
-    def fetch_benchmark(self, query, selection=None):
+    def fetch_benchmark(self, query: dict, selection: dict | None = None):
         """Fetch all benchmarks that match the query"""
         raise NotImplementedError()
 
-    def create_experiment(self, config):
+    def create_experiment(self, config: ExperimentConfig):
         """Insert a new experiment inside the database"""
         raise NotImplementedError()
 
-    def delete_experiment(self, experiment=None, uid=None):
+    def delete_experiment(
+        self, experiment: Experiment | None = None, uid: str | int | None = None
+    ):
         """Delete matching experiments from the database
 
         Parameters
@@ -147,7 +206,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         Returns
@@ -164,7 +223,13 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
+    def update_experiment(
+        self,
+        experiment: Experiment | None = None,
+        uid: str | int | None = None,
+        where: dict | None = None,
+        **kwargs: Unpack[PartialExperimentConfig],
+    ) -> bool:
         """Update the fields of a given experiment
 
         Parameters
@@ -172,7 +237,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -196,15 +261,22 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def fetch_experiments(self, query, selection=None):
+    def fetch_experiments(
+        self, query: dict, selection: dict | None = None
+    ) -> list[ExperimentConfig]:
         """Fetch all experiments that match the query"""
         raise NotImplementedError()
 
-    def register_trial(self, trial):
+    def register_trial(self, trial: Trial):
         """Create a new trial to be executed"""
         raise NotImplementedError()
 
-    def delete_trials(self, experiment=None, uid=None, where=None):
+    def delete_trials(
+        self,
+        experiment: Experiment | None = None,
+        uid: str | int | None = None,
+        where: dict | None = None,
+    ) -> int:
         """Delete matching trials from the database
 
         Parameters
@@ -212,7 +284,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -232,7 +304,7 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def reserve_trial(self, experiment):
+    def reserve_trial(self, experiment: Experiment) -> Trial | None:
         """Select a pending trial and reserve it for the worker
 
         Returns
@@ -242,7 +314,12 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def fetch_trials(self, experiment=None, uid=None, where=None):
+    def fetch_trials(
+        self,
+        experiment: Experiment | None = None,
+        uid: str | int | None = None,
+        where: dict | None = None,
+    ) -> list[Trial] | None:
         """Fetch all the trials of an experiment in the database
 
         Parameters
@@ -250,7 +327,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -271,7 +348,13 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
+    def update_trials(
+        self,
+        experiment: Experiment | None = None,
+        uid: str | int | None = None,
+        where: dict | None = None,
+        **kwargs,
+    ):
         """Update trials of a given experiment matching a query
 
         Parameters
@@ -279,7 +362,7 @@ class BaseStorageProtocol:
         experiment: Experiment, optional
            experiment object to retrieve from the database
 
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         where: Optional[dict]
@@ -299,7 +382,14 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+    def update_trial(
+        self,
+        trial: Trial | None = None,
+        uid: str | int | None = None,
+        experiment_uid: str | int | None = None,
+        where: dict | None = None,
+        **kwargs,
+    ):
         """Update fields of a given trial
 
         Parameters
@@ -309,6 +399,9 @@ class BaseStorageProtocol:
 
         uid: str, optional
             id of the trial to update in the database
+
+        experiment_uid: str or int, optional
+            experiment id of the trial to update in the database
 
         where: Optional[dict]
             constraint trials must respect. Note: useful to handle race conditions.
@@ -327,7 +420,12 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def get_trial(self, trial=None, uid=None):
+    def get_trial(
+        self,
+        trial: Trial | None = None,
+        uid: str | None = None,
+        experiment_uid: str | int | None = None,
+    ) -> Trial | None:
         """Fetch a single trial
 
         Parameters
@@ -338,9 +436,12 @@ class BaseStorageProtocol:
         uid: str, optional
             trial id used to retrieve the trial object
 
+        experiment_uid: str or int, optional
+            experiment id used to retrieve the trial object
+
         Returns
         -------
-        return none if the trial is not found,
+        return None if the trial is not found,
 
         Raises
         ------
@@ -353,23 +454,29 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def fetch_lost_trials(self, experiment):
+    def fetch_lost_trials(self, experiment: Experiment) -> list[Trial]:
         """Fetch all trials that have a heartbeat older than
         some given time delta (2 minutes by default)
         """
         raise NotImplementedError()
 
-    def retrieve_result(self, trial, *args, **kwargs):
+    def retrieve_result(self, trial: Trial, *args, **kwargs) -> Trial:
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
         """
         raise NotImplementedError()
 
-    def push_trial_results(self, trial):
+    def push_trial_results(self, trial: Trial):
         """Push the trial's results to the database"""
         raise NotImplementedError()
 
-    def set_trial_status(self, trial, status, heartbeat=None, was=None):
+    def set_trial_status(
+        self,
+        trial: Trial,
+        status: str,
+        heartbeat: datetime | None = None,
+        was: str | None = None,
+    ):
         """Update the trial status and the heartbeat
 
         Parameters
@@ -395,33 +502,37 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def fetch_pending_trials(self, experiment):
+    def fetch_pending_trials(self, experiment: Experiment) -> list[Trial]:
         """Fetch all trials that are available to be executed by a worker,
         this includes new, suspended and interrupted trials
         """
         raise NotImplementedError()
 
-    def fetch_noncompleted_trials(self, experiment):
+    def fetch_noncompleted_trials(self, experiment: Experiment) -> list[Trial]:
         """Fetch all non completed trials"""
         raise NotImplementedError()
 
-    def fetch_trials_by_status(self, experiment, status):
+    def fetch_trials_by_status(
+        self, experiment: Experiment, status: str
+    ) -> list[Trial]:
         """Fetch all trials with the given status"""
         raise NotImplementedError()
 
-    def count_completed_trials(self, experiment):
+    def count_completed_trials(self, experiment: Experiment) -> int:
         """Count the number of completed trials"""
         raise NotImplementedError()
 
-    def count_broken_trials(self, experiment):
+    def count_broken_trials(self, experiment: Experiment) -> int:
         """Count the number of broken trials"""
         raise NotImplementedError()
 
-    def update_heartbeat(self, trial):
+    def update_heartbeat(self, trial: Trial):
         """Update trial's heartbeat"""
         raise NotImplementedError()
 
-    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+    def initialize_algorithm_lock(
+        self, experiment_id: int | str, algorithm_config: dict
+    ):
         """Initialize algorithm lock for given experiment
 
         Parameters
@@ -433,14 +544,19 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
+    def release_algorithm_lock(
+        self,
+        experiment: Experiment | None = None,
+        uid: str | int | None = None,
+        new_state: dict | None = None,
+    ):
         """Release the algorithm lock
 
         Parameters
         ----------
         experiment: Experiment, optional
            experiment object to retrieve from the database
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object.
         new_state: dict, optional
              The new state of the algorithm that should be saved in the lock object.
@@ -448,33 +564,37 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def get_algorithm_lock_info(self, experiment=None, uid=None):
+    def get_algorithm_lock_info(
+        self, experiment: Experiment | None = None, uid: str | int | None = None
+    ) -> LockedAlgorithmState:
         """Load algorithm lock info
 
         Parameters
         ----------
         experiment: Experiment, optional
            experiment object to retrieve from the database
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object.
 
         Returns
         -------
         ``orion.storage.base.LockedAlgorithmState``
-            The locked state of the algoithm. Note that the lock is not acquired by the process
+            The locked state of the algorithm. Note that the lock is not acquired by the process
             calling ``get_algorithm_lock_info`` and the value of LockedAlgorithmState.locked
             may not be valid if another process is running and could acquire the lock concurrently.
         """
         raise NotImplementedError()
 
-    def delete_algorithm_lock(self, experiment=None, uid=None):
+    def delete_algorithm_lock(
+        self, experiment: Experiment | None = None, uid: str | int | None = None
+    ) -> Literal[0, 1]:
         """Delete experiment algorithm lock from the storage
 
         Parameters
         ----------
         experiment: Experiment, optional
            experiment object to retrieve from the database
-        uid: str, optional
+        uid: str or int, optional
             experiment id used to retrieve the trial object
 
         Returns
@@ -491,7 +611,9 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
     @contextlib.contextmanager
-    def acquire_algorithm_lock(self, experiment, timeout=600, retry_interval=1):
+    def acquire_algorithm_lock(
+        self, experiment: Experiment, timeout: int = 600, retry_interval: int = 1
+    ) -> typing.Generator[LockedAlgorithmState, None, None]:
         """Acquire lock on algorithm in storage
 
         This method is a contextmanager and should be called using the ``with``-clause.
@@ -517,27 +639,7 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
 
-storage_factory = GenericSingletonFactory(BaseStorageProtocol)
-
-
-def get_storage():
-    """Return current storage
-
-    This is a wrapper around the Storage Singleton object to provide
-    better error message when it is used without being initialized.
-
-    Raises
-    ------
-    RuntimeError
-        If the underlying storage was not initialized prior to calling this function
-
-    Notes
-    -----
-    To initialize the underlying storage you must first call `Storage(...)`
-    with the appropriate arguments for the chosen backend
-
-    """
-    return storage_factory.create()
+storage_factory = GenericFactory(BaseStorageProtocol)
 
 
 def setup_storage(storage=None, debug=False):
@@ -549,7 +651,7 @@ def setup_storage(storage=None, debug=False):
         Configuration for the storage backend. If not defined, global configuration
         is used.
     debug: bool, optional
-        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        If using in debug mode, the storage config is overridden with legacy:EphemeralDB.
         Defaults to False.
 
     """
@@ -576,14 +678,14 @@ def setup_storage(storage=None, debug=False):
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
-        storage_factory.create(of_type=storage_type, **storage)
+        return storage_factory.create(of_type=storage_type, **storage)
     except ValueError:
         if storage_factory.create().__class__.__name__.lower() != storage_type.lower():
             raise
 
 
 # pylint: disable=too-few-public-methods
-class ReadOnlyStorageProtocol(object):
+class ReadOnlyStorageProtocol:
     """Read-only interface from a storage protocol.
 
     .. seealso::

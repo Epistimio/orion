@@ -1,21 +1,15 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.producer`."""
 import contextlib
 import copy
-import datetime
 import threading
 import time
 
 import pytest
 
 from orion.core.io.experiment_builder import build
-from orion.core.utils import format_trials
-from orion.core.utils.exceptions import ReservationTimeout, WaitingForTrials
 from orion.core.worker.producer import Producer
-from orion.core.worker.trial import Trial
 from orion.testing import OrionState, generate_trials
-from orion.testing.trial import compare_trials
 
 
 def produce_lies(producer):
@@ -72,7 +66,7 @@ def create_producer():
         experiment.algorithms.algorithm.max_trials = 20
 
         producer = Producer(experiment)
-        yield producer, cfg.storage()
+        yield producer, cfg.storage
 
 
 def test_produce():
@@ -80,15 +74,15 @@ def test_produce():
     with create_producer() as (producer, _):
         algorithm = producer.experiment.algorithms
         possible_values = [(1,)]
-        algorithm.algorithm.possible_values = possible_values
+        algorithm.unwrapped.possible_values = possible_values
 
         producer.produce(1)
 
         # Algorithm was ordered to suggest some trials
-        num_new_points = algorithm.algorithm._num
+        num_new_points = algorithm.unwrapped._num
         assert num_new_points == 1  # pool size
 
-        algorithm.algorithm._suggested[0].params["x"] == possible_values[0][0]
+        assert algorithm.unwrapped._suggested[0].params["x"] == possible_values[0][0]
 
 
 def test_register_new_trials():
@@ -99,15 +93,15 @@ def test_register_new_trials():
 
         algorithm = producer.experiment.algorithms
         possible_values = [(1,)]
-        algorithm.algorithm.possible_values = possible_values
+        algorithm.unwrapped.possible_values = possible_values
 
         assert producer.produce(1) == 1
 
         # Algorithm was ordered to suggest some trials
-        num_new_points = algorithm.algorithm._num
+        num_new_points = algorithm.unwrapped._num
         assert num_new_points == 1  # pool size
 
-        algorithm.algorithm._suggested[0].params["x"] == possible_values[0][0]
+        assert algorithm.unwrapped._suggested[0].params["x"] == possible_values[0][0]
 
         # `num_new_points` new trials were registered at database
         assert len(storage._fetch_trials({})) == trials_in_db_before + 1
@@ -163,6 +157,7 @@ def test_concurent_producers(monkeypatch):
         assert (
             len(storage._fetch_trials({"status": "new"})) == new_trials_in_db_before + 1
         )
+        random_dt = NotImplemented  # todo: undefined variable.
         new_trials = list(
             storage._fetch_trials({"status": "new", "submit_time": random_dt})
         )
@@ -190,16 +185,16 @@ def test_duplicate_within_pool():
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
         # Avoid limiting number of samples from the within the algorithm.
-        producer.experiment.algorithms.algorithm.pool_size = 1000
+        producer.experiment.algorithms.unwrapped.pool_size = 1000
 
-        producer.experiment.algorithms.algorithm.possible_values = [
+        producer.experiment.algorithms.unwrapped.possible_values = [
             (v,) for v in [1, 1, 3]
         ]
 
         assert producer.produce(3) == 2
 
         # Algorithm was required to suggest some trials
-        num_new_trials = producer.experiment.algorithms.algorithm._num
+        num_new_trials = producer.experiment.algorithms.unwrapped._num
         assert num_new_trials == 3  # pool size
 
         # `num_new_trials` new trials were registered at database
@@ -225,16 +220,16 @@ def test_duplicate_within_pool_and_db():
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
         # Avoid limiting number of samples from the within the algorithm.
-        producer.experiment.algorithms.algorithm.pool_size = 1000
+        producer.experiment.algorithms.unwrapped.pool_size = 1000
 
-        producer.experiment.algorithms.algorithm.possible_values = [
+        producer.experiment.algorithms.unwrapped.possible_values = [
             (v,) for v in [0, 1, 2]
         ]
 
         assert producer.produce(3) == 1
 
         # Algorithm was required to suggest some trials
-        num_new_trials = producer.experiment.algorithms.algorithm._num
+        num_new_trials = producer.experiment.algorithms.unwrapped._num
         assert num_new_trials == 3  # pool size
 
         # `num_new_trials` new trials were registered at database
@@ -278,7 +273,7 @@ def test_evc(monkeypatch, producer):
 
 @pytest.mark.skip("Should be reactivated when algorithms can be warm-started")
 def test_evc_duplicates(monkeypatch, producer):
-    """Verify that producer wont register samples that are available in parent experiment"""
+    """Verify that producer won't register samples that are available in parent experiment"""
     experiment = producer.experiment
     new_experiment = build(
         experiment.name, algorithms="random", branching={"enable": True}

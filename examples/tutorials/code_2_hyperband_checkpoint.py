@@ -31,9 +31,12 @@ following template.
     orion hunt -n <exp name>
         ./your_script.sh --checkpoint '{experiment.working_dir}/{trial.hash_params}'
 
-Your script is reponsible to take this checkpoint path, resume from checkpoints or same
+Your script is responsible to take this checkpoint path, resume from checkpoints or same
 checkpoints.
 We will demonstrate below how this can be done with PyTorch, but using Oríon's Python API.
+
+Note for macos users : You will need to either run this page as a jupyter notebook in order for it to compile, or 
+encapsulate the code in a main function and running it under ``if __name__ == '__main__'``.
 
 Training code
 -------------
@@ -44,19 +47,18 @@ optimization.
 First things first, the imports.
 
 """
-import numpy
+# noqa
+import os
 
+# flake8: noqa
+import numpy
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import SubsetRandomSampler
-
 import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
-
-import os
-import argparse
+from torch.utils.data import SubsetRandomSampler
 
 #%%
 # We will use the data SubsetRandomSampler data loader from PyTorch to split
@@ -123,7 +125,7 @@ def build_data_loaders(batch_size, split_seed=1):
 # Next, we write the function to save checkpoints. It is important to include
 # not only the model in the checkpoint, but also the optimizer and the learning rate
 # schedule when using one. In this example we will use the exponential learning rate schedule,
-# so we checkpoint it. We save the current epoch as well so that we now where we resume from.
+# so we checkpoint it. We save the current epoch as well so that we know where we resume from.
 
 
 def save_checkpoint(checkpoint, model, optimizer, lr_scheduler, epoch):

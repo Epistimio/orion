@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.evc.conflicts`."""
 import pprint
 
@@ -34,7 +33,7 @@ def conflicts(
     return conflicts
 
 
-class TestNewDimensionConflict(object):
+class TestNewDimensionConflict:
     """Tests methods related to new dimension conflicts"""
 
     def test_try_resolve_no_default(self, new_dimension_conflict):
@@ -100,7 +99,7 @@ class TestNewDimensionConflict(object):
         assert repr(new_dimension_conflict) == "New new"
 
 
-class TestChangedDimensionConflict(object):
+class TestChangedDimensionConflict:
     """Tests methods related to changed dimension prior conflicts"""
 
     def test_try_resolve_twice(self, changed_dimension_conflict):
@@ -138,7 +137,7 @@ class TestChangedDimensionConflict(object):
         pytest.lazy_fixture("missing_dimension_from_config_conflict"),
     ],
 )
-class TestMissingDimensionConflict(object):
+class TestMissingDimensionConflict:
     """Tests methods related to missing dimension conflicts"""
 
     def test_get_marked_arguments(self, conflicts, dimension_conflict):
@@ -230,7 +229,7 @@ class TestMissingDimensionConflict(object):
         )
 
 
-class TestAlgorithmConflict(object):
+class TestAlgorithmConflict:
     """Tests methods related to algorithm configuration conflicts"""
 
     def test_try_resolve_twice(self, algorithm_conflict):
@@ -252,14 +251,14 @@ class TestAlgorithmConflict(object):
 
     def test_repr(self, old_config, new_config, algorithm_conflict):
         """Verify the representation of conflict for user interface"""
-        repr_baseline = "{0}\n   !=\n{1}".format(
+        repr_baseline = "{}\n   !=\n{}".format(
             pprint.pformat(old_config["algorithms"]),
             pprint.pformat(new_config["algorithms"]),
         )
         assert repr(algorithm_conflict) == repr_baseline
 
 
-class TestOrionVersionConflict(object):
+class TestOrionVersionConflict:
     """Tests methods related to orion version conflicts"""
 
     def test_try_resolve_twice(self, orion_version_conflict):
@@ -282,14 +281,14 @@ class TestOrionVersionConflict(object):
 
     def test_repr(self, old_config, new_config, orion_version_conflict):
         """Verify the representation of conflict for user interface"""
-        repr_baseline = "{0} != {1}".format(
+        repr_baseline = "{} != {}".format(
             old_config["metadata"]["orion_version"],
             new_config["metadata"]["orion_version"],
         )
         assert repr(orion_version_conflict) == repr_baseline
 
 
-class TestCodeConflict(object):
+class TestCodeConflict:
     """Tests methods related to code conflicts"""
 
     def test_try_resolve_twice(self, code_conflict):
@@ -340,7 +339,7 @@ class TestCodeConflict(object):
         assert list(conflict.CodeConflict.detect(old_config, new_config)) == []
 
 
-class TestCommandLineConflict(object):
+class TestCommandLineConflict:
     """Tests methods related to code conflicts"""
 
     def test_try_resolve_twice(self, cli_conflict):
@@ -381,7 +380,7 @@ class TestCommandLineConflict(object):
         )
 
 
-class TestScriptConfigConflict(object):
+class TestScriptConfigConflict:
     """Tests methods related to code conflicts"""
 
     def test_try_resolve_twice(self, config_conflict):
@@ -451,72 +450,74 @@ class TestScriptConfigConflict(object):
         assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
 
 
-@pytest.mark.usefixtures("setup_pickleddb_database")
-class TestExperimentNameConflict(object):
+@pytest.mark.usefixtures("orionstate")
+class TestExperimentNameConflict:
     """Tests methods related to experiment name conflicts"""
 
-    def test_try_resolve_twice(self, experiment_name_conflict):
+    def test_try_resolve_twice(self, experiment_name_conflict, storage):
         """Verify that conflict cannot be resolved twice"""
         assert not experiment_name_conflict.is_resolved
         assert isinstance(
-            experiment_name_conflict.try_resolve("dummy"),
+            experiment_name_conflict.try_resolve("dummy", storage=storage),
             experiment_name_conflict.ExperimentNameResolution,
         )
         assert experiment_name_conflict.is_resolved
-        assert experiment_name_conflict.try_resolve() is None
+        assert experiment_name_conflict.try_resolve(storage=storage) is None
 
-    def test_try_resolve(self, experiment_name_conflict):
+    def test_try_resolve(self, experiment_name_conflict, storage):
         """Verify that resolution is achievable with a valid name"""
         new_name = "dummy"
         assert not experiment_name_conflict.is_resolved
-        resolution = experiment_name_conflict.try_resolve(new_name)
+        resolution = experiment_name_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, experiment_name_conflict.ExperimentNameResolution)
         assert experiment_name_conflict.is_resolved
         assert resolution.conflict is experiment_name_conflict
         assert resolution.new_name == new_name
 
-    def test_branch_w_existing_exp(self, existing_exp_conflict):
+    def test_branch_w_existing_exp(self, existing_exp_conflict, storage):
         """Test branching when an existing experiment with the new name already exists"""
         with pytest.raises(ValueError) as exc:
-            existing_exp_conflict.try_resolve("dummy")
+            existing_exp_conflict.try_resolve("dummy", storage=storage)
 
         assert "Cannot" in str(exc.value)
 
-    def test_conflict_exp_no_child(self, exp_no_child_conflict):
+    def test_conflict_exp_no_child(self, exp_no_child_conflict, storage):
         """Verify the version number is incremented when exp has no child."""
         new_name = "test"
         assert not exp_no_child_conflict.is_resolved
-        resolution = exp_no_child_conflict.try_resolve(new_name)
+        resolution = exp_no_child_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, exp_no_child_conflict.ExperimentNameResolution)
         assert exp_no_child_conflict.is_resolved
         assert resolution.conflict is exp_no_child_conflict
         assert resolution.old_version == 1
         assert resolution.new_version == 2
 
-    def test_conflict_exp_w_child(self, exp_w_child_conflict):
+    def test_conflict_exp_w_child(self, exp_w_child_conflict, storage):
         """Verify the version number is incremented from child when exp has a child."""
         new_name = "test"
         assert not exp_w_child_conflict.is_resolved
-        resolution = exp_w_child_conflict.try_resolve(new_name)
+        resolution = exp_w_child_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
         assert exp_w_child_conflict.is_resolved
         assert resolution.conflict is exp_w_child_conflict
         assert resolution.new_version == 3
 
-    def test_conflict_exp_w_child_as_parent(self, exp_w_child_as_parent_conflict):
+    def test_conflict_exp_w_child_as_parent(
+        self, exp_w_child_as_parent_conflict, storage
+    ):
         """Verify that an error is raised when trying to branch from parent."""
         new_name = "test"
         with pytest.raises(ValueError) as exc:
-            exp_w_child_as_parent_conflict.try_resolve(new_name)
+            exp_w_child_as_parent_conflict.try_resolve(new_name, storage=storage)
 
         assert "Experiment name" in str(exc.value)
 
-    def test_conflict_exp_renamed(self, exp_w_child_conflict):
+    def test_conflict_exp_renamed(self, exp_w_child_conflict, storage):
         """Verify the version number is not incremented when exp is renamed."""
         # It increments from child
         new_name = "test2"
         assert not exp_w_child_conflict.is_resolved
-        resolution = exp_w_child_conflict.try_resolve(new_name)
+        resolution = exp_w_child_conflict.try_resolve(new_name, storage=storage)
         assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
         assert exp_w_child_conflict.is_resolved
         assert resolution.conflict is exp_w_child_conflict
@@ -531,11 +532,11 @@ class TestExperimentNameConflict(object):
         )
 
 
-class TestConflicts(object):
+class TestConflicts:
     """Tests for Conflicts container, for getter, deprecation and resolve methods"""
 
     def test_register(self, conflicts):
-        """Verify that conflicts are properly registerd"""
+        """Verify that conflicts are properly registered"""
         assert len(conflicts.conflicts) == 7
         isinstance(conflicts.conflicts[0], evc.conflicts.NewDimensionConflict)
         isinstance(conflicts.conflicts[-1], evc.conflicts.ExperimentNameConflict)

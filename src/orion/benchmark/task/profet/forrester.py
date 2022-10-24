@@ -9,7 +9,7 @@ from a given forrester function.
 """
 import typing
 from dataclasses import dataclass
-from typing import Any, Callable, ClassVar, Dict, List, Tuple
+from typing import Callable, ClassVar, Dict, List, Tuple
 
 from orion.benchmark.task.profet.model_utils import get_architecture_forrester
 from orion.benchmark.task.profet.profet_task import ProfetTask
@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
 
 
 class ProfetForresterTask(ProfetTask):
-    """Simulated Task consisting in training a model on a variant of the Forrester function. """
+    """Simulated Task consisting in training a model on a variant of the Forrester function."""
 
     @dataclass
     class ModelConfig(ProfetTask.ModelConfig):

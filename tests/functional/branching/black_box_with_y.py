@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """Simple one dimensional example for a possible user's script."""
 import argparse
 
@@ -9,7 +8,7 @@ from orion.client import report_results
 def function(x, y):
     """Evaluate partial information of a quadratic."""
     y = x + y - 34.56789
-    return 4 * y ** 2 + 23.4, 8 * y
+    return 4 * y**2 + 23.4, 8 * y
 
 
 def execute():

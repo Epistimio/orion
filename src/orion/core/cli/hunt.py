@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Module running the optimization command
 =======================================
@@ -7,14 +6,15 @@ Module running the optimization command
 Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
+from __future__ import annotations
 
 import logging
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
+from orion.core.io import experiment_builder
 from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import (
     BrokenExperiment,
@@ -23,7 +23,6 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
-from orion.core.worker.producer import Producer
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Conducts hyperparameter optimization"
@@ -144,7 +143,6 @@ def workon(
     if max_idle_time is not None and reservation_timeout is None:
         reservation_timeout = max_idle_time
 
-    producer = Producer(experiment)
     consumer = Consumer(
         experiment,
         user_script_config,
@@ -152,7 +150,7 @@ def workon(
         ignore_code_changes,
     )
 
-    client = ExperimentClient(experiment, producer, heartbeat=heartbeat)
+    client = ExperimentClient(experiment, heartbeat=heartbeat)
 
     if executor is None:
         executor = orion.core.config.worker.executor
