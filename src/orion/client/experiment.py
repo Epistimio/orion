@@ -50,12 +50,6 @@ def reserve_trial(
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
 
-    if timeout is not None:
-        log.warning(
-            "Reservation_timeout is deprecated and will be removed in v0.4.0."
-            "Use idle_timeout instead."
-        )
-
     trial = None
     produced = 0
 
@@ -674,7 +668,6 @@ class ExperimentClient:
         fct: Callable,
         n_workers: int | None = None,
         pool_size: int = 0,
-        reservation_timeout: int | None = None,
         max_trials: int | None = None,
         max_trials_per_worker: int | None = None,
         max_broken: int | None = None,
@@ -703,12 +696,6 @@ class ExperimentClient:
             config if defined.  Increase it to improve the sampling speed if workers spend too much
             time waiting for algorithms to sample points. An algorithm will try sampling
             `pool_size` trials but may return less.
-        reservation_timeout: int, optional
-            Maximum time allowed to try reserving a trial. ReservationTimeout will be raised if
-            timeout is reached.  Such timeout are generally caused by slow database, large number
-            of concurrent workers leading to many race conditions or small search spaces with
-            integer/categorical dimensions that may be fully explored.
-            Defaults to ``orion.core.config.worker.reservation_timeout``.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -785,9 +772,6 @@ class ExperimentClient:
             pool_size = orion.core.config.worker.pool_size
         if not pool_size:
             pool_size = n_workers
-
-        if not reservation_timeout:
-            reservation_timeout = orion.core.config.worker.reservation_timeout
 
         if not idle_timeout:
             idle_timeout = orion.core.config.worker.idle_timeout

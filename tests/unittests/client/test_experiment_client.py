@@ -663,7 +663,7 @@ class TestSuggest:
             """Never suggest a new trial"""
             return []
 
-        monkeypatch.setattr(orion.core.config.worker, "reservation_timeout", -1)
+        monkeypatch.setattr(orion.core.config.worker, "idle_timeout", -1)
 
         with create_experiment(config, base_trial, statuses=["completed"]) as (
             cfg,

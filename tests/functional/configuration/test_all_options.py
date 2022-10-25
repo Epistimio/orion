@@ -615,7 +615,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "heartbeat": 30,
             "max_trials": 10,
             "max_broken": 5,
-            "reservation_timeout": 16,
             "idle_timeout": 17,
             "max_idle_time": 15,
             "interrupt_signal_code": 131,
@@ -630,7 +629,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "ORION_HEARTBEAT": 40,
         "ORION_WORKER_MAX_TRIALS": 20,
         "ORION_WORKER_MAX_BROKEN": 6,
-        "ORION_RESERVATION_TIMEOUT": 17,
         "ORION_IDLE_TIMEOUT": 18,
         "ORION_MAX_IDLE_TIME": 16,
         "ORION_INTERRUPT_CODE": 132,
@@ -646,7 +644,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "heartbeat": 50,
             "max_trials": 30,
             "max_broken": 7,
-            "reservation_timeout": 17,
             "idle_timeout": 18,
             "max_idle_time": 16,
             "interrupt_signal_code": 133,
@@ -741,9 +738,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
             == config["executor_configuration"]
         )
         assert self.workon_kwargs["pool_size"] == config["pool_size"]
-        assert (
-            self.workon_kwargs["reservation_timeout"] == config["reservation_timeout"]
-        )
+
         assert self.workon_kwargs["idle_timeout"] == config["idle_timeout"]
         assert self.workon_kwargs["max_trials"] == config["max_trials"]
         assert self.workon_kwargs["max_broken"] == config["max_broken"]
@@ -769,7 +764,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "heartbeat": self.env_vars["ORION_HEARTBEAT"],
             "max_trials": self.env_vars["ORION_WORKER_MAX_TRIALS"],
             "max_broken": self.env_vars["ORION_WORKER_MAX_BROKEN"],
-            "reservation_timeout": self.env_vars["ORION_RESERVATION_TIMEOUT"],
             "idle_timeout": self.env_vars["ORION_IDLE_TIMEOUT"],
             "max_idle_time": self.env_vars["ORION_MAX_IDLE_TIME"],
             "interrupt_signal_code": self.env_vars["ORION_INTERRUPT_CODE"],
@@ -811,7 +805,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "executor": self.cmdargs["executor"],
             "executor_configuration": {"threads_per_worker": 2},
             "pool_size": self.cmdargs["pool-size"],
-            "reservation_timeout": self.cmdargs["reservation-timeout"],
             "idle_timeout": self.cmdargs["idle-timeout"],
             "heartbeat": self.cmdargs["heartbeat"],
             "max_trials": self.cmdargs["worker-max-trials"],
