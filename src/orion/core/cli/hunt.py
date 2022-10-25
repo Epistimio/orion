@@ -128,7 +128,6 @@ def workon(
     max_trials=None,
     max_broken=None,
     max_idle_time=None,
-    reservation_timeout=None,
     heartbeat=None,
     user_script_config=None,
     interrupt_signal_code=None,
@@ -140,8 +139,8 @@ def workon(
     """Try to find solution to the search problem defined in `experiment`."""
 
     # NOTE: Remove in v0.3.0
-    if max_idle_time is not None and reservation_timeout is None:
-        reservation_timeout = max_idle_time
+    if max_idle_time is not None and idle_timeout is None:
+        idle_timeout = max_idle_time
 
     consumer = Consumer(
         experiment,
@@ -165,7 +164,6 @@ def workon(
                 consumer,
                 n_workers=n_workers,
                 pool_size=pool_size,
-                reservation_timeout=reservation_timeout,
                 max_trials_per_worker=max_trials,
                 max_broken=max_broken,
                 trial_arg="trial",
