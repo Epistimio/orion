@@ -9,6 +9,9 @@ from orion.storage.base import setup_storage
 LOAD_DATA = os.path.join(os.path.dirname(__file__), "orion_db_load_test_data.pickled")
 
 
+# TODO: Test loading benchmarks
+
+
 def execute(command, assert_code=0):
     """Execute orion command and return returncode"""
     returncode = orion.core.cli.main(command.split(" "))
@@ -125,13 +128,10 @@ def test_load_overwrite(empty_database):
     assert len(new_trials) == 24
     assert len(new_algos) == 3
 
-    # New IDs are computed based on existing ones in destination database.
-    # As experiments are inserted one by one, each insertion will overwrite 1 previous experiment
-    # and compute new IDs based on all other data not overwritten, so that
-    # we will ultimately have completely new IDs for all overwritten data.
-    assert not common_indices(experiments, new_experiments)
-    assert not common_indices(trials, new_trials)
-    assert not common_indices(algos, new_algos)
+    # NB:
+    # New IDs are computed based on existing ones in destination database,
+    # and experiments are inserted after all new IDs are computed.
+    # So, new IDs may be similar to old ones, so it's useless to compare them.
 
 
 def test_load_bump(empty_database):

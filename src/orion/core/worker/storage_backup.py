@@ -1,4 +1,4 @@
-# pylint: disable=,protected-access
+# pylint: disable=,protected-access,too-many-locals,too-many-branches,too-many-statements
 """
 Module responsible for storage export/import
 ============================================
@@ -15,6 +15,11 @@ from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+COL_EXPERIMENTS = "experiments"
+COL_ALGOS = "algo"
+COL_BENCHMARKS = "benchmarks"
+COL_TRIALS = "trials"
 
 COLLECTIONS = {"experiments", "algo", "benchmarks", "trials"}
 EXPERIMENT_RELATED_COLLECTIONS = {"algo", "trials"}
@@ -44,11 +49,13 @@ def dump_database(storage, dump_host, name=None, version=None):
 def load_database(storage, load_host, resolve, name=None, version=None):
     """Import data into a database
     :param storage: storage of destination database to load into
-    :param load_host: file path containing data to import (should be a pickled file representing a PickledDB)
+    :param load_host: file path containing data to import
+        (should be a pickled file representing a PickledDB)
     :param resolve: policy to resolve import conflict. Either 'ignore', 'overwrite' or 'bump'
         'ignore' will ignore imported data on conflict
         'overwrite' will overwrite old data in destination database on conflict
-        'bump' will bump imported data version before adding it, if data with same ID is found in destination
+        'bump' will bump imported data version before adding it,
+            if data with same ID is found in destination
     :param name: (optional) name of experiment to import (by default, whole file is imported)
     :param version: (optional) version of experiment to import
     """
@@ -59,10 +66,10 @@ def load_database(storage, load_host, resolve, name=None, version=None):
     logger.info(f"Loaded src {src_db}")
 
     dst_db = storage._db
+    import_benchmarks = False
     with src_db.locked_database(write=False) as src_database:
         if name is None:
-            # Import benchmarks
-            _load_benchmarks(src_database, dst_db, resolve)
+            import_benchmarks = True
             # Retrieve all src experiments for export
             experiments = src_database.read("experiments")
         else:
@@ -80,10 +87,10 @@ def load_database(storage, load_host, resolve, name=None, version=None):
             logger.info(
                 f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
             )
-        # Import experiments
-        for experiment in experiments:
-            _load_experiment(src_database, dst_db, experiment, resolve)
-        logger.info(f"Imported collection experiments ({len(experiments)} entries)")
+        preparation = _prepare_import(
+            src_database, dst_db, resolve, experiments, import_benchmarks
+        )
+        _execute_import(dst_db, *preparation)
 
 
 def _dump(src_db, dst_db, collection_names, name=None, version=None):
@@ -136,106 +143,145 @@ def _dump(src_db, dst_db, collection_names, name=None, version=None):
             )
 
 
-def _load_benchmarks(src_database, dst_db, resolve):
-    """Export all benchmarks"""
-    collection_name = "benchmarks"
-    benchmarks = src_database.read(collection_name)
-    for src_benchmark in benchmarks:
-        _load_benchmark(dst_db, src_benchmark, resolve)
-    logger.info(f"Imported collection {collection_name} ({len(benchmarks)} entries)")
+def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmarks=True):
+    """Prepare importation.
 
+    Compute all changes to apply to make import and return changes as dictionaries.
 
-def _load_benchmark(dst_db, src_benchmark, resolve):
-    """Export one benchmark into destination database"""
-    collection_name = "benchmarks"
-    dst_benchmarks = dst_db.read(collection_name, {"name": src_benchmark["name"]})
-    if dst_benchmarks:
-        assert len(dst_benchmarks) == 1
-        (dst_benchmark,) = dst_benchmarks
-        if resolve == "ignore":
-            logger.info(f'Ignored benchmark already in dst: {src_benchmark["name"]}')
-            return
-        elif resolve == "overwrite":
-            logger.info(f'Overwrite benchmark in dst, name: {src_benchmark["name"]}')
-            dst_db.remove(collection_name, {"_id": dst_benchmark["_id"]})
-        elif resolve == "bump":
-            raise DatabaseError(
-                "Can't bump benchmark version, as benchmarks do not currently support versioning."
+    :param src_database: database to import from
+    :param dst_db: database to import into
+    :param resolve: resolve policy
+    :param experiments: experiments to import from src_database into dst_db
+    :param import_benchmarks: if True, benchmarks will be also imported from src_database
+    :return: a couple (queries to delete, data to add) representing
+        changes to apply to dst_db to make import
+    """
+
+    queries_to_delete = {}
+    data_to_add = {}
+
+    if import_benchmarks:
+        for src_benchmark in src_database.read(COL_BENCHMARKS):
+            dst_benchmarks = dst_db.read(
+                COL_BENCHMARKS, {"name": src_benchmark["name"]}
             )
-    # Delete benchmark database ID so that a new one will be generated on insertion
-    del src_benchmark["_id"]
-    # Insert benchmark
-    dst_db.write(collection_name, src_benchmark)
+            if dst_benchmarks:
+                (dst_benchmark,) = dst_benchmarks
+                if resolve == "ignore":
+                    logger.info(
+                        f'Ignored benchmark already in dst: {src_benchmark["name"]}'
+                    )
+                    continue
+                if resolve == "overwrite":
+                    logger.info(
+                        f'Overwrite benchmark in dst, name: {src_benchmark["name"]}'
+                    )
+                    queries_to_delete.setdefault(COL_BENCHMARKS, []).append(
+                        {"_id": dst_benchmark["_id"]}
+                    )
+                elif resolve == "bump":
+                    raise DatabaseError(
+                        "Can't bump benchmark version, "
+                        "as benchmarks do not currently support versioning."
+                    )
+            # Delete benchmark database ID so that a new one will be generated on insertion
+            del src_benchmark["_id"]
+            data_to_add.setdefault(COL_BENCHMARKS, []).append(src_benchmark)
 
+    all_dst_experiments = dst_db.read("experiments")
+    last_experiment_id = max((data["_id"] for data in all_dst_experiments), default=0)
+    last_versions = {}
+    for dst_exp in all_dst_experiments:
+        name = dst_exp["name"]
+        version = dst_exp["version"]
+        last_versions[name] = max(last_versions.get(name, 0), version)
 
-def _load_experiment(src_database, dst_db, experiment, resolve):
-    """Export one experiment from src to dst database using resolve policy"""
-    dst_experiments = dst_db.read(
-        "experiments", {"name": experiment["name"], "version": experiment["version"]}
-    )
-    if dst_experiments:
-        assert len(dst_experiments) == 1
-        (dst_experiment,) = dst_experiments
-        if resolve == "ignore":
-            logger.info(
-                f'Ignored experiment already in dst: {experiment["name"]}.{experiment["version"]}'
-            )
-            return
-        elif resolve == "overwrite":
-            # We must remove experiment data in dst
-            logger.info(
-                f'Overwrite experiment in dst: {experiment["name"]}.{experiment["version"]}'
-            )
-            for collection in EXPERIMENT_RELATED_COLLECTIONS:
-                dst_db.remove(collection, {"experiment": dst_experiment["_id"]})
-            dst_db.remove("experiments", {"_id": dst_experiment["_id"]})
-        elif resolve == "bump":
-            old_version = experiment["version"]
-            new_version = (
-                max(
-                    (
-                        data["version"]
-                        for data in dst_db.read(
-                            "experiments", {"name": experiment["name"]}
-                        )
-                    ),
-                    default=0,
+    for experiment in experiments:
+        dst_experiments = dst_db.read(
+            "experiments",
+            {"name": experiment["name"], "version": experiment["version"]},
+        )
+        if dst_experiments:
+            (dst_experiment,) = dst_experiments
+            if resolve == "ignore":
+                logger.info(
+                    f'Ignored experiment already in dst: '
+                    f'{experiment["name"]}.{experiment["version"]}'
                 )
-                + 1
-            )
-            experiment["version"] = new_version
+                continue
+            if resolve == "overwrite":
+                # We must remove experiment data in dst
+                logger.info(
+                    f'Overwrite experiment in dst: {experiment["name"]}.{experiment["version"]}'
+                )
+                for collection in EXPERIMENT_RELATED_COLLECTIONS:
+                    queries_to_delete.setdefault(collection, []).append(
+                        {"experiment": dst_experiment["_id"]}
+                    )
+                queries_to_delete.setdefault(COL_EXPERIMENTS, []).append(
+                    {"_id": dst_experiment["_id"]}
+                )
+            elif resolve == "bump":
+                old_version = experiment["version"]
+                new_version = last_versions.get(experiment["name"], 0) + 1
+                last_versions[experiment["name"]] = new_version
+                experiment["version"] = new_version
+                logger.info(
+                    f'Bumped version of src experiment: {experiment["name"]}, '
+                    f"from {old_version} to {new_version}"
+                )
+        else:
             logger.info(
-                f'Bumped version of src experiment: {experiment["name"]}, '
-                f"from {old_version} to {new_version}"
+                f'Import experiment {experiment["name"]}.{experiment["version"]}'
             )
-    else:
-        logger.info(f'Import experiment {experiment["name"]}.{experiment["version"]}')
 
-    # Get data related to experiment to import.
-    algos = src_database.read("algo", {"experiment": experiment["_id"]})
-    trials = [
-        Trial(**data)
-        for data in src_database.read("trials", {"experiment": experiment["_id"]})
-    ]
+        # Get data related to experiment to import.
+        algos = src_database.read("algo", {"experiment": experiment["_id"]})
+        trials = [
+            Trial(**data)
+            for data in src_database.read("trials", {"experiment": experiment["_id"]})
+        ]
 
-    # Generate new experiment ID
-    next_experiment_id = (
-        max((data["_id"] for data in dst_db.read("experiments")), default=0) + 1
-    )
-    experiment["_id"] = next_experiment_id
-    # Update algos and trials: set new experiment ID and remove algo/trials database IDs,
-    # so that new IDs will be generated at insertion.
-    # Trial parents are identified using trial identifier (trial.id)
-    # which is not related to trial database ID (trial.id_override).
-    # So, we can safely remove trial database ID.
-    for algo in algos:
-        algo["experiment"] = next_experiment_id
-        del algo["_id"]
-    for trial in trials:
-        trial.experiment = next_experiment_id
-        trial.id_override = None
+        # Generate new experiment ID
+        new_experiment_id = last_experiment_id + 1
+        last_experiment_id = new_experiment_id
+        experiment["_id"] = new_experiment_id
+        # Update algos and trials: set new experiment ID and remove algo/trials database IDs,
+        # so that new IDs will be generated at insertion.
+        # Trial parents are identified using trial identifier (trial.id)
+        # which is not related to trial database ID (trial.id_override).
+        # So, we can safely remove trial database ID.
+        for algo in algos:
+            algo["experiment"] = new_experiment_id
+            del algo["_id"]
+        for trial in trials:
+            trial.experiment = new_experiment_id
+            trial.id_override = None
 
-    # Write data
-    dst_db.write("experiments", experiment)
-    dst_db.write("algo", algos)
-    dst_db.write("trials", [trial.to_dict() for trial in trials])
+        # Write data
+        data_to_add.setdefault(COL_EXPERIMENTS, []).append(experiment)
+        data_to_add.setdefault(COL_ALGOS, []).extend(algos)
+        data_to_add.setdefault(COL_TRIALS, []).extend(
+            trial.to_dict() for trial in trials
+        )
+
+    return queries_to_delete, data_to_add
+
+
+def _execute_import(dst_db, queries_to_delete: dict, data_to_add: dict):
+    """Execute import
+    :param dst_db: destination database where to apply changes
+    :param queries_to_delete: dictionary mapping a collection name to a list of queries to use
+        to find and delete data
+    :param data_to_add: dictionary mapping a collection name to a list of data to add
+    """
+
+    for collection_name, queries in queries_to_delete.items():
+        logger.info(
+            f"Deleting from {len(queries)} queries into collection {collection_name}"
+        )
+        for query in queries:
+            dst_db.remove(collection_name, query)
+    for collection_name, data in data_to_add.items():
+        logger.info(f"Writing {len(data)} data into collection {collection_name}")
+        dst_db.write(collection_name, data)
