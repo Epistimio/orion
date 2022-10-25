@@ -128,7 +128,7 @@ setup_args = dict(
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
-        "numpy",
+        "numpy>=1.17",
         "scipy",
         "gitpython",
         "filelock",
