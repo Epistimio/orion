@@ -571,9 +571,7 @@ class ExperimentClient:
             raise CompletedExperiment("Experiment is done, cannot sample more trials.")
 
         try:
-            trial = reserve_trial(
-                self._experiment, self._producer, pool_size, timeout=None
-            )
+            trial = reserve_trial(self._experiment, self._producer, pool_size)
 
         except (ReservationRaceCondition, WaitingForTrials) as e:
             if self.is_broken:
