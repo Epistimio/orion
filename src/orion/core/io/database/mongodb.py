@@ -3,6 +3,7 @@ Wrapper for MongoDB
 ===================
 """
 import functools
+import logging
 
 import pymongo
 
@@ -20,6 +21,7 @@ INDEX_OP_ERROR_MESSAGES = ["index not found with name"]
 DUPLICATE_KEY_MESSAGES = ["duplicate key error"]
 
 NOT_SET = object()
+logger = logging.getLogger(__name__)
 
 
 def mongodb_exception_wrapper(method):
@@ -129,19 +131,27 @@ class MongoDB(Database):
         name = type(self).__qualname__
         args = ", ".join(
             f"{name}={getattr(self, name)}"
-            for name in ["host", "name", "port", "username", "password", "options"]
+            for name in [
+                "host",
+                "name",
+                "port",
+                "username",
+                "password",
+                "options",
+                "owner",
+            ]
         )
         return f"{name}({args})"
 
     def __getstate__(self):
         state = {}
-        for key in ["host", "name", "port", "username", "password", "options"]:
+        for key in ["host", "name", "port", "username", "password", "options", "owner"]:
             state[key] = getattr(self, key)
 
         return state
 
     def __setstate__(self, state):
-        for key in ["host", "name", "port", "username", "password", "options"]:
+        for key in ["host", "name", "port", "username", "password", "options", "owner"]:
             setattr(self, key, state[key])
         self.uri = None
         self.initiate_connection()
@@ -325,12 +335,11 @@ class MongoDB(Database):
 
         """
         dbcollection = self._db[collection_name]
+        if query is None:
+            query = {}
 
         if self.owner:
-            if query is None:
-                query = {}
-
-            query["owner_id"] = {"$eq": self.owner}
+            query["owner_id"] = self.owner
 
         if not isinstance(
             getattr(dbcollection, "count_documents"), pymongo.collection.Collection
