@@ -165,13 +165,11 @@ class TestReservationFct:
             client,
         ):
 
-            timeout = 3
-
             # Make sure first it produces properly
             n_trials_before_reserve = len(client.fetch_trials())
             assert not client.is_done
 
-            reserve_trial(experiment, client._producer, pool_size=1, timeout=timeout)
+            reserve_trial(experiment, client._producer, pool_size=1)
 
             assert not client.is_done
             assert len(client.fetch_trials()) == n_trials_before_reserve + 1
@@ -183,9 +181,7 @@ class TestReservationFct:
             monkeypatch.setattr(client._producer, "produce", cant_produce)
 
             with pytest.raises(RuntimeError, match="I should not be called"):
-                reserve_trial(
-                    experiment, client._producer, pool_size=1, timeout=timeout
-                )
+                reserve_trial(experiment, client._producer, pool_size=1)
 
             # Now make sure the producer is not called and no additional trials are generated
             def make_exp_is_done(reserve):
@@ -200,9 +196,7 @@ class TestReservationFct:
             assert not client.is_done
 
             with pytest.raises(CompletedExperiment):
-                reserve_trial(
-                    experiment, client._producer, pool_size=1, timeout=timeout
-                )
+                reserve_trial(experiment, client._producer, pool_size=1)
 
             assert client.is_done
             assert len(client.fetch_trials()) == n_trials_before_reserve
