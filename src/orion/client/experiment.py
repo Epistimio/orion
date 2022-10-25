@@ -45,7 +45,6 @@ def reserve_trial(
     experiment: Experiment,
     producer: Producer,
     pool_size: int,
-    timeout: int | None = None,
 ) -> Trial:
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
