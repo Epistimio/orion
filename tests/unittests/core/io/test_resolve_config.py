@@ -273,10 +273,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert worker_config.pop("max_trials") == orion.core.config.worker.max_trials
     assert worker_config.pop("max_broken") == orion.core.config.worker.max_broken
     assert worker_config.pop("max_idle_time") == orion.core.config.worker.max_idle_time
-    assert (
-        worker_config.pop("idle_timeout")
-        == orion.core.config.worker.idle_timeout
-    )
+    assert worker_config.pop("idle_timeout") == orion.core.config.worker.idle_timeout
     assert worker_config.pop("idle_timeout") == orion.core.config.worker.idle_timeout
     assert (
         worker_config.pop("interrupt_signal_code")

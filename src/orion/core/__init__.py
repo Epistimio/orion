@@ -304,9 +304,7 @@ def define_worker_config(config):
             alternative="worker.idle_timeout",
             name="worker.max_idle_time",
         ),
-        help=(
-            "This argument will be removed in v0.3.0. Use idle_timeout instead."
-        ),
+        help=("This argument will be removed in v0.3.0. Use idle_timeout instead."),
     )
 
     worker_config.add_option(
