@@ -658,7 +658,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "heartbeat": 70,
         "worker-max-trials": 0,
         "worker-max-broken": 8,
-        "reservation-timeout": 18,
         "idle-timeout": 19,
         "max-idle-time": 17,
         "interrupt-signal-code": 134,
