@@ -330,7 +330,7 @@ class MongoDB(Database):
             if query is None:
                 query = {}
 
-            query["owner_id"] = {'$eq': self.owner}
+            query["owner_id"] = {"$eq": self.owner}
 
         if not isinstance(
             getattr(dbcollection, "count_documents"), pymongo.collection.Collection
