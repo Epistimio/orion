@@ -82,6 +82,7 @@ def get_storage_for_user(request: RequestContext):
         port=request.service.database.port,
         username=request.username,
         password=request.password,
+        owner=request.username,
     )
 
     storage = Legacy(

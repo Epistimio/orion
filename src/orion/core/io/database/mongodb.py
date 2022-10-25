@@ -113,7 +113,7 @@ class MongoDB(Database):
         else:
             port = pymongo.MongoClient.PORT
 
-        self.owner = username if owner is NOT_SET else owner
+        self.owner = None if owner is NOT_SET else owner
 
         super().__init__(
             host,
@@ -254,8 +254,6 @@ class MongoDB(Database):
         """
         dbcollection = self._db[collection_name]
 
-        assert self.owner is not None, "Writing to database requires owner"
-
         if query is not None:
             query["owner_id"] = self.owner
 
@@ -309,7 +307,6 @@ class MongoDB(Database):
         dbcollection = self._db[collection_name]
         update_data = {"$set": data}
 
-        assert self.owner is not None, "Writing to database requires owner"
         query["owner_id"] = self.owner
 
         dbdoc = dbcollection.find_one_and_update(
