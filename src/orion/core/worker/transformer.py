@@ -433,7 +433,7 @@ class Enumerate(Transformer):
         self.categories = categories
         map_dict = {cat: i for i, cat in enumerate(categories)}
         self._map = numpy.vectorize(lambda x: map_dict[x], otypes="i")
-        self._imap = numpy.vectorize(lambda x: categories[x], otypes=[numpy.object])
+        self._imap = numpy.vectorize(lambda x: categories[x], otypes=[object])
 
     def __deepcopy__(self, memo):
         """Make a deepcopy"""
