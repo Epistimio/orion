@@ -45,10 +45,16 @@ def reserve_trial(
     experiment: Experiment,
     producer: Producer,
     pool_size: int,
+    timeout: int | None = None,
 ) -> Trial:
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
-
+    
+    if timeout is not None:
+        log.warning(
+            "Reservation_timeout is deprecated and will be removed in v0.4.0."
+            "Use idle_timeout instead."
+        )
     trial = None
     produced = 0
 
