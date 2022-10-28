@@ -150,11 +150,11 @@ def clean_config(name: str, config: dict, branching: dict | None):
 def merge_algorithm_config(config: dict, new_config: dict) -> None:
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
-    if isinstance(config.get("algorithms"), dict) and len(config["algorithms"]) > 1:
+    if isinstance(config.get("algorithm"), dict) and len(config["algorithm"]) > 1:
         log.debug("Overriding algo config with new one.")
-        log.debug("    Old config:\n%s", pprint.pformat(config["algorithms"]))
-        log.debug("    New config:\n%s", pprint.pformat(new_config["algorithms"]))
-        config["algorithms"] = new_config["algorithms"]
+        log.debug("    Old config:\n%s", pprint.pformat(config["algorithm"]))
+        log.debug("    New config:\n%s", pprint.pformat(new_config["algorithm"]))
+        config["algorithm"] = new_config["algorithm"]
 
 
 # TODO: Remove for v0.4
@@ -533,7 +533,7 @@ class ExperimentBuilder:
         space: dict, optional
             Optimization space of the algorithm.
             Should have the form ``dict(name='<prior>(args)')``.
-        algorithms: str or dict, optional
+        algorithm: str or dict, optional
             Algorithm used for optimization.
         strategy: str or dict, optional
             Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
@@ -871,7 +871,7 @@ class ExperimentBuilder:
         version: int,
         mode: Mode,
         space: Space | dict[str, str],
-        algorithms: str | dict | None = None,
+        algorithm: str | dict | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
         working_dir: str | None = None,
@@ -901,7 +901,7 @@ class ExperimentBuilder:
         space: dict or Space object
             Optimization space of the algorithm. If dict, should have the form
             `dict(name='<prior>(args)')`.
-        algorithms: str or dict, optional
+        algorithm: str or dict, optional
             Algorithm used for optimization.
         strategy: str or dict, optional
             Parallel strategy to use to parallelize the algorithm.
@@ -929,7 +929,7 @@ class ExperimentBuilder:
         instantiated_algorithm = _instantiate_algo(
             space=space,
             max_trials=max_trials,
-            config=algorithms,
+            config=algorithm,
             ignore_unavailable=mode != "x",
             knowledge_base=knowledge_base,
         )
@@ -950,7 +950,7 @@ class ExperimentBuilder:
             space=space,
             _id=_id,
             max_trials=max_trials,
-            algorithms=instantiated_algorithm,
+            algorithm=instantiated_algorithm,
             max_broken=max_broken,
             working_dir=working_dir,
             metadata=metadata,
