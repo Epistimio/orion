@@ -251,13 +251,13 @@ def _instantiate_algo(
     ----------
     config:
         Configuration of the algorithm. If None or empty, system's defaults are used
-        (orion.core.config.experiment.algorithms).
+        (orion.core.config.experiment.algorithm).
     ignore_unavailable: bool, optional
         If True and algorithm is not available (plugin not installed), return the configuration.
         Otherwise, raise Factory error.
 
     """
-    config = config or orion.core.config.experiment.algorithms
+    config = config or orion.core.config.experiment.algorithm
     assert config is not None
     try:
         algo_type: type[BaseAlgorithm]

@@ -213,10 +213,10 @@ class TestCreateAlgo:
         source_experiment = build_experiment(
             name="foo",
             space={"x": "uniform(0, 1)"},
-            algorithms=algo_config,
+            algorithm=algo_config,
             debug=True,
         )
-        assert isinstance(source_experiment.algorithms.unwrapped, algo)
+        assert isinstance(source_experiment.algorithm.unwrapped, algo)
 
 
 class TestMultiTaskWrapper:
@@ -329,7 +329,7 @@ class TestMultiTaskWrapper:
             name="target_1",
             space=target_space,
             knowledge_base=knowledge_base,
-            algorithms=algo_type,
+            algorithm=algo_type,
             max_trials=max_trials,
             debug=True,
         )
@@ -340,7 +340,7 @@ class TestMultiTaskWrapper:
 
         # IDEA: Add type hints to the `Experiment` class, and make it generic in terms of the
         # algorithms, so that we could get the `algorithms` to be algo_type here.
-        algo = experiment.algorithms
+        algo = experiment.algorithm
         assert isinstance(algo, MultiTaskWrapper)
         assert isinstance(algo.unwrapped, algo_type)
         assert experiment.fetch_trials() == []
@@ -365,12 +365,12 @@ class TestMultiTaskWrapper:
             name="target_2",
             space=target_space,
             knowledge_base=knowledge_base,
-            algorithms=DummyWarmStarteableAlgo,
+            algorithm=DummyWarmStarteableAlgo,
             max_trials=100,
             debug=True,
         )
         assert isinstance(experiment._experiment.knowledge_base, KnowledgeBase)
-        algo = experiment.algorithms
+        algo = experiment.algorithm
         assert algo is not None
         assert isinstance(algo.unwrapped, DummyWarmStarteableAlgo)
         assert not algo.unwrapped.warm_start_trials
@@ -381,7 +381,7 @@ class TestMultiTaskWrapper:
             trial_with_result = _add_result(trial, objective)
             experiment.observe(trial_with_result, [])
 
-        algo = experiment.algorithms
+        algo = experiment.algorithm
 
         # IDEA: Add type hints to the `Experiment` class, and make it generic in terms of the
         # algorithms, so that we could get the `algorithms` to be `Random` here.

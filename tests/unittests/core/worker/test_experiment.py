@@ -959,7 +959,7 @@ def create_experiment(mode: Mode, space: Space, algorithm, storage):
         "supernaekei",
         mode=mode,
         space=space,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_broken=5,
         max_trials=5,
         storage=storage,
@@ -972,8 +972,8 @@ def disable_algo_lock(monkeypatch, storage):
     @contextlib.contextmanager
     def no_lock(experiment, timeout, retry_interval):
         yield LockedAlgorithmState(
-            state=experiment.algorithms.state_dict,
-            configuration=experiment.algorithms.configuration,
+            state=experiment.algorithm.state_dict,
+            configuration=experiment.algorithm.configuration,
         )
 
     monkeypatch.setattr(storage, "acquire_algorithm_lock", no_lock)

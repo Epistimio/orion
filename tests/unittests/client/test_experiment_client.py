@@ -641,7 +641,7 @@ class TestSuggest:
                 """Suggest a new value and then always suggest the same"""
                 return [format_trials.tuple_to_trial([0], experiment.space)]
 
-            monkeypatch.setattr(experiment.algorithms, "suggest", amnesia)
+            monkeypatch.setattr(experiment.algorithm, "suggest", amnesia)
 
             assert len(experiment.fetch_trials()) == 1
 
@@ -665,7 +665,7 @@ class TestSuggest:
             client,
         ):
 
-            monkeypatch.setattr(experiment.algorithms, "suggest", opt_out)
+            monkeypatch.setattr(experiment.algorithm, "suggest", opt_out)
 
             assert len(experiment.fetch_trials()) == 1
 

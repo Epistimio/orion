@@ -254,7 +254,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert exp_config.pop("max_trials") == orion.core.config.experiment.max_trials
     assert exp_config.pop("max_broken") == orion.core.config.experiment.max_broken
     assert exp_config.pop("working_dir") == orion.core.config.experiment.working_dir
-    assert exp_config.pop("algorithms") == orion.core.config.experiment.algorithms
+    assert exp_config.pop("algorithm") == orion.core.config.experiment.algorithm
     # TODO: Remove for v0.4
     assert exp_config.pop("strategy") == orion.core.config.experiment.strategy
 

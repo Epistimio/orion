@@ -1355,17 +1355,17 @@ class TestInstantiateAlgo:
 def test_load_unavailable_algo(algo_unavailable_config, capsys):
     with OrionState(experiments=[algo_unavailable_config]):
         experiment = experiment_builder.load("supernaekei", mode="r")
-        assert experiment.algorithms == algo_unavailable_config["algorithms"]
+        assert experiment.algorithm == algo_unavailable_config["algorithm"]
         assert (
-            experiment.configuration["algorithms"]
-            == algo_unavailable_config["algorithms"]
+            experiment.configuration["algorithm"]
+            == algo_unavailable_config["algorithm"]
         )
 
         experiment = experiment_builder.load("supernaekei", mode="w")
-        assert experiment.algorithms == algo_unavailable_config["algorithms"]
+        assert experiment.algorithm == algo_unavailable_config["algorithm"]
         assert (
-            experiment.configuration["algorithms"]
-            == algo_unavailable_config["algorithms"]
+            experiment.configuration["algorithm"]
+            == algo_unavailable_config["algorithm"]
         )
 
         with pytest.raises(

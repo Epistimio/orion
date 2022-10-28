@@ -60,10 +60,10 @@ def create_producer():
     ) as cfg:
         experiment = cfg.get_experiment(name="default_name")
 
-        experiment.algorithms.algorithm.possible_values = [(v,) for v in range(0, 11)]
-        experiment.algorithms.seed_rng(0)
+        experiment.algorithm.algorithm.possible_values = [(v,) for v in range(0, 11)]
+        experiment.algorithm.seed_rng(0)
         experiment.max_trials = 20
-        experiment.algorithms.algorithm.max_trials = 20
+        experiment.algorithm.algorithm.max_trials = 20
 
         producer = Producer(experiment)
         yield producer, cfg.storage
@@ -72,7 +72,7 @@ def create_producer():
 def test_produce():
     """Test new trials are properly produced"""
     with create_producer() as (producer, _):
-        algorithm = producer.experiment.algorithms
+        algorithm = producer.experiment.algorithm
         possible_values = [(1,)]
         algorithm.unwrapped.possible_values = possible_values
 
@@ -91,7 +91,7 @@ def test_register_new_trials():
         trials_in_db_before = len(storage._fetch_trials({}))
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
-        algorithm = producer.experiment.algorithms
+        algorithm = producer.experiment.algorithm
         possible_values = [(1,)]
         algorithm.unwrapped.possible_values = possible_values
 
@@ -125,9 +125,9 @@ def test_concurent_producers(monkeypatch):
         trials_in_db_before = len(storage._fetch_trials({}))
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
-        producer.experiment.algorithms.algorithm.possible_values = [(1,)]
+        producer.experiment.algorithm.algorithm.possible_values = [(1,)]
         # Make sure it starts from index 0
-        producer.experiment.algorithms.seed_rng(0)
+        producer.experiment.algorithm.seed_rng(0)
 
         second_producer = Producer(producer.experiment)
         second_producer.experiment = copy.deepcopy(producer.experiment)
@@ -136,11 +136,9 @@ def test_concurent_producers(monkeypatch):
 
         def suggest(self, num):
             time.sleep(sleep)
-            return producer.experiment.algorithms.algorithm.possible_values[0]
+            return producer.experiment.algorithm.algorithm.possible_values[0]
 
-        monkeypatch.setattr(
-            producer.experiment.algorithms.algorithm, "suggest", suggest
-        )
+        monkeypatch.setattr(producer.experiment.algorithm.algorithm, "suggest", suggest)
 
         pool = threading.Pool(2)
         first_result = pool.apply_async(producer.produce)
@@ -185,16 +183,16 @@ def test_duplicate_within_pool():
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
         # Avoid limiting number of samples from the within the algorithm.
-        producer.experiment.algorithms.unwrapped.pool_size = 1000
+        producer.experiment.algorithm.unwrapped.pool_size = 1000
 
-        producer.experiment.algorithms.unwrapped.possible_values = [
+        producer.experiment.algorithm.unwrapped.possible_values = [
             (v,) for v in [1, 1, 3]
         ]
 
         assert producer.produce(3) == 2
 
         # Algorithm was required to suggest some trials
-        num_new_trials = producer.experiment.algorithms.unwrapped._num
+        num_new_trials = producer.experiment.algorithm.unwrapped._num
         assert num_new_trials == 3  # pool size
 
         # `num_new_trials` new trials were registered at database
@@ -220,16 +218,16 @@ def test_duplicate_within_pool_and_db():
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
         # Avoid limiting number of samples from the within the algorithm.
-        producer.experiment.algorithms.unwrapped.pool_size = 1000
+        producer.experiment.algorithm.unwrapped.pool_size = 1000
 
-        producer.experiment.algorithms.unwrapped.possible_values = [
+        producer.experiment.algorithm.unwrapped.possible_values = [
             (v,) for v in [0, 1, 2]
         ]
 
         assert producer.produce(3) == 1
 
         # Algorithm was required to suggest some trials
-        num_new_trials = producer.experiment.algorithms.unwrapped._num
+        num_new_trials = producer.experiment.algorithm.unwrapped._num
         assert num_new_trials == 3  # pool size
 
         # `num_new_trials` new trials were registered at database
@@ -250,7 +248,7 @@ def test_evc(monkeypatch, producer):
     """Verify that producer is using available trials from EVC"""
     experiment = producer.experiment
     new_experiment = build(
-        experiment.name, algorithms="random", branching={"enable": True}
+        experiment.name, algorithm="random", branching={"enable": True}
     )
 
     # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
@@ -276,7 +274,7 @@ def test_evc_duplicates(monkeypatch, producer):
     """Verify that producer won't register samples that are available in parent experiment"""
     experiment = producer.experiment
     new_experiment = build(
-        experiment.name, algorithms="random", branching={"enable": True}
+        experiment.name, algorithm="random", branching={"enable": True}
     )
 
     # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
@@ -296,9 +294,9 @@ def test_evc_duplicates(monkeypatch, producer):
         return suggest_trials
 
     producer.experiment = new_experiment
-    producer.algorithm = new_experiment.algorithms
+    producer.algorithm = new_experiment.algorithm
 
-    monkeypatch.setattr(new_experiment.algorithms, "suggest", suggest)
+    monkeypatch.setattr(new_experiment.algorithm, "suggest", suggest)
 
     producer.update()
     producer.produce(len(trials) + 2)
