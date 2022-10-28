@@ -220,7 +220,7 @@ def test_fetch_config(raw_config):
         "max_trials": 100,
         "max_broken": 5,
         "name": "voila_voici",
-        "algorithms": "random",
+        "algorithm": "random",
     }
 
     assert config == {}
@@ -325,14 +325,14 @@ def test_fetch_config_dash(monkeypatch, config_file):
     """Verify fetch_config supports dash."""
 
     def mocked_config(file_object):
-        return {"experiment": {"max-broken": 10, "algorithms": {"dont-change": "me"}}}
+        return {"experiment": {"max-broken": 10, "algorithm": {"dont-change": "me"}}}
 
     monkeypatch.setattr("yaml.safe_load", mocked_config)
 
     config = resolve_config.fetch_config({"config": config_file})
 
     assert config == {
-        "experiment": {"max_broken": 10, "algorithms": {"dont-change": "me"}}
+        "experiment": {"max_broken": 10, "algorithm": {"dont-change": "me"}}
     }
 
 
@@ -340,14 +340,14 @@ def test_fetch_config_underscore(monkeypatch, config_file):
     """Verify fetch_config supports underscore as well."""
 
     def mocked_config(file_object):
-        return {"experiment": {"max_broken": 10, "algorithms": {"dont-change": "me"}}}
+        return {"experiment": {"max_broken": 10, "algorithm": {"dont-change": "me"}}}
 
     monkeypatch.setattr("yaml.safe_load", mocked_config)
 
     config = resolve_config.fetch_config({"config": config_file})
 
     assert config == {
-        "experiment": {"max_broken": 10, "algorithms": {"dont-change": "me"}}
+        "experiment": {"max_broken": 10, "algorithm": {"dont-change": "me"}}
     }
 
 

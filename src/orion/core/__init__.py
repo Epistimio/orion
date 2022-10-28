@@ -195,7 +195,7 @@ def define_experiment_config(config):
     )
 
     experiment_config.add_option(
-        "algorithms",
+        "algorithm",
         option_type=dict,
         default={"random": {"seed": None}},
         help="Algorithm configuration for the experiment.",

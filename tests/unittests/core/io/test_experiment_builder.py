@@ -66,7 +66,7 @@ def python_api_config():
         max_trials=1000,
         max_broken=5,
         working_dir="",
-        algorithms={
+        algorithm={
             "dumbalgo": {
                 "done": False,
                 "judgement": None,
@@ -86,7 +86,7 @@ def python_api_config():
 
 @pytest.fixture()
 def algo_unavailable_config(python_api_config):
-    python_api_config["algorithms"] = {"idontreallyexist": {"but": "iwishiwould"}}
+    python_api_config["algorithm"] = {"idontreallyexist": {"but": "iwishiwould"}}
     return python_api_config
 
 
@@ -114,7 +114,7 @@ def new_config(random_dt, script_path):
         max_trials=1000,
         max_broken=5,
         working_dir="",
-        algorithms={
+        algorithm={
             "dumbalgo": {
                 "done": False,
                 "judgement": None,
@@ -143,7 +143,7 @@ def parent_version_config(script_path):
         _id="parent_config",
         name="old_experiment",
         version=1,
-        algorithms="random",
+        algorithm="random",
         metadata={
             "user": "corneauf",
             "datetime": datetime.datetime.utcnow(),
@@ -184,7 +184,7 @@ def test_get_cmd_config(raw_config):
     cmdargs = {"config": raw_config}
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
-    assert local_config["algorithms"] == "random"
+    assert local_config["algorithm"] == "random"
     assert local_config["max_trials"] == 100
     assert local_config["max_broken"] == 5
     assert local_config["name"] == "voila_voici"
@@ -208,7 +208,7 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     cmdargs = {"config": incomplete_config_file}
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
-    assert "algorithms" not in local_config
+    assert "algorithm" not in local_config
     assert "max_trials" not in local_config
     assert "max_broken" not in local_config
     assert "name" not in local_config["storage"]["database"]
@@ -243,7 +243,7 @@ def test_fetch_config_from_db_hit(new_config):
     assert db_config["metadata"] == new_config["metadata"]
     assert db_config["max_trials"] == new_config["max_trials"]
     assert db_config["max_broken"] == new_config["max_broken"]
-    assert db_config["algorithms"] == new_config["algorithms"]
+    assert db_config["algorithm"] == new_config["algorithm"]
     assert db_config["metadata"] == new_config["metadata"]
 
 
@@ -281,8 +281,8 @@ def test_get_from_args_hit(monkeypatch, raw_config, random_dt, new_config):
     assert exp_view.metadata == new_config["metadata"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
-    assert exp_view.algorithms
-    assert exp_view.algorithms.configuration == new_config["algorithms"]
+    assert exp_view.algorithm
+    assert exp_view.algorithm.configuration == new_config["algorithm"]
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
@@ -315,8 +315,8 @@ def test_get_from_args_hit_no_conf_file(
     assert exp_view.metadata == new_config["metadata"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
-    assert exp_view.algorithms
-    assert exp_view.algorithms.configuration == new_config["algorithms"]
+    assert exp_view.algorithm
+    assert exp_view.algorithm.configuration == new_config["algorithm"]
 
 
 @pytest.mark.usefixtures("with_user_dendi")
@@ -358,8 +358,8 @@ def test_build_from_args_no_hit(
         assert exp.metadata["user_args"] == cmdargs["user_args"]
         assert exp.max_trials == 100
         assert exp.max_broken == 5
-        assert exp.algorithms
-        assert exp.algorithms.configuration == {"random": {"seed": None}}
+        assert exp.algorithm
+        assert exp.algorithm.configuration == {"random": {"seed": None}}
 
 
 @pytest.mark.usefixtures(
@@ -394,8 +394,8 @@ def test_build_from_args_hit(monkeypatch, old_config_file, script_path, new_conf
     assert exp.metadata == new_config["metadata"]
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
-    assert exp.algorithms
-    assert exp.algorithms.configuration == new_config["algorithms"]
+    assert exp.algorithm
+    assert exp.algorithm.configuration == new_config["algorithm"]
 
 
 @pytest.mark.usefixtures("with_user_bouthilx")
@@ -500,8 +500,8 @@ def test_build_no_hit(config_file, random_dt, script_path):
         assert exp.max_trials == max_trials
         assert exp.max_broken == max_broken
         assert not exp.is_done
-        assert exp.algorithms
-        assert exp.algorithms.configuration == {"random": {"seed": None}}
+        assert exp.algorithm
+        assert exp.algorithm.configuration == {"random": {"seed": None}}
 
 
 def test_build_no_commandline_config():
@@ -531,8 +531,8 @@ def test_build_hit(python_api_config):
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
-    assert exp.algorithms
-    assert exp.algorithms.configuration == python_api_config["algorithms"]
+    assert exp.algorithm
+    assert exp.algorithm.configuration == python_api_config["algorithm"]
 
 
 @pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
@@ -553,8 +553,8 @@ def test_build_without_config_hit(python_api_config):
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
-    assert exp.algorithms
-    assert exp.algorithms.configuration == python_api_config["algorithms"]
+    assert exp.algorithm
+    assert exp.algorithm.configuration == python_api_config["algorithm"]
 
 
 @pytest.mark.usefixtures(
@@ -588,8 +588,8 @@ def test_build_from_args_without_cmd(
     assert exp.metadata == new_config["metadata"]
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
-    assert exp.algorithms
-    assert exp.algorithms.configuration == new_config["algorithms"]
+    assert exp.algorithm
+    assert exp.algorithm.configuration == new_config["algorithm"]
 
 
 # TODO: Remove for v0.4
@@ -664,18 +664,18 @@ class TestExperimentVersioning:
                 assert "Running experiment in a different state" not in caplog.text
 
             assert exp.version == 1
-            assert exp.configuration["algorithms"] == {"random": {"seed": None}}
+            assert exp.configuration["algorithm"] == {"random": {"seed": None}}
 
             new_algo = "gridsearch"
             with caplog.at_level(logging.WARNING):
 
                 exp = experiment_builder.build(
-                    name=parent_version_config["name"], algorithms=new_algo
+                    name=parent_version_config["name"], algorithm=new_algo
                 )
                 assert "Running experiment in a different state" in caplog.text
 
             assert exp.version == 1
-            assert list(exp.configuration["algorithms"].keys())[0] == new_algo
+            assert list(exp.configuration["algorithm"].keys())[0] == new_algo
 
             caplog.clear()
             with caplog.at_level(logging.WARNING):
@@ -684,7 +684,7 @@ class TestExperimentVersioning:
                 assert "Running experiment in a different state" not in caplog.text
 
             assert exp.version == 1
-            assert list(exp.configuration["algorithms"].keys())[0] == new_algo
+            assert list(exp.configuration["algorithm"].keys())[0] == new_algo
 
     def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""
@@ -759,12 +759,12 @@ class TestBuild:
             exp = experiment_builder.build(**new_config)
 
         # Deliver an external configuration to finalize init
-        new_config["algorithms"]["dumbalgo"]["done"] = False
-        new_config["algorithms"]["dumbalgo"]["judgement"] = None
-        new_config["algorithms"]["dumbalgo"]["scoring"] = 0
-        new_config["algorithms"]["dumbalgo"]["suspend"] = False
-        new_config["algorithms"]["dumbalgo"]["value"] = 5
-        new_config["algorithms"]["dumbalgo"]["seed"] = None
+        new_config["algorithm"]["dumbalgo"]["done"] = False
+        new_config["algorithm"]["dumbalgo"]["judgement"] = None
+        new_config["algorithm"]["dumbalgo"]["scoring"] = 0
+        new_config["algorithm"]["dumbalgo"]["suspend"] = False
+        new_config["algorithm"]["dumbalgo"]["value"] = 5
+        new_config["algorithm"]["dumbalgo"]["seed"] = None
         new_config.pop("something_to_be_ignored")
         new_config["knowledge_base"] = None
         assert exp.configuration == new_config
@@ -789,12 +789,12 @@ class TestBuild:
         new_config["refers"] = {}
         new_config.pop("_id")
         new_config.pop("something_to_be_ignored")
-        new_config["algorithms"]["dumbalgo"]["done"] = False
-        new_config["algorithms"]["dumbalgo"]["judgement"] = None
-        new_config["algorithms"]["dumbalgo"]["scoring"] = 0
-        new_config["algorithms"]["dumbalgo"]["suspend"] = False
-        new_config["algorithms"]["dumbalgo"]["value"] = 5
-        new_config["algorithms"]["dumbalgo"]["seed"] = None
+        new_config["algorithm"]["dumbalgo"]["done"] = False
+        new_config["algorithm"]["dumbalgo"]["judgement"] = None
+        new_config["algorithm"]["dumbalgo"]["scoring"] = 0
+        new_config["algorithm"]["dumbalgo"]["suspend"] = False
+        new_config["algorithm"]["dumbalgo"]["value"] = 5
+        new_config["algorithm"]["dumbalgo"]["seed"] = None
         new_config["refers"] = {"adapter": [], "parent_id": None, "root_id": _id}
         new_config["knowledge_base"] = None
         assert found_config[0] == new_config
@@ -805,8 +805,8 @@ class TestBuild:
         assert exp.max_broken == new_config["max_broken"]
         assert exp.working_dir == new_config["working_dir"]
         assert exp.version == new_config["version"]
-        assert exp.algorithms
-        assert exp.algorithms.configuration == new_config["algorithms"]
+        assert exp.algorithm
+        assert exp.algorithm.configuration == new_config["algorithm"]
 
     def test_working_dir_is_correctly_set(self, new_config):
         """Check if working_dir is correctly changed."""
@@ -852,12 +852,12 @@ class TestBuild:
             exp = experiment_builder.build(**new_config)
             assert experiment_count_before == count_experiments()
 
-        new_config["algorithms"]["dumbalgo"]["done"] = False
-        new_config["algorithms"]["dumbalgo"]["judgement"] = None
-        new_config["algorithms"]["dumbalgo"]["scoring"] = 0
-        new_config["algorithms"]["dumbalgo"]["suspend"] = False
-        new_config["algorithms"]["dumbalgo"]["value"] = 5
-        new_config["algorithms"]["dumbalgo"]["seed"] = None
+        new_config["algorithm"]["dumbalgo"]["done"] = False
+        new_config["algorithm"]["dumbalgo"]["judgement"] = None
+        new_config["algorithm"]["dumbalgo"]["scoring"] = 0
+        new_config["algorithm"]["dumbalgo"]["suspend"] = False
+        new_config["algorithm"]["dumbalgo"]["value"] = 5
+        new_config["algorithm"]["dumbalgo"]["seed"] = None
         new_config.pop("something_to_be_ignored")
         new_config["knowledge_base"] = None
         assert exp.configuration == new_config
@@ -867,7 +867,7 @@ class TestBuild:
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build(**new_config)
 
-        assert isinstance(exp.algorithms, AlgoWrapper)
+        assert isinstance(exp.algorithm, AlgoWrapper)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 
@@ -875,7 +875,7 @@ class TestBuild:
     def test_algo_case_insensitive(self, new_config):
         """Verify that algo with uppercase or lowercase leads to same experiment"""
         with OrionState(experiments=[new_config], trials=[]):
-            new_config["algorithms"]["DUMBALGO"] = new_config["algorithms"].pop(
+            new_config["algorithm"]["DUMBALGO"] = new_config["algorithm"].pop(
                 "dumbalgo"
             )
             exp = experiment_builder.build(**new_config)
@@ -944,14 +944,12 @@ class TestBuild:
         """Test that configuring an algorithm with just a string is OK."""
         name = "supernaedo3"
         space = {"x": "uniform(0,10)"}
-        algorithms = "dumbalgo"
+        algorithm = "dumbalgo"
 
         with OrionState(experiments=[], trials=[]):
-            exp = experiment_builder.build(
-                name=name, space=space, algorithms=algorithms
-            )
+            exp = experiment_builder.build(name=name, space=space, algorithm=algorithm)
 
-        assert exp.configuration["algorithms"] == {
+        assert exp.configuration["algorithm"] == {
             "dumbalgo": {
                 "done": False,
                 "judgement": None,

@@ -68,7 +68,7 @@ def test_warm_starting_helps(
     source_experiment = build_experiment(
         name="source_exp",
         space=source_space,
-        algorithms={"of_type": "random", "seed": 42},
+        algorithm={"of_type": "random", "seed": 42},
         storage=storage,
         max_trials=n_source_trials,
     )
@@ -82,7 +82,7 @@ def test_warm_starting_helps(
         name="witout_warm_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo_config,
+        algorithm=algo_config,
         knowledge_base=None,
     )
     assert len(without_warm_starting.fetch_trials()) == max_trials
@@ -92,7 +92,7 @@ def test_warm_starting_helps(
         name="with_warm_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo_config,
+        algorithm=algo_config,
         knowledge_base=knowledge_base,
     )
     assert len(with_warm_starting.fetch_trials()) == max_trials
@@ -132,7 +132,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
         space=source_space,
         storage=warm_start_storage,
         max_trials=n_source_trials,
-        algorithms={"of_type": "random", "seed": 42},
+        algorithm={"of_type": "random", "seed": 42},
     )
     source_experiment.workon(_wrap(source_task))
     warm_start_kb = KnowledgeBase(warm_start_storage)
@@ -145,7 +145,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
         space=target_space,
         storage=hot_start_storage,
         max_trials=n_source_trials,
-        algorithms={"of_type": "random", "seed": 42},
+        algorithm={"of_type": "random", "seed": 42},
     )
     target_prior_experiment.workon(_wrap(target_task))
     hot_start_kb = KnowledgeBase(hot_start_storage)
@@ -157,7 +157,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
         name="cold_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo_config,
+        algorithm=algo_config,
         knowledge_base=None,
     )
     # Warm-start: Prior information from the source task.
@@ -166,7 +166,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
         name="warm_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo_config,
+        algorithm=algo_config,
         knowledge_base=warm_start_kb,
     )
     # Hot-start: Prior information from the target task.
@@ -175,7 +175,7 @@ def test_warm_start_benchmarking(algo: type[BaseAlgorithm], tmp_path: Path):
         name="hot_start",
         space=target_space,
         max_trials=max_trials,
-        algorithms=algo_config,
+        algorithm=algo_config,
         knowledge_base=hot_start_kb,
     )
 

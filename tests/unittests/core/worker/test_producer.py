@@ -34,7 +34,7 @@ base_experiment = {
         "datetime": "2017-11-23T02:00:00",
         "orion_version": "XYZ",
     },
-    "algorithms": {
+    "algorithm": {
         "dumbalgo": {
             "value": (5,),
             "scoring": 0,

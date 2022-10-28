@@ -163,7 +163,7 @@ class TestRead:
         value = orion_db.read(
             "experiments",
             {"name": "not_found", "metadata.user": "tsirif"},
-            selection={"algorithms": 1},
+            selection={"algorithm": 1},
         )
         assert value == []
 
