@@ -36,6 +36,7 @@ def new_client(endpoint, tok):
 
 
 def test_one_workon_rest_client():
+    """Test a single client"""
     with server() as (endpoint, _):
         client = new_client(endpoint, TOKEN1)
 
