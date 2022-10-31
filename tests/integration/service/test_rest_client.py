@@ -35,20 +35,6 @@ def new_client(endpoint, tok):
     return client
 
 
-def test_one_workon_rest_client():
-    """Test a single client"""
-    with server() as (endpoint, _):
-        client = new_client(endpoint, TOKEN1)
-
-        count = client.workon(
-            fct=function,
-            n_workers=2,
-        )
-
-        assert count >= 10
-        assert client.is_done
-
-
 def workon(endpoint, tok):
     client = new_client(endpoint, tok)
 
