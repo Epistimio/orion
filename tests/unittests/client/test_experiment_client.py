@@ -275,7 +275,7 @@ class TestInsert:
             trial = client.insert(dict(x=100))
 
             ref_trial = experiment.get_trial(uid=trial.id)
-            assert ref_trial.status == "interrupted"
+            assert ref_trial.status == "new"
 
             if not is_rest(factory):
                 compare_without_heartbeat(trial, client.get_trial(uid=trial.id))
@@ -353,7 +353,7 @@ class TestInsert:
             trial = client.insert(dict(x=100))
 
             ref_trial = experiment.get_trial(uid=trial.id)
-            assert ref_trial.status == "interrupted"
+            assert ref_trial.status == "new"
 
             assert trial.params["x"] == 100
             assert trial.params["y"] == 5
