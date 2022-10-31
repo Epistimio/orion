@@ -182,10 +182,10 @@ class LocalExperimentBroker(ExperimentBroker):
         experiment_name = request.data.pop("experiment_name")
         client = retrieve_experiment_client(request, experiment_name)
 
-        trial = request.data.pop("trial")
         uid = request.data.pop("uid")
 
-        trial = client.get_trial(trial=trial, uid=uid)
+        trial = client.get_trial(uid=uid)
+        log.debug("%s %s %s", trial, request.data, uid)
         results = self._make_trial(trial)
         return success(dict(result=results))
 

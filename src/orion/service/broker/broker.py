@@ -160,16 +160,67 @@ class ExperimentBroker:
         """Create a new experiment"""
 
     def suggest(self, request: RequestContext):
-        """Suggest and reserve a new trial"""
+        """Suggest and reserve a new trial
+
+        See `~orion.client.ExperimentClient.suggest`
+        """
 
     def observe(self, request: RequestContext):
-        """observe and release a trial"""
+        """observe and release a trial
+
+        See `~orion.client.ExperimentClient.observe`
+        """
 
     def is_done(self, request: RequestContext):
-        """return true if the experiment is done"""
+        """return true if the experiment is done
+
+        See `~orion.client.ExperimentClient.is_done`
+        """
 
     def heartbeat(self, request: RequestContext):
-        """update the heartbeat of a trial"""
+        """update the heartbeat of a trial
+
+        See `~orion.client.ExperimentClient.heartbeat`
+        """
 
     def release(self, request: RequestContext):
-        """release a trial"""
+        """release a trial
+
+        See `~orion.client.ExperimentClient.release`
+        """
+
+    def insert(self, request: RequestContext):
+        """insert a trial
+
+        See `~orion.client.ExperimentClient.insert`
+        """
+
+    def fetch_noncompleted_trials(self, request: RequestContext):
+        """Fetch non completed trials
+
+        See `~orion.client.ExperimentClient.fetch_noncompleted_trials`
+        """
+
+    def fetch_pending_trials(self, request: RequestContext):
+        """Fetch pending trials
+
+        See `~orion.client.ExperimentClient.fetch_pending_trials`
+        """
+
+    def fetch_trials_by_status(self, request: RequestContext):
+        """Fetch trials by status
+
+        See `~orion.client.ExperimentClient.fetch_trials_by_status`
+        """
+
+    def get_trial(self, request: RequestContext):
+        """Retrieve a trial
+
+        See `~orion.client.ExperimentClient.get_trial`
+        """
+
+    def fetch_trials(self, request: RequestContext):
+        """Fetch trials
+
+        See `~orion.client.ExperimentClient.fetch_trials`
+        """

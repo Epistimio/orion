@@ -50,10 +50,14 @@ class ClientActionREST(BaseClientREST):
         return self._to_trials(payload.get("result", []))
 
     def get_trial(self, trial=None, uid=None):
+
+        # uid is db_id here
+        if trial is not None:
+            uid = trial.params_id
+
         payload = self._post(
             "get_trial",
             experiment_name=self.experiment_name,
-            trial=trial,
             uid=uid,
         )
 
