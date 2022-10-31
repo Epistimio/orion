@@ -47,7 +47,7 @@ config = dict(
     max_trials=10,
     max_broken=5,
     working_dir="",
-    algorithms={"random": {"seed": 1}},
+    algorithm={"random": {"seed": 1}},
     refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
 )
 

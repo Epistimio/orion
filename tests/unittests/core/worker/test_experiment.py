@@ -22,7 +22,7 @@ from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.worker.experiment import Experiment, Mode
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
-from orion.storage.base import Lockedalgorithmtate, setup_storage
+from orion.storage.base import LockedAlgorithmState, setup_storage
 from orion.testing import OrionState
 
 
@@ -971,7 +971,7 @@ def create_experiment(mode: Mode, space: Space, algorithm, storage):
 def disable_algo_lock(monkeypatch, storage):
     @contextlib.contextmanager
     def no_lock(experiment, timeout, retry_interval):
-        yield Lockedalgorithmtate(
+        yield LockedAlgorithmState(
             state=experiment.algorithm.state_dict,
             configuration=experiment.algorithm.configuration,
         )
