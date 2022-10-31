@@ -405,7 +405,7 @@ class Study:
                 experiment = create_experiment(
                     experiment_name,
                     space=space,
-                    algorithms=algorithm.experiment_algorithm,
+                    algorithm=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                     storage=self.benchmark.storage,
                     executor=executor,
