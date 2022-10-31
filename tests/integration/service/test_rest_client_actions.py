@@ -1,4 +1,3 @@
-
 from orion.service.client.experiment import ExperimentClientREST
 from orion.service.testing import server
 
@@ -35,25 +34,20 @@ def new_client(endpoint, tok):
 
 def test_client_actions():
     """Test client actions"""
-    
+
     with server() as (endpoint, _):
         client = new_client(endpoint, TOKEN1)
 
         inserted_trial = client.insert({"a": 0.5, "b": 0.5})
-        
+
         assert inserted_trial is not None
-        
+
         assert len(client.fetch_trials()) == 1
         assert len(client.fetch_pending_trials()) == 1
         assert len(client.fetch_trials_by_status("new")) == 1
-        
+
         # this includes reserved trials
         assert len(client.fetch_noncompleted_trials()) == 1
-        
+
         print(inserted_trial)
         assert client.get_trial(inserted_trial) is not None
-        
-        
-        
-        
-
