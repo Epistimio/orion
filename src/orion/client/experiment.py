@@ -418,7 +418,7 @@ class ExperimentClient:
             return trial
 
         if not reserve:
-            self.release(trial)
+            self.release(trial, status="new")
 
         return trial
 
