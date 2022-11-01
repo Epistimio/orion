@@ -1,3 +1,4 @@
+import time
 from multiprocessing import Process
 
 from orion.service.client.experiment import ExperimentClientREST
@@ -51,7 +52,9 @@ def test_n_workon_rest_client(tokens=None):
     if tokens is None:
         tokens = [TOKEN1, TOKEN2]
 
-    with server() as (endpoint, port):
+    with server() as (endpoint, _):
+        time.sleep(10)
+
         workers = []
 
         for token in tokens:
