@@ -8,11 +8,11 @@ configuring applications. We will use it to define our Hyperparameters and some 
 
 Imports
 ^^^^^^^
-You will need to import some modules using pip, such as ``datasets``, ``transformers``, ``orion`` and ``hydra-orion-sweeper``.
+You will need to import some modules using pip, such as ``datasets``, ``transformers`` and ``hydra-orion-sweeper``.
 
  .. literalinclude:: /../../examples/huggingface/main.py
    :language: python
-   :lines: 8-25
+   :lines: 8-22
 
 
 Hydra configuration file
@@ -39,24 +39,27 @@ We also are going to be using this main function as the entry point of the progr
 
  .. literalinclude:: /../../examples/huggingface/main.py
    :language: python
-   :lines: 136-139, 240-241
+   :lines: 134-137, 238-239
 
-
-Adapting the code for Oríon
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-for Orion, we only need to make one small change to the script: we report to Oríon the objective that we
-want to **minimize** at the end of the script using :py:func:`orion.client.report_objective`:
-
-.. literalinclude:: /../../examples/huggingface/main.py
-   :language: python
-   :lines: 227-230
-
-
-:py:func:`orion.client.report_objective` can be imported using :
+With the ``hydra-orion-sweeper``, this function needs to return the objective. You have 3 choices 
+for what you can return : 
 
 .. code-block:: python
 
-   from orion.client import report_objective
+    if cfg.return_type == "float":
+        return out
+
+    if cfg.return_type == "dict":
+        return dict(name="objective", type="objective", value=out)
+
+    if cfg.return_type == "list":
+        return [dict(name="objective", type="objective", value=out)]
+
+For the purpose of this tutorial, we are going to keep it simple and simply return a float, our objective that we want to minimize.
+
+ .. literalinclude:: /../../examples/huggingface/main.py
+   :language: python
+   :lines: 232
 
 Execution
 ^^^^^^^^^

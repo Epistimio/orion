@@ -21,8 +21,6 @@ from transformers import (
     TrainingArguments,
 )
 
-from orion.client import report_objective
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -134,7 +132,7 @@ def get_free_gpu():
 
 
 @hydra.main(config_path=".", config_name="config")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> float:
     # Get Hydra arguments and apply hyperparaters to training arguments
     args = cfg.args
 
@@ -226,12 +224,12 @@ def main(cfg: DictConfig):
     eval_metrics = trainer.evaluate()
     print("Final evaluation metrics:", eval_metrics)
 
-    report_objective(1.0 - eval_metrics["eval_accuracy"], "error")
-
     # Print out memory stats
     print("Total GPU memory:", torch.cuda.get_device_properties(0).total_memory)
     print("GPU memory reserved:", torch.cuda.memory_reserved(0))
     print("GPU memory allocated:", torch.cuda.memory_allocated(0))
+
+    return 1.0 - eval_metrics["eval_accuracy"]
 
 
 # =======================================================================
