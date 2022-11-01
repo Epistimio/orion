@@ -32,13 +32,17 @@ def test_new_experiment(with_logs):
     with server() as (endpoint, port):
         client = WorkonClientREST(endpoint, TOKEN)
         expid1 = client.new_experiment(
-            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+            name="MyExperiment",
+            space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
+            working_dir="orion_test_working_dir",
         )
 
         # same experiment should be no problem
         client2 = WorkonClientREST(endpoint, TOKEN2)
         expid2 = client2.new_experiment(
-            name="MyExperiment", space=dict(a="uniform(0, 1)", c="uniform(0, 1)")
+            name="MyExperiment",
+            space=dict(a="uniform(0, 1)", c="uniform(0, 1)"),
+            working_dir="orion_test_working_dir",
         )
         assert expid1.name == expid2.name
         assert expid1.euid != expid2.euid
@@ -59,6 +63,7 @@ def test_suggest(with_logs):
         client.new_experiment(
             name="MyExperiment",
             space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
+            working_dir="orion_test_working_dir",
         )
 
         client_trial = client.suggest()
@@ -84,7 +89,9 @@ def test_observe(with_logs):
 
         # create an experiment
         client.new_experiment(
-            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+            name="MyExperiment",
+            space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
+            working_dir="orion_test_working_dir",
         )
 
         # Suggest a trial using current experiment
@@ -111,7 +118,9 @@ def test_heartbeat(with_logs):
 
         # create an experiment
         client.new_experiment(
-            name="MyExperiment", space=dict(a="uniform(0, 1)", b="uniform(0, 1)")
+            name="MyExperiment",
+            space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
+            working_dir="orion_test_working_dir",
         )
 
         # Suggest a trial for heartbeat
@@ -141,6 +150,7 @@ def test_is_done(with_logs):
             name="MyExperiment",
             space=dict(a="uniform(0, 1)", b="uniform(0, 1)"),
             max_trials=10,
+            working_dir="orion_test_working_dir",
         )
 
         while not client.is_done():
@@ -164,4 +174,7 @@ def test_authentication(with_logs):
         client = WorkonClientREST(endpoint, "NOT A TOKEN")
 
         with pytest.raises(RemoteException):
-            client.new_experiment(name="MyExperiment")
+            client.new_experiment(
+                name="MyExperiment",
+                working_dir="orion_test_working_dir",
+            )

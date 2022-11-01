@@ -128,15 +128,19 @@ class MongoDBConfig:
 
 
 @contextmanager
-def mongod(port, address) -> None:
+def mongod(port, address, mode="local") -> None:
     """Launch a mongoDB server in parallel. The server is stop on exit"""
-    log.debug("Starting mongodb on %s:%d", address, port)
-    with tempfile.TemporaryDirectory() as dir:
-        start_mongodb(port, address, dir)
 
-        yield MongoDBConfig(port, address, dir)
+    if mode == "local":
+        log.debug("Starting mongodb on %s:%d", address, port)
+        with tempfile.TemporaryDirectory() as dir:
+            start_mongodb(port, address, dir)
 
-        stop_mongodb(dir)
+            yield MongoDBConfig(port, address, dir)
+
+            stop_mongodb(dir)
+    else:
+        yield MongoDBConfig(27017, "localhost", "")
 
 
 def _add_mongo_user(mongo, user, password, db="amin", role="admin"):

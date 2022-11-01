@@ -109,9 +109,6 @@ def create_experiment_client(request: RequestContext) -> ExperimentClient:
     client = build_experiment(
         **request.data,
         storage=storage,
-        # if we keep the username on the storage that would prevent
-        # more pervasive modification
-        # username=request.username,
     )
     client.remote_mode = True
     return client
