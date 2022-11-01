@@ -212,9 +212,7 @@ class Benchmark:
             for _, exp in study.get_experiments():
                 exp_column = dict()
                 stats = exp.stats
-                exp_column["Algorithm"] = list(exp.configuration["algorithms"].keys())[
-                    0
-                ]
+                exp_column["Algorithm"] = list(exp.configuration["algorithm"].keys())[0]
                 exp_column["Experiment Name"] = exp.name
                 exp_column["Number Trial"] = len(exp.fetch_trials())
                 exp_column["Best Evaluation"] = stats.best_evaluation
