@@ -53,7 +53,7 @@ class TestAverageRank:
             figure["rankings"],
             [
                 list(algorithm.keys())[0]
-                for algorithm in study_experiments_config["algorithm"]
+                for algorithm in study_experiments_config["algorithms"]
             ],
             balanced=study_experiments_config["max_trial"],
             with_avg=True,
@@ -139,13 +139,8 @@ class TestParallelAssessment:
 
         names = []
         algorithms = []
-<<<<<<< HEAD
         for algorithm in study_experiments_config["algorithms"]:
             algo = list(algorithm.keys())[0]
-=======
-        for algorithm in study_experiments_config["algorithm"]:
-            algo = list(algorithm["algorithm"].keys())[0]
->>>>>>> c242b937 (changing some more algorithms to algorithm)
             algorithms.append(algo)
 
             for worker in n_workers:
