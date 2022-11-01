@@ -430,7 +430,7 @@ class Study:
         for _, experiment in self.get_experiments():
             trials = experiment.fetch_trials()
 
-            algorithm_name = list(experiment.configuration["algorithms"].keys())[0]
+            algorithm_name = list(experiment.configuration["algorithm"].keys())[0]
 
             if algorithm_tasks.get(algorithm_name, None) is None:
                 task_state = {
