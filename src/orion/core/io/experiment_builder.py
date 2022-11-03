@@ -930,26 +930,21 @@ class ExperimentBuilder:
         if isinstance(knowledge_base, dict):
             knowledge_base = _instantiate_knowledge_base(knowledge_base)
 
-        if algorithm is None:
-            instantiated_algorithm = None
-        else:
-            instantiated_algorithm = _instantiate_algo(
-                space=space,
-                max_trials=max_trials,
-                config=algorithm,
-                ignore_unavailable=mode != "x",
-                knowledge_base=knowledge_base,
-            )
-        if algorithms is None:
-            instantiated_algorithms = None
-        else:
-            instantiated_algorithms = _instantiate_algo(
-                space=space,
-                max_trials=max_trials,
-                config=algorithms,
-                ignore_unavailable=mode != "x",
-                knowledge_base=knowledge_base,
-            )
+        instantiated_algorithm = _instantiate_algo(
+            space=space,
+            max_trials=max_trials,
+            config=algorithm,
+            ignore_unavailable=mode != "x",
+            knowledge_base=knowledge_base,
+        )
+
+        instantiated_algorithms = _instantiate_algo(
+            space=space,
+            max_trials=max_trials,
+            config=algorithms,
+            ignore_unavailable=mode != "x",
+            knowledge_base=knowledge_base,
+        )
 
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
         working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
