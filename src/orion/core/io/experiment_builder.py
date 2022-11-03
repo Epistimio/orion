@@ -864,7 +864,8 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode="x", **config)
 
-    # too-many-locals disabled for the deprecation of algorithms. We will be able to able once algorithms is removed
+    # too-many-locals disabled for the deprecation of algorithms.
+    # We will be able to able once algorithms is removed
     # pylint: disable=too-many-arguments,too-many-locals
     def create_experiment(
         self,
