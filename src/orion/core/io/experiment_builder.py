@@ -872,6 +872,7 @@ class ExperimentBuilder:
         mode: Mode,
         space: Space | dict[str, str],
         algorithm: str | dict | None = None,
+        algorithms: str | dict | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
         working_dir: str | None = None,
@@ -926,13 +927,27 @@ class ExperimentBuilder:
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
         if isinstance(knowledge_base, dict):
             knowledge_base = _instantiate_knowledge_base(knowledge_base)
-        instantiated_algorithm = _instantiate_algo(
-            space=space,
-            max_trials=max_trials,
-            config=algorithm,
-            ignore_unavailable=mode != "x",
-            knowledge_base=knowledge_base,
-        )
+
+        if algorithm is None:
+            instantiated_algorithm = None
+        else:
+            instantiated_algorithm = _instantiate_algo(
+                space=space,
+                max_trials=max_trials,
+                config=algorithm,
+                ignore_unavailable=mode != "x",
+                knowledge_base=knowledge_base,
+            )
+        if algorithms is None:
+            instantiated_algorithms = None
+        else:
+            instantiated_algorithms = _instantiate_algo(
+                space=space,
+                max_trials=max_trials,
+                config=algorithms,
+                ignore_unavailable=mode != "x",
+                knowledge_base=knowledge_base,
+            )
 
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
         working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
@@ -951,6 +966,7 @@ class ExperimentBuilder:
             _id=_id,
             max_trials=max_trials,
             algorithm=instantiated_algorithm,
+            algorithms=instantiated_algorithms,
             max_broken=max_broken,
             working_dir=working_dir,
             metadata=metadata,
