@@ -256,6 +256,8 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert exp_config.pop("working_dir") == orion.core.config.experiment.working_dir
     assert exp_config.pop("algorithm") == orion.core.config.experiment.algorithm
     # TODO: Remove for v0.4
+    assert exp_config.pop("algorithms") == orion.core.config.experiment.algorithms
+    # TODO: Remove for v0.4
     assert exp_config.pop("strategy") == orion.core.config.experiment.strategy
 
     assert exp_config == {}
