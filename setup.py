@@ -56,7 +56,7 @@ extras_require = {
         "ConfigSpace",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
-    "pb2": ["GPy"],
+    "pb2": ["GPy", "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
         "numpy",
