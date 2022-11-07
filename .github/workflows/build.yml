@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-    
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
@@ -187,7 +187,7 @@ jobs:
           mongodb-db: orion_test
 
       - name: Configure MongoDB
-        run: scripts/add_users.sh
+        run: MONGO_PORT=27017 scripts/add_users.sh
 
       - name: Install dependencies
         run: |
