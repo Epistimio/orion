@@ -30,7 +30,7 @@ def new_client(endpoint, tok):
         branching=None,
         max_idle_time=None,
         heartbeat=None,
-        working_dir=None,
+        working_dir="orion_test_working_dir",
         debug=False,
     )
     return client
@@ -43,6 +43,8 @@ def workon(endpoint, tok):
         fct=function,
         n_workers=2,
     )
+
+    client.close()
 
     assert count >= 10
     assert client.is_done

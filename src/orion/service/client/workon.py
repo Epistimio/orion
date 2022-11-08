@@ -126,6 +126,8 @@ class WorkonClientREST(BaseClientREST):
         pacemaker = self._pacemakers.pop(trial.id, None)
         if pacemaker is not None:
             pacemaker.stop()
+        else:
+            log.warning("Trial pacemaker not found! %s", trial.id)
 
     def is_done(self) -> bool:
         """returns true if the experiment is done"""
@@ -153,9 +155,12 @@ class WorkonClientREST(BaseClientREST):
             )
 
     def release_all(self):
-        for k, v in self._pacemakers.items():
+        pacemakers = list(self._pacemakers.items())
+
+        for k, v in pacemakers:
+            log.warning("Trial was not already released! %s", k)
             self.release(RemoteTrial(None, k, []), "interrupted")
             v.stop()
 
     def __del__(self):
-        self.release_all()
+        self.close()
