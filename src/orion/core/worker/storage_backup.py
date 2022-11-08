@@ -196,6 +196,7 @@ def _prepare_import(
     :return: a couple (queries to delete, data to add) representing
         changes to apply to dst_db to make import
     """
+    assert resolve in ("ignore", "overwrite", "bump")
 
     queries_to_delete = {}
     data_to_add = {}
