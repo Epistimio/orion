@@ -122,8 +122,13 @@ def upgrade_documents(storage):
     for experiment in storage.fetch_experiments({}):
         add_version(experiment)
         uid = experiment.pop("_id")
+        if "algorithms" in experiment:
+            algorithm = experiment.pop("algorithms")
+        if "algorithm" in experiment:
+            algorithm = experiment.pop("algorithm")
+
         storage.update_experiment(uid=experiment, **experiment)
-        storage.initialize_algorithm_lock(uid, experiment["algorithm"])
+        storage.initialize_algorithm_lock(uid, algorithm)
 
         for trial in storage.fetch_trials(uid=uid):
             # trial_config = trial.to_dict()
