@@ -193,7 +193,6 @@ class Experiment(Generic[AlgoT]):
         max_trials: int | None = None,
         max_broken: int | None = None,
         algorithm: AlgoT | None = None,
-        algorithms: AlgoT | None = None,
         working_dir: str | None = None,
         metadata: dict | None = None,
         refers: dict | None = None,
@@ -211,20 +210,12 @@ class Experiment(Generic[AlgoT]):
         self.max_broken = max_broken
         self.knowledge_base = knowledge_base
         self.working_dir = working_dir
-
+        self.algorithm = algorithm
         self._storage = storage
 
         self._node = ExperimentNode(
             self.name, self.version, experiment=self, storage=self._storage
         )
-        if algorithms is not None:
-            log.warning(
-                "algorithms is deprecated and will be removed in v0.4.0. Use algorithms instead."
-            )
-        if algorithm is None and algorithms is not None:
-            self.algorithm = algorithms
-        else:
-            self.algorithm = algorithm
 
     @property
     def storage(self):
