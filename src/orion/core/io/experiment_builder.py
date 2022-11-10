@@ -929,16 +929,14 @@ class ExperimentBuilder:
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
         if isinstance(knowledge_base, dict):
             knowledge_base = _instantiate_knowledge_base(knowledge_base)
-        if algorithm is not None:
-            instantiated_algorithm = _instantiate_algo(
-                space=space,
-                max_trials=max_trials,
-                config=algorithm,
-                ignore_unavailable=mode != "x",
-                knowledge_base=knowledge_base,
-            )
-        else:
-            instantiated_algorithm = None
+
+        instantiated_algorithm = _instantiate_algo(
+            space=space,
+            max_trials=max_trials,
+            config=algorithm,
+            ignore_unavailable=mode != "x",
+            knowledge_base=knowledge_base,
+        )
 
         if algorithms is not None:
             instantiated_algorithms = _instantiate_algo(
@@ -948,6 +946,7 @@ class ExperimentBuilder:
                 ignore_unavailable=mode != "x",
                 knowledge_base=knowledge_base,
             )
+            instantiated_algorithm = None
         else:
             instantiated_algorithms = None
 
