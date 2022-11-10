@@ -930,16 +930,14 @@ class ExperimentBuilder:
         if isinstance(knowledge_base, dict):
             knowledge_base = _instantiate_knowledge_base(knowledge_base)
 
-        instantiated_algorithm = None
-        if algorithm is not None:
-            instantiated_algorithm = _instantiate_algo(
-                space=space,
-                max_trials=max_trials,
-                config=algorithm,
-                ignore_unavailable=mode != "x",
-                knowledge_base=knowledge_base,
-            )
-        elif algorithms is not None:
+        instantiated_algorithm = _instantiate_algo(
+            space=space,
+            max_trials=max_trials,
+            config=algorithm,
+            ignore_unavailable=mode != "x",
+            knowledge_base=knowledge_base,
+        )
+        if algorithms is not None and algorithm is None:
             log.warning(
                 "algorithms is deprecated and will be removed in v0.4.0. Use algorithms instead."
             )
