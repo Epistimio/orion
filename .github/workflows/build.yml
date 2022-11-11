@@ -98,6 +98,10 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
+    - name: Install Hpobench
+      uses: eWaterCycle/setup-singularity@v7
+      with:
+        singularity-version: 3.8.7
     - name: Test with tox (and all extra dependencies)
       run: tox -e py-all
     - name: Upload coverage to Codecov
