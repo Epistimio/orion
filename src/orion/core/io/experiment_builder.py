@@ -939,7 +939,7 @@ class ExperimentBuilder:
         )
         if algorithms is not None and algorithm is None:
             log.warning(
-                "algorithms is deprecated and will be removed in v0.4.0. Use algorithms instead."
+                "algorithms is deprecated and will be removed in v0.4.0. Use algorithm instead."
             )
             instantiated_algorithm = _instantiate_algo(
                 space=space,
