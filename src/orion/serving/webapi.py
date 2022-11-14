@@ -121,6 +121,11 @@ class WebApi(falcon.API):
         self.add_route("/benchmarks", benchmarks_resource)
         self.add_route("/benchmarks/{name}", benchmarks_resource, suffix="benchmark")
         self.add_route(
+            "/experiments/status/{name}",
+            experiments_resource,
+            suffix="experiment_status",
+        )
+        self.add_route(
             "/trials/{experiment_name}", trials_resource, suffix="trials_in_experiment"
         )
         self.add_route(

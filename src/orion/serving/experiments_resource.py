@@ -6,7 +6,9 @@ Serves all the requests made to experiments/ REST endpoint.
 
 """
 import json
-from typing import Optional
+from collections import Counter
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 from falcon import Request, Response
 
@@ -17,6 +19,84 @@ from orion.serving.responses import (
     build_experiment_response,
     build_experiments_response,
 )
+
+
+def _compute_trial_duration(trial: Trial):
+    if trial.end_time:
+        return trial.end_time - trial.start_time
+    elif trial.heartbeat:
+        return trial.heartbeat - trial.start_time
+    else:
+        return timedelta()
+
+
+class ExperimentStatus:
+    __slots__ = (
+        "trial_status_percentage",
+        "eta",
+        "current_execution_time",
+        "whole_clock_time",
+        "progress",
+    )
+
+    def __init__(self):
+        self.trial_status_percentage = {status: 0.0 for status in Trial.allowed_stati}
+        self.eta = timedelta()
+        self.current_execution_time = timedelta()
+        self.whole_clock_time = timedelta()
+        self.progress = 0.0
+
+    def to_dict(self):
+        return {
+            "trial_status_percentage": self.trial_status_percentage,
+            "eta": str(self.eta),
+            "current_execution_time": str(self.current_execution_time),
+            "whole_clock_time": str(self.whole_clock_time),
+            "progress": self.progress,
+        }
+
+
+def retrieve_experiment_status(experiment):
+    trials: List[Trial] = experiment.fetch_trials(with_evc_tree=False)
+
+    # List completed trials
+    completed_trials = [trial for trial in trials if trial.status == "completed"]
+    # List running trials (status new or reserved)
+    running_trials = [trial for trial in trials if trial.status in ("new", "reserved")]
+    # Compute average duration for completed trials
+    average_completed_duration = sum(
+        (_compute_trial_duration(trial) for trial in completed_trials),
+        start=timedelta(),
+    ) / len(completed_trials)
+
+    exp_stat = ExperimentStatus()
+    # Compute number of trials per trial status
+    for status, count in Counter(trial.status for trial in trials).items():
+        exp_stat.trial_status_percentage[status] = count / len(trials)
+    # Compute estimated remaining time for experiment to finish
+    exp_stat.eta = (
+        float("+inf")
+        if average_completed_duration == 0
+        else average_completed_duration * len(running_trials)
+    )
+    # Compute current execution time
+    min_exc_time = min(trial.start_time for trial in trials if trial.start_time)
+    max_exc_time = datetime.fromtimestamp(0)
+    for trial in trials:
+        if trial.end_time:
+            max_exc_time = max(max_exc_time, trial.end_time)
+        elif trial.heartbeat:
+            max_exc_time = max(max_exc_time, trial.heartbeat)
+    exp_stat.current_execution_time = (
+        timedelta() if min_exc_time > max_exc_time else max_exc_time - min_exc_time
+    )
+    # Compute whole clock time
+    exp_stat.whole_clock_time = sum(
+        (_compute_trial_duration(trial) for trial in trials), start=timedelta()
+    )
+    # Compute experiment progress
+    exp_stat.progress = (len(trials) - len(running_trials)) / len(trials)
+    return exp_stat
 
 
 class ExperimentsResource:
@@ -48,6 +128,16 @@ class ExperimentsResource:
 
         response = build_experiment_response(experiment, status, algorithm, best_trial)
         resp.body = json.dumps(response)
+
+    def on_get_experiment_status(self, req: Request, resp: Response, name: str):
+        """
+        Handle GET requests for experiments/status/:name where `name` is
+        the user-defined name of the experiment
+        """
+        verify_query_parameters(req.params, ["version"])
+        version = req.get_param_as_int("version")
+        experiment = retrieve_experiment(self.storage, name, version)
+        resp.body = json.dumps(retrieve_experiment_status(experiment).to_dict())
 
 
 def _find_latest_versions(experiments):
