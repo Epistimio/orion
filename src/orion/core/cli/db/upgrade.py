@@ -11,6 +11,7 @@ import logging
 import sys
 
 from orion.core.io import experiment_builder
+from orion.core.io.config import ConfigurationError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
@@ -122,10 +123,16 @@ def upgrade_documents(storage):
     for experiment in storage.fetch_experiments({}):
         add_version(experiment)
         uid = experiment.pop("_id")
+        algorithm = None
         if "algorithms" in experiment:
             algorithm = experiment.pop("algorithms")
         if "algorithm" in experiment:
             algorithm = experiment.pop("algorithm")
+
+        if algorithm is None:
+            raise ConfigurationError(
+                "The data was corrupted, as there was no algorithm in the experiment"
+            )
 
         storage.update_experiment(uid=experiment, **experiment)
         storage.initialize_algorithm_lock(uid, algorithm)
