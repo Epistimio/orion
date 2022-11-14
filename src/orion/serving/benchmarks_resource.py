@@ -50,20 +50,6 @@ class BenchmarksResource:
         resp.body = json.dumps(response)
 
 
-def _find_latest_versions(experiments):
-    """Find the latest versions of the experiments"""
-    leaf_experiments = {}
-    for experiment in experiments:
-        name = experiment["name"]
-        version = experiment["version"]
-
-        if name in leaf_experiments:
-            leaf_experiments[name] = max(leaf_experiments[name], version)
-        else:
-            leaf_experiments[name] = version
-    return leaf_experiments
-
-
 def _retrieve_status(experiment: Experiment) -> str:
     """
     Determines the status of an experiment.
