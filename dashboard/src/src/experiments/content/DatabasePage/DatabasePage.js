@@ -3,6 +3,7 @@ import { DEFAULT_BACKEND } from '../../../utils/queryServer';
 import { FeaturedTable } from './FeaturedTable';
 import { BackendContext } from '../../BackendContext';
 import { TrialsProvider } from './TrialsProvider';
+import { ExperimentStatusBar } from '../../components/ExperimentStatusBar';
 
 /**
  * Singleton to provide experiment trials.
@@ -26,14 +27,21 @@ class DatabasePage extends React.Component {
     if (this.state.trials === false)
       return `Unable to load trials for experiment "${this.state.experiment}".`;
     return (
-      <div className="bx--grid bx--grid--full-width bx--grid--no-gutter database-page">
-        <div className="bx--row database-page__r1">
-          <div className="bx--col-lg-16">
-            <FeaturedTable
-              columns={this.state.trials.headers}
-              data={this.state.trials.trials}
-              experiment={this.state.experiment}
-            />
+      <div>
+        <div className="bx--grid bx--grid--full-width bx--grid--no-gutter database-page">
+          <div className="bx--row database-page__r1">
+            <div className="bx--col-lg-16 pb-4">
+              <ExperimentStatusBar name={this.state.experiment} />
+            </div>
+          </div>
+          <div className="bx--row database-page__r1">
+            <div className="bx--col-lg-16">
+              <FeaturedTable
+                columns={this.state.trials.headers}
+                data={this.state.trials.trials}
+                experiment={this.state.experiment}
+              />
+            </div>
           </div>
         </div>
       </div>
