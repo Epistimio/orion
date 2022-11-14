@@ -326,67 +326,82 @@ test('Test pagination - change page', async () => {
 
 test('Test (de)select columns', async () => {
   const user = userEvent.setup();
+
   // Load page
   const { container } = render(<App />, { wrapper: MemoryRouter });
+
   // Switch to database page
   await user.click(screen.queryByTitle(/Go to experiments database/));
+
   // Select an experiment
   await user.click(
     await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
   );
   await waitForExperimentToBeLoaded('2-dim-shape-exp');
-  // Check first row for ID, submit time, start time and objective
-  expect(
-    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
-  ).toBeInTheDocument();
-  expect(
-    queryByText(container, '2019-11-19 15:41:16.985000')
-  ).toBeInTheDocument();
-  expect(
-    queryByText(container, '2019-11-19 15:41:16.996000')
-  ).toBeInTheDocument();
-  expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
-  // Locate options `submit time`, `objective` and 'select all'
+
+  // Define values for first row
+  const valID = /0f886905874af10a6db412885341ae0b/;
+  const valSubmitTime = '2019-11-19 15:41:16.985000';
+  const valStartTime = '2019-11-19 15:41:16.996000';
+  const valEndTime = '2019-11-19 21:58:02.820000';
+  const valObjective = '-0.7881121864177159';
+
+  // Check first row for ID, submit time, start time, end time and objective
+  expect(screen.queryByTitle(valID)).toBeInTheDocument();
+  expect(queryByText(container, valSubmitTime)).toBeInTheDocument();
+  expect(queryByText(container, valStartTime)).toBeInTheDocument();
+  expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryByText(container, valObjective)).toBeInTheDocument();
+
+  // Locate options
   const multiSelect = document.getElementById('multiselect-columns');
   await user.click(multiSelect.querySelector('button.bx--list-box__field'));
+  const optionID = queryByText(multiSelect, 'ID');
   const optionSubmitTime = queryByText(multiSelect, 'Submit time');
+  const optionStartTime = queryByText(multiSelect, 'Start time');
+  const optionEndTime = queryByText(multiSelect, 'End time');
   const optionObjective = queryByText(multiSelect, 'Objective');
   const optionSelectAll = queryByText(multiSelect, '(select all)');
+  expect(optionID).toBeInTheDocument();
   expect(optionSubmitTime).toBeInTheDocument();
+  expect(optionStartTime).toBeInTheDocument();
+  expect(optionEndTime).toBeInTheDocument();
   expect(optionObjective).toBeInTheDocument();
   expect(optionSelectAll).toBeInTheDocument();
+
   // Deselect column Submit time and check first row
   await user.click(optionSubmitTime);
-  expect(
-    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
-  ).toBeInTheDocument();
-  expect(queryByText(container, '2019-11-19 15:41:16.985000')).toBeNull();
-  expect(
-    queryByText(container, '2019-11-19 15:41:16.996000')
-  ).toBeInTheDocument();
-  expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
+  expect(screen.queryByTitle(valID)).toBeInTheDocument();
+  expect(queryByText(container, valSubmitTime)).toBeNull();
+  expect(queryByText(container, valStartTime)).toBeInTheDocument();
+  expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryByText(container, valObjective)).toBeInTheDocument();
+
   // Deselect column objective and check first row
   await user.click(optionObjective);
-  expect(
-    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
-  ).toBeInTheDocument();
-  expect(queryByText(container, '2019-11-19 15:41:16.985000')).toBeNull();
-  expect(
-    queryByText(container, '2019-11-19 15:41:16.996000')
-  ).toBeInTheDocument();
-  expect(queryByText(container, '-0.7881121864177159')).toBeNull();
+  expect(screen.queryByTitle(valID)).toBeInTheDocument();
+  expect(queryByText(container, valSubmitTime)).toBeNull();
+  expect(queryByText(container, valStartTime)).toBeInTheDocument();
+  expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryByText(container, valObjective)).toBeNull();
+
+  // Deselect columns ID, start time, end time, and check first row
+  await user.click(optionID);
+  await user.click(optionStartTime);
+  await user.click(optionEndTime);
+  expect(screen.queryByTitle(valID)).toBeNull();
+  expect(queryByText(container, valSubmitTime)).toBeNull();
+  expect(queryByText(container, valStartTime)).toBeNull();
+  expect(queryByText(container, valEndTime)).toBeNull();
+  expect(queryByText(container, valObjective)).toBeNull();
+
   // Click to 'select all' and check that all columns are now visible in first row
   await user.click(optionSelectAll);
-  expect(
-    screen.queryByTitle(/0f886905874af10a6db412885341ae0b/)
-  ).toBeInTheDocument();
-  expect(
-    queryByText(container, '2019-11-19 15:41:16.985000')
-  ).toBeInTheDocument();
-  expect(
-    queryByText(container, '2019-11-19 15:41:16.996000')
-  ).toBeInTheDocument();
-  expect(queryByText(container, '-0.7881121864177159')).toBeInTheDocument();
+  expect(screen.queryByTitle(valID)).toBeInTheDocument();
+  expect(queryByText(container, valSubmitTime)).toBeInTheDocument();
+  expect(queryByText(container, valStartTime)).toBeInTheDocument();
+  expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryByText(container, valObjective)).toBeInTheDocument();
 });
 
 test('Test sort columns', async () => {
