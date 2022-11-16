@@ -34,7 +34,7 @@ export class ExperimentStatusBar extends React.Component {
             </Column>
             <Column className="justify-content-center">
               <strong>Whole clock time</strong>:&nbsp;
-              <code>{this.state.status.whole_clock_time} %</code>
+              <code>{this.state.status.whole_clock_time}</code>
             </Column>
             <Column className="justify-content-end">
               <strong>ETA</strong>:&nbsp;<code>{this.state.status.eta}</code>
