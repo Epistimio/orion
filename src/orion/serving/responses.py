@@ -42,7 +42,7 @@ def build_trial_response(trial: Trial) -> dict:
         "statistics": {
             statistic.name: statistic.value for statistic in trial.statistics
         },
-        "status": trial.status
+        "status": trial.status,
     }
 
 
