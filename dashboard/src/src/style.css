@@ -71,3 +71,7 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
 .modal-trial-key {
   text-align: right;
 }
+.progress-bar.bg-running {
+  background-color: lightgray;
+  color: darkslategrey;
+}

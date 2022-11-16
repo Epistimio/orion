@@ -31,7 +31,10 @@ class DatabasePage extends React.Component {
         <div className="bx--grid bx--grid--full-width bx--grid--no-gutter database-page">
           <div className="bx--row database-page__r1">
             <div className="bx--col-lg-16 pb-4">
-              <ExperimentStatusBar name={this.state.experiment} />
+              <ExperimentStatusBar
+                name={this.state.experiment}
+                withInfo={true}
+              />
             </div>
           </div>
           <div className="bx--row database-page__r1">

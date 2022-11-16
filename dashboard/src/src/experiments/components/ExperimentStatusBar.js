@@ -2,11 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Backend, DEFAULT_BACKEND } from '../../utils/queryServer';
 import ProgressBar from 'react-bootstrap/ProgressBar';
-import {
-  Column,
-  Grid,
-  Row,
-} from 'carbon-components-react';
+import { Column, Grid, Row } from 'carbon-components-react';
 
 function floatToPercent(value) {
   return Math.round(value * 100);
@@ -20,28 +16,51 @@ export class ExperimentStatusBar extends React.Component {
   }
   render() {
     if (this.state.status === null)
-      return `Loading status bar for experiment "${this.props.name}" ...`;
+      return (
+        <div>
+          <ProgressBar
+            now={100}
+            variant={'running'}
+            animated
+            title={`Loading status bar for experiment "${this.props.name}" ...`}
+            key={1}
+          />
+        </div>
+      );
     if (this.state.status === false)
-      return `Unable to load status bar for experiment "${this.props.name}".`;
+      return (
+        <div>
+          <ProgressBar
+            variant="danger"
+            label="error"
+            now={100}
+            title={`Unable to load status bar for experiment "${this.props.name}".`}
+          />
+        </div>
+      );
     const pc = this.state.status.trial_status_percentage;
     return (
       <div>
-        <Grid className="pb-2">
-          <Row>
-            <Column>
-              <strong>Execution time</strong>:&nbsp;
-              <code>{this.state.status.current_execution_time}</code>
-            </Column>
-            <Column className="justify-content-center">
-              <strong>Whole clock time</strong>:&nbsp;
-              <code>{this.state.status.whole_clock_time}</code>
-            </Column>
-            <Column className="justify-content-end">
-              <strong>ETA</strong>:&nbsp;<code>{this.state.status.eta}</code>
-            </Column>
-          </Row>
-        </Grid>
-        <div className="pb-2">
+        {this.props.withInfo ? (
+          <Grid className="pb-2">
+            <Row>
+              <Column>
+                <strong>Execution time</strong>:&nbsp;
+                <code>{this.state.status.current_execution_time}</code>
+              </Column>
+              <Column className="justify-content-center">
+                <strong>Whole clock time</strong>:&nbsp;
+                <code>{this.state.status.whole_clock_time}</code>
+              </Column>
+              <Column className="justify-content-end">
+                <strong>ETA</strong>:&nbsp;<code>{this.state.status.eta}</code>
+              </Column>
+            </Row>
+          </Grid>
+        ) : (
+          ''
+        )}
+        <div {...(this.props.withInfo ? { className: 'pb-2' } : {})}>
           <ProgressBar>
             <ProgressBar
               variant="success"
@@ -65,14 +84,18 @@ export class ExperimentStatusBar extends React.Component {
             />
           </ProgressBar>
         </div>
-        <Grid className="pb-2">
-          <Row>
-            <Column className="justify-content-end">
-              <strong>Progress</strong>:&nbsp;
-              <code>{floatToPercent(this.state.status.progress)} %</code>
-            </Column>
-          </Row>
-        </Grid>
+        {this.props.withInfo ? (
+          <Grid className="pb-2">
+            <Row>
+              <Column className="justify-content-end">
+                <strong>Progress</strong>:&nbsp;
+                <code>{floatToPercent(this.state.status.progress)} %</code>
+              </Column>
+            </Row>
+          </Grid>
+        ) : (
+          ''
+        )}
       </div>
     );
   }
@@ -100,4 +123,5 @@ export class ExperimentStatusBar extends React.Component {
 }
 ExperimentStatusBar.propTypes = {
   name: PropTypes.string.isRequired,
+  withInfo: PropTypes.bool,
 };
