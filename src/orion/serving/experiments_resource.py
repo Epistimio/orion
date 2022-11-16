@@ -7,7 +7,7 @@ Serves all the requests made to experiments/ REST endpoint.
 """
 import json
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Optional
 
 from falcon import Request, Response
@@ -63,36 +63,39 @@ def retrieve_experiment_status(experiment):
     completed_trials = [trial for trial in trials if trial.status == "completed"]
     # List running trials (status new or reserved)
     running_trials = [trial for trial in trials if trial.status in ("new", "reserved")]
-    # Compute average duration for completed trials
-    average_completed_duration = sum(
-        (_compute_trial_duration(trial) for trial in completed_trials),
-        start=timedelta(),
-    ) / len(completed_trials)
+    # List trials that have start time and (end time or heartbeat)
+    executed_trials = [
+        trial
+        for trial in trials
+        if trial.start_time and (trial.end_time or trial.heartbeat)
+    ]
 
     exp_stat = ExperimentStatus()
     # Compute number of trials per trial status
     for status, count in Counter(trial.status for trial in trials).items():
         exp_stat.trial_status_percentage[status] = count / len(trials)
     # Compute estimated remaining time for experiment to finish
+    average_completed_duration = sum(
+        (_compute_trial_duration(trial) for trial in completed_trials),
+        start=timedelta(),
+    ) / len(completed_trials)
     exp_stat.eta = (
         float("+inf")
         if average_completed_duration == 0
         else average_completed_duration * len(running_trials)
     )
     # Compute current execution time
-    min_exc_time = min(trial.start_time for trial in trials if trial.start_time)
-    max_exc_time = datetime.fromtimestamp(0)
-    for trial in trials:
-        if trial.end_time:
-            max_exc_time = max(max_exc_time, trial.end_time)
-        elif trial.heartbeat:
-            max_exc_time = max(max_exc_time, trial.heartbeat)
+    min_exc_time = min(trial.start_time for trial in executed_trials)
+    max_exc_time = max(
+        (trial.end_time if trial.end_time else trial.heartbeat)
+        for trial in executed_trials
+    )
     exp_stat.current_execution_time = (
         timedelta() if min_exc_time > max_exc_time else max_exc_time - min_exc_time
     )
     # Compute whole clock time
     exp_stat.whole_clock_time = sum(
-        (_compute_trial_duration(trial) for trial in trials), start=timedelta()
+        (_compute_trial_duration(trial) for trial in executed_trials), start=timedelta()
     )
     # Compute experiment progress
     exp_stat.progress = (len(trials) - len(running_trials)) / len(trials)
