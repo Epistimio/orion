@@ -800,6 +800,8 @@ class ExperimentBuilder:
         merge_algorithm_config(config, new_config)
         # TODO: Remove for v0.4
         merge_producer_config(config, new_config)
+        if "knowledge_base" in new_config:
+            config["knowledge_base"] = new_config["knowledge_base"]
 
         config.setdefault("name", name)
         config.setdefault("version", version)
