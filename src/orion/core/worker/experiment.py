@@ -65,6 +65,7 @@ class ExperimentStats:
     start_time: datetime.datetime
     finish_time: datetime.datetime
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
+    whole_clock_time: datetime.timedelta = field(default_factory=datetime.timedelta)
 
 
 # pylint: disable=too-many-public-methods
@@ -615,7 +616,13 @@ class Experiment(Generic[AlgoT]):
         """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
         experiment.
         """
+        trials = self.fetch_trials(with_evc_tree=False)
         completed_trials = self.fetch_trials_by_status("completed")
+        executed_trials = [
+            trial
+            for trial in trials
+            if trial.start_time and (trial.end_time or trial.heartbeat)
+        ]
 
         if not completed_trials:
             return {}
@@ -644,6 +651,9 @@ class Experiment(Generic[AlgoT]):
             start_time=start_time,
             finish_time=finish_time,
             duration=duration,
+            whole_clock_time=sum(
+                (trial.duration for trial in executed_trials), start=datetime.timedelta()
+            )
         )
 
     def __repr__(self):

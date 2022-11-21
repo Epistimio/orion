@@ -21,18 +21,10 @@ from orion.serving.responses import (
 )
 
 
-def _compute_trial_duration(trial: Trial):
-    if trial.end_time:
-        return trial.end_time - trial.start_time
-    elif trial.heartbeat:
-        return trial.heartbeat - trial.start_time
-    else:
-        return timedelta()
-
-
 class ExperimentStatus:
     __slots__ = (
-        "trial_status_percentage",
+        "nb_trials",
+        "trial_status_count",
         "eta",
         "current_execution_time",
         "whole_clock_time",
@@ -40,7 +32,8 @@ class ExperimentStatus:
     )
 
     def __init__(self):
-        self.trial_status_percentage = {status: 0.0 for status in Trial.allowed_stati}
+        self.nb_trials = 0
+        self.trial_status_count = {status: 0.0 for status in Trial.allowed_stati}
         self.eta = timedelta()
         self.current_execution_time = timedelta()
         self.whole_clock_time = timedelta()
@@ -48,7 +41,8 @@ class ExperimentStatus:
 
     def to_dict(self):
         return {
-            "trial_status_percentage": self.trial_status_percentage,
+            "nb_trials": self.nb_trials,
+            "trial_status_count": self.trial_status_count,
             "eta": str(self.eta),
             "current_execution_time": str(self.current_execution_time),
             "whole_clock_time": str(self.whole_clock_time),
@@ -58,47 +52,26 @@ class ExperimentStatus:
 
 def retrieve_experiment_status(experiment):
     trials: List[Trial] = experiment.fetch_trials(with_evc_tree=False)
+    st = experiment.stats
 
     # List completed trials
     completed_trials = [trial for trial in trials if trial.status == "completed"]
     # List running trials (status new or reserved)
     running_trials = [trial for trial in trials if trial.status in ("new", "reserved")]
-    # List trials that have start time and (end time or heartbeat)
-    executed_trials = [
-        trial
-        for trial in trials
-        if trial.start_time and (trial.end_time or trial.heartbeat)
-    ]
 
     exp_stat = ExperimentStatus()
+    # Register trials count
+    exp_stat.nb_trials = len(trials)
     # Compute number of trials per trial status
-    for status, count in Counter(trial.status for trial in trials).items():
-        exp_stat.trial_status_percentage[status] = count / len(trials)
+    exp_stat.trial_status_count = Counter(trial.status for trial in trials)
     # Compute estimated remaining time for experiment to finish
-    average_completed_duration = sum(
-        (_compute_trial_duration(trial) for trial in completed_trials),
-        start=timedelta(),
-    ) / len(completed_trials)
-    exp_stat.eta = (
-        float("+inf")
-        if average_completed_duration == 0
-        else average_completed_duration * len(running_trials)
-    )
+    exp_stat.eta = (st.duration / len(completed_trials)) * len(running_trials)
     # Compute current execution time
-    min_exc_time = min(trial.start_time for trial in executed_trials)
-    max_exc_time = max(
-        (trial.end_time if trial.end_time else trial.heartbeat)
-        for trial in executed_trials
-    )
-    exp_stat.current_execution_time = (
-        timedelta() if min_exc_time > max_exc_time else max_exc_time - min_exc_time
-    )
+    exp_stat.current_execution_time = st.duration
     # Compute whole clock time
-    exp_stat.whole_clock_time = sum(
-        (_compute_trial_duration(trial) for trial in executed_trials), start=timedelta()
-    )
+    exp_stat.whole_clock_time = st.whole_clock_time
     # Compute experiment progress
-    exp_stat.progress = (len(trials) - len(running_trials)) / len(trials)
+    exp_stat.progress = len(completed_trials) / len(trials)
     return exp_stat
 
 

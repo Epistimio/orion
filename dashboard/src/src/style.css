@@ -75,3 +75,6 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
   background-color: lightgray;
   color: darkslategrey;
 }
+.progress-bar.bg-suspended {
+  background-color: pink;
+}
