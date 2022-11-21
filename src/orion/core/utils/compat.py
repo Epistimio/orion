@@ -15,9 +15,9 @@ def getuser():
 
 
 
-# pylint: too-few-public-methods
+# pylint: disable=too-few-public-methods
 class _readline:
-    # pylint: no-method-argument
+    # pylint: disable=no-method-argument
     def set_completer_delims(*args, **kwargs):
         """Fake method for windows"""
 
