@@ -2,7 +2,6 @@
 """Common fixtures and utils for unittests and functional tests."""
 from __future__ import annotations
 
-import getpass
 import os
 from typing import Any
 
