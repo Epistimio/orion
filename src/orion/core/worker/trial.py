@@ -15,7 +15,6 @@ import os
 import warnings
 from datetime import timedelta
 
-
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
 

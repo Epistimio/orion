@@ -652,8 +652,9 @@ class Experiment(Generic[AlgoT]):
             finish_time=finish_time,
             duration=duration,
             whole_clock_time=sum(
-                (trial.duration for trial in executed_trials), start=datetime.timedelta()
-            )
+                (trial.duration for trial in executed_trials),
+                start=datetime.timedelta(),
+            ),
         )
 
     def __repr__(self):
