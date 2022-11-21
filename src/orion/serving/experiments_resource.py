@@ -6,9 +6,7 @@ Serves all the requests made to experiments/ REST endpoint.
 
 """
 import json
-from collections import Counter
-from datetime import timedelta
-from typing import List, Optional
+from typing import Optional
 
 from falcon import Request, Response
 
@@ -19,60 +17,6 @@ from orion.serving.responses import (
     build_experiment_response,
     build_experiments_response,
 )
-
-
-class ExperimentStatus:
-    __slots__ = (
-        "nb_trials",
-        "trial_status_count",
-        "eta",
-        "current_execution_time",
-        "whole_clock_time",
-        "progress",
-    )
-
-    def __init__(self):
-        self.nb_trials = 0
-        self.trial_status_count = {status: 0.0 for status in Trial.allowed_stati}
-        self.eta = timedelta()
-        self.current_execution_time = timedelta()
-        self.whole_clock_time = timedelta()
-        self.progress = 0.0
-
-    def to_dict(self):
-        return {
-            "nb_trials": self.nb_trials,
-            "trial_status_count": self.trial_status_count,
-            "eta": str(self.eta),
-            "current_execution_time": str(self.current_execution_time),
-            "whole_clock_time": str(self.whole_clock_time),
-            "progress": self.progress,
-        }
-
-
-def retrieve_experiment_status(experiment):
-    trials: List[Trial] = experiment.fetch_trials(with_evc_tree=False)
-    st = experiment.stats
-
-    # List completed trials
-    completed_trials = [trial for trial in trials if trial.status == "completed"]
-    # List running trials (status new or reserved)
-    running_trials = [trial for trial in trials if trial.status in ("new", "reserved")]
-
-    exp_stat = ExperimentStatus()
-    # Register trials count
-    exp_stat.nb_trials = len(trials)
-    # Compute number of trials per trial status
-    exp_stat.trial_status_count = Counter(trial.status for trial in trials)
-    # Compute estimated remaining time for experiment to finish
-    exp_stat.eta = (st.duration / len(completed_trials)) * len(running_trials)
-    # Compute current execution time
-    exp_stat.current_execution_time = st.duration
-    # Compute whole clock time
-    exp_stat.whole_clock_time = st.whole_clock_time
-    # Compute experiment progress
-    exp_stat.progress = len(completed_trials) / len(trials)
-    return exp_stat
 
 
 class ExperimentsResource:
@@ -113,7 +57,7 @@ class ExperimentsResource:
         verify_query_parameters(req.params, ["version"])
         version = req.get_param_as_int("version")
         experiment = retrieve_experiment(self.storage, name, version)
-        resp.body = json.dumps(retrieve_experiment_status(experiment).to_dict())
+        resp.body = json.dumps(experiment.stats.to_dict())
 
 
 def _find_latest_versions(experiments):

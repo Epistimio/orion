@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import dataclasses
 import datetime
 import inspect
 import logging
 import typing
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Generator, Generic, TypeVar
 
@@ -64,8 +66,22 @@ class ExperimentStats:
     best_evaluation: float
     start_time: datetime.datetime
     finish_time: datetime.datetime
+    nb_trials: int
+    progress: float
+    trial_status_count: dict = field(default_factory=dict)
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
     whole_clock_time: datetime.timedelta = field(default_factory=datetime.timedelta)
+    eta: datetime.timedelta = field(default_factory=datetime.timedelta)
+
+    def to_dict(self):
+        return {
+            key: (
+                str(value)
+                if isinstance(value, (datetime.datetime, datetime.timedelta))
+                else value
+            )
+            for key, value in dataclasses.asdict(self).items()
+        }
 
 
 # pylint: disable=too-many-public-methods
@@ -623,6 +639,9 @@ class Experiment(Generic[AlgoT]):
             for trial in trials
             if trial.start_time and (trial.end_time or trial.heartbeat)
         ]
+        running_trials = [
+            trial for trial in trials if trial.status in ("new", "reserved")
+        ]
 
         if not completed_trials:
             return {}
@@ -655,6 +674,10 @@ class Experiment(Generic[AlgoT]):
                 (trial.duration for trial in executed_trials),
                 start=datetime.timedelta(),
             ),
+            nb_trials=len(trials),
+            eta=(duration / len(completed_trials)) * len(running_trials),
+            trial_status_count={**Counter(trial.status for trial in trials)},
+            progress=len(completed_trials) / len(trials),
         )
 
     def __repr__(self):

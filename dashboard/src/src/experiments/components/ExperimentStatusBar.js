@@ -55,18 +55,19 @@ export class ExperimentStatusBar extends React.Component {
           <Grid className="pb-2">
             <Row>
               <Column>
-                <strong>Execution time</strong>:&nbsp;
-                <code>{this.state.status.current_execution_time}</code>
+                <strong>Duration</strong>:&nbsp;
+                <code>{this.state.status.duration}</code>
                 <Tooltip>Current execution time for all completed trials</Tooltip>
               </Column>
               <Column className="justify-content-center">
-                <strong>Whole clock time</strong>:&nbsp;
+                <strong>Sum of trials time</strong>:&nbsp;
                 <code>{this.state.status.whole_clock_time}</code>
                 <Tooltip>Sum of trials execution time</Tooltip>
               </Column>
               <Column className="justify-content-end">
                 <strong>ETA</strong>:&nbsp;<code>{this.state.status.eta}</code>
                 <Tooltip>Estimated time for experiment to finish</Tooltip>
+                {/* TODO display remaining time or end date ? */}
               </Column>
             </Row>
           </Grid>
