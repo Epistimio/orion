@@ -3,7 +3,6 @@ import os
 import time
 
 
-# pylint: no-method-argument
 def getuser():
     """getpass use pwd which is UNIX only"""
 
@@ -18,6 +17,7 @@ def getuser():
 
 # pylint: too-few-public-methods
 class _readline:
+    # pylint: no-method-argument
     def set_completer_delims(*args, **kwargs):
         """Fake method for windows"""
 
