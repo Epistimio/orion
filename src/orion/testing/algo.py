@@ -18,7 +18,7 @@ from orion.algo.space import Space
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward, format_trials
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper, create_algo
+from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.trial import Trial
 
 AlgoType = TypeVar("AlgoType", bound=BaseAlgorithm)
@@ -107,7 +107,7 @@ class BaseAlgoTests:
     This test-suite covers all typical cases for HPO algorithms. To use it for a new algorithm,
     the class inheriting from this one must redefine the attributes ``algo_name`` with
     the name of the algorithm used to create it with the algorithm factory
-    ``orion.core.worker.primary_algo.SpaceTransformAlgoWrapper`` and ``config`` with a base
+    ``orion.core.worker.primary_algo.SpaceTransform`` and ``config`` with a base
     configuration for the algorithm that contains all its arguments. The base space can be redefine
     if needed with the attribute ``space``.
 
@@ -267,7 +267,7 @@ class BaseAlgoTests:
         seed: int | Sequence[int] | None = None,
         n_observed_trials: int | None = None,
         **kwargs,
-    ) -> SpaceTransformAlgoWrapper[AlgoType]:
+    ):
         """Create the algorithm based on config.
 
         Also initializes the algorithm with the required number of random trials from the previous
@@ -296,8 +296,7 @@ class BaseAlgoTests:
 
         original_space = space or cls.create_space()
         algo = create_algo(space=original_space, algo_type=cls.algo_type, **algo_kwargs)
-        # TODO: Add a `max_trials` attribute on the BaseAlgorithm class.
-        algo.algorithm.max_trials = cls.max_trials
+        algo.max_trials = cls.max_trials
 
         # Seed the randomness before we observe anything.
         if seed is not None:
@@ -350,16 +349,14 @@ class BaseAlgoTests:
         Parameters
         ----------
         trials: list of ``orion.core.worker.trial.Trial``
-            Trials formatted as tuples of values
         algo: ``orion.algo.base.BaseAlgorithm``
-            The algorithm used to observe trials.
         rng: ``numpy.random.RandomState``
             Random number generator to generate random objectives.
         """
         backward.algo_observe(
             algo,
             trials,
-            [dict(objective=rng.normal()) for i in range(len(trials))],
+            [dict(objective=rng.normal()) for _ in trials],
         )
 
     @classmethod

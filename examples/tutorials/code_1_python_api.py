@@ -7,6 +7,9 @@ This short tutorial will show you the basics to use Oríon in python. We will op
 1-d ``rosenbrock`` function with random search and TPE and visualize the regret curve to compare
 the algorithms.
 
+Note for macos users : You will need to either run this page as a jupyter notebook in order for it to compile, or 
+encapsulate the code in a main function and running it under ``if __name__ == '__main__'``.
+
 We first import the only function needed, :func:`build experiment <orion.client.build_experiment>`.
 """
 from orion.client import build_experiment

@@ -1,3 +1,4 @@
+""" Tests for the Registry, a local "storage"-like container for the algo's trials. """
 import copy
 
 import pytest
@@ -108,6 +109,20 @@ class TestRegistry:
         assert same_id == registered_id
         assert len(registry) == 1
         assert list(registry) == [same_but_with_experiment]
+
+    def test_init_registry_with_trials(self, space: Space):
+        """Test that trials passed to __init__ are stored in the registry."""
+        trials = space.sample(3)
+        registry = Registry(trials)
+        assert all(trial in registry for trial in trials)
+        assert len(registry) == 3
+
+    def test_registry_repr(self, space: Space):
+        """Test a registry's __repr__ shows the trials in the registry."""
+        trials = space.sample(3)
+        registry = Registry(trials)
+        registry_str = str(registry)
+        assert all(str(trial) in registry_str for trial in trials)
 
 
 class TestRegistryMapping:

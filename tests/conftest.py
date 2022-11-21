@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """Common fixtures and utils for unittests and functional tests."""
+from __future__ import annotations
+
+import getpass
 import os
+from typing import Any
 
 import numpy
 import pytest
@@ -76,7 +80,7 @@ class DumbAlgo(BaseAlgorithm):
         suspend=False,
         done=False,
         seed=None,
-        **nested_algo
+        **nested_algo,
     ):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
@@ -90,18 +94,17 @@ class DumbAlgo(BaseAlgorithm):
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
-        super().__init__(
-            space,
-            value=value,
-            scoring=scoring,
-            judgement=judgement,
-            suspend=suspend,
-            done=done,
-            seed=seed,
-            **nested_algo
-        )
+        super().__init__(space, **nested_algo)
+        self.value = value
+        self.scoring = scoring
+        self.judgement = judgement
+        self.suspend = suspend
+        self.done = done
+        self.seed = seed
+        if self.seed is not None:
+            self.seed_rng(self.seed)
 
-    def seed(self, seed):
+    def seed_rng(self, seed):
         """Set the index to seed.
 
         Setting the seed as an index so that unit-tests can force the algorithm to suggest the same
@@ -112,7 +115,7 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super().state_dict
+        _state_dict: dict[str, Any] = super().state_dict
         _state_dict.update(
             {
                 "index": self._index,
