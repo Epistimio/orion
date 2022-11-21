@@ -94,8 +94,8 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.compat import getuser
 from orion.core.utils import backward
+from orion.core.utils.compat import getuser
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Perform a stress tests on python API."""
 import logging
-import multiprocessing
 import os
 import random
 import time
@@ -157,7 +156,7 @@ def f(x, worker=-1):
     """Sleep and return objective equal to param"""
     time.sleep(max(0, random.gauss(1, 0.2)))
 
-    print(f'\r {x:5.2f}', end='')
+    print(f"\r {x:5.2f}", end="")
 
     return [dict(name="objective", value=x, type="objective")]
 
@@ -182,7 +181,7 @@ def get_experiment(storage, space_type, size):
     storage_config = BACKENDS_CONFIGS[storage]
 
     discrete = space_type == "discrete"
-    high = size # * 2
+    high = size  # * 2
 
     return create_experiment(
         "stress-test",
@@ -447,7 +446,7 @@ def main():
 
     for i, workers in enumerate(num_workers):
         pool_size = POOL_SIZE
-        if POOL_SIZE == 'worker':
+        if POOL_SIZE == "worker":
             pool_size = workers
 
         results[workers] = benchmark(workers, size, pool_size=pool_size)

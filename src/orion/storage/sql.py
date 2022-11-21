@@ -54,87 +54,87 @@ def compile_binary_postgresql(type_, compiler, **kw):
     return "BYTEA"
 
 
-# fmt: off
 class User(Base):
     """Defines the User table"""
+
     __tablename__ = "users"
 
-    _id         = Column(Integer, primary_key=True, autoincrement=True)
-    name        = Column(String(30), unique=True)
-    token       = Column(String(32))
-    created_at  = Column(DateTime)
-    last_seen   = Column(DateTime)
+    _id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(30), unique=True)
+    token = Column(String(32))
+    created_at = Column(DateTime)
+    last_seen = Column(DateTime)
 
 
 class Experiment(Base):
     """Defines the Experiment table"""
+
     __tablename__ = "experiments"
 
-    _id         = Column(Integer, primary_key=True, autoincrement=True)
-    name        = Column(String(30))
-    meta        = Column(JSON)          # metadata field is reserved
-    version     = Column(Integer)
-    owner_id    = Column(Integer, ForeignKey("users._id"), nullable=False)
-    datetime    = Column(DateTime)
-    algorithms  = Column(JSON)
-    remaining   = Column(JSON)
-    space       = Column(JSON)
-    parent_id   = Column(Integer)
+    _id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(30))
+    meta = Column(JSON)  # metadata field is reserved
+    version = Column(Integer)
+    owner_id = Column(Integer, ForeignKey("users._id"), nullable=False)
+    datetime = Column(DateTime)
+    algorithms = Column(JSON)
+    remaining = Column(JSON)
+    space = Column(JSON)
+    parent_id = Column(Integer)
 
     __table_args__ = (
-        UniqueConstraint('name', 'owner_id', name='_one_name_per_owner'),
-        Index('idx_experiment_name_version', 'name', 'version'),
+        UniqueConstraint("name", "owner_id", name="_one_name_per_owner"),
+        Index("idx_experiment_name_version", "name", "version"),
     )
 
 
 class Trial(Base):
     """Defines the Trial table"""
+
     __tablename__ = "trials"
 
-    _id             = Column(Integer, primary_key=True, autoincrement=True)
-    experiment_id   = Column(Integer, ForeignKey("experiments._id"), nullable=False)
-    owner_id        = Column(Integer, ForeignKey("users._id"), nullable=False)
-    status          = Column(String(30))
-    results         = Column(JSON)
-    start_time      = Column(DateTime)
-    end_time        = Column(DateTime)
-    heartbeat       = Column(DateTime)
-    parent          = Column(Integer, ForeignKey("trials._id"), nullable=True)
-    params          = Column(JSON)
-    worker          = Column(JSON)
-    submit_time     = Column(DateTime)
+    _id = Column(Integer, primary_key=True, autoincrement=True)
+    experiment_id = Column(Integer, ForeignKey("experiments._id"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users._id"), nullable=False)
+    status = Column(String(30))
+    results = Column(JSON)
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+    heartbeat = Column(DateTime)
+    parent = Column(Integer, ForeignKey("trials._id"), nullable=True)
+    params = Column(JSON)
+    worker = Column(JSON)
+    submit_time = Column(DateTime)
     exp_working_dir = Column(String(30))
-    id              = Column(String(30))
+    id = Column(String(30))
 
     __table_args__ = (
-        UniqueConstraint('experiment_id', 'id', name='_one_trial_hash_per_experiment'),
-        Index('idx_trial_experiment_id', 'experiment_id'),
-        Index('idx_trial_status', 'status'),
+        UniqueConstraint("experiment_id", "id", name="_one_trial_hash_per_experiment"),
+        Index("idx_trial_experiment_id", "experiment_id"),
+        Index("idx_trial_status", "status"),
         # Can't put an index on json
         # Index('idx_trial_results', 'results'),
-        Index('idx_trial_start_time', 'start_time'),
-        Index('idx_trial_end_time', 'end_time'),
+        Index("idx_trial_start_time", "start_time"),
+        Index("idx_trial_end_time", "end_time"),
     )
 
 
 class Algo(Base):
     """Defines the Algo table"""
+
     __tablename__ = "algo"
 
     # it is one algo per experiment so we could set experiment_id as the primary key
     # and make it a 1-1 relation
-    _id             = Column(Integer, primary_key=True, autoincrement=True)
-    experiment_id   = Column(Integer, ForeignKey("experiments._id"), nullable=False)
-    owner_id        = Column(Integer, ForeignKey("users._id"), nullable=False)
-    configuration   = Column(JSON)
-    locked          = Column(Integer)
-    state           = Column(BINARY)
-    heartbeat       = Column(DateTime)
+    _id = Column(Integer, primary_key=True, autoincrement=True)
+    experiment_id = Column(Integer, ForeignKey("experiments._id"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users._id"), nullable=False)
+    configuration = Column(JSON)
+    locked = Column(Integer)
+    state = Column(BINARY)
+    heartbeat = Column(DateTime)
 
-    __table_args__ = (
-        Index('idx_algo_experiment_id', 'experiment_id'),
-    )
-# fmt: on
+    __table_args__ = (Index("idx_algo_experiment_id", "experiment_id"),)
 
 
 def get_tables():
@@ -183,7 +183,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         # Create the schema
         # sqlite3 can fail on table if it already exist
-        # the doc says it shouldnt but it does
+        # the doc says it shouldn't but it does
         try:
             Base.metadata.create_all(self.engine)
         except DBAPIError:
