@@ -149,7 +149,7 @@ def build_experiment(
         for each trial. Defaults to a temporary directory that is deleted at end of execution.
     max_idle_time: int, optional
         Deprecated and will be removed in v0.3.0.
-        Use experiment.workon(reservation_timeout) instead.
+        Use experiment.workon(idle_timeout) instead.
     heartbeat: int, optional
         Frequency (seconds) at which the heartbeat of the trial is updated.
         If the heartbeat of a `reserved` trial is larger than twice the configured
@@ -248,7 +248,7 @@ def _build_experiment(
 
     if max_idle_time:
         log.warning(
-            "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
+            "max_idle_time is deprecated. Use experiment.workon(idle_timeout) instead."
         )
 
     builder = experiment_builder.ExperimentBuilder(storage, debug=debug)
