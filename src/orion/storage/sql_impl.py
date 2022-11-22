@@ -6,11 +6,11 @@ import time
 import uuid
 from copy import deepcopy
 
+import sqlalchemy
+
 # Use MongoDB json serializer
 from bson.json_util import dumps as to_json
 from bson.json_util import loads as from_json
-
-import sqlalchemy
 from sqlalchemy import (
     BINARY,
     JSON,
@@ -42,15 +42,17 @@ from orion.storage.base import (
     get_trial_uid_and_exp,
     get_uid,
 )
-    
+
 log = logging.getLogger(__name__)
 
 Base = declarative_base()
+
 
 @compiles(BINARY, "postgresql")
 def compile_binary_postgresql(type_, compiler, **kw):
     """Postgresql does not know about Binary type we should byte array instead"""
     return "BYTEA"
+
 
 class User(Base):
     """Defines the User table"""
@@ -62,6 +64,7 @@ class User(Base):
     token = Column(String(32))
     created_at = Column(DateTime)
     last_seen = Column(DateTime)
+
 
 class Experiment(Base):
     """Defines the Experiment table"""
@@ -84,6 +87,7 @@ class Experiment(Base):
         Index("idx_experiment_name_version", "name", "version"),
     )
 
+
 class Trial(Base):
     """Defines the Trial table"""
 
@@ -105,9 +109,7 @@ class Trial(Base):
     id = Column(String(30))
 
     __table_args__ = (
-        UniqueConstraint(
-            "experiment_id", "id", name="_one_trial_hash_per_experiment"
-        ),
+        UniqueConstraint("experiment_id", "id", name="_one_trial_hash_per_experiment"),
         Index("idx_trial_experiment_id", "experiment_id"),
         Index("idx_trial_status", "status"),
         # Can't put an index on json
@@ -115,6 +117,7 @@ class Trial(Base):
         Index("idx_trial_start_time", "start_time"),
         Index("idx_trial_end_time", "end_time"),
     )
+
 
 class Algo(Base):
     """Defines the Algo table"""
@@ -133,8 +136,10 @@ class Algo(Base):
 
     __table_args__ = (Index("idx_algo_experiment_id", "experiment_id"),)
 
+
 def get_tables():
     return [User, Experiment, Trial, Algo, User]
+
 
 class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
     """Implement a generic protocol to allow Orion to communicate using
@@ -244,9 +249,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         self.engine = sqlalchemy.create_engine(self.uri, echo=True, future=True)
 
         if self.uri == "sqlite://" or self.uri == "":
-            log.warning(
-                "You are serializing an in-memory database, data will be lost"
-            )
+            log.warning("You are serializing an in-memory database, data will be lost")
             Base.metadata.create_all(self.engine)
 
         self._connect(self.token)
@@ -280,9 +283,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 config.update(self._to_experiment(experiment))
 
             # Alreadyc reate the algo lock as well
-            self.initialize_algorithm_lock(
-                config["_id"], config.get("algorithms", {})
-            )
+            self.initialize_algorithm_lock(config["_id"], config.get("algorithms", {}))
         except DBAPIError:
             raise DuplicateKeyError()
 
@@ -427,9 +428,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     def get_trial(self, trial=None, uid=None, experiment_uid=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.get_trial`"""
-        trial_uid, experiment_uid = get_trial_uid_and_exp(
-            trial, uid, experiment_uid
-        )
+        trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
 
         with Session(self.engine) as session:
             stmt = select(Trial).where(
@@ -463,9 +462,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         self, trial=None, uid=None, experiment_uid=None, where=None, **kwargs
     ):
         """See :func:`orion.storage.base.BaseStorageProtocol.update_trial`"""
-        trial_uid, experiment_uid = get_trial_uid_and_exp(
-            trial, uid, experiment_uid
-        )
+        trial_uid, experiment_uid = get_trial_uid_and_exp(trial, uid, experiment_uid)
 
         where = self._get_query(where)
 
