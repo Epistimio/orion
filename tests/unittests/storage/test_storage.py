@@ -22,6 +22,7 @@ from orion.storage.base import (
     setup_storage,
 )
 from orion.storage.legacy import Legacy
+from orion.storage.sql import HAS_SQLALCHEMY
 from orion.storage.track import HAS_TRACK, REASON
 from orion.testing import OrionState, base_experiment
 
@@ -30,9 +31,18 @@ log.setLevel(logging.WARNING)
 
 storage_backends = [
     None,  # defaults to legacy with PickleDB
-    dict(type="sqlalchemy", uri="sqlite:///${file}"),  # Temporary file
-    dict(type="sqlalchemy", uri="sqlite://"),  # In-memory
 ]
+
+if not HAS_SQLALCHEMY:
+    log.warning("Track is not tested because: %s!", REASON)
+else:
+    storage_backends.extend(
+        [
+            dict(type="sqlalchemy", uri="sqlite:///${file}"),  # Temporary file
+            dict(type="sqlalchemy", uri="sqlite://"),  # In-memory
+        ]
+    )
+
 
 if not HAS_TRACK:
     log.warning("Track is not tested because: %s!", REASON)

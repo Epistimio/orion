@@ -1,8 +1,11 @@
 IMPORT_ERROR = None
 try:
     from orion.storage.sql_impl import SQLAlchemy as SQLAlchemyImpl
-except ImportError as err:
+
+    HAS_SQLALCHEMY = True
+except ModuleNotFoundError as err:
     IMPORT_ERROR = err
+    HAS_SQLALCHEMY = False
 
 
 if IMPORT_ERROR is not None:
