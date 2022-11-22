@@ -14,7 +14,6 @@ def getuser():
     return getpass.getuser()
 
 
-
 # pylint: disable=too-few-public-methods
 class _readline:
     # pylint: disable=no-method-argument
