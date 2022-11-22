@@ -22,6 +22,8 @@ export class ExperimentStatusBar extends React.Component {
   constructor(props) {
     super(props);
     this.state = { status: null };
+    this.renderProgressPart = this.renderProgressPart.bind(this);
+    this.onFocus = this.onFocus.bind(this);
   }
   render() {
     if (this.state.status === null)
@@ -47,8 +49,6 @@ export class ExperimentStatusBar extends React.Component {
           />
         </div>
       );
-    const sc = this.state.status.trial_status_count;
-    const nb = this.state.status.nb_trials;
     return (
       <div>
         {this.props.withInfo ? (
@@ -57,7 +57,9 @@ export class ExperimentStatusBar extends React.Component {
               <Column>
                 <strong>Duration</strong>:&nbsp;
                 <code>{this.state.status.duration}</code>
-                <Tooltip>Current execution time for all completed trials</Tooltip>
+                <Tooltip>
+                  Current execution time for all completed trials
+                </Tooltip>
               </Column>
               <Column className="justify-content-center">
                 <strong>Sum of trials time</strong>:&nbsp;
@@ -76,31 +78,13 @@ export class ExperimentStatusBar extends React.Component {
         )}
         <div {...(this.props.withInfo ? { className: 'pb-2' } : {})}>
           <ProgressBar>
-            <ProgressBar
-              variant={StatusToProgress.completed}
-              now={floatToPercent(sc.completed / nb)}
-              key={1}
-            />
-            <ProgressBar
-              variant={StatusToProgress.suspended}
-              now={floatToPercent(sc.suspended / nb)}
-              key={2}
-            />
-            <ProgressBar
-              variant={StatusToProgress.interrupted}
-              now={floatToPercent(sc.interrupted / nb)}
-              key={2}
-            />
-            <ProgressBar
-              variant={StatusToProgress.broken}
-              now={floatToPercent(sc.broken / nb)}
-              key={3}
-            />
-            <ProgressBar
-              variant={StatusToProgress.reserved}
-              now={floatToPercent(sc.reserved / nb)}
-              key={4}
-            />
+            {[
+              'completed',
+              'suspended',
+              'interrupted',
+              'broken',
+              'reserved',
+            ].map(trialStatus => this.renderProgressPart(trialStatus))}
           </ProgressBar>
         </div>
         {this.props.withInfo ? (
@@ -119,13 +103,28 @@ export class ExperimentStatusBar extends React.Component {
       </div>
     );
   }
+  renderProgressPart(trialStatus) {
+    console.log('progress', trialStatus);
+    return (
+      <ProgressBar
+        variant={StatusToProgress[trialStatus]}
+        now={floatToPercent(
+          this.state.status.trial_status_count[trialStatus] /
+            this.state.status.nb_trials
+        )}
+        title={`${trialStatus} (${this.state.status.trial_status_count[trialStatus]})`}
+        onClick={() => this.onFocus(trialStatus)}
+        striped={this.props.focus === trialStatus}
+        key={trialStatus}
+      />
+    );
+  }
   componentDidMount() {
     this._isMounted = true;
     const backend = new Backend(DEFAULT_BACKEND);
     backend
       .query(`experiments/status/${this.props.name}`)
       .then(status => {
-        console.log(status);
         if (this._isMounted) {
           this.setState({ status });
         }
@@ -140,8 +139,16 @@ export class ExperimentStatusBar extends React.Component {
   componentWillUnmount() {
     this._isMounted = false;
   }
+  onFocus(trialStatus) {
+    console.log(`Bar on focus ${trialStatus}`);
+    if (this.props.onFocus) {
+      this.props.onFocus(trialStatus);
+    }
+  }
 }
 ExperimentStatusBar.propTypes = {
   name: PropTypes.string.isRequired,
   withInfo: PropTypes.bool,
+  focus: PropTypes.string,
+  onFocus: PropTypes.func,
 };

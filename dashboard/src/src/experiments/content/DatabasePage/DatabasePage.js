@@ -17,7 +17,8 @@ class DatabasePage extends React.Component {
   static contextType = BackendContext;
   constructor(props) {
     super(props);
-    this.state = { experiment: null, trials: null };
+    this.state = { experiment: null, trials: null, trialStatus: null };
+    this.onSelectTrialStatus = this.onSelectTrialStatus.bind(this);
   }
   render() {
     if (this.state.experiment === null)
@@ -34,6 +35,8 @@ class DatabasePage extends React.Component {
               <ExperimentStatusBar
                 name={this.state.experiment}
                 withInfo={true}
+                focus={this.state.trialStatus}
+                onFocus={this.onSelectTrialStatus}
               />
             </div>
           </div>
@@ -41,8 +44,16 @@ class DatabasePage extends React.Component {
             <div className="bx--col-lg-16">
               <FeaturedTable
                 columns={this.state.trials.headers}
-                data={this.state.trials.trials}
+                data={
+                  this.state.trialStatus === null
+                    ? this.state.trials.trials
+                    : this.state.trials.trials.filter(
+                        trial => trial.status === this.state.trialStatus
+                      )
+                }
                 experiment={this.state.experiment}
+                trialStatus={this.state.trialStatus}
+                nbTrials={this.state.trials.trials.length}
               />
             </div>
           </div>
@@ -85,6 +96,12 @@ class DatabasePage extends React.Component {
             this.setState({ trials: false });
           }
         });
+    });
+  }
+  onSelectTrialStatus(trialStatus) {
+    console.log(`Db page on focus ${trialStatus}`);
+    this.setState({
+      trialStatus: this.state.trialStatus === trialStatus ? null : trialStatus,
     });
   }
 }
