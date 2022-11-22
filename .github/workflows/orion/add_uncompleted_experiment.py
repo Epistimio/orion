@@ -1,10 +1,24 @@
+"""
+Helper script to add an uncompleted experiment to
+db_dashboard_full_with_uncompleted_experiment.pkl
+"""
 from datetime import datetime, timedelta
 
-from orion.core.io.database.pickleddb import PickledDB
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage
 
-uncompleted_experiment = {
+SUBMIT_TIME = datetime(
+    year=2000,
+    month=1,
+    day=1,
+    hour=10,
+    minute=0,
+    second=0,
+    microsecond=123456,
+)
+
+# Copied form experiment 2-dim-exp, name changed to uncompleted_experiment
+UNCOMPLETED_EXPERIMENT = {
     "space": {
         "/dropout": "uniform(0, 0.5, precision=1)",
         "/learning_rate": "loguniform(1e-5, 1e-3, shape=3)",
@@ -146,7 +160,7 @@ uncompleted_experiment = {
             "/dropout": "uniform(0, 0.5, precision=1)",
             "/learning_rate": "loguniform(1e-5, 1e-3, shape=3)",
         },
-        "datetime": datetime(2022, 11, 21, 12, 00, 00, 123456),
+        "datetime": SUBMIT_TIME,
     },
     "pool_size": 1,
     "max_trials": 20,
@@ -154,6 +168,14 @@ uncompleted_experiment = {
     "algorithms": {"random": {"seed": None}},
     "producer": {"strategy": "MaxParallelStrategy"},
     "working_dir": "orion_working_dir",
+}
+NB_TRIALS_TO_ADD = {
+    "completed": 40,
+    "new": 30,
+    "reserved": 25,
+    "suspended": 20,
+    "interrupted": 15,
+    "broken": 10,
 }
 
 
@@ -166,37 +188,45 @@ def main():
             }
         }
     )
-    nb_trials_to_add = {
-        "new": 30,
-        "reserved": 25,
-        "suspended": 20,
-        "completed": 40,
-        "interrupted": 15,
-        "broken": 10,
-    }
-    x = {"name": "/x", "type": "real", "value": 0.0}
-    results = {"name": "obj", "type": "objective", "value": 0.0}
+
     pickle_db = storage._db
-    assert isinstance(pickle_db, PickledDB)
+
+    # Clean database if necessary.
+    for exp_found in pickle_db.read("experiments", {"name": "uncompleted_experiment"}):
+        nb_exps_deleted = pickle_db.remove("experiments", {"_id": exp_found["_id"]})
+        nb_trials_deleted = pickle_db.remove("trials", {"experiment": exp_found["_id"]})
+        print(
+            "Deleted",
+            nb_exps_deleted,
+            "experiment(s),",
+            nb_trials_deleted,
+            "trial(s)",
+        )
+
     pickle_db.write(
         "experiments",
-        uncompleted_experiment,
+        UNCOMPLETED_EXPERIMENT,
     )
     (exp,) = pickle_db.read("experiments", {"name": "uncompleted_experiment"})
-    for status, count in sorted(nb_trials_to_add.items()):
+
+    x = {"name": "/x", "type": "real", "value": 0.0}
+    results = {"name": "obj", "type": "objective", "value": 0.0}
+    for status, count in sorted(NB_TRIALS_TO_ADD.items()):
         for i in range(count):
-            submit_time = datetime.now()
             trial_kwargs = dict(
                 experiment=exp["_id"],
                 params=[x],
                 status=status,
                 results=[results],
-                submit_time=submit_time,
+                submit_time=SUBMIT_TIME,
             )
+            if status != "new":
+                trial_kwargs.update(
+                    start_time=SUBMIT_TIME + timedelta(minutes=i),
+                )
             if status == "completed":
                 trial_kwargs.update(
-                    start_time=submit_time + timedelta(minutes=i),
-                    end_time=submit_time + timedelta(minutes=(i + 1)),
+                    end_time=SUBMIT_TIME + timedelta(minutes=(i + 2)),
                 )
             pickle_db.write("trials", Trial(**trial_kwargs).to_dict())
             x["value"] += 1
