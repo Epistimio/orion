@@ -1,6 +1,5 @@
 import React from 'react';
 import App from '../App';
-import { HashRouter as Router } from 'react-router-dom';
 import {
   render,
   waitFor,
@@ -64,12 +63,9 @@ function hasPlotImmediately(...texts) {
  * @param texts - texts to search
  */
 async function lookupPlot(...texts) {
-  await waitFor(
-    () => {
-      expect(hasPlotImmediately(...texts)).toBe(true);
-    },
-    { interval: 1000, timeout: 120000 }
-  );
+  await waitFor(() => {
+    expect(hasPlotImmediately(...texts)).toBe(true);
+  }, global.CONFIG_WAIT_FOR_LONG);
 }
 
 /**
@@ -306,6 +302,7 @@ test('Test sleep', async () => {
 });
 
 test('Test select benchmark', async () => {
+  const user = userEvent.setup();
   render(<App />, { wrapper: MemoryRouter });
 
   // Switch to benchmarks page
@@ -315,7 +312,7 @@ test('Test select benchmark', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -325,8 +322,8 @@ test('Test select benchmark', async () => {
   expect(benchmarkField).toBeInTheDocument();
 
   // Select branin_baselines_webapi benchmark
-  userEvent.type(benchmarkField, 'branin');
-  userEvent.keyboard('{enter}');
+  await user.type(benchmarkField, 'branin');
+  await user.keyboard('{enter}');
   expect(benchmarkField.value).toBe('branin_baselines_webapi');
   const leftMenu = document.querySelector('.bx--structured-list');
   expect(leftMenu).toBeInTheDocument();
@@ -343,10 +340,9 @@ test('Test select benchmark', async () => {
   );
 
   // Select all_algos_webapi benchmark
-  // Select text in search bar before typing a new text, so that old text is cleared
-  benchmarkField.setSelectionRange(0, benchmarkField.value.length);
-  userEvent.type(benchmarkField, 'all_algos');
-  userEvent.keyboard('{enter}');
+  // Use backspace to clear field before typing new hint
+  await user.type(benchmarkField, '{Backspace>50/}all_algos');
+  await user.keyboard('{enter}');
   expect(benchmarkField.value).toBe('all_algos_webapi');
   expect(await findByText(leftMenu, /AverageResult/)).toBeInTheDocument();
   expect(await findByText(leftMenu, /Branin/)).toBeInTheDocument();
@@ -362,9 +358,8 @@ test('Test select benchmark', async () => {
   await lookupPlot('Average Regret', 'rosenbrock');
 
   // Select all_assessments_webapi_2
-  benchmarkField.setSelectionRange(0, benchmarkField.value.length);
-  userEvent.type(benchmarkField, 'all_asses');
-  userEvent.keyboard('{enter}');
+  await user.type(benchmarkField, '{Backspace>50/}all_asses');
+  await user.keyboard('{enter}');
   expect(benchmarkField.value).toBe('all_assessments_webapi_2');
   expect(await findByText(leftMenu, /AverageRank/)).toBeInTheDocument();
   expect(await findByText(leftMenu, /AverageResult/)).toBeInTheDocument();
@@ -391,6 +386,7 @@ test('Test select benchmark', async () => {
 });
 
 test('Test (de)select assessments', async () => {
+  const user = userEvent.setup();
   render(<App />, { wrapper: MemoryRouter });
 
   // Switch to benchmarks page
@@ -400,7 +396,7 @@ test('Test (de)select assessments', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -409,8 +405,8 @@ test('Test (de)select assessments', async () => {
   );
   expect(benchmarkField).toBeInTheDocument();
   // Select all_assessments_webapi_2
-  userEvent.type(benchmarkField, 'all_asses');
-  userEvent.keyboard('{enter}');
+  await user.type(benchmarkField, 'all_asses');
+  await user.keyboard('{enter}');
   expect(benchmarkField.value).toBe('all_assessments_webapi_2');
 
   // Make sure all plots are there (10 plots)
@@ -424,7 +420,7 @@ test('Test (de)select assessments', async () => {
   expect(inputAssessmentAverageRank.checked).toBe(true);
 
   // Deselect assessment
-  userEvent.click(inputAssessmentAverageRank);
+  await user.click(inputAssessmentAverageRank);
   expect(inputAssessmentAverageRank.checked).toBe(false);
   await sleep(1000);
   for (let texts of AAWA2_average_rank) {
@@ -434,7 +430,7 @@ test('Test (de)select assessments', async () => {
     expect(hasPlotImmediately(...texts)).toBe(true);
   }
   // Reselect assessment.
-  userEvent.click(inputAssessmentAverageRank);
+  await user.click(inputAssessmentAverageRank);
   expect(inputAssessmentAverageRank.checked).toBe(true);
   await sleep(1000);
   for (let texts of AAWA2_all) {
@@ -443,6 +439,7 @@ test('Test (de)select assessments', async () => {
 });
 
 test('Test (de)select tasks', async () => {
+  const user = userEvent.setup();
   render(<App />, { wrapper: MemoryRouter });
 
   // Switch to benchmarks page
@@ -452,7 +449,7 @@ test('Test (de)select tasks', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -461,8 +458,8 @@ test('Test (de)select tasks', async () => {
   );
   expect(benchmarkField).toBeInTheDocument();
   // Select all_assessments_webapi_2
-  userEvent.type(benchmarkField, 'all_asses');
-  userEvent.keyboard('{enter}');
+  await user.type(benchmarkField, 'all_asses');
+  await user.keyboard('{enter}');
   expect(benchmarkField.value).toBe('all_assessments_webapi_2');
 
   // Make sure all plots are there (10 plots)
@@ -476,7 +473,7 @@ test('Test (de)select tasks', async () => {
   expect(inputTaskBranin.checked).toBe(true);
 
   // Deselect task.
-  userEvent.click(inputTaskBranin);
+  await user.click(inputTaskBranin);
   expect(inputTaskBranin.checked).toBe(false);
   await sleep(1000);
   for (let texts of AAWA2_branin) {
@@ -486,7 +483,7 @@ test('Test (de)select tasks', async () => {
     expect(hasPlotImmediately(...texts)).toBe(true);
   }
   // Reselect task.
-  userEvent.click(inputTaskBranin);
+  await user.click(inputTaskBranin);
   expect(inputTaskBranin.checked).toBe(true);
   await sleep(1000);
   for (let texts of AAWA2_all) {
@@ -495,6 +492,7 @@ test('Test (de)select tasks', async () => {
 });
 
 test('Test (de)select algorithms', async () => {
+  const user = userEvent.setup();
   render(<App />, { wrapper: MemoryRouter });
 
   // Switch to benchmarks page
@@ -504,7 +502,7 @@ test('Test (de)select algorithms', async () => {
     await screen.findByText(
       /No benchmark selected/,
       {},
-      { interval: 1000, timeout: 120000 }
+      global.CONFIG_WAIT_FOR_LONG
     )
   ).toBeInTheDocument();
   // Get benchmark search field
@@ -513,8 +511,8 @@ test('Test (de)select algorithms', async () => {
   );
   expect(benchmarkField).toBeInTheDocument();
   // Select all_assessments_webapi_2
-  userEvent.type(benchmarkField, 'all_asses');
-  userEvent.keyboard('{enter}');
+  await user.type(benchmarkField, 'all_asses');
+  await user.keyboard('{enter}');
   expect(benchmarkField.value).toBe('all_assessments_webapi_2');
 
   // Make sure all plots are there (10 plots)
@@ -528,7 +526,7 @@ test('Test (de)select algorithms', async () => {
   expect(inputAlgorithmRandom.checked).toBe(true);
 
   // Deselect algorithm.
-  userEvent.click(inputAlgorithmRandom);
+  await user.click(inputAlgorithmRandom);
   expect(inputAlgorithmRandom.checked).toBe(false);
   await sleep(1000);
   for (let texts of AAWA2_all) {
@@ -538,7 +536,7 @@ test('Test (de)select algorithms', async () => {
     expect(hasPlotImmediately(...textsNoRandom)).toBe(true);
   }
   // Reselect algorithm.
-  userEvent.click(inputAlgorithmRandom);
+  await user.click(inputAlgorithmRandom);
   expect(inputAlgorithmRandom.checked).toBe(true);
   await sleep(1000);
   for (let texts of AAWA2_all) {

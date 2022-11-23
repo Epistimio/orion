@@ -1,0 +1,81 @@
+# Workflow to run unit tests from Github Actions.
+# Inspired from: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: dashboard-src
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  schedule:
+    - cron: '44 4 * * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: dashboard/src
+
+jobs:
+  test-dashboard-src:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Launch an orion server
+      - name: Launch Orion server
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - run: python -m pip install git+https://github.com/notoraptor/orion.git@feature/benchmark_webapi_rebased#egg=orion[profet]
+      - name: info about current directory
+        run: df .
+      - name: check filesystem type using df
+        run: df -Th
+      - name: check filesystem type using fstab
+        run: cat /etc/fstab
+
+      - name: Setup MongoDB
+        uses: supercharge/mongodb-github-action@1.8.0
+        with:
+          mongodb-version: 4.2
+          mongodb-db: orion_dashboard_test
+      - name: Populate MongoDB
+        run: |
+            cd ../../
+            python .github/workflows/orion/pickle_to_mongodb.py
+            cd dashboard/src/
+
+      - name: Start Orion backend
+        run: |
+            # Start Orion backend in repository root folder.
+            cd ../../
+            mkdir -p gunicorn_tmp_dir
+            orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml 2> orion-backend-${{ matrix.node-version }}.log &
+            cd dashboard/src/
+      # install
+      - run: yarn
+      # check files formatting using Carbon's `ci-check` script
+      - run: yarn ci-check
+      # Run tests
+      # NB: Tests are running in parallel by default, this may cause backend to receive too many requests in small time
+      # Option --runInBand allows running tests sequentially: https://jestjs.io/docs/cli#--runinband
+      - run: yarn test --all --verbose --runInBand
+      # Upload orion backend log.
+      - name: Get Orion backend log
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: orion-backend-log-artifact-${{ matrix.node-version }}
+          path: orion-backend-${{ matrix.node-version }}.log
