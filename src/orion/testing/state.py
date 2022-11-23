@@ -136,6 +136,7 @@ class BaseOrionState:
     def _set_tables(self):
         self.trials = []
         self.lies = []
+        exp_ids = set()
 
         for exp in self._experiments:
             self.storage.create_experiment(exp)
@@ -143,6 +144,10 @@ class BaseOrionState:
             exp = self.storage.fetch_experiments(dict(name=exp["name"]))[0]
             self.expname_to_uid[exp["name"]] = exp["_id"]
 
+            if exp["_id"] in exp_ids:
+                raise RuntimeError("Duplicate experiment during setup")
+
+            exp_ids.add(exp["_id"])
             self.storage.initialize_algorithm_lock(exp["_id"], exp.get("algorithms"))
 
         for trial in self._trials:

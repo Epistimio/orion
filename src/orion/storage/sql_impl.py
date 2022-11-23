@@ -127,7 +127,9 @@ class Algo(Base):
     # it is one algo per experiment so we could set experiment_id as the primary key
     # and make it a 1-1 relation
     _id = Column(Integer, primary_key=True, autoincrement=True)
-    experiment_id = Column(Integer, ForeignKey("experiments._id"), nullable=False)
+    experiment_id = Column(
+        Integer, ForeignKey("experiments._id"), nullable=False, unique=True
+    )
     owner_id = Column(Integer, ForeignKey("users._id"), nullable=False)
     configuration = Column(JSON)
     locked = Column(Integer)
@@ -173,13 +175,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             uri = "sqlite://"
 
         # engine_from_config
-        self.engine = sqlalchemy.create_engine(
-            uri,
-            echo=False,
-            future=True,
-            json_serializer=to_json,
-            json_deserializer=from_json,
-        )
+        self.engine = self._create_engine(uri)
 
         # Create the schema
         # sqlite3 can fail on table if it already exist
@@ -193,6 +189,16 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         self.user_id = None
         self.user = None
         self._connect(token)
+
+    @staticmethod
+    def _create_engine(uri):
+        return sqlalchemy.create_engine(
+            uri,
+            echo=False,
+            future=True,
+            json_serializer=to_json,
+            json_deserializer=from_json,
+        )
 
     def _connect(self, token):
         name = orion.core.utils.compat.getuser()
@@ -246,7 +252,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
     def __setstate__(self, state):
         self.uri = state["uri"]
         self.token = state["token"]
-        self.engine = sqlalchemy.create_engine(self.uri, echo=True, future=True)
+        self.engine = self._create_engine(self.uri)
 
         if self.uri == "sqlite://" or self.uri == "":
             log.warning("You are serializing an in-memory database, data will be lost")
@@ -278,12 +284,11 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
                 session.add(experiment)
                 session.commit()
-
                 session.refresh(experiment)
                 config.update(self._to_experiment(experiment))
 
-            # Alreadyc reate the algo lock as well
-            self.initialize_algorithm_lock(config["_id"], config.get("algorithms", {}))
+            # Already create the algo lock as well
+            self._insert_algorithm_lock(config["_id"], config.get("algorithms", {}))
         except DBAPIError:
             raise DuplicateKeyError()
 
@@ -478,7 +483,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
             self._set_from_dict(trial, kwargs)
             session.commit()
 
-        return OrionTrial(**self._to_trial(trial))
+        return 1  # OrionTrial(**self._to_trial(trial))
 
     def fetch_lost_trials(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_lost_trials`"""
@@ -695,8 +700,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
     # Algorithm
     # =========
-    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
-        """See :func:`orion.storage.base.BaseStorageProtocol.initialize_algorithm_lock`"""
+    def _insert_algorithm_lock(self, experiment_id, algorithm_config):
         with Session(self.engine) as session:
             algo = Algo(
                 experiment_id=experiment_id,
@@ -705,7 +709,27 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
                 locked=0,
                 heartbeat=datetime.datetime.utcnow(),
             )
+
             session.add(algo)
+            session.commit()
+
+    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
+        """See :func:`orion.storage.base.BaseStorageProtocol.initialize_algorithm_lock`"""
+        with Session(self.engine) as session:
+            stmt = (
+                update(Algo)
+                .where(
+                    Algo.experiment_id == experiment_id,
+                    Algo.owner_id == self.user_id,
+                )
+                .values(
+                    configuration=algorithm_config,
+                    locked=0,
+                    heartbeat=datetime.datetime.utcnow(),
+                )
+            )
+
+            session.execute(stmt)
             session.commit()
 
     def release_algorithm_lock(self, experiment=None, uid=None, new_state=None):
@@ -859,8 +883,8 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
 
         return selected
 
-    def _set_from_dict(self, obj, data, rest=None):
-        data = deepcopy(data)
+    def _set_from_dict(self, obj, argdata, rest=None):
+        data = deepcopy(argdata)
         meta = dict()
         while data:
             k, v = data.popitem()

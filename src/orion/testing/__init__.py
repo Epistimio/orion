@@ -22,6 +22,16 @@ from orion.core.worker.producer import Producer
 from orion.serving.webapi import WebApi
 from orion.testing.state import OrionState
 
+
+class MockDatetime(datetime.datetime):
+    """Fake Datetime"""
+
+    @classmethod
+    def utcnow(cls):
+        """Return our random/fixed datetime"""
+        return default_datetime()
+
+
 base_experiment = {
     "name": "default_name",
     "version": 0,
@@ -244,15 +254,6 @@ def falcon_client(exp_config=None, trial_config=None, statuses=None):
         falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
 
         yield cfg, experiment, exp_client, falcon_client
-
-
-class MockDatetime(datetime.datetime):
-    """Fake Datetime"""
-
-    @classmethod
-    def utcnow(cls):
-        """Return our random/fixed datetime"""
-        return default_datetime()
 
 
 @contextlib.contextmanager
