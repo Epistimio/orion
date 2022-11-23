@@ -119,7 +119,7 @@ base_trial = {
     "experiment": 0,
     "status": "new",  # new, reserved, suspended, completed, broken
     "worker": None,
-    "submit_time": "2017-11-23T02:00:00",
+    "submit_time": datetime.datetime.fromisoformat("2017-11-23T02:00:00"),
     "start_time": None,
     "end_time": None,
     "heartbeat": None,

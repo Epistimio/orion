@@ -29,7 +29,7 @@ base_experiment = {
         "user": "default_user",
         "user_script": "abc",
         "priors": {"x": "uniform(0, 10)"},
-        "datetime": "2017-11-23T02:00:00",
+        "datetime": datetime.datetime.fromisoformat("2017-11-23T02:00:00"),
         "orion_version": "XYZ",
     },
     "algorithms": {"random": {"seed": 1}},
@@ -39,7 +39,7 @@ base_trial = {
     "experiment": "default_name",
     "status": "new",  # new, reserved, suspended, completed, broken
     "worker": None,
-    "submit_time": "2017-11-23T02:00:00",
+    "submit_time": datetime.datetime.fromisoformat("2017-11-23T02:00:00"),
     "start_time": None,
     "end_time": None,
     "heartbeat": None,

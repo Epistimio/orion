@@ -9,7 +9,6 @@ import yaml
 
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-import orion.core.utils.compat as getpass
 from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
@@ -136,24 +135,6 @@ def fixed_suggestion_value(space):
 def fixed_suggestion(fixed_suggestion_value, space):
     """Return the same trial from a possible space."""
     return format_trials.tuple_to_trial(fixed_suggestion_value, space)
-
-
-@pytest.fixture()
-def with_user_tsirif(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'tsirif'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "tsirif")
-
-
-@pytest.fixture()
-def with_user_bouthilx(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "bouthilx")
-
-
-@pytest.fixture()
-def with_user_dendi(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'dendi'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "dendi")
 
 
 dendi_exp_config = dict(

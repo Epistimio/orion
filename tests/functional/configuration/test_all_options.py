@@ -186,6 +186,8 @@ class TestStorage(ConfigurationTestSuite):
     config = {
         "storage": {
             "type": "legacy",
+            "uri": "config",
+            "token": "config",
             "database": {
                 "name": "test_name",
                 "type": "pickleddb",
@@ -197,6 +199,8 @@ class TestStorage(ConfigurationTestSuite):
 
     env_vars = {
         "ORION_STORAGE_TYPE": "legacy",
+        "ORION_STORAGE_TOKEN": "env",
+        "ORION_STORAGE_URI": "env",
         "ORION_DB_NAME": "test_env_var_name",
         "ORION_DB_TYPE": "pickleddb",
         "ORION_DB_ADDRESS": "${tmp_path}/there.pkl",
@@ -206,6 +210,8 @@ class TestStorage(ConfigurationTestSuite):
     local = {
         "storage": {
             "type": "legacy",
+            "uri": "local",
+            "token": "local",
             "database": {"type": "pickleddb", "host": "${tmp_path}/local.pkl"},
         }
     }
@@ -242,6 +248,8 @@ class TestStorage(ConfigurationTestSuite):
 
         assert orion.core.config.storage.to_dict() == {
             "type": self.env_vars["ORION_STORAGE_TYPE"],
+            "uri": self.env_vars["ORION_STORAGE_URI"],
+            "token": self.env_vars["ORION_STORAGE_TOKEN"],
             "database": {
                 "name": self.env_vars["ORION_DB_NAME"],
                 "type": self.env_vars["ORION_DB_TYPE"],
@@ -277,6 +285,8 @@ class TestStorage(ConfigurationTestSuite):
 
         assert orion.core.config.storage.to_dict() == {
             "type": self.env_vars["ORION_STORAGE_TYPE"],
+            "uri": self.env_vars["ORION_STORAGE_URI"],
+            "token": self.env_vars["ORION_STORAGE_TOKEN"],
             "database": {
                 "name": self.env_vars["ORION_DB_NAME"],
                 "type": self.env_vars["ORION_DB_TYPE"],

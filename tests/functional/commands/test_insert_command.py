@@ -5,7 +5,6 @@ import os
 import pytest
 
 import orion.core.cli
-import orion.core.utils.compat as getpass
 
 
 def get_user_corneau():
@@ -13,10 +12,10 @@ def get_user_corneau():
     return "corneau"
 
 
+@pytest.mark.usefixtures("with_user_corneau")
 def test_insert_invalid_experiment(storage, monkeypatch, capsys):
     """Test the insertion of an invalid experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     returncode = orion.core.cli.main(
         [
@@ -37,11 +36,10 @@ def test_insert_invalid_experiment(storage, monkeypatch, capsys):
     assert "Error: No experiment with given name 'dumb_experiment'"
 
 
-@pytest.mark.usefixtures("only_experiments_db", "version_XYZ")
+@pytest.mark.usefixtures("only_experiments_db", "version_XYZ", "with_user_corneau")
 def test_insert_single_trial(storage, monkeypatch, script_path):
     """Try to insert a single trial"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     orion.core.cli.main(
         [
@@ -71,11 +69,10 @@ def test_insert_single_trial(storage, monkeypatch, script_path):
     assert trial.params["/x"] == 1
 
 
-@pytest.mark.usefixtures("only_experiments_db", "version_XYZ")
+@pytest.mark.usefixtures("only_experiments_db", "version_XYZ", "with_user_corneau")
 def test_insert_single_trial_default_value(storage, monkeypatch):
     """Try to insert a single trial using a default value"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     orion.core.cli.main(
         [
@@ -103,11 +100,10 @@ def test_insert_single_trial_default_value(storage, monkeypatch):
     assert trial.params["/x"] == 1
 
 
-@pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("only_experiments_db", "with_user_corneau")
 def test_insert_with_no_default_value(monkeypatch):
     """Try to insert a single trial by omitting a namespace with no default value"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(
@@ -124,11 +120,10 @@ def test_insert_with_no_default_value(monkeypatch):
     assert "Dimension /x is unspecified and has no default value" in str(exc_info.value)
 
 
-@pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("only_experiments_db", "with_user_corneau")
 def test_insert_with_incorrect_namespace(monkeypatch):
     """Try to insert a single trial with a namespace not inside the experiment space"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(
@@ -146,11 +141,10 @@ def test_insert_with_incorrect_namespace(monkeypatch):
     assert "Found namespace outside of experiment space : /p" in str(exc_info.value)
 
 
-@pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("only_experiments_db", "with_user_corneau")
 def test_insert_with_outside_bound_value(monkeypatch):
     """Try to insert a single trial with value outside the distribution's interval"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(
@@ -168,11 +162,10 @@ def test_insert_with_outside_bound_value(monkeypatch):
     assert "Value 100 is outside of" in str(exc_info.value)
 
 
-@pytest.mark.usefixtures("only_experiments_db", "version_XYZ")
+@pytest.mark.usefixtures("only_experiments_db", "version_XYZ", "with_user_corneau")
 def test_insert_two_hyperparameters(storage, monkeypatch):
     """Try to insert a single trial with two hyperparameters"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setattr(getpass, "getuser", get_user_corneau)
     orion.core.cli.main(
         [
             "insert",

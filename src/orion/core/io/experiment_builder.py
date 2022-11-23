@@ -84,6 +84,7 @@ import typing
 from typing import Any, TypeVar
 
 import orion.core
+import orion.core.utils.compat
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
@@ -95,7 +96,6 @@ from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import backward
-from orion.core.utils.compat import getuser
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
@@ -934,9 +934,11 @@ class ExperimentBuilder:
             knowledge_base=knowledge_base,
         )
 
+        username = orion.core.utils.compat.getuser()
+
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
         working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
-        metadata = _default(metadata, {"user": _default(user, getuser())})
+        metadata = _default(metadata, {"user": _default(user, username)})
         refers = _default(refers, dict(parent_id=None, root_id=None, adapter=[]))
         refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))  # type: ignore
 

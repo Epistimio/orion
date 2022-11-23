@@ -30,8 +30,8 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Session, declarative_base
 
 import orion.core
+import orion.core.utils.compat
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.compat import getuser
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.core.worker.trial import validate_status
 from orion.storage.base import (
@@ -195,7 +195,7 @@ class SQLAlchemy(BaseStorageProtocol):  # noqa: F811
         self._connect(token)
 
     def _connect(self, token):
-        name = getuser()
+        name = orion.core.utils.compat.getuser()
 
         user = self._find_user(name, token)
 

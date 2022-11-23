@@ -12,7 +12,7 @@ from pymongo import MongoClient
 
 import orion.core
 import orion.core.utils.backward as backward
-import orion.core.utils.compat as getpass
+import orion.core.utils.compat
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io import resolve_config
@@ -364,7 +364,31 @@ def mock_infer_versioning_metadata(monkeypatch):
 @pytest.fixture()
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "userxyz")
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "userxyz")
+
+
+@pytest.fixture()
+def with_user_tsirif(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'tsirif'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "tsirif")
+
+
+@pytest.fixture()
+def with_user_bouthilx(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "bouthilx")
+
+
+@pytest.fixture()
+def with_user_dendi(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'dendi'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "dendi")
+
+
+@pytest.fixture()
+def with_user_corneau(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'corneau'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "corneau")
 
 
 @pytest.fixture()

@@ -189,11 +189,13 @@ def test_get_cmd_config(raw_config):
     assert local_config["max_broken"] == 5
     assert local_config["name"] == "voila_voici"
     assert local_config["storage"] == {
+        "token": "tok",
+        "uri": "sqlite://",
         "database": {
             "host": "${FILE}",
             "name": "orion_test",
             "type": "pickleddb",
-        }
+        },
     }
     assert local_config["metadata"] == {"orion_version": "XYZ", "user": "tsirif"}
 
