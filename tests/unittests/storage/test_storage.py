@@ -34,7 +34,7 @@ storage_backends = [
 ]
 
 if not HAS_SQLALCHEMY:
-    log.warning("Track is not tested because: %s!", REASON)
+    log.warning("SQLAlchemy is not tested because it is not installed")
 else:
     storage_backends.extend(
         [
