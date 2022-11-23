@@ -23,13 +23,9 @@ from orion.serving.webapi import WebApi
 from orion.testing.state import OrionState
 
 
-class MockDatetime(datetime.datetime):
-    """Fake Datetime"""
-
-    @classmethod
-    def utcnow(cls):
-        """Return our random/fixed datetime"""
-        return default_datetime()
+def default_datetime():
+    """Return default datetime"""
+    return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
 base_experiment = {
@@ -56,11 +52,6 @@ base_trial = {
     "results": [],
     "params": [],
 }
-
-
-def default_datetime():
-    """Return default datetime"""
-    return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
 all_status = ["completed", "broken", "reserved", "interrupted", "suspended", "new"]
@@ -254,15 +245,6 @@ def falcon_client(exp_config=None, trial_config=None, statuses=None):
         falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
 
         yield cfg, experiment, exp_client, falcon_client
-
-
-@contextlib.contextmanager
-def mocked_datetime(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    with monkeypatch.context() as m:
-        m.setattr(datetime, "datetime", MockDatetime)
-
-        yield MockDatetime
 
 
 class AssertNewFile:

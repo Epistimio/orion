@@ -2,12 +2,14 @@
 """Common fixtures and utils for unittests and functional tests."""
 from __future__ import annotations
 
+import datetime
 import os
 from typing import Any
 
 import numpy
 import pytest
 import yaml
+from freezegun import freeze_time
 from pymongo import MongoClient
 
 import orion.core
@@ -23,7 +25,8 @@ from orion.storage.base import storage_factory
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
-from orion.testing import OrionState, mocked_datetime
+
+from orion.testing import OrionState, default_datetime
 
 
 def pytest_addoption(parser):
@@ -394,8 +397,8 @@ def with_user_corneau(monkeypatch):
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    with mocked_datetime(monkeypatch) as datetime:
-        yield datetime.utcnow()
+    with freeze_time(default_datetime()):
+        yield datetime.datetime.utcnow()
 
 
 @pytest.fixture(scope="function")
