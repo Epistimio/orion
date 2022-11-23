@@ -864,7 +864,7 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode="x", **config)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-locals
     def create_experiment(
         self,
         name: str,
