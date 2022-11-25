@@ -77,6 +77,7 @@ jobs:
     - name: Launch frontend
       run: orion frontend &
     - name: Test frontend
+      uses: browser-actions/setup-firefox@latest
       run: PATH=$PATH:$(pwd) pytest tests/functional/serving/test_frontend.py
 
   test:
