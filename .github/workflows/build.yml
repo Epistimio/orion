@@ -193,7 +193,7 @@ jobs:
       - name: Configure MongoDB
         run: |
           mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
-  
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -238,7 +238,7 @@ jobs:
     - name: Configure MongoDB
       run: |
         mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
-        
+
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
