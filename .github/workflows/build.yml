@@ -182,10 +182,9 @@ jobs:
         uses: supercharge/mongodb-github-action@1.8.0
         with:
           mongodb-version: 4.2
-      - name: Check MongoDB
-        run: which mongo && which mongosh
-      - name: Configure MongoDB
-        run: mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+          mongodb-db: orion_test
+          mongodb-username: user
+          mongodb-password: pass
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -219,8 +218,9 @@ jobs:
       uses: supercharge/mongodb-github-action@1.8.0
       with:
         mongodb-version: 4.2
-    - name: Configure MongoDB
-      run: mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+        mongodb-db: orion_test
+        mongodb-username: user
+        mongodb-password: pass
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
