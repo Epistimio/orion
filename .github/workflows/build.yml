@@ -76,8 +76,9 @@ jobs:
       run: orion serve -c .github/workflows/orion/orion_config.yaml &
     - name: Launch frontend
       run: orion frontend &
-    - name: Test frontend
+    - name: Install Firefox
       uses: browser-actions/setup-firefox@latest
+    - name: Test frontend
       run: PATH=$PATH:$(pwd) pytest tests/functional/serving/test_frontend.py
 
   test:
