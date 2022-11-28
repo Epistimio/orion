@@ -74,15 +74,15 @@ def test_produce():
     with create_producer() as (producer, _):
         algorithm = producer.experiment.algorithms
         possible_values = [(1,)]
-        algorithm.algorithm.possible_values = possible_values
+        algorithm.unwrapped.possible_values = possible_values
 
         producer.produce(1)
 
         # Algorithm was ordered to suggest some trials
-        num_new_points = algorithm.algorithm._num
+        num_new_points = algorithm.unwrapped._num
         assert num_new_points == 1  # pool size
 
-        algorithm.algorithm._suggested[0].params["x"] == possible_values[0][0]
+        assert algorithm.unwrapped._suggested[0].params["x"] == possible_values[0][0]
 
 
 def test_register_new_trials():
@@ -93,15 +93,15 @@ def test_register_new_trials():
 
         algorithm = producer.experiment.algorithms
         possible_values = [(1,)]
-        algorithm.algorithm.possible_values = possible_values
+        algorithm.unwrapped.possible_values = possible_values
 
         assert producer.produce(1) == 1
 
         # Algorithm was ordered to suggest some trials
-        num_new_points = algorithm.algorithm._num
+        num_new_points = algorithm.unwrapped._num
         assert num_new_points == 1  # pool size
 
-        algorithm.algorithm._suggested[0].params["x"] == possible_values[0][0]
+        assert algorithm.unwrapped._suggested[0].params["x"] == possible_values[0][0]
 
         # `num_new_points` new trials were registered at database
         assert len(storage._fetch_trials({})) == trials_in_db_before + 1
@@ -185,16 +185,16 @@ def test_duplicate_within_pool():
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
         # Avoid limiting number of samples from the within the algorithm.
-        producer.experiment.algorithms.algorithm.pool_size = 1000
+        producer.experiment.algorithms.unwrapped.pool_size = 1000
 
-        producer.experiment.algorithms.algorithm.possible_values = [
+        producer.experiment.algorithms.unwrapped.possible_values = [
             (v,) for v in [1, 1, 3]
         ]
 
         assert producer.produce(3) == 2
 
         # Algorithm was required to suggest some trials
-        num_new_trials = producer.experiment.algorithms.algorithm._num
+        num_new_trials = producer.experiment.algorithms.unwrapped._num
         assert num_new_trials == 3  # pool size
 
         # `num_new_trials` new trials were registered at database
@@ -220,16 +220,16 @@ def test_duplicate_within_pool_and_db():
         new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
         # Avoid limiting number of samples from the within the algorithm.
-        producer.experiment.algorithms.algorithm.pool_size = 1000
+        producer.experiment.algorithms.unwrapped.pool_size = 1000
 
-        producer.experiment.algorithms.algorithm.possible_values = [
+        producer.experiment.algorithms.unwrapped.possible_values = [
             (v,) for v in [0, 1, 2]
         ]
 
         assert producer.produce(3) == 1
 
         # Algorithm was required to suggest some trials
-        num_new_trials = producer.experiment.algorithms.algorithm._num
+        num_new_trials = producer.experiment.algorithms.unwrapped._num
         assert num_new_trials == 3  # pool size
 
         # `num_new_trials` new trials were registered at database

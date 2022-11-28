@@ -17,6 +17,7 @@ from orion.algo.pbt.pb2_utils import import_optional, select_config
 from orion.algo.pbt.pbt import PBT
 from orion.core.utils.flatten import flatten
 from orion.core.utils.random_state import RandomState, control_randomness
+from orion.core.worker.transformer import ReshapedSpace, TransformedSpace
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -172,6 +173,7 @@ class PB2(PBT):
             ]
 
             new_trial = trial_to_branch.branch(params=new_params)
+            assert isinstance(self.space, (TransformedSpace, ReshapedSpace))
             new_trial = self.space.transform(self.space.reverse(new_trial))
 
             logger.debug("Attempt %s - Creating new trial %s", attempts, new_trial)

@@ -5,9 +5,14 @@ Random sampler as optimization algorithm
 Draw and deliver samples from prior defined in problem's domain.
 
 """
+from __future__ import annotations
+
+from typing import Sequence
+
 import numpy
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 
 
 class Random(BaseAlgorithm):
@@ -23,10 +28,12 @@ class Random(BaseAlgorithm):
 
     """
 
-    def __init__(self, space, seed=None):
-        super().__init__(space, seed=seed)
+    def __init__(self, space: Space, seed: int | Sequence[int] | None = None):
+        super().__init__(space)
+        self.seed = seed
+        self.seed_rng(seed)
 
-    def seed_rng(self, seed):
+    def seed_rng(self, seed: int | Sequence[int] | None):
         """Seed the state of the random number generator.
 
         :param seed: Integer seed for the random number generator.

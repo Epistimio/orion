@@ -11,10 +11,11 @@ import numpy
 import pytest
 
 from orion.algo.pbt.pb2_utils import import_optional as pb2_import_optional
-from orion.client import create_experiment, workon
+from orion.client import build_experiment, create_experiment, workon
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.module_import import ImportOptional
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.algo_wrappers import AlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransform
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
 
@@ -295,7 +296,7 @@ def test_cardinality_stop_loguniform(algorithm: dict):
     exp = workon(
         rosenbrock, space=discrete_space, algorithms=algorithm, max_trials=max_trials
     )
-    algo_wrapper: SpaceTransformAlgoWrapper = exp.algorithms
+    algo_wrapper: SpaceTransform = exp.algorithms
     assert algo_wrapper.space == discrete_space
     assert algo_wrapper.algorithm.is_done
     assert algo_wrapper.is_done
@@ -392,7 +393,7 @@ def test_with_multidim(algorithm):
 def test_with_evc(algorithm, storage):
     """Test a scenario where algos are warm-started with EVC."""
 
-    base_exp = create_experiment(
+    base_exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
         algorithms=algorithm_configs["random"],
@@ -401,7 +402,7 @@ def test_with_evc(algorithm, storage):
     )
     base_exp.workon(rosenbrock, max_trials=10)
 
-    exp = create_experiment(
+    exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
         algorithms=algorithm,
@@ -495,11 +496,12 @@ def test_branching_algos(
     algorithm: dict[str, dict], storage: BaseStorageProtocol, tmp_path: Path
 ):
 
-    exp = create_experiment(
+    exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
         algorithms=algorithm,
         working_dir=tmp_path,
+        storage=storage,
     )
 
     exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
@@ -507,16 +509,18 @@ def test_branching_algos(
     def build_params_hist(trial: Trial) -> list[str]:
         params = [trial.params_repr()]
         while trial.parent:
+            assert isinstance(exp.algorithms, AlgoWrapper)
             trial = exp.algorithms.registry[trial.parent]
             params.append(trial.params_repr())
         return params[::-1]
 
     for trial in exp.fetch_trials():
-        params = build_params_hist(trial)
+        params_history = build_params_hist(trial)
+        assert isinstance(exp.algorithms, AlgoWrapper)
+        algo = exp.algorithms.unwrapped
         # TODO: This assumes algo.fidelities which may be specific to PBT...
-        assert (
-            len(params)
-            == exp.algorithms.algorithm.fidelities.index(trial.params["noise"]) + 1
-        )
+        assert hasattr(algo, "fidelities")
+        fidelities: list = algo.fidelities  # type: ignore
+        assert len(params_history) == fidelities.index(trial.params["noise"]) + 1
         with open(os.path.join(trial.working_dir, "hist.txt")) as f:
-            assert "\n".join(params) == f.read().strip("\n")
+            assert "\n".join(params_history) == f.read().strip("\n")

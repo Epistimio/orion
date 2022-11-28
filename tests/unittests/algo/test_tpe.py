@@ -22,6 +22,7 @@ from orion.algo.tpe import (
     ramp_up_weights,
 )
 from orion.core.utils import backward, format_trials
+from orion.core.worker.algo_wrappers.space_transform import SpaceTransform
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.transformer import build_required_space
 from orion.core.worker.trial import Trial
@@ -917,17 +918,18 @@ class TestTPE(BaseAlgoTests):
             print(f"num={num}, Suggesting {v} ({len(values)} values left.)")
             return v
 
-        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_random", _suggest_random)
-        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+        monkeypatch.setattr(TPE, "_suggest_random", _suggest_random)
+        monkeypatch.setattr(TPE, "_suggest_bo", _suggest_random)
 
         self.force_observe(RANGE, algo)
+        transform_wrapper = algo.unwrap(SpaceTransform)
         assert len(algo.algorithm.registry) == RANGE
-        assert len(algo.registry_mapping) == RANGE
-        assert len(algo.registry) == RANGE
+        assert len(transform_wrapper.registry_mapping) == RANGE
+        assert len(transform_wrapper.registry) == RANGE
         assert algo.algorithm.n_suggested == RANGE
         assert algo.algorithm.n_observed == RANGE
-        assert algo.n_suggested == RANGE
-        assert algo.n_observed == RANGE
+        assert transform_wrapper.n_suggested == RANGE
+        assert transform_wrapper.n_observed == RANGE
 
     @first_phase_only
     def test_stuck_exploiting(self, monkeypatch):

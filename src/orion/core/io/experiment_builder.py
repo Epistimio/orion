@@ -81,19 +81,21 @@ import getpass
 import logging
 import pprint
 import sys
-from typing import TypeVar
+import typing
+from typing import Any, TypeVar
 
 import orion.core
-import orion.core.utils.backward as backward  # pylint:disable=consider-using-from-import
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
 from orion.core.io import resolve_config
+from orion.core.io.config import ConfigurationError
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
@@ -101,9 +103,14 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment, Mode
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.primary_algo import create_algo
+from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 
+if typing.TYPE_CHECKING:
+    from orion.core.evc.adapters import CompositeAdapter
+    from orion.storage.base import BaseStorageProtocol
 log = logging.getLogger(__name__)
 
 
@@ -171,7 +178,7 @@ def merge_producer_config(config: dict, new_config: dict) -> None:
 ##
 
 
-def _instantiate_adapters(config):
+def _instantiate_adapters(config: list[dict]) -> CompositeAdapter:
     """Instantiate the adapter object
 
     Parameters
@@ -183,7 +190,7 @@ def _instantiate_adapters(config):
     return BaseAdapter.build(config)
 
 
-def _instantiate_space(config):
+def _instantiate_space(config: Space | dict[str, Any]) -> Space:
     """Instantiate the space object
 
     Build the Space object if argument is a dictionary, else return the Space object as is.
@@ -200,12 +207,49 @@ def _instantiate_space(config):
     return SpaceBuilder().build(config)
 
 
-def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
+def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
+    """Instantiate the Knowledge base from its configuration."""
+    if len(kb_config) != 1:
+        raise ConfigurationError(
+            f"The configuration for the KB should only have one key (the name of the KB "
+            f"class) and the dict of kwargs. (got {kb_config})"
+        )
+    kb_type_name = list(kb_config.keys())[0]
+    kb_types_with_name = [
+        subclass
+        for subclass in (KnowledgeBase.__subclasses__() + [KnowledgeBase])
+        if subclass.__name__ == kb_type_name
+    ]
+    if len(kb_types_with_name) == 0:
+        raise ConfigurationError(
+            f"Unable to find a subclass of KnowledgeBase with the given name: {kb_type_name}"
+        )
+    if len(kb_types_with_name) > 1:
+        raise ConfigurationError(
+            f"Multiple subclasses of KnowledgeBase with the given name: {kb_type_name}"
+        )
+    kb_type = kb_types_with_name[0]
+    kb_kwargs = kb_config[kb_type_name]
+    # Instantiate the storage that is required for the KB.
+    storage_config = kb_kwargs["storage"]
+    if isinstance(storage_config, dict):
+        storage = setup_storage(storage_config)
+        kb_kwargs["storage"] = storage
+    return kb_type(**kb_kwargs)
+
+
+def _instantiate_algo(
+    space: Space,
+    max_trials: int | None,
+    config: type[BaseAlgorithm] | str | dict | None = None,
+    ignore_unavailable: bool = False,
+    knowledge_base: KnowledgeBase | None = None,
+):
     """Instantiate the algorithm object
 
     Parameters
     ----------
-    config: dict, optional
+    config:
         Configuration of the algorithm. If None or empty, system's defaults are used
         (orion.core.config.experiment.algorithms).
     ignore_unavailable: bool, optional
@@ -213,21 +257,32 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
         Otherwise, raise Factory error.
 
     """
-    if not config:
-        config = orion.core.config.experiment.algorithms
-
+    config = config or orion.core.config.experiment.algorithms
+    assert config is not None
     try:
-        backported_config = backward.port_algo_config(config)
-        algo_constructor: type[BaseAlgorithm] = algo_factory.get_class(
-            backported_config.pop("of_type")
-        )
-        # NOTE: the config doesn't have the `of_type` key anymore, it only has the algo's kwargs
+        algo_type: type[BaseAlgorithm]
+        algo_config: dict
+        if isinstance(config, str):
+            algo_type = algo_factory.get_class(config)
+            algo_config = {}
+        elif isinstance(config, dict):
+            backported_config = backward.port_algo_config(config)
+            algo_name = backported_config.pop("of_type")
+            algo_type = algo_factory.get_class(algo_name)
+            algo_config = backported_config
+        else:
+            assert issubclass(config, BaseAlgorithm)
+            algo_type = config
+            algo_config = {}
+
         wrapped_algo = create_algo(
-            space=space, algo_type=algo_constructor, **backported_config
+            space=space,
+            algo_type=algo_type,
+            knowledge_base=knowledge_base,
+            **algo_config,
         )
         if max_trials is not None:
-            # todo: Create a `max_trials` property or annotation on BaseAlgorithm at some point.
-            wrapped_algo.algorithm.max_trials = max_trials
+            wrapped_algo.max_trials = max_trials
 
     except NotImplementedError as e:
         if not ignore_unavailable:
@@ -239,7 +294,7 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
     return wrapped_algo
 
 
-def _instantiate_strategy(config=None):
+def _instantiate_strategy(config: dict | None = None) -> None:
     """Instantiate the strategy object
 
     Parameters
@@ -258,7 +313,9 @@ def _instantiate_strategy(config=None):
     return None
 
 
-def _fetch_config_version(configs, version=None):
+def _fetch_config_version(
+    configs: list[ExperimentConfig], version: int | None = None
+) -> ExperimentConfig:
     """Fetch the experiment configuration corresponding to the given version
 
     Parameters
@@ -287,9 +344,9 @@ def _fetch_config_version(configs, version=None):
 
     version = min(version, max_version)
 
-    configs = filter(lambda exp: exp.get("version", 1) == version, configs)
+    filtered_configs = filter(lambda exp: exp.get("version", 1) == version, configs)
 
-    return next(iter(configs))
+    return next(iter(filtered_configs))
 
 
 ###
@@ -297,7 +354,7 @@ def _fetch_config_version(configs, version=None):
 ###
 
 
-def get_cmd_config(cmdargs):
+def get_cmd_config(cmdargs) -> ExperimentConfig:
     """Fetch configuration defined by commandline and local configuration file.
 
     Arguments of commandline have priority over options in configuration file.
@@ -388,7 +445,13 @@ def get_from_args(cmdargs, mode="r"):
     return builder.load(name, version, mode=mode)
 
 
-def build(name, version=None, branching=None, storage=None, **config):
+def build(
+    name: str,
+    version: int | None = None,
+    branching: dict | None = None,
+    storage: BaseStorageProtocol | dict | None = None,
+    **config,
+):
     """Build an experiment.
 
     .. seealso::
@@ -426,7 +489,9 @@ class ExperimentBuilder:
         If True, force using EphemeralDB for the storage. Default: False
     """
 
-    def __init__(self, storage=None, debug=False) -> None:
+    def __init__(
+        self, storage: dict | BaseStorageProtocol | None = None, debug: bool = False
+    ) -> None:
         singleton = None
         log.debug("Using for storage %s", storage)
 
@@ -555,7 +620,7 @@ class ExperimentBuilder:
         self._update_experiment(experiment)
         return experiment
 
-    def _get_conflicts(self, experiment, branching):
+    def _get_conflicts(self, experiment: Experiment, branching: dict):
         """Get conflicts between current experiment and corresponding configuration in database"""
         log.debug("Looking for conflicts in new configuration.")
         db_experiment = self.load(experiment.name, experiment.version, mode="r")
@@ -570,7 +635,7 @@ class ExperimentBuilder:
 
         return conflicts
 
-    def load(self, name, version=None, mode="r"):
+    def load(self, name: str, version: int | None = None, mode: Mode = "r"):
         """Load experiment from database
 
         An experiment view provides all reading operations of standard experiment but prevents the
@@ -610,7 +675,7 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode=mode, **db_config)
 
-    def fetch_config_from_db(self, name, version=None):
+    def fetch_config_from_db(self, name: str, version: int | None = None):
         """Fetch configuration from database
 
         Parameters
@@ -645,7 +710,7 @@ class ExperimentBuilder:
 
         return config
 
-    def _register_experiment(self, experiment):
+    def _register_experiment(self, experiment: Experiment):
         """Register a new experiment in the database"""
         experiment.metadata["datetime"] = datetime.datetime.utcnow()
         config = experiment.configuration
@@ -813,6 +878,7 @@ class ExperimentBuilder:
         metadata: dict | None = None,
         refers: dict | None = None,
         producer: dict | None = None,
+        knowledge_base: KnowledgeBase | dict | None = None,
         user: str | None = None,
         _id: int | str | None = None,
         **kwargs,
@@ -845,6 +911,9 @@ class ExperimentBuilder:
             Number of broken trials for the experiment to be considered broken.
         storage: dict, optional
             Configuration of the storage backend.
+        knowledge_base: KnowledgeBase | dict, optional
+            Knowledge base instance, or configuration of the knowledge base. Will be used to
+            warm-start the HPO algorithm, if possible.
 
         """
         T = TypeVar("T")
@@ -855,11 +924,14 @@ class ExperimentBuilder:
 
         space = _instantiate_space(space)
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
+        if isinstance(knowledge_base, dict):
+            knowledge_base = _instantiate_knowledge_base(knowledge_base)
         instantiated_algorithm = _instantiate_algo(
             space=space,
             max_trials=max_trials,
             config=algorithms,
             ignore_unavailable=mode != "x",
+            knowledge_base=knowledge_base,
         )
 
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
@@ -883,6 +955,7 @@ class ExperimentBuilder:
             working_dir=working_dir,
             metadata=metadata,
             refers=refers,
+            knowledge_base=knowledge_base,
         )
 
         if kwargs:
