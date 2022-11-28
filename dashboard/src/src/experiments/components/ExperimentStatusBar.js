@@ -55,10 +55,10 @@ export class ExperimentStatusBar extends React.Component {
           <Grid className="pb-2">
             <Row>
               <Column>
-                <strong>Duration</strong>:&nbsp;
+                <strong>Elapsed time</strong>:&nbsp;
                 <code>{this.state.status.duration}</code>
                 <Tooltip>
-                  Current execution time for all completed trials
+                  Time elapsed since the beginning of the HPO execution
                 </Tooltip>
               </Column>
               <Column className="justify-content-center">
