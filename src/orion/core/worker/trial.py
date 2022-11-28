@@ -481,12 +481,22 @@ class Trial:
     @property
     def duration(self):
         """Return trial duration as a timedelta() object"""
-        if self.end_time:
-            return self.end_time - self.start_time
-        elif self.heartbeat:
-            return self.heartbeat - self.start_time
+        execution_interval = self.execution_interval
+        if execution_interval:
+            from_time, to_time = execution_interval
+            return to_time - from_time
         else:
             return timedelta()
+
+    @property
+    def execution_interval(self):
+        """Return execution interval, or None if unavailable"""
+        if self.start_time:
+            if self.end_time:
+                return self.start_time, self.end_time
+            elif self.heartbeat:
+                return self.start_time, self.heartbeat
+        return None
 
     def _repr_values(self, values, sep=","):
         """Represent with a string the given values."""

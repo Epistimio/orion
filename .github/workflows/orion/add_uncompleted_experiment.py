@@ -42,6 +42,7 @@ def main():
     del uncompleted_experiment["_id"]
     uncompleted_experiment["name"] = "uncompleted_experiment"
     uncompleted_experiment["metadata"]["datetime"] = SUBMIT_TIME
+    uncompleted_experiment["max_trials"] = 200
 
     # Insert uncompleted experiment into db_dashboard_full_with_uncompleted_experiment.pkl
 

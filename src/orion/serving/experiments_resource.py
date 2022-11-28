@@ -57,7 +57,7 @@ class ExperimentsResource:
         verify_query_parameters(req.params, ["version"])
         version = req.get_param_as_int("version")
         experiment = retrieve_experiment(self.storage, name, version)
-        resp.body = json.dumps(experiment.stats.to_dict())
+        resp.body = json.dumps(experiment.stats.to_json())
 
 
 def _find_latest_versions(experiments):

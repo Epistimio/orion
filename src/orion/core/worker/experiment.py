@@ -14,6 +14,7 @@ import dataclasses
 import datetime
 import inspect
 import logging
+import math
 import typing
 from collections import Counter
 from dataclasses import dataclass, field
@@ -73,7 +74,7 @@ class ExperimentStats:
     whole_clock_time: datetime.timedelta = field(default_factory=datetime.timedelta)
     eta: datetime.timedelta = field(default_factory=datetime.timedelta)
 
-    def to_dict(self):
+    def to_json(self):
         return {
             key: (
                 str(value)
@@ -634,19 +635,10 @@ class Experiment(Generic[AlgoT]):
         """
         trials = self.fetch_trials(with_evc_tree=False)
         completed_trials = self.fetch_trials_by_status("completed")
-        executed_trials = [
-            trial
-            for trial in trials
-            if trial.start_time and (trial.end_time or trial.heartbeat)
-        ]
-        running_trials = [
-            trial for trial in trials if trial.status in ("new", "reserved")
-        ]
 
         if not completed_trials:
             return {}
         trials_completed = len(completed_trials)
-        best_trials_id = None
         trial = completed_trials[0]
         best_evaluation = trial.objective.value
         best_trials_id = trial.id
@@ -661,7 +653,38 @@ class Experiment(Generic[AlgoT]):
             if objective < best_evaluation:
                 best_evaluation = objective
                 best_trials_id = trial.id
-        duration = finish_time - start_time
+
+        # Compute duration using all finished/stopped/running experiments
+        # i.e. all trials that have an execution interval (from a start time to an end time or heartbeat)
+        intervals = []
+        for trial in trials:
+            interval = trial.execution_interval
+            if interval:
+                intervals.append(interval)
+        if intervals:
+            min_start_time = min(interval[0] for interval in intervals)
+            max_end_time = max(interval[1] for interval in intervals)
+            duration = max_end_time - min_start_time
+        else:
+            duration = datetime.timedelta()
+
+        # Compute ETA
+        if not self.max_trials or math.isinf(self.max_trials):
+            # If max_trials is None, 0 or infinite, we cannot compute ETA
+            eta = None
+        elif len(completed_trials) > self.max_trials:
+            # If there are more completed trials than max trials, then ETA should be 0 (?)
+            eta = 0
+        elif not completed_trials:
+            # If there are no completed trials, then we set ETA to infinite
+            eta = float("+inf")
+        else:
+            # Compute ETA using duration of completed trials
+            completed_intervals = [trial.execution_interval for trial in completed_trials]
+            min_start_time = min(interval[0] for interval in completed_intervals)
+            max_end_time = max(interval[1] for interval in completed_intervals)
+            completed_duration = max_end_time - min_start_time
+            eta = (completed_duration / len(completed_trials)) * (self.max_trials - len(completed_trials))
 
         return ExperimentStats(
             trials_completed=trials_completed,
@@ -671,11 +694,11 @@ class Experiment(Generic[AlgoT]):
             finish_time=finish_time,
             duration=duration,
             whole_clock_time=sum(
-                (trial.duration for trial in executed_trials),
+                (trial.duration for trial in trials),
                 start=datetime.timedelta(),
             ),
             nb_trials=len(trials),
-            eta=(duration / len(completed_trials)) * len(running_trials),
+            eta=eta,
             trial_status_count={**Counter(trial.status for trial in trials)},
             progress=len(completed_trials) / len(trials),
         )
