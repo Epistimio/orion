@@ -1006,10 +1006,9 @@ class TestSpace:
             space.register(Real("yolo4", "norm", 0.9, precision=0.6))
 
 
-
 def test_issue_1018():
-    from orion.algo.space import Real, Dimension
-    
+    from orion.algo.space import Real
+
     Real("a1", "uniform", -4.0, 0.0, default_value=-0.2)
     Real("a2", "uniform", -4.0, 0.0, low=-4.0, high=0.0, default_value=-0.2)
     Real("a3", "uniform", low=-4.0, high=0.0, default_value=-0.2)

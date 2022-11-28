@@ -56,7 +56,7 @@ class TestSpaceTransformWrapper(AlgoWrapperTests):
                 ],
                 status="new",
             )
-            palgo._verify_trial(invalid_trial)
+            algo_wrapper._verify_trial(invalid_trial)
 
         with pytest.raises(ValueError, match="has additional parameters"):
             invalid_trial = Trial(
@@ -68,7 +68,7 @@ class TestSpaceTransformWrapper(AlgoWrapperTests):
                 ],
                 status="new",
             )
-            palgo._verify_trial(invalid_trial)
+            algo_wrapper._verify_trial(invalid_trial)
 
         with pytest.raises(ValueError, match="does not belong to the dimension"):
             invalid_trial = format_trials.tuple_to_trial((("asdfa", 2), 10, 3.5), space)
