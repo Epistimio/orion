@@ -67,9 +67,15 @@ export class ExperimentStatusBar extends React.Component {
                 <Tooltip>Sum of trials execution time</Tooltip>
               </Column>
               <Column className="justify-content-end">
-                <strong>ETA</strong>:&nbsp;<code>{this.state.status.eta}</code>
+                <strong>ETA</strong>:&nbsp;
+                <code>
+                  {this.state.status.eta} (at{' '}
+                  {new Date(
+                    new Date().getTime() + this.state.status.eta_milliseconds
+                  ).toLocaleString()}
+                  )
+                </code>
                 <Tooltip>Estimated time for experiment to finish</Tooltip>
-                {/* TODO display remaining time or end date ? */}
               </Column>
             </Row>
           </Grid>
@@ -104,7 +110,6 @@ export class ExperimentStatusBar extends React.Component {
     );
   }
   renderProgressPart(trialStatus) {
-    console.log('progress', trialStatus);
     return (
       <ProgressBar
         variant={StatusToProgress[trialStatus]}
@@ -140,7 +145,6 @@ export class ExperimentStatusBar extends React.Component {
     this._isMounted = false;
   }
   onFocus(trialStatus) {
-    console.log(`Bar on focus ${trialStatus}`);
     if (this.props.onFocus) {
       this.props.onFocus(trialStatus);
     }

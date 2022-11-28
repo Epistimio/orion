@@ -73,6 +73,7 @@ class ExperimentStats:
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
     whole_clock_time: datetime.timedelta = field(default_factory=datetime.timedelta)
     eta: datetime.timedelta = field(default_factory=datetime.timedelta)
+    eta_milliseconds: float = 0
 
     def to_json(self):
         return {
@@ -699,6 +700,7 @@ class Experiment(Generic[AlgoT]):
             ),
             nb_trials=len(trials),
             eta=eta,
+            eta_milliseconds=eta.total_seconds() * 1000 if eta else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
             progress=len(completed_trials) / len(trials),
         )
