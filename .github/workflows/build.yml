@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: 3.9
       - name: Setup MongoDB
-        uses: supercharge/mongodb-github-action@1.3.0
+        uses: supercharge/mongodb-github-action@1.8.0
         with:
           mongodb-version: 4.2
       - name: Configure MongoDB
