@@ -637,23 +637,24 @@ class Experiment(Generic[AlgoT]):
         trials = self.fetch_trials(with_evc_tree=False)
         completed_trials = self.fetch_trials_by_status("completed")
 
-        if not completed_trials:
-            return {}
         trials_completed = len(completed_trials)
-        trial = completed_trials[0]
-        best_evaluation = trial.objective.value
-        best_trials_id = trial.id
+        best_evaluation = None
+        best_trials_id = None
         start_time = self.metadata["datetime"]
         finish_time = start_time
-        for trial in completed_trials:
-            # All trials are going to finish certainly after the start date
-            # of the experiment they belong to
-            if trial.end_time > finish_time:  # pylint:disable=no-member
-                finish_time = trial.end_time
-            objective = trial.objective.value
-            if objective < best_evaluation:
-                best_evaluation = objective
-                best_trials_id = trial.id
+        if completed_trials:
+            trial = completed_trials[0]
+            best_evaluation = trial.objective.value
+            best_trials_id = trial.id
+            for trial in completed_trials:
+                # All trials are going to finish certainly after the start date
+                # of the experiment they belong to
+                if trial.end_time > finish_time:  # pylint:disable=no-member
+                    finish_time = trial.end_time
+                objective = trial.objective.value
+                if objective < best_evaluation:
+                    best_evaluation = objective
+                    best_trials_id = trial.id
 
         # Compute duration using all finished/stopped/running experiments
         # i.e. all trials that have an execution interval (from a start time to an end time or heartbeat)
@@ -678,14 +679,19 @@ class Experiment(Generic[AlgoT]):
             eta = 0
         elif not completed_trials:
             # If there are no completed trials, then we set ETA to infinite
-            eta = float("+inf")
+            # NB: float("inf") may lead to wrong JSON syntax, so we just write "infinite"
+            eta = "infinite"
         else:
             # Compute ETA using duration of completed trials
-            completed_intervals = [trial.execution_interval for trial in completed_trials]
+            completed_intervals = [
+                trial.execution_interval for trial in completed_trials
+            ]
             min_start_time = min(interval[0] for interval in completed_intervals)
             max_end_time = max(interval[1] for interval in completed_intervals)
             completed_duration = max_end_time - min_start_time
-            eta = (completed_duration / len(completed_trials)) * (self.max_trials - len(completed_trials))
+            eta = (completed_duration / len(completed_trials)) * (
+                self.max_trials - len(completed_trials)
+            )
 
         return ExperimentStats(
             trials_completed=trials_completed,
@@ -699,8 +705,12 @@ class Experiment(Generic[AlgoT]):
                 start=datetime.timedelta(),
             ),
             nb_trials=len(trials),
+            # TODO
+            # Maybe create 2-3 more experiments to test these cases
             eta=eta,
-            eta_milliseconds=eta.total_seconds() * 1000 if eta else None,
+            eta_milliseconds=eta.total_seconds() * 1000
+            if isinstance(eta, datetime.timedelta)
+            else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
             progress=len(completed_trials) / len(trials),
         )

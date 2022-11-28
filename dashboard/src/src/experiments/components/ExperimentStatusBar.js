@@ -69,11 +69,16 @@ export class ExperimentStatusBar extends React.Component {
               <Column className="justify-content-end">
                 <strong>ETA</strong>:&nbsp;
                 <code>
-                  {this.state.status.eta} (at{' '}
-                  {new Date(
-                    new Date().getTime() + this.state.status.eta_milliseconds
-                  ).toLocaleString()}
-                  )
+                  {this.state.status.eta === null
+                    ? '(unknown)'
+                    : this.state.status.eta === 0
+                    ? 0
+                    : this.state.status.eta === 'infinite'
+                    ? '\u221E'
+                    : `${this.state.status.eta} (at ${new Date(
+                        new Date().getTime() +
+                          this.state.status.eta_milliseconds
+                      ).toLocaleString()})`}
                 </code>
                 <Tooltip>Estimated time for experiment to finish</Tooltip>
               </Column>
