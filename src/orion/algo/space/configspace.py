@@ -71,12 +71,19 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
     def real(self, dim: Real) -> FloatHyperparameter:
         """Convert a real dimension into a configspace equivalent"""
         if dim.prior_name in ("reciprocal", "uniform"):
-            a, b = dim._args
+
+            # NB: scipy uniform [loc, scale], configspace [min, max] with max = loc + scale, loc = min
+            if dim.prior_name == "uniform":
+                loc, scale = dim._args
+                lower = loc
+                upper = loc + scale
+            else:
+                lower, upper = dim._args
 
             return UniformFloatHyperparameter(
                 name=dim.name,
-                lower=a,
-                upper=b,
+                lower=lower,
+                upper=upper,
                 default_value=dim.default_value,
                 q=_qantization(dim),
                 log=dim.prior_name == "reciprocal",
@@ -102,13 +109,19 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
 
     def integer(self, dim: Integer) -> IntegerHyperparameter:
         """Convert a integer dimension into a configspace equivalent"""
+
         if dim.prior_name in ("int_uniform", "int_reciprocal"):
-            a, b = dim._args
+            if dim.prior_name == "int_uniform":
+                loc, scale = dim._args
+                lower = loc
+                upper = loc + scale
+            else:
+                lower, upper = dim._args
 
             return UniformIntegerHyperparameter(
                 name=dim.name,
-                lower=a,
-                upper=b,
+                lower=lower,
+                upper=upper,
                 default_value=dim.default_value,
                 q=_qantization(dim),
                 log=dim.prior_name == "int_reciprocal",
@@ -203,12 +216,18 @@ def _from_uniform(dim: Hyperparameter) -> Integer | Real:
     else:
         kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
 
-    dist = "uniform"
-    args.append(dim.lower)
-    args.append(dim.upper)
-
     if dim.log:
         dist = "reciprocal"
+        args.append(dim.lower)
+        args.append(dim.upper)
+    else:
+        # NB: scipy uniform [loc, scale], configspace [min, max] with max = loc + scale, loc = min
+        loc = dim.lower
+        scale = dim.upper - dim.lower
+
+        dist = "uniform"
+        args.append(loc)
+        args.append(scale)
 
     return klass(dim.name, dist, *args, **kwargs)
 

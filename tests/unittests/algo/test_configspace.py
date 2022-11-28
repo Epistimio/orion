@@ -10,15 +10,21 @@ if IMPORT_ERROR:
 def test_orion_configspace():
     space = Space()
 
+    # NB: scipy uniform [loc, scale], configspace [min, max] with max = loc + scale, loc = min
+    def uniform(type, name, low, high, **kwargs):
+        return type(name, "uniform", low, high - low, **kwargs)
+
     space.register(Integer("r1i", "reciprocal", 1, 6))
-    space.register(Integer("u1i", "uniform", -3, 6))
-    space.register(Integer("u2i", "uniform", -3, 6))
-    space.register(Integer("u3i", "uniform", -3, 6, default_value=2))
+    space.register(uniform(Integer, "u1i", -3, 6))
+    space.register(uniform(Integer, "u2i", -3, 6))
+    space.register(uniform(Integer, "u4i", -4, 0, default_value=-1))
+    space.register(uniform(Integer, "u3i", -3, 6, default_value=2))
 
     space.register(Real("r1f", "reciprocal", 1, 6))
-    space.register(Real("u1f", "uniform", -3, 6))
-    space.register(Real("u2f", "uniform", -3, 6))
-    space.register(Real("name.u2f", "uniform", -3, 6))
+    space.register(uniform(Real, "u1f", -3, 6))
+    space.register(uniform(Real, "u2f", -3, 6))
+    space.register(uniform(Real, "u4f", -4, 0, default_value=-0.2))
+    space.register(uniform(Real, "name.u2f", -3, 6))
 
     space.register(Categorical("c1", ("asdfa", 2)))
     space.register(Categorical("c2", dict(a=0.2, b=0.8)))
