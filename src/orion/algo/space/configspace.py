@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from functools import singledispatch
 from math import log10
 
@@ -57,6 +58,39 @@ def _qantization(dim: Dimension) -> float:
     return None
 
 
+def _upsert(array, i, value):
+    cp = len(array) - i
+
+    if value is None:
+        return
+
+    if cp == 0:
+        array.append(value)
+        return
+
+    if cp > 0:
+        array[i] = value
+        return
+
+    raise IndexError()
+
+
+def normalize_args(dim: Dimension, rv, kwarg_order=None) -> dict:
+    """Create an argument array from kwargs"""
+    if len(dim._kwargs) == 0:
+        return dim._args
+
+    args = list(deepcopy(dim._args))
+
+    if kwarg_order is None:
+        kwarg_order = ["loc", "scale"]
+
+    for i, kw in enumerate(kwarg_order):
+        _upsert(args, i, dim._kwargs.get(kw))
+
+    return args
+
+
 class ToConfigSpace(SpaceConverter[Hyperparameter]):
     """Convert an Orion space into a configspace"""
 
@@ -70,15 +104,16 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
 
     def real(self, dim: Real) -> FloatHyperparameter:
         """Convert a real dimension into a configspace equivalent"""
-        if dim.prior_name in ("reciprocal", "uniform"):
+        args = normalize_args(dim, dim.prior)
 
+        if dim.prior_name in ("reciprocal", "uniform"):
             # NB: scipy uniform [loc, scale], configspace [min, max] with max = loc + scale, loc = min
             if dim.prior_name == "uniform":
-                loc, scale = dim._args
+                loc, scale = args
                 lower = loc
                 upper = loc + scale
             else:
-                lower, upper = dim._args
+                lower, upper = normalize_args(dim, dim.prior, ["a", "b"])
 
             return UniformFloatHyperparameter(
                 name=dim.name,
@@ -90,7 +125,7 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
             )
 
         if dim.prior_name in ("normal", "norm"):
-            a, b = dim._args
+            a, b = args
 
             kwargs = dict(
                 name=dim.name,
@@ -109,14 +144,15 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
 
     def integer(self, dim: Integer) -> IntegerHyperparameter:
         """Convert a integer dimension into a configspace equivalent"""
+        args = normalize_args(dim, dim.prior)
 
         if dim.prior_name in ("int_uniform", "int_reciprocal"):
             if dim.prior_name == "int_uniform":
-                loc, scale = dim._args
+                loc, scale = args
                 lower = loc
                 upper = loc + scale
             else:
-                lower, upper = dim._args
+                lower, upper = normalize_args(dim, dim.prior, ["a", "b"])
 
             return UniformIntegerHyperparameter(
                 name=dim.name,
@@ -128,7 +164,7 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
             )
 
         if dim.prior_name in ("int_norm", "normal"):
-            a, b = dim._args
+            a, b = args
 
             kwargs = dict(
                 name=dim.name,
