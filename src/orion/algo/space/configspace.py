@@ -77,18 +77,18 @@ def _upsert(array, i, value):
 
 def normalize_args(dim: Dimension, rv, kwarg_order=None) -> dict:
     """Create an argument array from kwargs"""
-    if len(dim._kwargs) == 0:
-        return dim._args
-
-    args = list(deepcopy(dim._args))
-
     if kwarg_order is None:
         kwarg_order = ["loc", "scale"]
+
+    if len(dim._kwargs) == 0:
+        return dim._args[: len(kwarg_order)]
+
+    args = list(deepcopy(dim._args))
 
     for i, kw in enumerate(kwarg_order):
         _upsert(args, i, dim._kwargs.get(kw))
 
-    return args
+    return args[: len(kwarg_order)]
 
 
 class ToConfigSpace(SpaceConverter[Hyperparameter]):

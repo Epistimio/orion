@@ -203,8 +203,8 @@ class Dimension:
             and self.default_value not in self
         ):
             raise ValueError(
-                "{} is not a valid value for this Dimension. "
-                "Can't set default value.".format(self.default_value)
+                "{} is not a valid value for dimension: {}, "
+                "Can't set default value.".format(self.default_value, self.name)
             )
 
     def _get_hashable_members(self):
