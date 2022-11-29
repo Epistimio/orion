@@ -5,14 +5,10 @@ import './style.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { HashRouter as Router } from 'react-router-dom';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 
 createRoot(document.getElementById('root')).render(
   <Router>
-    <DndProvider backend={HTML5Backend}>
-      <App />
-    </DndProvider>
+    <App />
   </Router>
 );
 
