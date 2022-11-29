@@ -39,8 +39,7 @@ jobs:
 
       - name: Configure MongoDB
         run: |
-          mongosh --version
-          mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+          mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
 
       - name: Test with tox
         run: tox -e mongodb
