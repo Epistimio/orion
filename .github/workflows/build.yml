@@ -32,13 +32,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-          wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-          sudo apt-get update
-          sudo apt-get install -y mongodb-org
+          # wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+          # echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+          # sudo apt-get update
+          # sudo apt-get install -y mongodb-org
 
       - name: Configure MongoDB
-        run: mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+        run: |
+          mongosh --version
+          mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
 
       - name: Test with tox
         run: tox -e mongodb
