@@ -830,7 +830,7 @@ class TestTransformedDimension:
 
         with pytest.raises(ValueError) as exc:
             tdim2.validate()
-        assert "bad-default is not a valid value for this Dimension." in str(exc.value)
+        assert "bad-default is not a valid value for dimension: yolo2" in str(exc.value)
 
         tdim.original_dimension._kwargs.pop("size")
         tdim2.original_dimension._default_value = Dimension.NO_DEFAULT_VALUE
