@@ -75,30 +75,31 @@ test('Check filter experiments with search field', async () => {
       else expect(domElement).toBeNull();
     }
   };
+  const user = userEvent.setup();
   render(<ExperimentNavBar />);
   const searchField = await screen.findByPlaceholderText('Search experiment');
   expect(searchField).toBeInTheDocument();
-  userEvent.type(searchField, 'random');
-  await waitFor(() => checkExpectations([0, 0, 0, 0, 1, 0, 0]), {
-    interval: 1000,
-    timeout: 120000,
-  });
-  userEvent.clear(searchField);
-  userEvent.type(searchField, 'rosenbrock');
-  await waitFor(() => checkExpectations([0, 0, 0, 0, 1, 1, 0]), {
-    interval: 1000,
-    timeout: 120000,
-  });
-  userEvent.clear(searchField);
-  userEvent.type(searchField, 'dim-cat');
-  await waitFor(() => checkExpectations([0, 1, 0, 1, 0, 0, 0]), {
-    interval: 1000,
-    timeout: 120000,
-  });
-  userEvent.clear(searchField);
-  userEvent.type(searchField, 'unknown experiment');
-  await waitFor(() => checkExpectations([0, 0, 0, 0, 0, 0, 0]), {
-    interval: 1000,
-    timeout: 120000,
-  });
+  await user.type(searchField, 'random');
+  await waitFor(
+    () => checkExpectations([0, 0, 0, 0, 1, 0, 0]),
+    global.CONFIG_WAIT_FOR_LONG
+  );
+  await user.clear(searchField);
+  await user.type(searchField, 'rosenbrock');
+  await waitFor(
+    () => checkExpectations([0, 0, 0, 0, 1, 1, 0]),
+    global.CONFIG_WAIT_FOR_LONG
+  );
+  await user.clear(searchField);
+  await user.type(searchField, 'dim-cat');
+  await waitFor(
+    () => checkExpectations([0, 1, 0, 1, 0, 0, 0]),
+    global.CONFIG_WAIT_FOR_LONG
+  );
+  await user.clear(searchField);
+  await user.type(searchField, 'unknown experiment');
+  await waitFor(
+    () => checkExpectations([0, 0, 0, 0, 0, 0, 0]),
+    global.CONFIG_WAIT_FOR_LONG
+  );
 });
