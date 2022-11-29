@@ -1,0 +1,14 @@
+storage:
+  database:
+      name: 'orion_dashboard_test'
+      type: 'mongodb'
+
+gunicorn:
+   bind: '127.0.0.1:8000'
+   workers: 1
+   threads: 1
+   timeout: 600
+   loglevel: 'debug'
+   worker_tmp_dir: gunicorn_tmp_dir
+
+frontends_uri: ["http://localhost:3000", "http://127.0.0.1:3000"]

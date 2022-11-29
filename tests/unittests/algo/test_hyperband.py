@@ -19,7 +19,7 @@ from orion.algo.hyperband import (
 )
 from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.primary_algo import SpaceTransform
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests, TestPhase
 from orion.testing.trial import compare_trials, create_trial
@@ -1114,9 +1114,7 @@ class TestGenericHyperband(BaseAlgoTests):
 
         return 1, budgets.index(num)
 
-    def assert_callbacks(
-        self, spy, num: int, algo: SpaceTransformAlgoWrapper[Hyperband]
-    ):
+    def assert_callbacks(self, spy, num: int, algo: SpaceTransform[Hyperband]):
         if num == 0:
             return
 

@@ -1,5 +1,9 @@
 ---
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0  # Use the ref you want to point at
+    hooks:
+      - id: check-merge-conflict
   - repo: https://github.com/python/black
     rev: 22.6.0
     hooks:
@@ -9,7 +13,7 @@ repos:
     hooks:
       - id: codespell
         args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont"]
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/PyCQA/flake8
     rev: 3.9.2
     hooks:
       - id: flake8
