@@ -111,7 +111,11 @@ export class ExperimentStatusBar extends React.Component {
               </Column>
               <Column className="justify-content-end">
                 <strong>Progress</strong>:&nbsp;
-                <code>{floatToPercent(this.state.status.progress)} %</code>
+                <code>
+                  {this.state.status.progress === null
+                    ? '(unknown)'
+                    : `${floatToPercent(this.state.status.progress)} %`}
+                </code>
                 <Tooltip>Experiment progression percentage</Tooltip>
               </Column>
             </Row>

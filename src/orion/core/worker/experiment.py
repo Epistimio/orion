@@ -693,6 +693,16 @@ class Experiment(Generic[AlgoT]):
                 self.max_trials - len(completed_trials)
             )
 
+        # Compute progress
+        if (
+            not self.max_trials
+            or math.isinf(self.max_trials)
+            or len(completed_trials) > self.max_trials
+        ):
+            progress = None
+        else:
+            progress = len(completed_trials) / self.max_trials
+
         return ExperimentStats(
             trials_completed=trials_completed,
             best_trials_id=best_trials_id,
@@ -712,7 +722,7 @@ class Experiment(Generic[AlgoT]):
             if isinstance(eta, datetime.timedelta)
             else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
-            progress=len(completed_trials) / len(trials),
+            progress=progress,
         )
 
     def __repr__(self):

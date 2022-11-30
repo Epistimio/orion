@@ -4,6 +4,13 @@ import { Backend } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
 import { ExperimentStatusBar } from '../ExperimentStatusBar';
 
+/**
+ * TODO: Try to load bar only for displayed experiments in navbar (e.g. use progressive loading)
+ * TODO: Display max_trials somewhere on dashboard
+ * TODO: Compute progress bar using max(nb_trials, max_trials) instead of number of trials
+ * TODO: If max_trials is infinite, display a message like N/A
+ */
+
 import {
   SideNav,
   StructuredListWrapper,
