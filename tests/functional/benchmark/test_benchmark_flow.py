@@ -10,8 +10,8 @@ from orion.benchmark.task import BenchmarkTask, Branin
 from orion.storage.base import setup_storage
 
 algorithms = [
-    {"algorithm": {"random": {"seed": 1}}},
-    {"algorithm": {"tpe": {"seed": 1}}},
+    {"random": {"seed": 1}},
+    {"tpe": {"seed": 1}},
 ]
 
 
@@ -74,7 +74,7 @@ def test_simple():
 
     status = benchmark.status()
 
-    experiments = benchmark.experiments()
+    experiments = benchmark.get_experiments()
 
     assert len(experiments) == len(algorithms) * repetitions * len(assessments) * len(
         tasks

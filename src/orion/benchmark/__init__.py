@@ -209,7 +209,7 @@ class Benchmark:
         """Return all the experiments submitted in benchmark"""
         experiment_table = []
         for study in self.studies:
-            for exp in study.get_experiments():
+            for _, exp in study.get_experiments():
                 exp_column = dict()
                 stats = exp.stats
                 exp_column["Algorithm"] = list(exp.configuration["algorithms"].keys())[
@@ -482,7 +482,7 @@ class Study:
         for repetition_index, experiment in self.experiments_info:
             if (
                 algorithms is None
-                or type(experiment.algorithms.algorithm).__name__.lower() in algorithms
+                or list(experiment.algorithms.configuration.keys())[0] in algorithms
             ):
                 exps.append((repetition_index, experiment))
         return exps

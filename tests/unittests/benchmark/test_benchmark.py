@@ -48,8 +48,8 @@ class TestBenchmark:
             "targets": [
                 {
                     "assess": {
-                        "AverageResult": {"task_num": 2},
-                        "AverageRank": {"task_num": 2},
+                        "AverageResult": {"repetitions": 2},
+                        "AverageRank": {"repetitions": 2},
                     },
                     "task": {
                         "RosenBrock": {"dim": 3, "max_trials": 25},
@@ -98,7 +98,7 @@ class TestBenchmark:
         """Test to get the status of a benchmark"""
         experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-        study.experiments_info = experiments
+        study.experiments_info = list(enumerate(experiments))
 
         benchmark.studies = [study]
 
@@ -125,7 +125,7 @@ class TestBenchmark:
     def test_analysis(self, orionstate, benchmark, study, study_experiments_config):
         """Test to analysis benchmark result"""
         experiments = create_study_experiments(orionstate, **study_experiments_config)
-        study.experiments_info = experiments
+        study.experiments_info = list(enumerate(experiments))
 
         benchmark.studies = [study]
 
@@ -149,7 +149,7 @@ class TestBenchmark:
         """Test to get experiments list of a benchmark"""
         experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-        study.experiments_info = experiments
+        study.experiments_info = list(enumerate(experiments))
 
         benchmark.studies = [study]
 
@@ -195,8 +195,8 @@ class TestStudy:
         """Test study creation with all support algorithms input format"""
 
         algorithms = [
-            {"algorithm": {"gridsearch": {"n_values": 1}}, "deterministic": True},
-            {"algorithm": "tpe"},
+            {"gridsearch": {"n_values": 1}},
+            "tpe",
             {"random": {"seed": 1}},
             "asha",
         ]
@@ -224,7 +224,7 @@ class TestStudy:
         study.setup_experiments()
 
         assert len(study.experiments_info) == 4
-        assert isinstance(study.experiments_info[0], ExperimentClient)
+        assert isinstance(study.experiments_info[0][1], ExperimentClient)
 
     def test_execute(self, study):
         """Test to execute a study"""
@@ -249,7 +249,7 @@ class TestStudy:
         """Test to get status of a study"""
         experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-        study.experiments_info = experiments
+        study.experiments_info = list(enumerate(experiments))
 
         assert study.status() == [
             {
@@ -280,14 +280,11 @@ class TestStudy:
         """Test to get the ploty figure of a study"""
         experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-        study.experiments_info = experiments
+        study.experiments_info = list(enumerate(experiments))
 
         figure = study.analysis()
 
-        assert (
-            type(figure[study.assess_name][study.task_name]["regrets"])
-            is plotly.graph_objects.Figure
-        )
+        assert type(figure["regrets"]) is plotly.graph_objects.Figure
 
     def test_experiments(
         self, orionstate, study, study_experiments_config, task_number
@@ -296,9 +293,9 @@ class TestStudy:
         algo_num = len(study_experiments_config["algorithms"])
         experiments = create_study_experiments(orionstate, **study_experiments_config)
 
-        study.experiments_info = experiments
+        study.experiments_info = list(enumerate(experiments))
 
         experiments = study.get_experiments()
 
         assert len(experiments) == study_experiments_config["task_number"] * algo_num
-        assert isinstance(experiments[0], ExperimentClient)
+        assert isinstance(experiments[0][1], ExperimentClient)
