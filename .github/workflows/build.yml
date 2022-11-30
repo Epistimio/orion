@@ -70,13 +70,16 @@ jobs:
       run: |
           wget https://github.com/mozilla/geckodriver/releases/download/v0.31.0/geckodriver-v0.31.0-linux64.tar.gz
           tar -xvf geckodriver-v0.31.0-linux64.tar.gz
-          export PATH=$PATH:$(pwd)
+    - name: Create gunicorn_tmp_dir to match orion_config.yaml
+      run: mkdir -p gunicorn_tmp_dir
     - name: Launch backend
       run: orion serve -c .github/workflows/orion/orion_config.yaml &
     - name: Launch frontend
       run: orion frontend &
+    - name: Install Firefox
+      uses: browser-actions/setup-firefox@latest
     - name: Test frontend
-      run: pytest tests/functional/serving/test_frontend.py
+      run: PATH=$PATH:$(pwd) pytest tests/functional/serving/test_frontend.py
 
   test:
     needs: [pre-commit, pretest]
