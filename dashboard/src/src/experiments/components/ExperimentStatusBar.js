@@ -22,7 +22,6 @@ export class ExperimentStatusBar extends React.Component {
   constructor(props) {
     super(props);
     this.state = { status: null };
-    this.renderProgressPart = this.renderProgressPart.bind(this);
     this.onFocus = this.onFocus.bind(this);
   }
   render() {
@@ -101,6 +100,15 @@ export class ExperimentStatusBar extends React.Component {
         {this.props.withInfo ? (
           <Grid className="pb-2">
             <Row>
+              <Column>
+                {[
+                  'completed',
+                  'suspended',
+                  'interrupted',
+                  'broken',
+                  'reserved',
+                ].map(trialStatus => this.renderLegendPart(trialStatus))}
+              </Column>
               <Column className="justify-content-end">
                 <strong>Progress</strong>:&nbsp;
                 <code>{floatToPercent(this.state.status.progress)} %</code>
@@ -112,6 +120,22 @@ export class ExperimentStatusBar extends React.Component {
           ''
         )}
       </div>
+    );
+  }
+  renderLegendPart(trialStatus) {
+    return (
+      <>
+        <ProgressBar
+          key={trialStatus}
+          now={100}
+          style={{ width: '1rem' }}
+          variant={StatusToProgress[trialStatus]}
+        />
+        <div className="px-1">
+          {trialStatus.charAt(0).toUpperCase()}
+          {trialStatus.slice(1)}
+        </div>
+      </>
     );
   }
   renderProgressPart(trialStatus) {
