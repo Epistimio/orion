@@ -6,12 +6,9 @@ Serves all the requests made to benchmarks/ REST endpoint.
 
 """
 import json
-from typing import Optional
 
 from falcon import Request, Response
 
-from orion.core.worker.experiment import Experiment
-from orion.core.worker.trial import Trial
 from orion.serving.parameters import retrieve_benchmark, verify_query_parameters
 from orion.serving.responses import build_benchmark_response, build_benchmarks_response
 
@@ -48,31 +45,3 @@ class BenchmarksResource:
 
         response = build_benchmark_response(benchmark, assessment, task, algorithms)
         resp.body = json.dumps(response)
-
-
-def _retrieve_status(experiment: Experiment) -> str:
-    """
-    Determines the status of an experiment.
-
-    Returns
-    -------
-        "done" if the experiment is complete, otherwise "not done".
-    """
-    return "done" if experiment.is_done else "not done"
-
-
-def _retrieve_algorithm(experiment: Experiment) -> dict:
-    """Populates the `algorithm` key with the configuration of the experiment's algorithm."""
-    algorithm_name = list(experiment.algorithms.configuration.keys())[0]
-
-    result = {"name": algorithm_name}
-    result.update(experiment.algorithms.configuration[algorithm_name])
-    return result
-
-
-def _retrieve_best_trial(experiment: Experiment) -> Optional[Trial]:
-    """Constructs the view of the best trial if there is one"""
-    if not experiment.stats:
-        return None
-
-    return experiment.get_trial(uid=experiment.stats.best_trials_id)
