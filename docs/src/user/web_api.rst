@@ -306,6 +306,99 @@ visualize your experiments and their results.
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
 
+Benchmarks
+----------
+The benchmark resource permits the retrieval of in-progress and completed benchmarks. You can
+retrieve individual benchmarks as well as a list of all your benchmarks.
+
+.. http:get:: /benchmarks
+
+   Return an unordered list of your benchmarks.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      [
+        {
+          "name": "branin_baselines",
+          "algorithms": ["gridsearch", "random"],
+          "assessments": {"AverageResult": {"repetitions": 2}},
+          "tasks": {"Branin": {"max_trials": 10}},
+        },
+        {
+          "name": "another_benchmark",
+          "algorithms": ["gridsearch", {"random": {"seed": 1}}],
+          "assessments": {
+            "AverageRank": {"repetitions": 2},
+            "AverageResult": {"repetitions": 2},
+          },
+          "tasks": {
+            "Branin": {"max_trials": 10},
+            "CarromTable": {"max_trials": 20},
+            "EggHolder": {"dim": 4, "max_trials": 20},
+          },
+        },
+      ]
+
+   :>jsonarr name: Name of the benchmark.
+   :>jsonarr algorithms: Algorithms of the benchmark.
+   :>jsonarr assessments: Assessments used in the benchmark.
+   :>jsonarr tasks: Tasks covered by the benchmark.
+
+.. http:get:: /benchmarks/:name
+
+   Retrieve the details of the existing benchmark named ``name``.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+        "name": "all_algos_webapi",
+        "algorithms": ["gridsearch", {"random": {'seed': 1}}],
+        "tasks": [{"Branin": {"max_trials": 5}}, {"RosenBrock": {"dim": 3, "max_trials": 5}}],
+        "assessments": [{"AverageResult": {"repetitions": 3}}],
+        "analysis": {
+          "AverageResult": {
+            "Branin": <plotly json encoding>
+            "RosenBrock": <plotly json encoding>
+          }
+        }
+      }
+
+   :query asssessment: Optional, specific assessment to analyse. All assessments will appear as
+                       part of the benchmark configuration, but the analysis dictionary will
+                       only contain the specified assessment.
+   :query task: Optional, specific task to analyse. All tasks will appear as
+                part of the benchmark configuration, but the analysis dictionary will
+                only contain the specified task.
+   :query algorithms: Optional, specific algorithms to include in the analyse. Multiple
+                values may be passed.
+                All algorithms will appear as part of the benchmark configuration, but
+                the analysis will be executed on the specified algorithms only.
+
+   :>jsonarr name: Name of the benchmark.
+   :>jsonarr algorithms: Algorithms of the benchmark.
+   :>jsonarr assessments: Assessments used in the benchmark.
+   :>jsonarr tasks: Tasks covered by the benchmark.
+   :>jsonarr analysis: Dictionary of format {assessment_name: {task: <plotly json>}}
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified benchmark does not exist in the database,
+                    or assessment, task or algorithms are not part of the existing benchmark
+                    configuration.
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
