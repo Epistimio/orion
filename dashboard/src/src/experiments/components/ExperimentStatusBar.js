@@ -50,8 +50,9 @@ export class ExperimentStatusBar extends React.Component {
       );
     return (
       <div>
+        {this.props.withInfo ? this.renderExperimentInfo() : ''}
         {this.props.withInfo ? (
-          <Grid className="pb-2">
+          <Grid fullWidth className="mb-2">
             <Row>
               <Column>
                 <strong>Elapsed time</strong>:&nbsp;
@@ -60,12 +61,12 @@ export class ExperimentStatusBar extends React.Component {
                   Time elapsed since the beginning of the HPO execution
                 </Tooltip>
               </Column>
-              <Column className="justify-content-center">
+              <Column className="text-sm-center">
                 <strong>Sum of trials time</strong>:&nbsp;
                 <code>{this.state.status.whole_clock_time}</code>
                 <Tooltip>Sum of trials execution time</Tooltip>
               </Column>
-              <Column className="justify-content-end">
+              <Column className="text-sm-right">
                 <strong>ETA</strong>:&nbsp;
                 <code>
                   {this.state.status.eta === null
@@ -86,7 +87,7 @@ export class ExperimentStatusBar extends React.Component {
         ) : (
           ''
         )}
-        <div {...(this.props.withInfo ? { className: 'pb-2' } : {})}>
+        <div {...(this.props.withInfo ? { className: 'mb-2' } : {})}>
           <ProgressBar>
             {[
               'completed',
@@ -94,22 +95,24 @@ export class ExperimentStatusBar extends React.Component {
               'interrupted',
               'broken',
               'reserved',
-            ].map(trialStatus => this.renderProgressPart(trialStatus))}
+            ].map((trialStatus, i) => this.renderProgressPart(trialStatus, i))}
           </ProgressBar>
         </div>
         {this.props.withInfo ? (
-          <Grid className="pb-2">
+          <Grid className="mb-4">
             <Row>
-              <Column>
+              <Column className="d-flex flex-row">
                 {[
                   'completed',
                   'suspended',
                   'interrupted',
                   'broken',
                   'reserved',
-                ].map(trialStatus => this.renderLegendPart(trialStatus))}
+                ].map((trialStatus, i) =>
+                  this.renderLegendPart(trialStatus, i)
+                )}
               </Column>
-              <Column className="justify-content-end">
+              <Column className="text-sm-right">
                 <strong>Progress</strong>:&nbsp;
                 <code>
                   {this.state.status.progress === null
@@ -126,25 +129,44 @@ export class ExperimentStatusBar extends React.Component {
       </div>
     );
   }
-  renderLegendPart(trialStatus) {
+  renderExperimentInfo() {
+    const stats = this.state.status;
+    const rows = [
+      {
+        title: 'Best trial ID',
+        value:
+          stats.best_trials_id === null ? '(unknown)' : stats.best_trials_id,
+      },
+      {
+        title: 'Best evaluation',
+        value:
+          stats.best_evaluation === null ? '(unknown)' : stats.best_evaluation,
+      },
+      { title: 'Start time', value: stats.start_time },
+      { title: 'Finish time', value: stats.finish_time },
+      { title: 'Trials', value: stats.nb_trials },
+      { title: 'Max trials', value: stats.max_trials },
+    ];
     return (
-      <>
-        <ProgressBar
-          key={trialStatus}
-          now={100}
-          style={{ width: '1rem' }}
-          variant={StatusToProgress[trialStatus]}
-        />
-        <div className="px-1">
-          {trialStatus.charAt(0).toUpperCase()}
-          {trialStatus.slice(1)}
-        </div>
-      </>
+      <div>
+        <h3 className="text-center mb-2">Experiment "{this.props.name}"</h3>
+        <Grid className="mb-3">
+          {rows.map((row, indexRow) => (
+            <Row key={indexRow}>
+              <Column className="text-right">
+                <strong>{row.title}</strong>
+              </Column>
+              <Column>{row.value}</Column>
+            </Row>
+          ))}
+        </Grid>
+      </div>
     );
   }
-  renderProgressPart(trialStatus) {
+  renderProgressPart(trialStatus, key) {
     return (
       <ProgressBar
+        key={key}
         variant={StatusToProgress[trialStatus]}
         now={floatToPercent(
           this.state.status.trial_status_count[trialStatus] /
@@ -153,8 +175,22 @@ export class ExperimentStatusBar extends React.Component {
         title={`${trialStatus} (${this.state.status.trial_status_count[trialStatus]})`}
         onClick={() => this.onFocus(trialStatus)}
         striped={this.props.focus === trialStatus}
-        key={trialStatus}
       />
+    );
+  }
+  renderLegendPart(trialStatus, key) {
+    return (
+      <div key={key} className="d-flex flex-row align-items-baseline">
+        <ProgressBar
+          now={100}
+          style={{ width: '1rem' }}
+          variant={StatusToProgress[trialStatus]}
+        />
+        <div className="px-1">
+          {trialStatus.charAt(0).toUpperCase()}
+          {trialStatus.slice(1)}
+        </div>
+      </div>
     );
   }
   componentDidMount() {
