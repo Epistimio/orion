@@ -736,7 +736,7 @@ class Experiment(Generic[AlgoT]):
             else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
             progress=progress,
-            max_trials=self.max_trials
+            max_trials=("infinite" if math.isinf(self.max_trials) else self.max_trials),
         )
 
     def __repr__(self):
