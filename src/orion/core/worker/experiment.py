@@ -60,6 +60,20 @@ class ExperimentStats:
        When Experiment reached terminating condition and stopped running.
     duration: `datetime.timedelta`
        Elapsed time.
+    max_trials: int
+        Experiment max_trials
+    nb_trials: int
+        Number of trials in experiment
+    progress: float
+        Experiment progression (between 0 and 1).
+    trial_status_count: Dict[str, int]
+        Dictionary mapping trial status to number of trials that have this status
+    whole_clock_time: `datetime.timedelta`
+        Sum of trial duration
+    eta: `datetime.timedelta`
+        Estimated remaining time
+    eta_milliseconds: float
+        ETA in milliseconds (used to get ETA in other programming languages, e.g. Javascript)
     """
 
     trials_completed: int
@@ -67,6 +81,7 @@ class ExperimentStats:
     best_evaluation: float
     start_time: datetime.datetime
     finish_time: datetime.datetime
+    max_trials: int
     nb_trials: int
     progress: float
     trial_status_count: dict = field(default_factory=dict)
@@ -715,14 +730,13 @@ class Experiment(Generic[AlgoT]):
                 start=datetime.timedelta(),
             ),
             nb_trials=len(trials),
-            # TODO
-            # Maybe create 2-3 more experiments to test these cases
             eta=eta,
             eta_milliseconds=eta.total_seconds() * 1000
             if isinstance(eta, datetime.timedelta)
             else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
             progress=progress,
+            max_trials=self.max_trials
         )
 
     def __repr__(self):
