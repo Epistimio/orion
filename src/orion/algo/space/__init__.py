@@ -1103,7 +1103,7 @@ class Space(dict):
 
         Raises
         ------
-        ValueError is the trial has parameters that are not contained by the space.
+        ValueError if the trial has parameters that are not contained by the space.
 
         """
         if isinstance(trial, str):
