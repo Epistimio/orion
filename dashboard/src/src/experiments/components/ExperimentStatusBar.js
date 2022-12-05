@@ -75,10 +75,10 @@ export class ExperimentStatusBar extends React.Component {
                     ? 0
                     : this.state.status.eta === 'infinite'
                     ? '\u221E'
-                    : `${this.state.status.eta} (at ${new Date(
+                    : `${this.state.status.eta} @ ${new Date(
                         new Date().getTime() +
                           this.state.status.eta_milliseconds
-                      ).toLocaleString()})`}
+                      ).toLocaleString()}`}
                 </code>
                 <Tooltip>Estimated time for experiment to finish</Tooltip>
               </Column>
@@ -88,15 +88,27 @@ export class ExperimentStatusBar extends React.Component {
           ''
         )}
         <div {...(this.props.withInfo ? { className: 'mb-2' } : {})}>
-          <ProgressBar>
-            {[
-              'completed',
-              'suspended',
-              'interrupted',
-              'broken',
-              'reserved',
-            ].map((trialStatus, i) => this.renderProgressPart(trialStatus, i))}
-          </ProgressBar>
+          {this.state.status.max_trials === 'infinite' ? (
+            <ProgressBar
+              striped={true}
+              label={'N/A'}
+              title={'N/A (max trials \u221E)'}
+              now={100}
+              variant="running"
+            />
+          ) : (
+            <ProgressBar>
+              {[
+                'completed',
+                'suspended',
+                'interrupted',
+                'broken',
+                'reserved',
+              ].map((trialStatus, i) =>
+                this.renderProgressPart(trialStatus, i)
+              )}
+            </ProgressBar>
+          )}
         </div>
         {this.props.withInfo ? (
           <Grid className="mb-4">
@@ -145,7 +157,10 @@ export class ExperimentStatusBar extends React.Component {
       { title: 'Start time', value: stats.start_time },
       { title: 'Finish time', value: stats.finish_time },
       { title: 'Trials', value: stats.nb_trials },
-      { title: 'Max trials', value: stats.max_trials },
+      {
+        title: 'Max trials',
+        value: stats.max_trials === 'infinite' ? '\u221E' : stats.max_trials,
+      },
     ];
     return (
       <div>
@@ -164,15 +179,19 @@ export class ExperimentStatusBar extends React.Component {
     );
   }
   renderProgressPart(trialStatus, key) {
+    const stats = this.state.status;
+    const progressBase = Math.max(stats.max_trials, stats.nb_trials);
     return (
       <ProgressBar
         key={key}
         variant={StatusToProgress[trialStatus]}
         now={floatToPercent(
-          this.state.status.trial_status_count[trialStatus] /
-            this.state.status.nb_trials
+          (this.state.status.trial_status_count[trialStatus] || 0) /
+            progressBase
         )}
-        title={`${trialStatus} (${this.state.status.trial_status_count[trialStatus]})`}
+        title={`${trialStatus} (${this.state.status.trial_status_count[
+          trialStatus
+        ] || 0})`}
         onClick={() => this.onFocus(trialStatus)}
         striped={this.props.focus === trialStatus}
       />
@@ -188,7 +207,8 @@ export class ExperimentStatusBar extends React.Component {
         />
         <div className="px-1">
           {trialStatus.charAt(0).toUpperCase()}
-          {trialStatus.slice(1)}
+          {trialStatus.slice(1)} (
+          {this.state.status.trial_status_count[trialStatus] || 0})
         </div>
       </div>
     );

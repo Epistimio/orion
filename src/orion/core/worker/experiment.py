@@ -709,14 +709,14 @@ class Experiment(Generic[AlgoT]):
             )
 
         # Compute progress
-        if (
-            not self.max_trials
-            or math.isinf(self.max_trials)
-            or len(completed_trials) > self.max_trials
-        ):
+        if self.max_trials is None or math.isinf(self.max_trials):
             progress = None
         else:
-            progress = len(completed_trials) / self.max_trials
+            progress_base = max(self.max_trials, len(trials))
+            if progress_base == 0:
+                progress = None
+            else:
+                progress = len(completed_trials) / progress_base
 
         return ExperimentStats(
             trials_completed=trials_completed,
