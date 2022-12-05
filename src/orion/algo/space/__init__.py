@@ -1103,7 +1103,7 @@ class Space(dict):
 
         Raises
         ------
-        ValueError is the trial has parameters that are not contained by the space.
+        ValueError if the trial has parameters that are not contained by the space.
 
         """
         if isinstance(trial, str):
@@ -1144,7 +1144,7 @@ class Space(dict):
             If str, test if the string is a dimension part of the search space.
             If a Trial, test if trial's hyperparameters fit the current search space.
         """
-        
+
         try:
             self.assert_contains(key_or_trial)
             return True
