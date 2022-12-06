@@ -866,6 +866,19 @@ class ReshapedSpace(Space):
         trials = self.original.sample(n_samples=n_samples, seed=seed)
         return [self.reshape(trial) for trial in trials]
 
+    def assert_contains(self, key_or_trial):
+        """Check if the trial or key is contained inside the space, if not an exception is raised
+
+        Raises
+        ------
+        TypeError when a dimension is not compatible with the space
+
+        """
+        if isinstance(key_or_trial, str):
+            super().assert_contains(key_or_trial)
+
+        return self.original.assert_contains(self.restore_shape(key_or_trial))
+
     def __contains__(self, key_or_trial):
         """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
@@ -877,10 +890,11 @@ class ReshapedSpace(Space):
             If a Trial, test if trial's hyperparameters fit the current search space.
 
         """
-        if isinstance(key_or_trial, str):
-            return super().__contains__(key_or_trial)
-
-        return self.restore_shape(key_or_trial) in self.original
+        try:
+            self.assert_contains(key_or_trial)
+            return True
+        except ValueError:
+            return False
 
     @property
     def cardinality(self):
