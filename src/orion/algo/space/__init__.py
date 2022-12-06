@@ -1107,8 +1107,7 @@ class Space(dict):
 
         """
         if isinstance(trial, str):
-            contains = super().__contains__(trial)
-            if not contains:
+            if not super().__contains__(trial):
                 raise ValueError("{trial} does not nelong to the dimension")
             return
 
@@ -1128,7 +1127,6 @@ class Space(dict):
             keys.remove(dim_name)
 
         if len(errors) > 0:
-            errors = "\n - ".join(errors)
             raise ValueError(f"Trial {trial.id} is not contained in space:\n{errors}")
 
         if len(keys) != 0:
