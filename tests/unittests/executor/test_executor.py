@@ -4,6 +4,7 @@ import pytest
 
 from orion.executor.base import AsyncException, ExecutorClosed, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
+from orion.executor.ray_backend import HAS_RAY, Ray
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
 
@@ -38,12 +39,34 @@ def xfail_dask_if_not_installed(
         ),
     )
 
+def skip_ray_if_not_installed(
+    value, reason="Ray dependency is required for these tests."
+):
+    return pytest.param(
+        value,
+        marks=pytest.mark.skipif(
+            not HAS_RAY,
+            reason=reason,
+        ),
+    )
+
+
+def xfail_ray_if_not_installed(
+    value, reason="Ray dependency is required for these tests."
+):
+    return pytest.param(
+        value,
+        marks=pytest.mark.xfail(
+            condition=not HAS_RAY, reason=reason, raises=ImportError
+        ),
+    )
 
 executors = [
     "joblib",
     "poolexecutor",
     "singleexecutor",
     skip_dask_if_not_installed("dask"),
+    skip_ray_if_not_installed("ray"),
 ]
 
 backends = [
@@ -51,6 +74,7 @@ backends = [
     multiprocess,
     SingleExecutor,
     skip_dask_if_not_installed(Dask),
+    skip_ray_if_not_installed(Ray),
 ]
 
 
