@@ -866,7 +866,7 @@ class ReshapedSpace(Space):
         trials = self.original.sample(n_samples=n_samples, seed=seed)
         return [self.reshape(trial) for trial in trials]
 
-    def assert_contains(self, key_or_trial):
+    def assert_contains(self, trial):
         """Check if the trial or key is contained inside the space, if not an exception is raised
 
         Raises
@@ -874,10 +874,10 @@ class ReshapedSpace(Space):
         TypeError when a dimension is not compatible with the space
 
         """
-        if isinstance(key_or_trial, str):
-            super().assert_contains(key_or_trial)
+        if isinstance(trial, str):
+            super().assert_contains(trial)
 
-        return self.original.assert_contains(self.restore_shape(key_or_trial))
+        return self.original.assert_contains(self.restore_shape(trial))
 
     def __contains__(self, key_or_trial):
         """Check whether `trial` is within the bounds of the space.
