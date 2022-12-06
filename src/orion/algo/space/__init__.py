@@ -1108,7 +1108,7 @@ class Space(dict):
         """
         if isinstance(trial, str):
             if not super().__contains__(trial):
-                raise ValueError("{trial} does not nelong to the dimension")
+                raise ValueError("{trial} does not belong to the dimension")
             return
 
         flattened_params = flatten(trial.params)
