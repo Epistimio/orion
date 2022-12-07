@@ -104,16 +104,8 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
 
     def real(self, dim: Real) -> FloatHyperparameter:
         """Convert a real dimension into a configspace equivalent"""
-        args = normalize_args(dim, dim.prior)
-
         if dim.prior_name in ("reciprocal", "uniform"):
-            # NB: scipy uniform [loc, scale], configspace [min, max] with max = loc + scale, loc = min
-            if dim.prior_name == "uniform":
-                loc, scale = args
-                lower = loc
-                upper = loc + scale
-            else:
-                lower, upper = normalize_args(dim, dim.prior, ["a", "b"])
+            lower, upper = dim.interval()
 
             return UniformFloatHyperparameter(
                 name=dim.name,
@@ -125,7 +117,7 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
             )
 
         if dim.prior_name in ("normal", "norm"):
-            a, b = args
+            a, b = normalize_args(dim, dim.prior)
 
             kwargs = dict(
                 name=dim.name,
@@ -144,15 +136,9 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
 
     def integer(self, dim: Integer) -> IntegerHyperparameter:
         """Convert a integer dimension into a configspace equivalent"""
-        args = normalize_args(dim, dim.prior)
 
         if dim.prior_name in ("int_uniform", "int_reciprocal"):
-            if dim.prior_name == "int_uniform":
-                loc, scale = args
-                lower = loc
-                upper = loc + scale
-            else:
-                lower, upper = normalize_args(dim, dim.prior, ["a", "b"])
+            lower, upper = dim.interval()
 
             return UniformIntegerHyperparameter(
                 name=dim.name,
@@ -164,7 +150,7 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
             )
 
         if dim.prior_name in ("int_norm", "normal"):
-            a, b = args
+            a, b = normalize_args(dim, dim.prior)
 
             kwargs = dict(
                 name=dim.name,
