@@ -1,5 +1,5 @@
 import traceback
-
+import os
 from orion.executor.base import (
     AsyncException,
     AsyncResult,
@@ -49,14 +49,17 @@ class _Future(Future):
 
 
 class Ray(BaseExecutor):
-    def __init__(self, n_workers=-1, **config):
+    def __init__(self, n_workers=-1, runtime_env=None, **config,):
         super().__init__(n_workers=n_workers)
-        
         if not HAS_RAY:
             raise ImportError("Ray must be installed to use Ray executor.")
         self.config = config
-        ray.init()
-        print("Ray was initiated")
+        if not ray.is_initialized():
+            if runtime_env is None:
+                ray.init()
+            else:
+                ray.init(runtime_env=runtime_env)
+            print("Ray was initiated")
     
     def __getstate__(self):
         return super().__getstate__()
