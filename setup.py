@@ -59,7 +59,7 @@ extras_require = {
         "ConfigSpace",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
-    "pb2": ["GPy"],
+    "pb2": ["GPy", "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
         "numpy",
@@ -132,7 +132,7 @@ setup_args = dict(
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
-        "numpy",
+        "numpy>=1.17",
         "scipy",
         "gitpython",
         "filelock",
@@ -179,7 +179,7 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.8 3.9".split()]
+] + [("Programming Language :: Python :: %s" % x) for x in "3 3.7 3.8 3.9 3.10".split()]
 
 if __name__ == "__main__":
     setup(**setup_args)

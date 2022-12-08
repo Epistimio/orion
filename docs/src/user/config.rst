@@ -108,7 +108,7 @@ Full Example of Global Configuration
         heartbeat: 120
         interrupt_signal_code: 130
         max_broken: 10
-        reservation_timeout: 60
+        idle_timeout: 60
         max_trials: 1000000000
         user_script_config: config
 
@@ -365,7 +365,7 @@ Worker
         heartbeat: 120
         interrupt_signal_code: 130
         max_broken: 10
-        reservation_timeout: 60
+        idle_timeout: 60
         max_trials: 1000000000
         user_script_config: config
 
@@ -464,14 +464,14 @@ max_broken
     Maximum number of broken trials before worker stops.
 
 
-.. _config_worker_reservation_timeout:
+.. _config_worker_idle_timeout:
 
-reservation_timeout
+idle_timeout
 ~~~~~~~~~~~~~~~~~~~
 
 :Type: int
 :Default: 60
-:Env var: ORION_RESERVATION_TIMEOUT
+:Env var: ORION_IDLE_TIMEOUT
 :Description:
     Maximum time the experiment can spend trying to reserve a new suggestion. Such timeout are
     generally caused by slow database, large number of concurrent workers leading to many race
@@ -487,13 +487,13 @@ max_idle_time
 .. warning::
 
    **DEPRECATED.** This argument will be removed in v0.3.
-   Use :ref:`config_worker_reservation_timeout` instead.
+   Use :ref:`config_worker_idle_timeout` instead.
 
 :Type: int
 :Default: 60
 :Env var: ORION_MAX_IDLE_TIME
 :Description:
-    (DEPRECATED) This argument will be removed in v0.3. Use :ref:`config_worker_reservation_timeout`
+    (DEPRECATED) This argument will be removed in v0.3. Use :ref:`config_worker_idle_timeout`
     instead.
 
 

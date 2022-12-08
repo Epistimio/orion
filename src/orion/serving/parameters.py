@@ -2,15 +2,19 @@
 Common code for verifying query parameters
 ==========================================
 """
-from typing import Optional
+from typing import List, Optional
 
 import falcon
 
+from orion.benchmark import Benchmark
+from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.core.io import experiment_builder
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.serving.responses import (
+    ERROR_BENCHMARK_NOT_FOUND,
+    ERROR_BENCHMARK_STUDY_NOT_FOUND,
     ERROR_EXPERIMENT_NOT_FOUND,
     ERROR_INVALID_PARAMETER,
     ERROR_TRIAL_NOT_FOUND,
@@ -114,3 +118,50 @@ def retrieve_trial(experiment: Experiment, trial_id: str):
             description=f'Trial "{trial_id}" does not exist',
         )
     return trial
+
+
+def retrieve_benchmark(
+    storage,
+    benchmark_name: str,
+    assessment: Optional[str] = None,
+    task: Optional[str] = None,
+    algorithms: Optional[List[str]] = None,
+) -> Optional[Benchmark]:
+    """
+    Retrieve an benchmark from the database with the given name.
+
+    Parameters
+    ----------
+    benchmark_name: str
+        Name of the benchmark to fetch.
+    assessment: str or None, optional
+        Filter analysis and only return those for the given assessment name.
+        This value will only be validated, no analysis is computed here.
+    task: str or None, optional
+        Filter analysis and only return those for the given task name.
+        This value will only be validated, no analysis is computed here.
+    algorithms: list of str or None, optional
+        Compute analysis only on specified algorithms. Compute on all otherwise.
+        This value will only be validated, no analysis is computed here.
+
+    Raises
+    ------
+    falcon.HTTPNotFound
+        When the benchmark doesn't exist
+    """
+    try:
+        benchmark = get_or_create_benchmark(storage, benchmark_name)
+        benchmark.validate_assessment(assessment)
+        benchmark.validate_task(task)
+        benchmark.validate_algorithms(algorithms)
+        return benchmark
+    except ValueError as e:
+        raise falcon.HTTPNotFound(
+            title=ERROR_BENCHMARK_STUDY_NOT_FOUND,
+            description=str(e),
+        )
+    except NoConfigurationError:
+        raise falcon.HTTPNotFound(
+            title=ERROR_BENCHMARK_NOT_FOUND,
+            description=f'Benchmark "{benchmark_name}" does not exist',
+        )

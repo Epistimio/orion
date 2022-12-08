@@ -22,7 +22,7 @@ def max_trial():
 @pytest.fixture
 def benchmark_algorithms():
     """Return a list of algorithms suitable for Orion experiment"""
-    return [{"algorithm": {"random": {"seed": 1}}}, {"algorithm": {"tpe": {"seed": 1}}}]
+    return [{"random": {"seed": 1}}, {"tpe": {"seed": 1}}]
 
 
 @pytest.fixture
@@ -33,8 +33,8 @@ def benchmark_config(benchmark_algorithms):
         "targets": [
             {
                 "assess": {
-                    "AverageResult": {"task_num": 2},
-                    "AverageRank": {"task_num": 2},
+                    "AverageResult": {"repetitions": 2},
+                    "AverageRank": {"repetitions": 2},
                 },
                 "task": {
                     "RosenBrock": {"dim": 3, "max_trials": 25},
@@ -83,7 +83,7 @@ def experiment_config(max_trial, benchmark_algorithms):
         pool_size=1,
         max_trials=max_trial,
         working_dir="",
-        algorithms=benchmark_algorithms[0]["algorithm"],
+        algorithms=benchmark_algorithms[0],
         producer={"strategy": "NoParallelStrategy"},
     )
     return config

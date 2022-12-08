@@ -10,8 +10,8 @@ from orion.benchmark.task import BenchmarkTask, Branin
 from orion.storage.base import setup_storage
 
 algorithms = [
-    {"algorithm": {"random": {"seed": 1}}},
-    {"algorithm": {"tpe": {"seed": 1}}},
+    {"random": {"seed": 1}},
+    {"tpe": {"seed": 1}},
 ]
 
 
@@ -52,9 +52,9 @@ class BirdLike(BenchmarkTask):
 @pytest.mark.usefixtures("orionstate")
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
-    task_num = 2
+    repetitions = 2
     max_trials = 10
-    assessments = [AverageResult(task_num), AverageRank(task_num)]
+    assessments = [AverageResult(repetitions), AverageRank(repetitions)]
     tasks = [
         Branin(max_trials),
         BirdLike(max_trials),
@@ -74,9 +74,9 @@ def test_simple():
 
     status = benchmark.status()
 
-    experiments = benchmark.experiments()
+    experiments = benchmark.get_experiments()
 
-    assert len(experiments) == len(algorithms) * task_num * len(assessments) * len(
+    assert len(experiments) == len(algorithms) * repetitions * len(assessments) * len(
         tasks
     )
 

@@ -1,7 +1,7 @@
 storage:
   database:
-      host: '.github/workflows/orion/db_dashboard_full.pkl'
-      type: 'pickleddb'
+      name: 'orion_dashboard_test'
+      type: 'mongodb'
 
 gunicorn:
    bind: '127.0.0.1:8000'

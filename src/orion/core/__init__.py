@@ -315,30 +315,10 @@ def define_worker_config(config):
         env_var="ORION_MAX_IDLE_TIME",
         deprecate=dict(
             version="v0.3",
-            alternative="worker.reservation_timeout",
+            alternative="worker.idle_timeout",
             name="worker.max_idle_time",
         ),
-        help=(
-            "This argument will be removed in v0.3.0. Use reservation_timeout instead."
-        ),
-    )
-
-    worker_config.add_option(
-        "reservation_timeout",
-        option_type=int,
-        default=60,
-        env_var="ORION_RESERVATION_TIMEOUT",
-        deprecate=dict(
-            version="v0.4",
-            alternative="worker.idle_timeout",
-            name="worker.reservation_timeout",
-        ),
-        help=(
-            "Maximum time the experiment can spend trying to reserve a new suggestion."
-            "Such timeout are generally caused by slow database, large number of "
-            "concurrent workers leading to many race conditions or small search spaces "
-            "with integer/categorical dimensions that may be fully explored."
-        ),
+        help=("This argument will be removed in v0.3.0. Use idle_timeout instead."),
     )
 
     worker_config.add_option(

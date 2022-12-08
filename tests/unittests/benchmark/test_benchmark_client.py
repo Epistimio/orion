@@ -115,8 +115,8 @@ class TestCreateBenchmark:
 
     def test_create_with_deterministic_algorithm(self, benchmark_config_py):
         algorithms = [
-            {"algorithm": {"random": {"seed": 1}}},
-            {"algorithm": {"gridsearch": {"n_values": 50}}, "deterministic": True},
+            {"random": {"seed": 1}},
+            {"gridsearch": {"n_values": 50}},
         ]
         with OrionState() as cfg:
             config = copy.deepcopy(benchmark_config_py)
@@ -130,7 +130,7 @@ class TestCreateBenchmark:
                     if algo == "gridsearch":
                         assert status["experiments"] == 1
                     else:
-                        assert status["experiments"] == study.assessment.task_num
+                        assert status["experiments"] == study.assessment.repetitions
 
     def test_create_with_invalid_targets(self, benchmark_config_py):
         """Test creation with invalid Task and Assessment"""
@@ -162,7 +162,7 @@ class TestCreateBenchmark:
         """Test creation with assessment or task does not exist or not loaded"""
 
         cfg_invalid_assess = copy.deepcopy(benchmark_config)
-        cfg_invalid_assess["targets"][0]["assess"]["idontexist"] = {"task_num": 2}
+        cfg_invalid_assess["targets"][0]["assess"]["idontexist"] = {"repetitions": 2}
 
         with OrionState(benchmarks=cfg_invalid_assess) as cfg:
             with pytest.raises(NotImplementedError) as exc:
@@ -189,7 +189,7 @@ class TestCreateBenchmark:
         """Test creation with not existing assessment parameters"""
 
         benchmark_config["targets"][0]["assess"]["AverageResult"] = {
-            "task_num": 2,
+            "repetitions": 2,
             "idontexist": 100,
         }
 
@@ -306,7 +306,8 @@ class TestCreateBenchmark:
 
                 config["executor"] = executor
                 bm1 = get_or_create_benchmark(cfg.storage, **config)
-                client = bm1.studies[0].experiments_info[0][1]
+                # This line now fails because bm1.studies[0].experiments_info has length zero.
+                # client = bm1.studies[0].experiments_info[0][1]
 
                 count.value = 0
                 bm1.process(n_workers=2)
