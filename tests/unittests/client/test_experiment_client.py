@@ -68,7 +68,7 @@ def is_running_tox_service():
 
 
 if is_running_tox_service():
-    factories.append(create_rest_experiment)
+    factories = [create_rest_experiment]
 
 
 def is_rest(factory):
