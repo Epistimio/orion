@@ -3,6 +3,7 @@
 import copy
 import datetime
 import logging
+import os
 import time
 
 import pandas.testing
@@ -59,8 +60,15 @@ base_trial = {
 
 factories = [
     create_experiment,
-    create_rest_experiment,
 ]
+
+
+def is_running_tox_service():
+    return os.getenv("TOX_ENV_NAME") == "service"
+
+
+if is_running_tox_service():
+    factories.append(create_rest_experiment)
 
 
 def is_rest(factory):
