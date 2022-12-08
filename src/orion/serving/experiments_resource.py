@@ -96,7 +96,7 @@ def _retrieve_algorithm(experiment: Experiment) -> dict:
 
 def _retrieve_best_trial(experiment: Experiment) -> Optional[Trial]:
     """Constructs the view of the best trial if there is one"""
-    if not experiment.stats:
+    if not experiment.stats.trials_completed:
         return None
 
     return experiment.get_trial(uid=experiment.stats.best_trials_id)

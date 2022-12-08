@@ -391,7 +391,7 @@ def format_stats(experiment):
 
     """
     stats = experiment.stats
-    if not stats:
+    if not stats.trials_completed:
         return NO_STATS_TEMPLATE.format(title=format_title("Stats"))
 
     best_params = get_trial_params(stats.best_trials_id, experiment)

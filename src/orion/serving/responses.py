@@ -88,7 +88,7 @@ def build_experiment_response(
     }
 
     stats = experiment.stats
-    if stats:
+    if stats.trials_completed:
         data["trialsCompleted"] = stats.trials_completed
         data["startTime"] = str(stats.start_time)
         data["endTime"] = str(stats.finish_time)
