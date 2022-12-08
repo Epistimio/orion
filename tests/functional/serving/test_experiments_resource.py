@@ -196,6 +196,154 @@ class TestItem:
         }
 
 
+class TestStats:
+    """Test the server's response to experiments/status/:name"""
+
+    def test_non_existent_experiment(self, client, ephemeral_storage):
+        """
+        Tests that a 404 response is returned when the experiment
+        doesn't exist in the database
+        """
+        response = client.simulate_get("/experiments/status/a")
+
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "title": "Experiment not found",
+            "description": 'Experiment "a" does not exist',
+        }
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        response = client.simulate_get("/experiments/status/b")
+
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "title": "Experiment not found",
+            "description": 'Experiment "b" does not exist',
+        }
+
+    def test_experiment_specification(self, client, ephemeral_storage):
+        """Tests that the experiment stats returned is following the specification"""
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_trial(storage, experiment=1, id_override="ae8", status="completed")
+
+        response = client.simulate_get("/experiments/status/a")
+        assert response.status == "200 OK"
+        assert response.json == {
+            "trials_completed": 1,
+            "best_trials_id": "7bbfdb8c684aa5f4be324a09d7da94af",
+            "best_evaluation": 0.05,
+            "start_time": "0001-01-01 00:00:00",
+            "finish_time": "0001-01-02 00:00:00",
+            "max_trials": 10,
+            "nb_trials": 1,
+            "progress": 0.1,
+            "trial_status_count": {"completed": 1},
+            "duration": "23:59:50",
+            "whole_clock_time": "23:59:50",
+            "eta": "8 days, 23:58:30",
+            "eta_milliseconds": 777510000.0,
+        }
+
+    def test_default_is_latest_version(self, client, ephemeral_storage):
+        """Tests that the latest experiment is returned when no version parameter exists"""
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_experiment(storage, name="a", version=3, _id=2)
+        _add_experiment(storage, name="a", version=2, _id=3)
+        _add_trial(storage, experiment=1, id_override="ae8", status="completed")
+        _add_trial(storage, experiment=2, id_override="ae8", status="reserved")
+        _add_trial(storage, experiment=3, id_override="ae8", status="interrupted")
+
+        response = client.simulate_get("/experiments/status/a")
+        response1 = client.simulate_get("/experiments/status/a?version=1")
+        response3 = client.simulate_get("/experiments/status/a?version=3")
+
+        assert response.status == "200 OK"
+        assert response1.status == "200 OK"
+        assert response3.status == "200 OK"
+
+        assert response.json == {
+            "trials_completed": 0,
+            "best_trials_id": None,
+            "best_evaluation": None,
+            "start_time": "0001-01-01 00:00:00",
+            "finish_time": "0001-01-01 00:00:00",
+            "max_trials": 10,
+            "nb_trials": 1,
+            "progress": 0.0,
+            "trial_status_count": {"reserved": 1},
+            "duration": "23:59:50",
+            "whole_clock_time": "23:59:50",
+            "eta": "infinite",
+            "eta_milliseconds": None,
+        }
+
+        assert response.json == response3.json
+        assert response.json != response1.json
+
+    def test_specific_version(self, client, ephemeral_storage):
+        """Tests that the specified version of an experiment is returned"""
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+        _add_experiment(storage, name="a", version=3, _id=2)
+        _add_experiment(storage, name="a", version=2, _id=3)
+        _add_trial(storage, experiment=1, id_override="ae8", status="completed")
+        _add_trial(storage, experiment=2, id_override="ae8", status="reserved")
+        _add_trial(storage, experiment=3, id_override="ae8", status="interrupted")
+
+        response = client.simulate_get("/experiments/status/a?version=2")
+        assert response.status == "200 OK"
+        assert response.json == {
+            "trials_completed": 0,
+            "best_trials_id": None,
+            "best_evaluation": None,
+            "start_time": "0001-01-01 00:00:00",
+            "finish_time": "0001-01-01 00:00:00",
+            "max_trials": 10,
+            "nb_trials": 1,
+            "progress": 0.0,
+            "trial_status_count": {"interrupted": 1},
+            "duration": "23:59:50",
+            "whole_clock_time": "23:59:50",
+            "eta": "infinite",
+            "eta_milliseconds": None,
+        }
+
+    def test_unknown_parameter(self, client, ephemeral_storage):
+        """
+        Tests that if an unknown parameter is specified in
+        the query string, an error is returned even if the experiment doesn't exist.
+        """
+        response = client.simulate_get("/experiments/status/a?unknown=true")
+
+        storage = ephemeral_storage.storage
+
+        assert response.status == "400 Bad Request"
+        assert response.json == {
+            "title": "Invalid parameter",
+            "description": 'Parameter "unknown" is not supported. Expected parameter "version".',
+        }
+
+        _add_experiment(storage, name="a", version=1, _id=1)
+
+        response = client.simulate_get("/experiments/status/a?unknown=true")
+
+        assert response.status == "400 Bad Request"
+        assert response.json == {
+            "title": "Invalid parameter",
+            "description": 'Parameter "unknown" is not supported. Expected parameter "version".',
+        }
+
+
 def _add_experiment(storage, **kwargs):
     """Adds experiment to the dummy orion instance"""
     base_experiment.update(copy.deepcopy(kwargs))
