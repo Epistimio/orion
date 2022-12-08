@@ -246,7 +246,9 @@ export function FeaturedTable({
             <Row>
               <Column>
                 <div>
-                  <h4 className="bx--data-table-header__title">
+                  <h4
+                    className="bx--data-table-header__title"
+                    title={`Experiment Trials for "${experiment}"`}>
                     Experiment Trials for "{experimentWords}"
                   </h4>
                   <p className="bx--data-table-header__description">
@@ -259,6 +261,7 @@ export function FeaturedTable({
               </Column>
               <Column>
                 <Pagination
+                  id="trials-pagination"
                   page={pageIndex + 1}
                   pageSize={pageSize}
                   pageSizes={[5, 10, 20, 50, 100]}
