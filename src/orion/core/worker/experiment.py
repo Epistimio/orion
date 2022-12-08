@@ -731,7 +731,7 @@ class Experiment(Generic[AlgoT]):
             duration=duration,
             whole_clock_time=sum(
                 (trial.duration for trial in trials),
-                start=datetime.timedelta(),
+                datetime.timedelta(),
             ),
             nb_trials=len(trials),
             eta=eta,
