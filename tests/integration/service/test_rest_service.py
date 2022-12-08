@@ -46,8 +46,6 @@ def test_new_experiment(with_logs):
         storage = get_mongo_admin(port)
         experiences = storage.fetch_experiments(dict(name="MyExperiment"))
         assert len(experiences) == 2, "Each user has their own experiment"
-        
-        
 
 
 def test_suggest(with_logs):
@@ -75,8 +73,7 @@ def test_suggest(with_logs):
         assert (
             str(trials[0]["_id"]) == client_trial.db_id
         ), "Trial exists inside the database"
-        
-        
+
 
 def test_observe(with_logs):
     with server() as (endpoint, port):
@@ -107,8 +104,7 @@ def test_observe(with_logs):
         assert trials[0]["results"] == [
             dict(name="objective", type="objective", value=1)
         ]
-        
-        
+
 
 def test_heartbeat(with_logs):
     with server() as (endpoint, port):
@@ -136,7 +132,7 @@ def test_heartbeat(with_logs):
         trials = list(mongo["trials"].find(dict(_id=ObjectId(client_trial.db_id))))
         new_heartbeat = trials[0]["heartbeat"]
         assert old_heartbeat != new_heartbeat, "Heartbeat should have changed"
-        
+
 
 def test_is_done(with_logs):
     with server() as (endpoint, port):
@@ -159,8 +155,7 @@ def test_is_done(with_logs):
         assert len(trials) == 10
 
         print("Done")
-        
-        
+
 
 def test_broken_experiment():
     pass
@@ -172,5 +167,3 @@ def test_authentication(with_logs):
 
         with pytest.raises(RemoteException):
             client.new_experiment(name="MyExperiment")
-        
-        
