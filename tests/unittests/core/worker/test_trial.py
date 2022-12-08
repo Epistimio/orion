@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Collection of tests for :mod:`orion.core.worker.trial`."""
 import copy
+import datetime
 import os
 import warnings
 
@@ -50,6 +51,36 @@ def trial_config(params):
         submit_time="2017-11-22T23:00:00",
         start_time=150,
         end_time="2017-11-23T00:00:00",
+        heartbeat=None,
+        results=[
+            dict(
+                name="objective-name",
+                type="objective",
+                value=2,
+            ),
+            dict(
+                name="gradient-name",
+                type="gradient",
+                value=[-0.1, 2],
+            ),
+        ],
+        params=params,
+        parent=None,
+    )
+
+
+@pytest.fixture
+def trial_config_with_correct_start_time(params):
+    return dict(
+        _id="something-unique",
+        id="eebf174e46dae012521c12985b652cff",
+        experiment="supernaedo2-dendi",
+        exp_working_dir=None,
+        status="completed",
+        worker="23415151",
+        submit_time=datetime.datetime.fromisoformat("2017-11-22T23:00:00"),
+        start_time=datetime.datetime.fromisoformat("2017-11-22T23:00:00"),
+        end_time=datetime.datetime.fromisoformat("2017-11-23T00:00:00"),
         heartbeat=None,
         results=[
             dict(
@@ -537,3 +568,18 @@ class TestTrial:
             ValueError, match="Some parameters are not part of base trial: {'/z': 0}"
         ):
             base_trial.branch(params={"/z": 0})
+
+    def test_execution_interval_property(self, trial_config):
+        """Check property `Trial.execution_interval`."""
+        t = Trial(**trial_config)
+        assert t.execution_interval == (150, "2017-11-23T00:00:00")
+
+        t = Trial()
+        assert t.execution_interval is None
+
+    def test_duration_property(self, trial_config_with_correct_start_time):
+        t = Trial(**trial_config_with_correct_start_time)
+        assert t.duration == datetime.timedelta(seconds=3600)
+
+        t = Trial()
+        assert t.duration == datetime.timedelta()
