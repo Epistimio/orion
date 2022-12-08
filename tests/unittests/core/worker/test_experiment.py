@@ -141,17 +141,15 @@ def generate_trials(status):
     """Generate Trials with different configurations"""
     new_trials = [_generate(base_trial, "status", value=s) for s in status]
 
+    now = datetime.datetime.utcnow()
+
     for i, trial in enumerate(new_trials):
         if trial["status"] != "new":
-            trial["start_time"] = datetime.datetime.utcnow() + datetime.timedelta(
-                seconds=i
-            )
+            trial["start_time"] = now + datetime.timedelta(seconds=i)
 
     for i, trial in enumerate(new_trials):
         if trial["status"] == "completed":
-            trial["end_time"] = datetime.datetime.utcnow() + datetime.timedelta(
-                seconds=i
-            )
+            trial["end_time"] = now + datetime.timedelta(seconds=i + 1)
 
     # make each trial unique
     for i, trial in enumerate(new_trials):
@@ -611,8 +609,8 @@ def test_configurable_broken_property(space: Space):
         assert not exp.is_broken
 
 
-def test_experiment_stats(space: Space):
-    """Check that property stats is returning a proper summary of experiment's results."""
+def test_experiment_stats_max_trials_none(space: Space):
+    """Check that property stats is returning a proper summary of experiment's results with max trials None."""
     NUM_COMPLETED = 3
     statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
     with OrionState(trials=generate_trials(statuses)) as cfg:
@@ -625,7 +623,146 @@ def test_experiment_stats(space: Space):
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == cfg.trials[3]["end_time"]
-        assert stats.duration == stats.finish_time - stats.start_time
+        assert stats.duration == datetime.timedelta(seconds=3)
+        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.nb_trials == NUM_COMPLETED + 2
+        assert stats.trial_status_count == {"completed": NUM_COMPLETED, "reserved": 2}
+        # If max trials is None, then progress and ETA cannot be computed
+        assert stats.max_trials is None
+        assert stats.progress is None
+        assert stats.eta is None
+        assert stats.eta_milliseconds is None
+
+
+def test_experiment_stats_max_trials_inf(space: Space):
+    """Check stats with max trials infinite."""
+    NUM_COMPLETED = 3
+    statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
+    with OrionState(trials=generate_trials(statuses)) as cfg:
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
+        exp._id = cfg.trials[0]["experiment"]
+        exp.metadata = {"datetime": datetime.datetime.utcnow()}
+        exp.max_trials = float("inf")
+        stats = exp.stats
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[2]["id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[3]["end_time"]
+        assert stats.duration == datetime.timedelta(seconds=3)
+        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.nb_trials == NUM_COMPLETED + 2
+        assert stats.trial_status_count == {"completed": NUM_COMPLETED, "reserved": 2}
+        # If max trials is infinite, then progress and ETA cannot be computed
+        assert stats.max_trials == "infinite"
+        assert stats.progress is None
+        assert stats.eta is None
+        assert stats.eta_milliseconds is None
+
+
+def test_experiment_stats_max_trials_zero(space: Space):
+    """Check stats with max trials 0."""
+    NUM_COMPLETED = 3
+    statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
+    with OrionState(trials=generate_trials(statuses)) as cfg:
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
+        exp._id = cfg.trials[0]["experiment"]
+        exp.metadata = {"datetime": datetime.datetime.utcnow()}
+        exp.max_trials = 0
+        stats = exp.stats
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[2]["id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[3]["end_time"]
+        assert stats.duration == datetime.timedelta(seconds=3)
+        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.nb_trials == NUM_COMPLETED + 2
+        assert stats.trial_status_count == {"completed": NUM_COMPLETED, "reserved": 2}
+        # If max trials is zero, then ETA cannot be computed, and progress is relative to nb trials
+        assert stats.max_trials == 0
+        assert stats.progress == 0.6
+        assert stats.eta is None
+        assert stats.eta_milliseconds is None
+
+
+def test_experiment_stats_max_trials_lesser_than_nb_completed(space: Space):
+    """Check stats with max trials < number of completed trials."""
+    NUM_COMPLETED = 3
+    statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
+    with OrionState(trials=generate_trials(statuses)) as cfg:
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
+        exp._id = cfg.trials[0]["experiment"]
+        exp.metadata = {"datetime": datetime.datetime.utcnow()}
+        exp.max_trials = 2
+        stats = exp.stats
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[2]["id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[3]["end_time"]
+        assert stats.duration == datetime.timedelta(seconds=3)
+        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.nb_trials == NUM_COMPLETED + 2
+        assert stats.trial_status_count == {"completed": NUM_COMPLETED, "reserved": 2}
+        # If max trials < completed trials, then ETA is 0, and progress is relative to nb trials
+        assert stats.max_trials == 2
+        assert stats.progress == 0.6
+        assert stats.eta == datetime.timedelta()
+        assert stats.eta_milliseconds == 0
+
+
+def test_experiment_stats_no_completed_trials(space: Space):
+    """Check stats with no completed trials."""
+    NUM_COMPLETED = 0
+    statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
+    with OrionState(trials=generate_trials(statuses)) as cfg:
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
+        exp._id = cfg.trials[0]["experiment"]
+        exp.metadata = {"datetime": datetime.datetime.utcnow()}
+        exp.max_trials = 2
+        stats = exp.stats
+        assert stats.trials_completed == NUM_COMPLETED
+        # Stats relative to completed trials cannot be computed
+        assert stats.best_trials_id is None
+        assert stats.best_evaluation is None
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == exp.metadata["datetime"]
+        assert stats.duration == datetime.timedelta()
+        assert stats.whole_clock_time == datetime.timedelta()
+        assert stats.nb_trials == NUM_COMPLETED + 2
+        assert stats.trial_status_count == {"reserved": 2}
+        # If no completed trials, then ETA is infinite, and progress is 0
+        assert stats.max_trials == 2
+        assert stats.progress == 0
+        assert stats.eta == "infinite"
+        assert stats.eta_milliseconds is None
+
+
+def test_experiment_stats_normal(space: Space):
+    """Check stats with max trials > completed trials."""
+    NUM_COMPLETED = 3
+    statuses = (["completed"] * NUM_COMPLETED) + (["reserved"] * 2)
+    with OrionState(trials=generate_trials(statuses)) as cfg:
+        exp = Experiment("supernaekei", mode="x", space=space, storage=cfg.storage)
+        exp._id = cfg.trials[0]["experiment"]
+        exp.metadata = {"datetime": datetime.datetime.utcnow()}
+        exp.max_trials = 10
+        stats = exp.stats
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[2]["id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[3]["end_time"]
+        assert stats.duration == datetime.timedelta(seconds=3)
+        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.nb_trials == NUM_COMPLETED + 2
+        assert stats.trial_status_count == {"completed": NUM_COMPLETED, "reserved": 2}
+        # If max trials > completed trials, then ETA and progress are relative to max trials
+        assert stats.max_trials == 10
+        assert stats.progress == 3 / 10
+        assert stats.eta == datetime.timedelta(seconds=7)
+        assert stats.eta_milliseconds == 7000
 
 
 def test_experiment_pickleable(space: Space):

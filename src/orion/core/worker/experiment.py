@@ -81,9 +81,9 @@ class ExperimentStats:
     best_evaluation: float
     start_time: datetime.datetime
     finish_time: datetime.datetime
-    max_trials: int
-    nb_trials: int
-    progress: float
+    max_trials: int = 0
+    nb_trials: int = 0
+    progress: float = 0
     trial_status_count: dict = field(default_factory=dict)
     duration: datetime.timedelta = field(default_factory=datetime.timedelta)
     whole_clock_time: datetime.timedelta = field(default_factory=datetime.timedelta)
@@ -652,12 +652,14 @@ class Experiment(Generic[AlgoT]):
         trials = self.fetch_trials(with_evc_tree=False)
         completed_trials = self.fetch_trials_by_status("completed")
 
-        trials_completed = len(completed_trials)
+        # Retrieve the best evaluation, best trial ID, start time and finish time
+        # TODO: should we compute finish time as min(completed_trials.start_time) instead of metadata["datetime"]?
+        # For duration below, we do not use metadata["datetime"]
         best_evaluation = None
         best_trials_id = None
-        start_time = self.metadata["datetime"]
+        start_time = self.metadata.get("datetime", None)
         finish_time = start_time
-        if completed_trials:
+        if start_time and completed_trials:
             trial = completed_trials[0]
             best_evaluation = trial.objective.value
             best_trials_id = trial.id
@@ -691,7 +693,7 @@ class Experiment(Generic[AlgoT]):
             eta = None
         elif len(completed_trials) > self.max_trials:
             # If there are more completed trials than max trials, then ETA should be 0 (?)
-            eta = 0
+            eta = datetime.timedelta()
         elif not completed_trials:
             # If there are no completed trials, then we set ETA to infinite
             # NB: float("inf") may lead to wrong JSON syntax, so we just write "infinite"
@@ -719,7 +721,7 @@ class Experiment(Generic[AlgoT]):
                 progress = len(completed_trials) / progress_base
 
         return ExperimentStats(
-            trials_completed=trials_completed,
+            trials_completed=len(completed_trials),
             best_trials_id=best_trials_id,
             best_evaluation=best_evaluation,
             start_time=start_time,
@@ -736,7 +738,11 @@ class Experiment(Generic[AlgoT]):
             else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
             progress=progress,
-            max_trials=("infinite" if math.isinf(self.max_trials) else self.max_trials),
+            max_trials=(
+                "infinite"
+                if self.max_trials is not None and math.isinf(self.max_trials)
+                else self.max_trials
+            ),
         )
 
     def __repr__(self):
