@@ -1,4 +1,4 @@
-# pylint:disable=protected-access,too-many-public-methods,too-many-lines
+# pylint:disable=protected-access,too-many-public-methods,too-many-lines,too-many-branches
 """
 Description of an optimization attempt
 ======================================
@@ -91,6 +91,7 @@ class ExperimentStats:
     eta_milliseconds: float = 0
 
     def to_json(self):
+        """Return a JSON-compatible dictionary of stats."""
         return {
             key: (
                 str(value)
@@ -653,8 +654,8 @@ class Experiment(Generic[AlgoT]):
         completed_trials = self.fetch_trials_by_status("completed")
 
         # Retrieve the best evaluation, best trial ID, start time and finish time
-        # TODO: should we compute finish time as min(completed_trials.start_time) instead of metadata["datetime"]?
-        # For duration below, we do not use metadata["datetime"]
+        # TODO: should we compute finish time as min(completed_trials.start_time)
+        # instead of metadata["datetime"]? For duration below, we do not use metadata["datetime"]
         best_evaluation = None
         best_trials_id = None
         start_time = self.metadata.get("datetime", None)
@@ -674,7 +675,8 @@ class Experiment(Generic[AlgoT]):
                     best_trials_id = trial.id
 
         # Compute duration using all finished/stopped/running experiments
-        # i.e. all trials that have an execution interval (from a start time to an end time or heartbeat)
+        # i.e. all trials that have an execution interval
+        # (from a start time to an end time or heartbeat)
         intervals = []
         for trial in trials:
             interval = trial.execution_interval
