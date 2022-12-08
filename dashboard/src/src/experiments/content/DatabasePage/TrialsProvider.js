@@ -114,11 +114,6 @@ export class TrialsProvider {
           header: 'End time',
         },
         {
-          id: 'status',
-          accessorKey: 'status',
-          header: 'Status',
-        },
-        {
           id: 'objective',
           accessorKey: 'objective',
           header: 'Objective',
