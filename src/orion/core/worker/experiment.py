@@ -58,7 +58,7 @@ class ExperimentStats:
        When Experiment was first dispatched and started running.
     finish_time: `datetime.datetime`
        When Experiment reached terminating condition and stopped running.
-    duration: `datetime.timedelta`
+    elapsed_time: `datetime.timedelta`
        Elapsed time.
     max_trials: int
         Experiment max_trials
@@ -68,7 +68,7 @@ class ExperimentStats:
         Experiment progression (between 0 and 1).
     trial_status_count: Dict[str, int]
         Dictionary mapping trial status to number of trials that have this status
-    whole_clock_time: `datetime.timedelta`
+    sum_of_trials_time: `datetime.timedelta`
         Sum of trial duration
     eta: `datetime.timedelta`
         Estimated remaining time
@@ -85,8 +85,8 @@ class ExperimentStats:
     nb_trials: int = 0
     progress: float = 0
     trial_status_count: dict = field(default_factory=dict)
-    duration: datetime.timedelta = field(default_factory=datetime.timedelta)
-    whole_clock_time: datetime.timedelta = field(default_factory=datetime.timedelta)
+    elapsed_time: datetime.timedelta = field(default_factory=datetime.timedelta)
+    sum_of_trials_time: datetime.timedelta = field(default_factory=datetime.timedelta)
     eta: datetime.timedelta = field(default_factory=datetime.timedelta)
     eta_milliseconds: float = 0
 
@@ -656,7 +656,8 @@ class Experiment(Generic[AlgoT]):
 
         # Retrieve the best evaluation, best trial ID, start time and finish time
         # TODO: should we compute finish time as min(completed_trials.start_time)
-        # instead of metadata["datetime"]? For duration below, we do not use metadata["datetime"]
+        # instead of metadata["datetime"]?
+        # For elapsed time below, we do not use metadata["datetime"]
         best_evaluation = None
         best_trials_id = None
         start_time = self.metadata.get("datetime", None)
@@ -675,7 +676,7 @@ class Experiment(Generic[AlgoT]):
                     best_evaluation = objective
                     best_trials_id = trial.id
 
-        # Compute duration using all finished/stopped/running experiments
+        # Compute elapsed time using all finished/stopped/running experiments
         # i.e. all trials that have an execution interval
         # (from a start time to an end time or heartbeat)
         intervals = []
@@ -686,9 +687,9 @@ class Experiment(Generic[AlgoT]):
         if intervals:
             min_start_time = min(interval[0] for interval in intervals)
             max_end_time = max(interval[1] for interval in intervals)
-            duration = max_end_time - min_start_time
+            elapsed_time = max_end_time - min_start_time
         else:
-            duration = datetime.timedelta()
+            elapsed_time = datetime.timedelta()
 
         # Compute ETA
         if not self.max_trials or math.isinf(self.max_trials):
@@ -729,8 +730,8 @@ class Experiment(Generic[AlgoT]):
             best_evaluation=best_evaluation,
             start_time=start_time,
             finish_time=finish_time,
-            duration=duration,
-            whole_clock_time=sum(
+            elapsed_time=elapsed_time,
+            sum_of_trials_time=sum(
                 (trial.duration for trial in trials),
                 datetime.timedelta(),
             ),

@@ -369,7 +369,7 @@ best trial:
 {best_params}
 start time: {stats.start_time}
 finish time: {stats.finish_time}
-duration: {stats.duration}
+elapsed_time: {stats.elapsed_time}
 """
 
 

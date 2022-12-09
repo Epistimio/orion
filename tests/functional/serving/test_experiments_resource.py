@@ -243,8 +243,8 @@ class TestStats:
             "nb_trials": 1,
             "progress": 0.1,
             "trial_status_count": {"completed": 1},
-            "duration": "23:59:50",
-            "whole_clock_time": "23:59:50",
+            "elapsed_time": "23:59:50",
+            "sum_of_trials_time": "23:59:50",
             "eta": "8 days, 23:58:30",
             "eta_milliseconds": 777510000.0,
         }
@@ -269,8 +269,8 @@ class TestStats:
             "nb_trials": 1,
             "progress": None,
             "trial_status_count": {"completed": 1},
-            "duration": "23:59:50",
-            "whole_clock_time": "23:59:50",
+            "elapsed_time": "23:59:50",
+            "sum_of_trials_time": "23:59:50",
             "eta": None,
             "eta_milliseconds": None,
         }
@@ -305,8 +305,8 @@ class TestStats:
             "nb_trials": 1,
             "progress": 0.0,
             "trial_status_count": {"reserved": 1},
-            "duration": "23:59:50",
-            "whole_clock_time": "23:59:50",
+            "elapsed_time": "23:59:50",
+            "sum_of_trials_time": "23:59:50",
             "eta": "infinite",
             "eta_milliseconds": None,
         }
@@ -338,8 +338,8 @@ class TestStats:
             "nb_trials": 1,
             "progress": 0.0,
             "trial_status_count": {"interrupted": 1},
-            "duration": "23:59:50",
-            "whole_clock_time": "23:59:50",
+            "elapsed_time": "23:59:50",
+            "sum_of_trials_time": "23:59:50",
             "eta": "infinite",
             "eta_milliseconds": None,
         }

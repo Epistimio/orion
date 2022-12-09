@@ -186,8 +186,8 @@ retrieve individual experiments as well as a list of all your experiments.
         "trial_status_count": {
           "completed": 40
         },
-        "duration": "2 days, 5:11:24.006755",
-        "whole_clock_time": "8 days, 23:15:15.594405",
+        "elapsed_time": "2 days, 5:11:24.006755",
+        "sum_of_trials_time": "8 days, 23:15:15.594405",
         "eta": "0:00:00",
         "eta_milliseconds": 0
       }
@@ -204,8 +204,8 @@ retrieve individual experiments as well as a list of all your experiments.
    :>json nb_trials: The current number of trials in this experiment.
    :>json progress: Floating value between 0 and 1 representing experiment progression.
    :>json trial_status_count: A dictionary mapping trial status to number of trials with this status in the experiment.
-   :>json duration: The time elapsed since experiment started.
-   :>json whole_clock_time: The sum of trials execution times.
+   :>json elapsed_time: The time elapsed since experiment started.
+   :>json sum_of_trials_time: The sum of trials execution times.
    :>json eta: The estimation of remaining time for experiment to finish.
    :>json eta_milliseconds: The ETA in milliseconds (convenient for usages in Javascript).
 

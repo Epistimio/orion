@@ -624,8 +624,8 @@ def test_experiment_stats_max_trials_none(space: Space):
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == cfg.trials[3]["end_time"]
-        assert stats.duration == datetime.timedelta(seconds=3)
-        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.elapsed_time == datetime.timedelta(seconds=3)
+        assert stats.sum_of_trials_time == datetime.timedelta(seconds=3)
         assert stats.nb_trials == NUM_COMPLETED + NUM_RESERVED
         assert stats.trial_status_count == {
             "completed": NUM_COMPLETED,
@@ -654,8 +654,8 @@ def test_experiment_stats_max_trials_inf(space: Space):
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == cfg.trials[3]["end_time"]
-        assert stats.duration == datetime.timedelta(seconds=3)
-        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.elapsed_time == datetime.timedelta(seconds=3)
+        assert stats.sum_of_trials_time == datetime.timedelta(seconds=3)
         assert stats.nb_trials == NUM_COMPLETED + NUM_RESERVED
         assert stats.trial_status_count == {
             "completed": NUM_COMPLETED,
@@ -684,8 +684,8 @@ def test_experiment_stats_max_trials_zero(space: Space):
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == cfg.trials[3]["end_time"]
-        assert stats.duration == datetime.timedelta(seconds=3)
-        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.elapsed_time == datetime.timedelta(seconds=3)
+        assert stats.sum_of_trials_time == datetime.timedelta(seconds=3)
         assert stats.nb_trials == NUM_COMPLETED + NUM_RESERVED
         assert stats.trial_status_count == {
             "completed": NUM_COMPLETED,
@@ -714,8 +714,8 @@ def test_experiment_stats_max_trials_lesser_than_nb_completed(space: Space):
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == cfg.trials[3]["end_time"]
-        assert stats.duration == datetime.timedelta(seconds=3)
-        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.elapsed_time == datetime.timedelta(seconds=3)
+        assert stats.sum_of_trials_time == datetime.timedelta(seconds=3)
         assert stats.nb_trials == NUM_COMPLETED + NUM_RESERVED
         assert stats.trial_status_count == {
             "completed": NUM_COMPLETED,
@@ -745,8 +745,8 @@ def test_experiment_stats_no_completed_trials(space: Space):
         assert stats.best_evaluation is None
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == exp.metadata["datetime"]
-        assert stats.duration == datetime.timedelta()
-        assert stats.whole_clock_time == datetime.timedelta()
+        assert stats.elapsed_time == datetime.timedelta()
+        assert stats.sum_of_trials_time == datetime.timedelta()
         assert stats.nb_trials == NUM_COMPLETED + NUM_RESERVED
         assert stats.trial_status_count == {"reserved": NUM_RESERVED}
         # If no completed trials, then ETA is infinite, and progress is 0
@@ -772,8 +772,8 @@ def test_experiment_stats_normal(space: Space):
         assert stats.best_evaluation == 0
         assert stats.start_time == exp.metadata["datetime"]
         assert stats.finish_time == cfg.trials[3]["end_time"]
-        assert stats.duration == datetime.timedelta(seconds=3)
-        assert stats.whole_clock_time == datetime.timedelta(seconds=3)
+        assert stats.elapsed_time == datetime.timedelta(seconds=3)
+        assert stats.sum_of_trials_time == datetime.timedelta(seconds=3)
         assert stats.nb_trials == NUM_COMPLETED + NUM_RESERVED
         assert stats.trial_status_count == {
             "completed": NUM_COMPLETED,
