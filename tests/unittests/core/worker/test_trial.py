@@ -615,8 +615,16 @@ class TestTrial:
         assert t.execution_interval == (t.start_time, t.heartbeat)
 
     def test_duration_property(self, trial_config_with_correct_start_time):
+        """Check property `Trial.duration`."""
         t = Trial(**trial_config_with_correct_start_time)
         assert t.duration == datetime.timedelta(seconds=3600)
 
         t = Trial()
         assert t.duration == datetime.timedelta()
+
+    def test_duration_property_no_end_time(self, trial_config_no_end_time):
+        """Check property `Trial.duration` with no end time"""
+        t = Trial(**trial_config_no_end_time)
+        assert t.end_time is None
+        assert t.heartbeat is not None
+        assert t.duration == t.heartbeat - t.start_time
