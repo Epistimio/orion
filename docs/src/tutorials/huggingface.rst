@@ -156,6 +156,7 @@ All that is left to do now is to train the model, and once it's finish training,
   :language: python
   :lines: 215-217, 224
 
+For more details, feel free to simply go look at the code, in ``examples/huggingface/main.py``
 
 Execution
 ^^^^^^^^^
