@@ -99,6 +99,36 @@ def trial_config_with_correct_start_time(params):
     )
 
 
+@pytest.fixture
+def trial_config_no_end_time(params):
+    return dict(
+        _id="something-unique",
+        id="eebf174e46dae012521c12985b652cff",
+        experiment="supernaedo2-dendi",
+        exp_working_dir=None,
+        status="completed",
+        worker="23415151",
+        submit_time=datetime.datetime.fromisoformat("2017-11-22T23:00:00"),
+        start_time=datetime.datetime.fromisoformat("2017-11-22T23:00:00"),
+        end_time=None,
+        heartbeat=datetime.datetime.fromisoformat("2017-11-22T00:30:00"),
+        results=[
+            dict(
+                name="objective-name",
+                type="objective",
+                value=2,
+            ),
+            dict(
+                name="gradient-name",
+                type="gradient",
+                value=[-0.1, 2],
+            ),
+        ],
+        params=params,
+        parent=None,
+    )
+
+
 class TestTrial:
     """Test Trial object and class."""
 
@@ -576,6 +606,13 @@ class TestTrial:
 
         t = Trial()
         assert t.execution_interval is None
+
+    def test_execution_interval_property_no_end_time(self, trial_config_no_end_time):
+        """Check property `Trial.execution_interval` with no end time"""
+        t = Trial(**trial_config_no_end_time)
+        assert t.end_time is None
+        assert t.heartbeat is not None
+        assert t.execution_interval == (t.start_time, t.heartbeat)
 
     def test_duration_property(self, trial_config_with_correct_start_time):
         t = Trial(**trial_config_with_correct_start_time)

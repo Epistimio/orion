@@ -249,6 +249,32 @@ class TestStats:
             "eta_milliseconds": 777510000.0,
         }
 
+    def test_experiment_max_trials_infinite(self, client, ephemeral_storage):
+        """Tests returned experiment stats with max_trials infinite"""
+
+        storage = ephemeral_storage.storage
+
+        _add_experiment(storage, name="a", version=1, _id=1, max_trials=float("inf"))
+        _add_trial(storage, experiment=1, id_override="ae8", status="completed")
+
+        response = client.simulate_get("/experiments/status/a")
+        assert response.status == "200 OK"
+        assert response.json == {
+            "trials_completed": 1,
+            "best_trials_id": "7bbfdb8c684aa5f4be324a09d7da94af",
+            "best_evaluation": 0.05,
+            "start_time": "0001-01-01 00:00:00",
+            "finish_time": "0001-01-02 00:00:00",
+            "max_trials": "infinite",
+            "nb_trials": 1,
+            "progress": None,
+            "trial_status_count": {"completed": 1},
+            "duration": "23:59:50",
+            "whole_clock_time": "23:59:50",
+            "eta": None,
+            "eta_milliseconds": None,
+        }
+
     def test_default_is_latest_version(self, client, ephemeral_storage):
         """Tests that the latest experiment is returned when no version parameter exists"""
 
@@ -346,8 +372,9 @@ class TestStats:
 
 def _add_experiment(storage, **kwargs):
     """Adds experiment to the dummy orion instance"""
-    base_experiment.update(copy.deepcopy(kwargs))
-    storage.create_experiment(base_experiment)
+    # To avoid accumulating modifications in base_experiment, we use a copy
+    experiment = {**base_experiment, **copy.deepcopy(kwargs)}
+    storage.create_experiment(experiment)
 
 
 def _add_trial(storage, **kwargs):

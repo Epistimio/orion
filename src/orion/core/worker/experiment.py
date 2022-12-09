@@ -1,4 +1,4 @@
-# pylint:disable=protected-access,too-many-public-methods,too-many-lines,too-many-branches
+# pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
 Description of an optimization attempt
 ======================================
@@ -645,6 +645,7 @@ class Experiment(Generic[AlgoT]):
 
         return copy.deepcopy(config)
 
+    # pylint:disable=too-many-branches
     @property
     def stats(self):
         """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
@@ -694,7 +695,7 @@ class Experiment(Generic[AlgoT]):
             # If max_trials is None, 0 or infinite, we cannot compute ETA
             eta = None
         elif len(completed_trials) > self.max_trials:
-            # If there are more completed trials than max trials, then ETA should be 0 (?)
+            # If there are more completed trials than max trials, then ETA should be 0
             eta = datetime.timedelta()
         elif not completed_trials:
             # If there are no completed trials, then we set ETA to infinite
