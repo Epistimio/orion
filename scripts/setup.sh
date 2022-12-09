@@ -59,7 +59,7 @@ function add_admin_user {
 EOM
     )
 
-    echo "$CMD" | mongo --port $PORT
+    echo "$CMD" | mongosh --port $PORT
 
     add_user $ADMIN $PASSWORD
 }
@@ -93,7 +93,7 @@ function add_user {
 EOM
     )
 
-    echo "$CMD" | mongo "mongodb://$ADDRESS:$PORT" --authenticationDatabase "admin" -u $ADMIN -p $PASSWORD
+    echo "$CMD" | mongosh "mongodb://$ADDRESS:$PORT" --authenticationDatabase "admin" -u $ADMIN -p $PASSWORD
 }
 
 
@@ -165,7 +165,7 @@ function ensure_indexes {
 EOM
     )
 
-    echo "$CMD" | mongo --port $PORT
+    echo "$CMD" | mongosh --port $PORT
 }
 
 function launch {
