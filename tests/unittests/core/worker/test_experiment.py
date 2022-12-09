@@ -830,6 +830,7 @@ read_only_methods = [
     "version",
     "working_dir",
     "storage",
+    "progress",
 ]
 read_write_only_methods = [
     "fix_lost_trials",
