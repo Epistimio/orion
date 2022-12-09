@@ -645,6 +645,23 @@ class Experiment(Generic[AlgoT]):
 
         return copy.deepcopy(config)
 
+    @property
+    def progress(self) -> float:
+        """Return a floating number between 0 and 1 representing experiment progress,
+        or None if progress cannot be completed."""
+        # Compute progress
+        trials = self.fetch_trials(with_evc_tree=False)
+        completed_trials = self.fetch_trials_by_status("completed")
+        if self.max_trials is None or math.isinf(self.max_trials):
+            progress = None
+        else:
+            progress_base = max(self.max_trials, len(trials))
+            if progress_base == 0:
+                progress = None
+            else:
+                progress = len(completed_trials) / progress_base
+        return progress
+
     # pylint:disable=too-many-branches
     @property
     def stats(self):
@@ -714,16 +731,6 @@ class Experiment(Generic[AlgoT]):
                 self.max_trials - len(completed_trials)
             )
 
-        # Compute progress
-        if self.max_trials is None or math.isinf(self.max_trials):
-            progress = None
-        else:
-            progress_base = max(self.max_trials, len(trials))
-            if progress_base == 0:
-                progress = None
-            else:
-                progress = len(completed_trials) / progress_base
-
         return ExperimentStats(
             trials_completed=len(completed_trials),
             best_trials_id=best_trials_id,
@@ -741,7 +748,7 @@ class Experiment(Generic[AlgoT]):
             if isinstance(eta, datetime.timedelta)
             else None,
             trial_status_count={**Counter(trial.status for trial in trials)},
-            progress=progress,
+            progress=self.progress,
             max_trials=(
                 "infinite"
                 if self.max_trials is not None and math.isinf(self.max_trials)
