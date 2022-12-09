@@ -649,17 +649,23 @@ class Experiment(Generic[AlgoT]):
     def progress(self) -> float:
         """Return a floating number between 0 and 1 representing experiment progress,
         or None if progress cannot be completed."""
-        # Compute progress
+
         trials = self.fetch_trials(with_evc_tree=False)
         completed_trials = self.fetch_trials_by_status("completed")
+        broken_trials = self.fetch_trials_by_status("broken")
+
         if self.max_trials is None or math.isinf(self.max_trials):
             progress = None
+        elif len(completed_trials) > self.max_trials:
+            progress = 1.0
         else:
-            progress_base = max(self.max_trials, len(trials))
-            if progress_base == 0:
+            nb_trials_to_complete = max(self.max_trials, len(trials)) - len(
+                broken_trials
+            )
+            if nb_trials_to_complete == 0:
                 progress = None
             else:
-                progress = len(completed_trials) / progress_base
+                progress = len(completed_trials) / nb_trials_to_complete
         return progress
 
     # pylint:disable=too-many-branches
