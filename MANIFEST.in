@@ -18,6 +18,7 @@ exclude .pylintrc
 exclude codecov.yml
 exclude .mailmap
 exclude .readthedocs.yml
+exclude scripts/setup.sh
 prune conda/
 prune .github/
 
