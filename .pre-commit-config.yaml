@@ -13,7 +13,7 @@ repos:
     hooks:
       - id: codespell
         args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont"]
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/PyCQA/flake8
     rev: 3.9.2
     hooks:
       - id: flake8

@@ -17,8 +17,8 @@ class AverageRank(BenchmarkAssessment):
     The performance (objective value) used for a trial will the best result until the trial.
     """
 
-    def __init__(self, task_num=1):
-        super().__init__(task_num=task_num)
+    def __init__(self, repetitions=1):
+        super().__init__(repetitions=repetitions)
 
     def analysis(self, task, experiments):
         """
@@ -37,8 +37,4 @@ class AverageRank(BenchmarkAssessment):
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
-        assessment = self.__class__.__name__
-        figures = defaultdict(dict)
-        figures[assessment][task] = dict()
-        figures[assessment][task][rankings.__name__] = rankings(algorithm_groups)
-        return figures
+        return {rankings.__name__: rankings(algorithm_groups)}

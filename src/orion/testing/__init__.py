@@ -132,7 +132,7 @@ def generate_benchmark_experiments_trials(
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
         exp["name"] = f"experiment-name-{i}"
-        exp["algorithms"] = benchmark_algorithms[i % algo_num]["algorithm"]
+        exp["algorithms"] = benchmark_algorithms[i % algo_num]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)
@@ -179,7 +179,7 @@ def create_study_experiments(
         experiments.append(client)
 
     for index, exp in enumerate(experiments):
-        experiments_info.append((int(index / task_number), exp))
+        experiments_info.append(exp)
 
     return experiments_info
 

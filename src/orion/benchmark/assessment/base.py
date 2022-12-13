@@ -14,23 +14,23 @@ class BenchmarkAssessment(ABC):
 
     Parameters
     ----------
-    task_num : int
+    repetitions : int
        Number of experiment the assessment ask to run the corresponding task
     kwargs : dict
        Configurable parameters of the assessment, a particular assessment
        implementation can have its own parameters.
     """
 
-    def __init__(self, task_num, **kwargs):
-        self.task_number = task_num
+    def __init__(self, repetitions, **kwargs):
+        self._repetitions = repetitions
         self._param_names = kwargs
 
-        self._param_names["task_num"] = task_num
+        self._param_names["repetitions"] = repetitions
 
     @property
-    def task_num(self):
+    def repetitions(self):
         """Return the task number to run for this assessment"""
-        return self.task_number
+        return self._repetitions
 
     def get_executor(self, task_index):
         """Return an instance of `orion.executor.base.Executor` based on the index of tasks

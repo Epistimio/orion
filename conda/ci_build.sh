@@ -18,5 +18,3 @@ conda install conda-build anaconda-client
 
 conda build conda --python 3.8
 conda build conda --python 3.9
-conda build conda --python 3.10
-conda build conda --python 3.11

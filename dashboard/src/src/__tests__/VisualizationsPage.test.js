@@ -27,11 +27,7 @@ test('Test if we switch to visualization page', async () => {
   // Let time for ExperimentNavBar to load experiments
   // to prevent warnings about async calls not terminated
   expect(
-    await screen.findByText(
-      /2-dim-shape-exp/,
-      {},
-      { interval: 1000, timeout: 120000 }
-    )
+    await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
   ).toBeInTheDocument();
 
   // Make sure we are on default (landing) page
@@ -58,7 +54,7 @@ test('Test if we can select and unselect experiments', async () => {
   const experiment = await screen.findByText(
     /2-dim-shape-exp/,
     {},
-    { interval: 1000, timeout: 120000 }
+    global.CONFIG_WAIT_FOR_LONG
   );
   expect(experiment).toBeInTheDocument();
 
@@ -73,14 +69,11 @@ test('Test if we can select and unselect experiments', async () => {
 
   // Check if plots are loaded
   // Wait enough (3 seconds) to let plots load
-  await waitFor(
-    () => {
-      expect(
-        screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
-      ).toBeInTheDocument();
-    },
-    { interval: 1000, timeout: 120000 }
-  );
+  await waitFor(() => {
+    expect(
+      screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
+    ).toBeInTheDocument();
+  }, global.CONFIG_WAIT_FOR_LONG);
   expect(
     await screen.findByText(
       /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i
@@ -108,14 +101,11 @@ test('Test if we can select and unselect experiments', async () => {
 
   // re-select experiment and check if plots are loaded
   fireEvent.click(experiment);
-  await waitFor(
-    () => {
-      expect(
-        screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
-      ).toBeInTheDocument();
-    },
-    { interval: 1000, timeout: 120000 }
-  );
+  await waitFor(() => {
+    expect(
+      screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
+    ).toBeInTheDocument();
+  }, global.CONFIG_WAIT_FOR_LONG);
   expect(
     await screen.findByText(
       /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i
@@ -129,14 +119,11 @@ test('Test if we can select and unselect experiments', async () => {
   const anotherExperiment = await screen.findByText(/tpe-rosenbrock/);
   expect(anotherExperiment).toBeInTheDocument();
   fireEvent.click(anotherExperiment);
-  await waitFor(
-    () => {
-      expect(
-        screen.queryByText(/Regret for experiment 'tpe-rosenbrock'/)
-      ).toBeInTheDocument();
-    },
-    { interval: 1000, timeout: 120000 }
-  );
+  await waitFor(() => {
+    expect(
+      screen.queryByText(/Regret for experiment 'tpe-rosenbrock'/)
+    ).toBeInTheDocument();
+  }, global.CONFIG_WAIT_FOR_LONG);
   expect(
     await screen.findByText(
       /Parallel Coordinates PLot for experiment 'tpe-rosenbrock'/i
