@@ -146,16 +146,14 @@ def main(cfg: DictConfig) -> float:
     args = cfg.args
 
     # Logger setup
-    if args["logfile"] is not None:
-        logfile = args["logfile"]
-    else:
-        logfile = "translation_hf.log"
+    logfile = args["logfile"] or "translation_hf.log"
+
     logging.basicConfig(filename=logfile, level=logging.INFO)
     logger = logging.getLogger()
 
     # Get a GPU if available
     if torch.cuda.is_available():
-        device = "cuda:0"
+        device = f"cuda:{get_free_gpu()}"
     else:
         device = "cpu"
 
