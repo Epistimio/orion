@@ -269,8 +269,9 @@ Although we recommend using the experiment client,
 we document the storage backend here for users who may need
 more flexibility.
 
-You should try to reuse the same storage throughout the your code.
-if the storage is otherwise unreachable you can create the storage client with
+You should try to use a single storage instance for each physical storage
+to minimize the amount of locking and/or connections.
+If the storage is otherwise unreachable you can create a new storage client with
 :py:func:`orion.storage.base.setup_storage`.
 
 To recap, you can create it indirectly with
