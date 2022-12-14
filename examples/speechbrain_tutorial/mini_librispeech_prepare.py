@@ -1,4 +1,6 @@
 """
+Code from the SpeechBrain Github repository :
+https://github.com/speechbrain/speechbrain/blob/develop/templates/speech_recognition/mini_librispeech_prepare.py
 Downloads and creates manifest files for speech recognition with Mini LibriSpeech.
 
 Authors:

@@ -7,9 +7,8 @@ from mini_librispeech_prepare import prepare_mini_librispeech
 
 logger = logging.getLogger(__name__)
 
-if __name__ == "__main__":
-    hparams_file, run_opts, overrides = sb.parse_arguments(sys.argv[1:])
 
+def download(hparams_file, run_opts, overrides):
     # Initialize ddp (useful only for multi-GPU DDP training)
     sb.utils.distributed.ddp_init_group(run_opts)
 
@@ -34,3 +33,11 @@ if __name__ == "__main__":
             "save_json_test": hparams["test_annotation"],
         },
     )
+
+    return hparams
+
+
+if __name__ == "__main__":
+    hparams_file, run_opts, overrides = sb.parse_arguments(sys.argv[1:])
+
+    download(hparams_file, run_opts, overrides)
