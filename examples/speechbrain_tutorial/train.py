@@ -1,4 +1,6 @@
 #!/usr/bin/env/python3
+# Code from The SpeechBrain Github repository :
+# https://github.com/speechbrain/speechbrain/blob/develop/templates/speech_recognition/ASR/train.py
 """Recipe for training a sequence-to-sequence ASR system with mini-librispeech.
 The system employs an encoder, a decoder, and an attention mechanism
 between them. Decoding is performed with beam search coupled with a neural
