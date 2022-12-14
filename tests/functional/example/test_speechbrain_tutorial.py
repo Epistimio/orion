@@ -33,9 +33,9 @@ def download_data(tmp_path_factory):
     data = path / "data"
     output = data / "results"
 
-    """Calling the script, for downloading the data"""
+    # Calling the script, for downloading the data
     script = os.path.abspath("examples/speechbrain_tutorial/download_data.py")
-    # Utiliser les commandes et overrides pour les download path
+    # Using commands and overriding download paths
     return_code = subprocess.call(
         [
             "python",
@@ -56,7 +56,7 @@ def download_data(tmp_path_factory):
         ]
     )
 
-    """ Reducing the size of the training, testing and validation set for the purpose of this test. """
+    # Reducing the size of the training, testing and validation set for the purpose of this test.
 
     json_clean(path / "test.json", 0.005)
     json_clean(path / "train.json", 0.005)
@@ -65,7 +65,7 @@ def download_data(tmp_path_factory):
     assert return_code != 2, "The example script does not exists."
     assert return_code != 1, "The example script did not terminates its execution."
 
-    """ Verifying if the temp dict is populated """
+    # Verifying if the temp dict is populated
     assert len(os.listdir(data)) != 0, "The data was not downloaded correctly"
 
     return path
