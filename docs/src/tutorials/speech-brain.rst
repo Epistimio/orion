@@ -19,7 +19,7 @@ Adapting the Speechbrain for Oríon
 
 The Adaptation for using Oríon is quite simple.
 
-1) We first need to import orion.report_objective() into the project.
+1) We first need to import ``orion.report_objective()`` into the project.
 
 .. code-block:: python
 
@@ -44,10 +44,14 @@ The code is now adapted and ready to be used with Oríon.
 Execution
 =========
 
-We are now going to call the orion hunt function. Notice that we still need to give the train.yaml
+We are now going to call the ``orion hunt`` command.
+Notice that we still need to give the ``train.yaml``
 file to speechbrain, since the general configuration is in there. However, we are going to specify
-the hyper-parameters that we want to optimize after that,
-which will automatically overrides the ones set in the train.yaml.
+the hyperparameters that we want to optimize in the command line,
+which will automatically overrides the ones set in the ``train.yaml``. When an argument
+is defined both in the yaml configuration file and in command line, SpeechBrain
+gives precedence to values provided in command line. Thus, defining the hyperparamers through
+the command line for Oríon allows overriding the values in ``train.yaml`` in SpeechBrain.
 
 .. code-block:: bash
 
@@ -65,13 +69,13 @@ Results
 =======
 
 When an experiment reaches its termination criterion, basically ``max-trials``,
-you can see the results using the command
+you can see the results using the following command:
 
 .. code-block:: bash
 
     $ orion info -n <experiment_name>
 
-This outputs the following statistics
+Which outputs the following statistics:
 
 .. code-block:: bash
 
