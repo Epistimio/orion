@@ -631,6 +631,13 @@ def test_runner_inside_childprocess():
     else:
         # parent process wait for child process to end
         wpid, exit_status = os.wait()
+        if wpid != pid:
+            try:
+                while wpid != pid:
+                    wpid, exit_status = os.wait()
+            except:
+                pass
+
         assert wpid == pid
         assert exit_status == 0
 
