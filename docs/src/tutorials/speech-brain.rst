@@ -22,7 +22,8 @@ In this tutorial, we are going to use some code from the `SpeechBrain
 template made as an example. We will repurpose this example to adapt it for Oríon. The template
 used for creating this tutorial can be found `here
 <https://github.com/speechbrain/speechbrain/tree/develop/templates/speech_recognition/ASR>`.
-You can also directly see the code of this example here : ``examples/speechbrain_tutorial``.
+You can also directly see the code modified for this example here :
+``examples/speechbrain_tutorial``.
 
 We used the ``train.py`` file, but created a ``main.py``, with the ``main`` function,
 which we slightly modified for optimizing the hyperparamers with Oríon.
