@@ -480,7 +480,7 @@ class Study:
         for repetition_index, experiment in self.experiments_info:
             if (
                 algorithms is None
-                or list(experiment.algorithms.configuration.keys())[0] in algorithms
+                or list(experiment.algorithm.configuration.keys())[0] in algorithms
             ):
                 exps.append((repetition_index, experiment))
         return exps
