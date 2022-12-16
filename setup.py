@@ -137,7 +137,7 @@ setup_args = dict(
         "plotly",
         "kaleido",
         "requests",
-        "pandas<=1.4.4",
+        "pandas",
         "gunicorn",
         "falcon",
         "falcon-cors",
