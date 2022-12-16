@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from functools import singledispatch
 from math import log10
 
@@ -57,6 +58,39 @@ def _qantization(dim: Dimension) -> float:
     return None
 
 
+def _upsert(array, i, value):
+    cp = len(array) - i
+
+    if value is None:
+        return
+
+    if cp == 0:
+        array.append(value)
+        return
+
+    if cp > 0:
+        array[i] = value
+        return
+
+    raise IndexError()
+
+
+def normalize_args(dim: Dimension, rv, kwarg_order=None) -> dict:
+    """Create an argument array from kwargs"""
+    if kwarg_order is None:
+        kwarg_order = ["loc", "scale"]
+
+    if len(dim._kwargs) == 0:
+        return dim._args[: len(kwarg_order)]
+
+    args = list(deepcopy(dim._args))
+
+    for i, kw in enumerate(kwarg_order):
+        _upsert(args, i, dim._kwargs.get(kw))
+
+    return args[: len(kwarg_order)]
+
+
 class ToConfigSpace(SpaceConverter[Hyperparameter]):
     """Convert an Orion space into a configspace"""
 
@@ -71,19 +105,19 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
     def real(self, dim: Real) -> FloatHyperparameter:
         """Convert a real dimension into a configspace equivalent"""
         if dim.prior_name in ("reciprocal", "uniform"):
-            a, b = dim._args
+            lower, upper = dim.interval()
 
             return UniformFloatHyperparameter(
                 name=dim.name,
-                lower=a,
-                upper=b,
+                lower=lower,
+                upper=upper,
                 default_value=dim.default_value,
                 q=_qantization(dim),
                 log=dim.prior_name == "reciprocal",
             )
 
         if dim.prior_name in ("normal", "norm"):
-            a, b = dim._args
+            a, b = normalize_args(dim, dim.prior)
 
             kwargs = dict(
                 name=dim.name,
@@ -102,20 +136,21 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
 
     def integer(self, dim: Integer) -> IntegerHyperparameter:
         """Convert a integer dimension into a configspace equivalent"""
+
         if dim.prior_name in ("int_uniform", "int_reciprocal"):
-            a, b = dim._args
+            lower, upper = dim.interval()
 
             return UniformIntegerHyperparameter(
                 name=dim.name,
-                lower=a,
-                upper=b,
+                lower=lower,
+                upper=upper,
                 default_value=dim.default_value,
                 q=_qantization(dim),
                 log=dim.prior_name == "int_reciprocal",
             )
 
         if dim.prior_name in ("int_norm", "normal"):
-            a, b = dim._args
+            a, b = normalize_args(dim, dim.prior)
 
             kwargs = dict(
                 name=dim.name,
@@ -203,12 +238,18 @@ def _from_uniform(dim: Hyperparameter) -> Integer | Real:
     else:
         kwargs["precision"] = int(-log10(dim.q)) if dim.q else 4
 
-    dist = "uniform"
-    args.append(dim.lower)
-    args.append(dim.upper)
-
     if dim.log:
         dist = "reciprocal"
+        args.append(dim.lower)
+        args.append(dim.upper)
+    else:
+        # NB: scipy uniform [loc, scale], configspace [min, max] with max = loc + scale, loc = min
+        loc = dim.lower
+        scale = dim.upper - dim.lower
+
+        dist = "uniform"
+        args.append(loc)
+        args.append(scale)
 
     return klass(dim.name, dist, *args, **kwargs)
 
