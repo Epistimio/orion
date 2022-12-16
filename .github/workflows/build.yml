@@ -14,7 +14,7 @@ on:
 
 jobs:
 
-  test:
+  test: 
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox (and all extra dependencies)
-      run: tox -e py-all --verbose
+      run: tox -e py-all -- tests/functional/example/test_speechbrain_tutorial.py
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
