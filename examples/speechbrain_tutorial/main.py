@@ -50,10 +50,10 @@ if __name__ == "__main__":
     )
     print("Starting evaluate")
     # Load best checkpoint for evaluation
-    valid_stats = asr_brain.evaluate(
-        test_set=datasets["valid"],
-        min_key="WER",
-        test_loader_kwargs=hparams["valid_dataloader_opts"],
-    )
+    #valid_stats = asr_brain.evaluate(
+    #    test_set=datasets["valid"],
+    #    min_key="WER",
+    #    test_loader_kwargs=hparams["valid_dataloader_opts"],
+    #)
 #
 #    report_objective(valid_stats)
