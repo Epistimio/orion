@@ -33,6 +33,10 @@ Oríon
     :target: https://github.com/Epistimio/orion/actions?query=workflow:build+branch:master+event:schedule
     :alt: Github actions tests
 
+.. image:: _static/logos/orion_logo_grid_150ppi.png
+  :width: 400
+  :alt: Oríon
+
 Oríon is an asynchronous framework for black-box function optimization.
 
 Its purpose is to serve as a meta-optimizer for machine learning models

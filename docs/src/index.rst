@@ -71,5 +71,6 @@
    developer/documenting
    developer/ci
    developer/release
+   developer/logos
 
 .. Don't fetch reference/viz
