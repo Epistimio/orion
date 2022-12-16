@@ -32,6 +32,8 @@ from __future__ import annotations
 import copy
 import logging
 import numbers
+from dataclasses import dataclass, field
+from distutils.log import error
 from functools import singledispatch
 from typing import Any, Generic, TypeVar
 
@@ -1095,6 +1097,44 @@ class Space(dict):
             )
         super().__setitem__(key, value)
 
+    def assert_contains(self, trial):
+        """Same as __contains__ but instead of return true or false it will raise an exception
+        with the exact causes of the mismatch.
+
+        Raises
+        ------
+        ValueError if the trial has parameters that are not contained by the space.
+
+        """
+        if isinstance(trial, str):
+            if not super().__contains__(trial):
+                raise ValueError("{trial} does not belong to the dimension")
+            return
+
+        flattened_params = flatten(trial.params)
+        keys = set(flattened_params.keys())
+        errors = []
+
+        for dim_name, dim in self.items():
+            if dim_name not in keys:
+                errors.append(f"{dim_name} is missing")
+                continue
+
+            value = flattened_params[dim_name]
+            if value not in dim:
+                errors.append(f"{value} does not belong to the dimension {dim}")
+
+            keys.remove(dim_name)
+
+        if len(errors) > 0:
+            raise ValueError(f"Trial {trial.id} is not contained in space:\n{errors}")
+
+        if len(keys) != 0:
+            errors = "\n - ".join(keys)
+            raise ValueError(f"Trial {trial.id} has additional parameters:\n{errors}")
+
+        return True
+
     def __contains__(self, key_or_trial):
         """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
@@ -1105,19 +1145,12 @@ class Space(dict):
             If str, test if the string is a dimension part of the search space.
             If a Trial, test if trial's hyperparameters fit the current search space.
         """
-        if isinstance(key_or_trial, str):
-            return super().__contains__(key_or_trial)
 
-        trial = key_or_trial
-        flattened_params = flatten(trial.params)
-        keys = set(flattened_params.keys())
-        for dim_name, dim in self.items():
-            if dim_name not in keys or flattened_params[dim_name] not in dim:
-                return False
-
-            keys.remove(dim_name)
-
-        return len(keys) == 0
+        try:
+            self.assert_contains(key_or_trial)
+            return True
+        except ValueError:
+            return False
 
     def __repr__(self):
         """Represent as a string the space and the dimensions it contains."""

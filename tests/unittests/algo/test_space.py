@@ -624,7 +624,7 @@ class TestCategorical:
         categories[0] = "asdfa"
         categories[2] = "lalala"
         dim = Categorical("yolo", categories, shape=2)
-        sample = ["asdfa", "1"]  # np.array(['asdfa', '1'], dtype=np.object)
+        sample = ["asdfa", "1"]  # np.array(['asdfa', '1'], dtype=object)
         assert dim.cast(sample) == ["asdfa", 1]
 
     def test_cast_array_multidim(self):
@@ -633,14 +633,14 @@ class TestCategorical:
         categories[0] = "asdfa"
         categories[2] = "lalala"
         dim = Categorical("yolo", categories, shape=2)
-        sample = np.array(["asdfa", "1"], dtype=np.object)
-        assert np.all(dim.cast(sample) == np.array(["asdfa", 1], dtype=np.object))
+        sample = np.array(["asdfa", "1"], dtype=object)
+        assert np.all(dim.cast(sample) == np.array(["asdfa", 1], dtype=object))
 
     def test_cast_bad_category(self):
         """Make sure array are cast to int and returned as array of values"""
         categories = list(range(10))
         dim = Categorical("yolo", categories, shape=2)
-        sample = np.array(["asdfa", "1"], dtype=np.object)
+        sample = np.array(["asdfa", "1"], dtype=object)
         with pytest.raises(ValueError) as exc:
             dim.cast(sample)
         assert "Invalid category: asdfa" in str(exc.value)
