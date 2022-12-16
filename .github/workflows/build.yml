@@ -15,7 +15,7 @@ on:
 jobs:
 
   test:
-    needs: [pre-commit, pretest]
+    needs:
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
