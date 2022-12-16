@@ -1,13 +1,13 @@
 # Roadmap
-Last update May 31th, 2022
+Last update August 18th, 2022
 
 ## Next releases - Short-Term
 
-### v0.2.5
+### v0.2.7
 
-- Add conversion functions for [ConfigSpace](https://automl.github.io/ConfigSpace/master/)
+### v0.2.6
 
-## Next releases - Mid-Term
+- Fix; make sure stdout from user script is printed back and not captured
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
@@ -16,6 +16,8 @@ Last update May 31th, 2022
 #### Leveraging previous experiences
 Leveraging the knowledge base contained in the EVC of previous trials to optimize and drive new
 trials.
+
+## Next releases - Mid-Term
 
 ## Next releases - Long-Term
 
