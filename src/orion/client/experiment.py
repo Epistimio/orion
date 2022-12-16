@@ -792,6 +792,7 @@ class ExperimentClient:
         # race condition for trials creation
         assert self.max_trials is not None
         assert max_trials is not None
+
         if self.max_trials > max_trials:
             self._experiment.max_trials = max_trials
             assert self._experiment.algorithms is not None
@@ -812,11 +813,7 @@ class ExperimentClient:
                 **kwargs,
             )
 
-            if self._executor is None or self._executor_owner:
-                with self.executor:
-                    rval = runner.run()
-            else:
-                rval = runner.run()
+            rval = runner.run()
 
         return rval
 
