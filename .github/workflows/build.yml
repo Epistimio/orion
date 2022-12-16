@@ -15,7 +15,6 @@ on:
 jobs:
 
   test:
-    needs:
     runs-on: ${{ matrix.platform }}
     strategy:
       max-parallel: 4
