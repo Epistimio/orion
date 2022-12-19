@@ -105,8 +105,8 @@ def test_execute_function(backend):
         assert executor.wait([future]) == [7]
 
     # Executor was closed at exit
-    #with pytest.raises(ExecutorClosed):
-    #    executor.submit(function, 1, 2, c=3)
+    with pytest.raises(ExecutorClosed):
+        executor.submit(function, 1, 2, c=3)
 
 
 @pytest.mark.parametrize("backend", backends)
@@ -176,7 +176,7 @@ def test_execute_async_all(backend):
         futures = [executor.submit(function, 1, 2, i) for i in range(10)]
 
         results = True
-        while results:
+        while results:  
             results = executor.async_get(futures, timeout=1)
             all_results_async.extend(results)
 

@@ -1,5 +1,6 @@
 import traceback
 import os
+import logging
 from orion.executor.base import (
     AsyncException,
     AsyncResult,
@@ -15,6 +16,7 @@ try:
 except ImportError:
     HAS_RAY = False
 
+logger = logging.getLogger(__name__)
 
 class _Future(Future):
     def __init__(self, future):
@@ -24,10 +26,10 @@ class _Future(Future):
     def get(self, timeout=None):
         if self.exception:
             raise self.exception
-        try:
+        try: 
             return ray.get(self.future,timeout=timeout)
         except ray.exceptions.GetTimeoutError as e:
-            print(e)
+            raise TimeoutError() from e
 
     def wait(self, timeout=None):
         try:
@@ -37,8 +39,10 @@ class _Future(Future):
         except Exception as e:
             self.exception = e
 
+
     def ready(self):
-        return self.future.future().done()
+        obj_ready = ray.wait([self.future])
+        return len(obj_ready[0]) == 1
 
     def successful(self):
         # Python 3.6 raise assertion error
@@ -51,6 +55,7 @@ class _Future(Future):
 class Ray(BaseExecutor):
     def __init__(self, n_workers=-1, runtime_env=None, **config,):
         super().__init__(n_workers=n_workers)
+        self.initialized = False
         if not HAS_RAY:
             raise ImportError("Ray must be installed to use Ray executor.")
         self.config = config
@@ -58,25 +63,34 @@ class Ray(BaseExecutor):
             if runtime_env is None:
                 ray.init()
             else:
-                ray.init(runtime_env=runtime_env)
-            print("Ray was initiated")
+                ray.init()#runtime_env={"working_dir": "/Users/simonolivier/DevOrion/orion/tests/unittests/executor"})
+            self.initialized = True
+            print("Ray was initiated with runtime_env : ", runtime_env)
     
     def __getstate__(self):
         return super().__getstate__()
 
     def __setstate__(self, state):
         super().__setstate__(state)
+    
+    def close(self):
+        if self.initialized:
+            self.initialized = False
+            ray.shutdown()
 
     def __del__(self):
-        ray.shutdown()
+        self.close()
+            
 
     def __enter__(self):
         return self
 
     def submit(self, function, *args, **kwargs):
         try:
-            remote_g = ray.remote(function)
-            return _Future(remote_g.remote(*args, **kwargs))
+            if (ray.is_initialized()):
+                remote_g = ray.remote(function)
+                return _Future(remote_g.remote(*args, **kwargs))
+            raise ExecutorClosed()
         except Exception as e:
             if str(e).startswith(
                 "Tried sending message after closing.  Status: closed"
@@ -84,10 +98,10 @@ class Ray(BaseExecutor):
                 raise ExecutorClosed() from e
 
             raise
-    def wait(self, futures):
+    def wait(self, futures):        
         return [future.get() for future in futures]
 
-    def async_get(self, futures, timeout=0.01):
+    def async_get(self, futures, timeout=None):
         results = []
         tobe_deleted = []
         for i, future in enumerate(futures):
@@ -101,12 +115,11 @@ class Ray(BaseExecutor):
                     results.append(AsyncException(future, err, traceback.format_exc()))
 
                 tobe_deleted.append(future)
-
         for future in tobe_deleted:
             futures.remove(future)
 
         return results
 
     def __exit__(self, exc_type, exc_value, traceback):
-        ray.shutdown()
+        self.close()
         super().__exit__(exc_type, exc_value, traceback)
