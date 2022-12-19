@@ -40,14 +40,15 @@ if __name__ == "__main__":
     # necessary to update the parameters of the model. Since all objects
     # with changing state are managed by the Checkpointer, training can be
     # stopped at any point, and will be resumed on next call.
-    #print("Starting fit")
-    #asr_brain.fit(
-    #    asr_brain.hparams.epoch_counter,
-    #    datasets["train"],
-    #    datasets["valid"],
-    #    train_loader_kwargs=hparams["train_dataloader_opts"],
-    #    valid_loader_kwargs=hparams["valid_dataloader_opts"],
-    #)
+    # print("Starting fit")
+
+    asr_brain.fit(
+        asr_brain.hparams.epoch_counter,
+        datasets["train"],
+        datasets["valid"],
+        train_loader_kwargs=hparams["train_dataloader_opts"],
+        valid_loader_kwargs=hparams["valid_dataloader_opts"],
+    )
     print("Starting evaluate")
     # Load best checkpoint for evaluation
     valid_stats = asr_brain.evaluate(

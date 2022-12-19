@@ -34,7 +34,11 @@ def download_data(tmp_path_factory):
     output = data / "results"
 
     # Calling the script, for downloading the data
-    script = os.path.abspath("examples/speechbrain_tutorial/download_data.py")
+
+    script = os.path.abspath(
+        str(os.path.dirname(os.path.abspath(__file__)))
+        + "/../../../examples/speechbrain_tutorial/download_data.py"
+    )
     # Using commands and overriding download paths
     return_code = subprocess.call(
         [
@@ -73,7 +77,10 @@ def download_data(tmp_path_factory):
 
 def test_script_integrity(capsys, download_data):
     """Verifies the example script can run in standalone via `python ...`."""
-    script = os.path.abspath("examples/speechbrain_tutorial/main.py")
+    script = os.path.abspath(
+        str(os.path.dirname(os.path.abspath(__file__)))
+        + "/../../../examples/speechbrain_tutorial/main.py"
+    )
     path = download_data
     data = path / "data"
     output = data / "results"
@@ -109,12 +116,18 @@ def test_script_integrity(capsys, download_data):
 @pytest.mark.usefixtures("orionstate")
 def test_orion_runs_script(download_data):
     """Verifies Oríon can execute the example script."""
-    script = os.path.abspath("examples/speechbrain_tutorial/main.py")
+    script = os.path.abspath(
+        str(os.path.dirname(os.path.abspath(__file__)))
+        + "/../../../examples/speechbrain_tutorial/main.py"
+    )
     path = download_data
     data = path / "data"
     output = data / "results"
 
-    config = "tests/functional/example/orion_config_speechbrain.yaml"
+    config = (
+        str(os.path.dirname(os.path.abspath(__file__)))
+        + "/orion_config_speechbrain.yaml"
+    )
 
     orion.core.cli.main(
         [
