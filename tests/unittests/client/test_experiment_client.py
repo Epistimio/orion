@@ -1006,6 +1006,6 @@ def test_run_experiment_twice():
         client.workon(main, max_trials=10)
 
         client._experiment.max_trials = 20
-        client._experiment.algorithms.algorithm.max_trials = 20
+        client._experiment.algorithm.algorithm.max_trials = 20
 
         client.workon(main, max_trials=20)
