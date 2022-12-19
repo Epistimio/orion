@@ -1,11 +1,12 @@
-import time
 import os
+import time
+
 import pytest
 
 from orion.executor.base import AsyncException, ExecutorClosed, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
-from orion.executor.ray_backend import HAS_RAY, Ray
 from orion.executor.multiprocess_backend import PoolExecutor
+from orion.executor.ray_backend import HAS_RAY, Ray
 from orion.executor.single_backend import SingleExecutor
 
 
@@ -16,9 +17,11 @@ def multiprocess(n):
 def thread(n):
     return PoolExecutor(n, "threading")
 
+
 def ray(n):
     test_working_dir = os.path.dirname(os.path.abspath(__file__))
     return Ray(n, runtime_env={"working_dir": test_working_dir})
+
 
 def skip_dask_if_not_installed(
     value, reason="Dask dependency is required for these tests."
@@ -42,6 +45,7 @@ def xfail_dask_if_not_installed(
         ),
     )
 
+
 def skip_ray_if_not_installed(
     value, reason="Ray dependency is required for these tests."
 ):
@@ -63,6 +67,7 @@ def xfail_ray_if_not_installed(
             condition=not HAS_RAY, reason=reason, raises=ImportError
         ),
     )
+
 
 executors = [
     "joblib",
@@ -176,7 +181,7 @@ def test_execute_async_all(backend):
         futures = [executor.submit(function, 1, 2, i) for i in range(10)]
 
         results = True
-        while results:  
+        while results:
             results = executor.async_get(futures, timeout=1)
             all_results_async.extend(results)
 
@@ -218,9 +223,7 @@ def test_execute_async_bad(backend):
 
 def nested_jobs(executor):
     with executor:
-        print("nested_jobs sub")
         futures = [executor.submit(function, 1, 2, i) for i in range(10)]
-        print("nested_jobs wait")
         all_results = executor.wait(futures)
     return sum(all_results)
 

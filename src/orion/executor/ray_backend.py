@@ -1,6 +1,6 @@
-import traceback
-import os
 import logging
+import traceback
+
 from orion.executor.base import (
     AsyncException,
     AsyncResult,
@@ -18,6 +18,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class _Future(Future):
     def __init__(self, future):
         self.future = future
@@ -26,19 +27,18 @@ class _Future(Future):
     def get(self, timeout=None):
         if self.exception:
             raise self.exception
-        try: 
-            return ray.get(self.future,timeout=timeout)
+        try:
+            return ray.get(self.future, timeout=timeout)
         except ray.exceptions.GetTimeoutError as e:
             raise TimeoutError() from e
 
     def wait(self, timeout=None):
         try:
-            ray.get(self.future, timeout = timeout)
+            ray.get(self.future, timeout=timeout)
         except ray.exceptions.GetTimeoutError:
             pass
         except Exception as e:
             self.exception = e
-
 
     def ready(self):
         obj_ready = ray.wait([self.future])
@@ -53,7 +53,12 @@ class _Future(Future):
 
 
 class Ray(BaseExecutor):
-    def __init__(self, n_workers=-1, runtime_env=None, **config,):
+    def __init__(
+        self,
+        n_workers=-1,
+        runtime_env=None,
+        **config,
+    ):
         super().__init__(n_workers=n_workers)
         self.initialized = False
         if not HAS_RAY:
@@ -63,16 +68,20 @@ class Ray(BaseExecutor):
             if runtime_env is None:
                 ray.init()
             else:
-                ray.init()#runtime_env={"working_dir": "/Users/simonolivier/DevOrion/orion/tests/unittests/executor"})
+                ray.init(
+                    runtime_env={
+                        "working_dir": "/Users/simonolivier/DevOrion/orion/tests/unittests/executor"
+                    }
+                )
             self.initialized = True
             print("Ray was initiated with runtime_env : ", runtime_env)
-    
+
     def __getstate__(self):
         return super().__getstate__()
 
     def __setstate__(self, state):
         super().__setstate__(state)
-    
+
     def close(self):
         if self.initialized:
             self.initialized = False
@@ -80,14 +89,13 @@ class Ray(BaseExecutor):
 
     def __del__(self):
         self.close()
-            
 
     def __enter__(self):
         return self
 
     def submit(self, function, *args, **kwargs):
         try:
-            if (ray.is_initialized()):
+            if ray.is_initialized():
                 remote_g = ray.remote(function)
                 return _Future(remote_g.remote(*args, **kwargs))
             raise ExecutorClosed()
@@ -98,7 +106,8 @@ class Ray(BaseExecutor):
                 raise ExecutorClosed() from e
 
             raise
-    def wait(self, futures):        
+
+    def wait(self, futures):
         return [future.get() for future in futures]
 
     def async_get(self, futures, timeout=None):
