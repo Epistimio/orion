@@ -7,7 +7,7 @@ import subprocess
 import pytest
 from pymongo import MongoClient
 
-import orion
+import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
 from orion.core.io.database import database_factory
