@@ -7,6 +7,7 @@ import subprocess
 import pytest
 from pymongo import MongoClient
 
+import orion
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
 from orion.core.io.database import database_factory
@@ -221,7 +222,7 @@ def fill_db(request):
     orion_version = get_version("orion")
     assert orion_version != f"orion {version}"
 
-    print(execute("orion -vv db upgrade -f"))
+    orion.core.cli.main(["db", "upgrade", "-f"])
 
     return version
 
