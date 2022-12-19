@@ -121,6 +121,7 @@ setup_args = dict(
         "BaseExecutor": [
             "singleexecutor = orion.executor.single_backend:SingleExecutor",
             "joblib = orion.executor.joblib_backend:Joblib",
+            "poolexecutor = orion.executor.multiprocess_backend:PoolExecutor",
             "dask = orion.executor.dask_backend:Dask",
         ],
     },
