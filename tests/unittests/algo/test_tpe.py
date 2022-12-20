@@ -403,7 +403,7 @@ class TestGMMSampler:
 
 
 def _trial_to_array(trial: Trial, space: Space) -> np.ndarray:
-    return np.array(format_trials.trial_to_tuple(trial, space=space))
+    return list(format_trials.trial_to_tuple(trial, space=space))
 
 
 def _array_to_trial(x: np.ndarray, space: Space, y: np.ndarray | None = None) -> Trial:
