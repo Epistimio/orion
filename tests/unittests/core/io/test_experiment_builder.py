@@ -2,9 +2,11 @@
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
 from __future__ import annotations
 
+import contextlib
 import copy
 import datetime
 import logging
+import typing
 from pathlib import Path
 
 import pytest
@@ -28,10 +30,14 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
 )
 from orion.core.worker.algo_wrappers import AlgoWrapper
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
+
+if typing.TYPE_CHECKING:
+    from _pytest.logging import LogCaptureFixture
 
 
 def count_experiments():
@@ -45,10 +51,8 @@ def space():
     return {"x": "uniform(-50,50)"}
 
 
-@pytest.fixture()
-def python_api_config():
-    """Create a configuration without the cli fluff."""
-    new_config = dict(
+def _python_api_config() -> ExperimentConfig:
+    return ExperimentConfig(
         name="supernaekei",
         version=1,
         space={"x": "uniform(0,10)"},
@@ -79,9 +83,14 @@ def python_api_config():
         _id="fasdfasfa",
         something_to_be_ignored="asdfa",
         refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
+        knowledge_base=None,
     )
 
-    return new_config
+
+@pytest.fixture()
+def python_api_config():
+    """Create a configuration without the cli fluff."""
+    return _python_api_config()
 
 
 @pytest.fixture()
@@ -1372,6 +1381,82 @@ def test_load_unavailable_algo(algo_unavailable_config, capsys):
             NotImplementedError, match="Could not find implementation of BaseAlgorithm"
         ):
             experiment_builder.build("supernaekei")
+
+
+def _exp_config_with_knowledge_base_at(kb_pickle_path: str | Path) -> ExperimentConfig:
+    config = _python_api_config()
+    config["knowledge_base"] = {
+        "KnowledgeBase": {
+            "storage": {
+                "type": "legacy",
+                "database": {"type": "pickleddb", "host": str(kb_pickle_path)},
+            },
+        },
+    }
+    return config
+
+
+def test_load_uninstantiable_knowledge_base(caplog: LogCaptureFixture, tmp_path: Path):
+    """Check that an error is raised when trying to create an experiment where the KB has absolute
+    paths that aren't on this machine.
+    """
+
+    @contextlib.contextmanager
+    def _logs_warning_about_kb():
+        # Now, if trying to open in read mode, but the path doesn't exist, then the exception
+        # should be caught and a warning should be printed.
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            yield
+        assert len(caplog.records) >= 1
+        assert "KnowledgeBase could not be instantiated" in caplog.text
+
+    @contextlib.contextmanager
+    def _setup(kb_host: str | Path):
+        exp_config = _exp_config_with_knowledge_base_at(kb_pickle_path=kb_host)
+        with OrionState(experiments=[exp_config]):
+            yield exp_config
+
+    with _setup(kb_host="/I/do/not/exist.pkl") as exp_config_with_invalid_kb_host:
+        caplog.clear()
+        with pytest.raises(PermissionError, match="/I"), caplog.at_level(logging.ERROR):
+            experiment_builder.build(
+                name=exp_config_with_invalid_kb_host["name"], mode="x"
+            )
+        assert len(caplog.records) >= 1
+
+        # Now, if trying to open in read mode, but the path doesn't exist, then the exception
+        # should be caught and a warning should be printed.
+        with _logs_warning_about_kb():
+            experiment = experiment_builder.load(
+                exp_config_with_invalid_kb_host["name"], mode="r"
+            )
+        assert experiment.knowledge_base is None
+
+    # Now, use a path that could be written to, but doesn't exist.
+    host = tmp_path / "some_folder" / "db.pkl"
+    with _setup(kb_host=host) as exp_config_with_absent_kb_file:
+        assert not host.exists()
+
+        # Try to load the experiment, but the KB points to pickledb host files that don't exist!
+        # NOTE: This shouldn't create the files, or any of the parent directories!
+        with _logs_warning_about_kb():
+            experiment_builder.load(exp_config_with_absent_kb_file["name"], mode="r")
+            assert not host.exists()
+            assert not host.parent.exists()
+
+        with _logs_warning_about_kb():
+            experiment_builder.build(exp_config_with_absent_kb_file["name"], mode="r")
+            assert not host.exists()
+            assert not host.parent.exists()
+
+        # Try to build the experiment to run it writing, but the KB points to pickledb host files
+        # that don't exist!
+        # NOTE: This shouldn't create the files, or any of the parent directories!
+        with pytest.raises(FileNotFoundError, match=str(host)):
+            experiment_builder.build(exp_config_with_absent_kb_file["name"], mode="x")
+            assert not host.exists()
+            assert not host.parent.exists()
 
 
 class TestInitExperimentReadWrite:

@@ -84,6 +84,8 @@ import sys
 import typing
 from typing import Any, TypeVar
 
+from typing_extensions import Literal
+
 import orion.core
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
@@ -207,7 +209,34 @@ def _instantiate_space(config: Space | dict[str, Any]) -> Space:
     return SpaceBuilder().build(config)
 
 
-def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
+@typing.overload
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: Literal[True] = True,
+) -> KnowledgeBase | None:
+    ...
+
+
+@typing.overload
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: Literal[False] = False,
+) -> KnowledgeBase:
+    ...
+
+
+@typing.overload
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: bool,
+) -> KnowledgeBase | None:
+    ...
+
+
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: bool = True,
+) -> KnowledgeBase | None:
     """Instantiate the Knowledge base from its configuration."""
     if len(kb_config) != 1:
         raise ConfigurationError(
@@ -232,10 +261,17 @@ def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
     kb_kwargs = kb_config[kb_type_name]
     # Instantiate the storage that is required for the KB.
     storage_config = kb_kwargs["storage"]
-    if isinstance(storage_config, dict):
-        storage = setup_storage(storage_config)
-        kb_kwargs["storage"] = storage
-    return kb_type(**kb_kwargs)
+    try:
+        if isinstance(storage_config, dict):
+            storage = setup_storage(storage_config)
+            kb_kwargs["storage"] = storage
+        return kb_type(**kb_kwargs)
+    except (FileNotFoundError, PermissionError) as err:
+        if not ignore_instantiation_errors:
+            log.error("Unable to instantiate the KnowledgeBase.")
+            raise err
+        log.warning("KnowledgeBase could not be instantiated.")
+        return None
 
 
 def _instantiate_algo(
