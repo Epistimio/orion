@@ -981,7 +981,9 @@ class ExperimentBuilder:
         space = _instantiate_space(space)
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
         if isinstance(knowledge_base, dict):
-            knowledge_base = _instantiate_knowledge_base(knowledge_base)
+            knowledge_base = _instantiate_knowledge_base(
+                knowledge_base, ignore_instantiation_errors=mode != "x"
+            )
         instantiated_algorithm = _instantiate_algo(
             space=space,
             max_trials=max_trials,
