@@ -19,6 +19,11 @@ from orion.testing.algo import BaseAlgoTests, TestPhase, first_phase_only
 if typing.TYPE_CHECKING:
     from _pytest.fixtures import SubRequest
 
+pytest.xfail(
+    "HEBO tests fail because of pymoo==0.5.0, see https://github.com/huawei-noah/HEBO/issues/19.",
+    allow_module_level=True,
+)
+
 if import_optional.failed:
     pytest.skip("skipping HEBO tests", allow_module_level=True)
 
