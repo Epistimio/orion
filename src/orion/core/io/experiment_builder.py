@@ -105,12 +105,19 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment, Mode
-from orion.core.worker.experiment_config import ExperimentConfig
+from orion.core.worker.experiment_config import (
+    ExperimentConfig,
+    MetaData,
+    PartialExperimentConfig,
+    RefersConfig,
+)
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 
 if typing.TYPE_CHECKING:
+    from typing_extensions import Unpack
+
     from orion.core.evc.adapters import CompositeAdapter
     from orion.storage.base import BaseStorageProtocol
 log = logging.getLogger(__name__)
@@ -121,7 +128,7 @@ log = logging.getLogger(__name__)
 ##
 
 
-def clean_config(name: str, config: dict, branching: dict | None):
+def clean_config(name: str, config: PartialExperimentConfig, branching: dict | None):
     """Clean configuration from hidden fields (ex: ``_id``) and update branching if necessary"""
     log.debug("Cleaning config")
 
@@ -390,7 +397,7 @@ def _fetch_config_version(
 ###
 
 
-def get_cmd_config(cmdargs) -> ExperimentConfig:
+def get_cmd_config(cmdargs) -> dict:
     """Fetch configuration defined by commandline and local configuration file.
 
     Arguments of commandline have priority over options in configuration file.
@@ -459,7 +466,7 @@ def build_from_args(cmdargs):
     return builder.build(**cmd_config)
 
 
-def get_from_args(cmdargs, mode="r"):
+def get_from_args(cmdargs: dict, mode: Literal["r", "w"] = "r"):
     """Build an experiment view based on commandline arguments
 
     .. seealso::
@@ -477,7 +484,7 @@ def get_from_args(cmdargs, mode="r"):
 
     name = cmd_config.get("name")
     version = cmd_config.get("version")
-
+    assert isinstance(name, str)
     return builder.load(name, version, mode=mode)
 
 
@@ -486,7 +493,7 @@ def build(
     version: int | None = None,
     branching: dict | None = None,
     storage: BaseStorageProtocol | dict | None = None,
-    **config,
+    **config: Unpack[PartialExperimentConfig],
 ):
     """Build an experiment.
 
@@ -498,10 +505,17 @@ def build(
     if storage is None:
         storage = setup_storage()
 
-    return ExperimentBuilder(storage).build(name, version, branching, **config)
+    config["name"] = name
+    config["version"] = version
+    return ExperimentBuilder(storage).build(branching=branching, **config)
 
 
-def load(name, version=None, mode="r", storage=None):
+def load(
+    name: str,
+    version=None,
+    mode: Literal["r", "w"] = "r",
+    storage: BaseStorageProtocol | dict | None = None,
+) -> Experiment:
     """Load an experiment.
 
     .. seealso::
@@ -549,7 +563,7 @@ class ExperimentBuilder:
         name: str,
         version: int | None = None,
         branching: dict | None = None,
-        **config,
+        **config: Unpack[PartialExperimentConfig],
     ) -> Experiment:
         """Build an experiment object
 
@@ -671,7 +685,9 @@ class ExperimentBuilder:
 
         return conflicts
 
-    def load(self, name: str, version: int | None = None, mode: Mode = "r"):
+    def load(
+        self, name: str, version: int | None = None, mode: Literal["r", "w"] = "r"
+    ):
         """Load experiment from database
 
         An experiment view provides all reading operations of standard experiment but prevents the
@@ -813,7 +829,9 @@ class ExperimentBuilder:
 
         return branched_experiment
 
-    def consolidate_config(self, name: str, version: int | None, config: dict):
+    def consolidate_config(
+        self, name: str, version: int | None, config: PartialExperimentConfig
+    ):
         """Merge together given configuration with db configuration matching
         for experiment (``name``, ``version``)
         """
@@ -913,8 +931,8 @@ class ExperimentBuilder:
         max_trials: int | None = None,
         max_broken: int | None = None,
         working_dir: str | None = None,
-        metadata: dict | None = None,
-        refers: dict | None = None,
+        metadata: MetaData | None = None,
+        refers: RefersConfig | None = None,
         producer: dict | None = None,
         knowledge_base: KnowledgeBase | dict | None = None,
         user: str | None = None,
