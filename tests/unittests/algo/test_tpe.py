@@ -402,7 +402,7 @@ class TestGMMSampler:
         assert len(likelis) == len(points)
 
 
-def _trial_to_array(trial: Trial, space: Space) -> np.ndarray:
+def _trial_to_array(trial: Trial, space: Space) -> list[tuple]:
     return list(format_trials.trial_to_tuple(trial, space=space))
 
 
