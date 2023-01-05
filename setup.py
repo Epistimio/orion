@@ -15,6 +15,7 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.algo.mofa",
     "orion.algo.dehb",
     "orion.algo.pbt",
+    "orion.algo.space",
     "orion.analysis",
     "orion.benchmark",
     "orion.client",
