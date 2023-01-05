@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from glob import glob
 from importlib import import_module
 
+import pkgutil
 import pkg_resources
 
 log = logging.getLogger(__name__)
@@ -65,11 +66,38 @@ def get_all_types(parent_cls, cls_name):
     return {class_.__name__.lower(): class_ for class_ in types}
 
 
+
+def discover_plugins(module):
+    """Discover uetools plugins"""
+    path = module.__path__
+    name = module.__name__
+
+    plugins = {}
+
+    for _, name, _ in pkgutil.iter_modules(path, name + "."):
+        plugins[name] = import_module(name)
+
+    return plugins
+
+
 def _import_modules(cls):
     cls.modules = []
     # TODO: remove?
     # base = import_module(cls.__base__.__module__)
 
+    # New
+    # Since orion.algo is a package namespace we can fetch all modules inside it
+    # each module need to be a valid plugin
+    
+    # FIXME
+    import orion.algo
+    modules = discover_plugins(orion.algo)
+    
+    for _, plugin in modules.items():
+        cls.modules.append(plugin)
+
+
+    # Legacy:
     # Get types advertised through entry points!
     for entry_point in pkg_resources.iter_entry_points(cls.__name__):
         entry_point.load()
@@ -158,6 +186,7 @@ class GenericFactory(Generic[T]):
     def get_classes(self) -> dict[str, type[T]]:
         """Get children classes of ``self.base``"""
         _import_modules(self.base)
+        
         return get_all_types(self.base, self.base.__name__)
 
 
