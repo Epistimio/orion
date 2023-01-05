@@ -12,7 +12,6 @@ with open("tests/requirements.txt") as f:
     tests_require = f.readlines()
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
-    "orion.algo",
     "orion.algo.mofa",
     "orion.algo.dehb",
     "orion.algo.pbt",
@@ -86,6 +85,10 @@ setup_args = dict(
     author_email="xavier.bouthillier@umontreal.ca",
     url="https://github.com/epistimio/orion",
     packages=packages,
+    namespace_packages=[
+        "orion",
+        "orion.algo",
+    ],
     package_dir={"": "src"},
     data_files=dashboard_files,
     include_package_data=True,
