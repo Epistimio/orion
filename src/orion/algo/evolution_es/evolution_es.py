@@ -123,7 +123,7 @@ class EvolutionES(Hyperband[BracketT]):
         such as multiply factor (times/divides by a multiply factor) and add factor
         (add/subtract by a multiply factor). The function must be defined by
         an importable string. If None, default
-        mutate function is used: ``orion.algo.mutate_functions.default_mutate``.
+        mutate function is used: ``orion.algo.evolution_es.mutate_functions.default_mutate``.
 
     """
 
@@ -229,7 +229,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
             else:
                 raise ValueError(f"Unsupported type for mutate: {owner.mutate}")
         function_string = self.mutate_attr.pop(
-            "function", "orion.algo.mutate_functions.default_mutate"
+            "function", "orion.algo.evolution_es.mutate_functions.default_mutate"
         )
         mod_name, func_name = function_string.rsplit(".", 1)
         mod = importlib.import_module(mod_name)
