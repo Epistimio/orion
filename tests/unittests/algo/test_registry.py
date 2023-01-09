@@ -3,7 +3,7 @@ import copy
 
 import pytest
 
-from orion.algo.registry import Registry, RegistryMapping
+from orion.algo.base.registry import Registry, RegistryMapping
 from orion.algo.space import Space
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.transformer import TransformedSpace, build_required_space

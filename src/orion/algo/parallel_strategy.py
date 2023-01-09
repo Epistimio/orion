@@ -12,7 +12,7 @@ from __future__ import annotations
 import copy
 import logging
 
-from orion.algo.registry import Registry
+from orion.algo.base.registry import Registry
 from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
 
