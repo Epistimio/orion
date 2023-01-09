@@ -2,7 +2,4 @@
 
 from .mofa import MOFA
 
-
-__all__ = [
-    'MOFA'
-]
+__all__ = ["MOFA"]

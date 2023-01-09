@@ -2,7 +2,4 @@
 
 from .dehb import DEHB
 
-
-__all__ = [
-    'DEHB'
-]
+__all__ = ["DEHB"]

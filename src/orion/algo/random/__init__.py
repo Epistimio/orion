@@ -2,7 +2,4 @@
 
 from .random import Random
 
-
-__all__ = [
-    'Random'
-]
+__all__ = ["Random"]

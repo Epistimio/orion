@@ -1,20 +1,19 @@
 """Hyperband hyperparameter optimizer"""
 
 from .hyperband import (
-    Hyperband,
     BudgetTuple,
+    Hyperband,
     HyperbandBracket,
-    display_budgets,
     RungDict,
     compute_budgets,
+    display_budgets,
 )
 
-
 __all__ = [
-    'Hyperband',
-    'BudgetTuple',
-    'HyperbandBracket',
-    'display_budgets',
-    'RungDict',
-    'compute_budgets'
+    "Hyperband",
+    "BudgetTuple",
+    "HyperbandBracket",
+    "display_budgets",
+    "RungDict",
+    "compute_budgets",
 ]

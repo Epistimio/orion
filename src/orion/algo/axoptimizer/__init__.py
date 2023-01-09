@@ -2,7 +2,4 @@
 
 from .axoptimizer import AxOptimizer
 
-
-__all__ = [
-    'AxOptimizer'
-]
+__all__ = ["AxOptimizer"]
