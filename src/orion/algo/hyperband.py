@@ -90,8 +90,8 @@ def compute_budgets(
     return budgets
 
 
+# pylint: disable=missing-function-docstring
 def tabulate_status(brackets: list[HyperbandBracket]) -> None:
-
     header = ["i"] + ["n_i", "r_i"] * len(brackets)
 
     data = []
@@ -147,6 +147,7 @@ def display_budgets(
 BracketT = TypeVar("BracketT", bound="HyperbandBracket")
 
 
+# pylint: disable=too-many-public-methods
 class Hyperband(BaseAlgorithm, Generic[BracketT]):
     """Hyperband formulates hyperparameter optimization as a pure-exploration non-stochastic
     infinite-armed bandit problem where a predefined resource like iterations, data samples,
@@ -234,7 +235,6 @@ class Hyperband(BaseAlgorithm, Generic[BracketT]):
             # the registry.
             trial.parent = None
 
-            full_id = self.get_id(trial, ignore_fidelity=False, ignore_parent=False)
             id_wo_fidelity = self.get_id(
                 trial, ignore_fidelity=True, ignore_parent=True
             )
@@ -495,6 +495,7 @@ class Hyperband(BaseAlgorithm, Generic[BracketT]):
 Owner = TypeVar("Owner", bound=Hyperband)
 
 
+# pylint: disable=too-many-public-methods
 class HyperbandBracket(Generic[Owner]):
     """Bracket of rungs for the algorithm Hyperband.
 

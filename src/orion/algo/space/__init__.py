@@ -1161,7 +1161,8 @@ class Space(dict):
 
     def values(self):
         """Return values sorted according to keys"""
-        return [self[k] for k, v in self.keys()]
+        # pylint: disable=consider-using-dict-items
+        return [self[k] for k in self.keys()]
 
     def keys(self):
         """Return sorted keys"""

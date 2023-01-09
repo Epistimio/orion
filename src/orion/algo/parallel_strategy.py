@@ -78,6 +78,7 @@ class ParallelStrategy:
         """Return a state dict that can be used to reset the state of the strategy."""
         return {"registry": self.registry.state_dict}
 
+    # pylint: disable=missing-function-docstring
     def set_state(self, state_dict: dict) -> None:
         self.registry.set_state(state_dict["registry"])
 
@@ -95,16 +96,18 @@ class ParallelStrategy:
         for trial in trials:
             self.registry.register(trial)
 
+    # pylint: disable=missing-function-docstring
     def infer(self, trial: Trial) -> Trial | None:
         fake_result = self.lie(trial)
         if fake_result is None:
             return None
 
         fake_trial = copy.deepcopy(trial)
+
+        # pylint: disable=protected-access
         fake_trial._results.append(fake_result)
         return fake_trial
 
-    # pylint: disable=no-self-use
     def lie(self, trial: Trial) -> Trial.Result | None:
         """Construct a fake result for an incomplete trial
 
@@ -170,7 +173,7 @@ class StatusBasedParallelStrategy(ParallelStrategy):
         if strategy_configs is None:
             strategy_configs = {"broken": {"of_type": "maxparallelstrategy"}}
 
-        self.strategies = dict()
+        self.strategies = {}
         for status, strategy_config in strategy_configs.items():
             self.strategies[status] = strategy_factory.create(**strategy_config)
 
@@ -201,12 +204,16 @@ class StatusBasedParallelStrategy(ParallelStrategy):
         state_dict["default_strategy"] = self.default_strategy.state_dict
         return state_dict
 
+    # pylint: disable=missing-function-docstring
     def set_state(self, state_dict: dict) -> None:
         super().set_state(state_dict)
-        for status in self.strategies.keys():
+
+        # pylint: disable=consider-using-dict-items
+        for status in self.strategies:
             self.strategies[status].set_state(state_dict["strategies"][status])
         self.default_strategy.set_state(state_dict["default_strategy"])
 
+    # pylint: disable=missing-function-docstring
     def get_strategy(self, trial: Trial) -> ParallelStrategy:
         strategy = self.strategies.get(trial.status)
 
@@ -243,6 +250,7 @@ class MaxParallelStrategy(ParallelStrategy):
         configuration["default_result"] = self.default_result
         return configuration
 
+    # pylint: disable=missing-function-docstring
     @property
     def max_result(self) -> float:
         objectives = [
@@ -280,6 +288,7 @@ class MeanParallelStrategy(ParallelStrategy):
 
     @property
     def mean_result(self) -> float:
+        """Compute the mean result"""
         objectives = [
             trial.objective.value
             for trial in self.registry

@@ -15,7 +15,6 @@ except ImportError as exc:
     class SHBracketManagerImpl:
         """Dummy implementation for optional import"""
 
-
     IMPORT_ERROR = exc
 
 

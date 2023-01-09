@@ -177,10 +177,8 @@ class EvolutionES(Hyperband[BracketT]):
         self.brackets: list[BracketT] = self.create_brackets()
         self.seed_rng(seed)
 
-    def create_bracket(
-        self, bracket_budgets: list[_BudgetTuple], iteration: int
-    ) -> BracketT:
-        return BracketEVES(self, bracket_budgets, iteration)
+    def create_bracket(self, budgets: list[_BudgetTuple], iteration: int) -> BracketT:
+        return BracketEVES(self, budgets, iteration)
 
     @property
     def state_dict(self) -> dict:
@@ -245,6 +243,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
 
     @property
     def space(self) -> Space:
+        """Return origin space"""
         return self.owner.space
 
     @property
@@ -290,6 +289,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
 
         return rung, population_range, red_team.tolist(), blue_team.tolist()
 
+    # pylint: disable=unused-argument
     def _mutate_population(
         self,
         red_team: Sequence[int],
@@ -304,10 +304,10 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
 
         if set(red_team) != set(blue_team):
             hurdles = np.zeros(1)
-            for i, _ in enumerate(red_team):
+            for i, red_value in enumerate(red_team):
                 winner, loser = (
                     (red_team, blue_team)
-                    if self.owner.performance[red_team[i]]
+                    if self.owner.performance[red_value]
                     < self.owner.performance[blue_team[i]]
                     else (blue_team, red_team)
                 )
@@ -387,11 +387,11 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
         self.copy_winner(winner_id, loser_id)
         kwargs = copy.deepcopy(self.mutate_attr)
 
-        for i, _ in enumerate(select_genes_key_list):
-            space = self.space.values()[select_genes_key_list[i]]
-            old = self.owner.population[select_genes_key_list[i]][loser_id]
+        for value in select_genes_key_list:
+            space = self.space.values()[value]
+            old = self.owner.population[value][loser_id]
             new = self.mutate_func(space, self.owner.rng, old, **kwargs)
-            self.owner.population[select_genes_key_list[i]][loser_id] = new
+            self.owner.population[value][loser_id] = new
 
         self.owner.performance[loser_id] = -1
 

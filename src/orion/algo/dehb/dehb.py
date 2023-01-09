@@ -32,7 +32,6 @@ if import_optional.failed:
         """Dummy implementation for optional imports"""
 
 
-
 logger = logging.getLogger(__name__)
 
 

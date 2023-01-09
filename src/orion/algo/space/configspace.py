@@ -56,7 +56,6 @@ class UnsupportedPrior(Exception):
     """Raised when the converting an unsupported dimension to configspace"""
 
 
-
 def _qantization(dim: Dimension) -> float:
     """Convert precision to the quantization factor"""
     if dim.precision:
