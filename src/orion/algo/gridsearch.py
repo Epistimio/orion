@@ -42,6 +42,7 @@ def grid(dim: Dimension, num: int):
         )
 
 
+# pylint: disable=unused-argument
 def fidelity_grid(dim: Fidelity, num: int):
     """Build fidelity grid, that is, only top value"""
     return [dim.interval()[1]]
@@ -127,6 +128,8 @@ class GridSearch(BaseAlgorithm):
         n_values: int | dict[str, int] = 100,
     ):
         super().__init__(space)
+
+        # pylint: disable=invalid-name
         self.n = 0
         self.n_values = n_values
         n_values_dict = (

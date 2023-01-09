@@ -21,6 +21,7 @@ with ImportOptional("BOHB") as import_optional:
 
 if import_optional.failed:
     CG_BOHB = None  # noqa: F811
+    # pylint: disable=invalid-name
     SuccessiveHalving = None  # noqa: F811
 
 

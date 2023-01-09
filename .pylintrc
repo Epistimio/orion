@@ -51,7 +51,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=abstract-class-instantiated,useless-super-delegation,no-member,keyword-arg-before-vararg,unidiomatic-typecheck,redefined-outer-name,fixme,F0401,wrong-import-position,wrong-import-order,
+disable=too-many-lines,consider-using-f-string,abstract-class-instantiated,useless-super-delegation,no-member,keyword-arg-before-vararg,unidiomatic-typecheck,redefined-outer-name,fixme,F0401,wrong-import-position,wrong-import-order,
         C0415, F0010, R0205, R1705, R1711, R1720, W0106, W0107, W0127, W0706, W1203, E1136
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -235,7 +235,7 @@ docstring-min-length=-1
 function-rgx=^(([a-z][a-z0-9_]{2,30})|(_[a-z0-9_]*))$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,v,ex,Run,_,f,e
+good-names=i,j,k,v,ex,Run,_,f,e,X,y,a,b,rv
 
 # Include a hint for the correct naming format with invalid-name
 include-naming-hint=no

@@ -1,3 +1,7 @@
+"""
+Configspace Conversion
+======================
+"""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -33,6 +37,7 @@ try:
 except ImportError as err:
     IMPORT_ERROR = err
 
+    # pylint: disable=too-few-public-methods
     class DummyType:
         """Dummy type for type hints"""
 
@@ -48,7 +53,8 @@ except ImportError as err:
 
 
 class UnsupportedPrior(Exception):
-    pass
+    """Raised when the converting an unsupported dimension to configspace"""
+
 
 
 def _qantization(dim: Dimension) -> float:
@@ -75,6 +81,7 @@ def _upsert(array, i, value):
     raise IndexError()
 
 
+# pylint: disable=protected-access,unused-argument
 def normalize_args(dim: Dimension, rv, kwarg_order=None) -> dict:
     """Create an argument array from kwargs"""
     if kwarg_order is None:
@@ -175,6 +182,7 @@ class ToConfigSpace(SpaceConverter[Hyperparameter]):
             weights=dim._probs,
         )
 
+    # pylint: disable=unused-argument
     def fidelity(self, dim: Fidelity) -> None:
         """Ignores fidelity dimension as configspace does not have an equivalent"""
         return None
@@ -216,7 +224,7 @@ def to_oriondim(dim: Hyperparameter) -> Dimension:
 @to_oriondim.register
 def _from_categorical(dim: CategoricalHyperparameter) -> Categorical:
     """Builds a categorical dimension from a categorical hyperparameter"""
-    choices = {k: w for k, w in zip(dim.choices, dim.probabilities)}
+    choices = dict(zip(dim.choices, dim.probabilities))
     return Categorical(dim.name, choices)
 
 

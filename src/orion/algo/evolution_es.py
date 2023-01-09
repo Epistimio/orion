@@ -14,7 +14,7 @@ from typing import Callable, ClassVar, Sequence, TypeVar
 
 import numpy as np
 
-from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket
+from orion.algo.hyperband import Hyperband, HyperbandBracket, _BudgetTuple
 from orion.algo.space import Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
@@ -42,21 +42,23 @@ def compute_budgets(
     reduction_factor: int,
     nums_population: int,
     pairs: int,
-) -> list[list[BudgetTuple]]:
+) -> list[list[_BudgetTuple]]:
     """Compute the budgets used for each execution of hyperband"""
     budgets_eves = []
     if reduction_factor == 1:
         for i in range(min_resources, max_resources + 1):
             if i == min_resources:
-                budgets_eves.append([BudgetTuple(nums_population, i)])
+                budgets_eves.append([_BudgetTuple(nums_population, i)])
             else:
-                budgets_eves[0].append(BudgetTuple(pairs * 2, i))
+                budgets_eves[0].append(_BudgetTuple(pairs * 2, i))
     else:
         num_brackets = int(np.log(max_resources) / np.log(reduction_factor))
-        budgets: list[list[BudgetTuple]] = []
-        budgets_tab: dict[int, list[BudgetTuple]] = {}  # just for display consideration
+        budgets: list[list[_BudgetTuple]] = []
+        budgets_tab: dict[
+            int, list[_BudgetTuple]
+        ] = {}  # just for display consideration
         for bracket_id in range(0, num_brackets + 1):
-            bracket_budgets: list[BudgetTuple] = []
+            bracket_budgets: list[_BudgetTuple] = []
             num_trials = int(
                 np.ceil(
                     int((num_brackets + 1) / (num_brackets - bracket_id + 1))
@@ -70,9 +72,9 @@ def compute_budgets(
             for i in range(0, num_brackets - bracket_id + 1):
                 n_i = int(num_trials / reduction_factor**i)
                 min_i = int(min_resources * reduction_factor**i)
-                bracket_budgets.append(BudgetTuple(n_i, min_i))
+                bracket_budgets.append(_BudgetTuple(n_i, min_i))
 
-                budget = BudgetTuple(n_i, min_i)
+                budget = _BudgetTuple(n_i, min_i)
                 if budgets_tab.get(i):
                     budgets_tab[i].append(budget)
                 else:
@@ -82,9 +84,9 @@ def compute_budgets(
 
         for i in range(len(budgets[0])):
             if i == 0:
-                budgets_eves.append([BudgetTuple(nums_population, budgets[0][i][1])])
+                budgets_eves.append([_BudgetTuple(nums_population, budgets[0][i][1])])
             else:
-                budgets_eves[0].append(BudgetTuple(pairs * 2, budgets[0][i][1]))
+                budgets_eves[0].append(_BudgetTuple(pairs * 2, budgets[0][i][1]))
 
     return budgets_eves
 
@@ -176,7 +178,7 @@ class EvolutionES(Hyperband[BracketT]):
         self.seed_rng(seed)
 
     def create_bracket(
-        self, bracket_budgets: list[BudgetTuple], iteration: int
+        self, bracket_budgets: list[_BudgetTuple], iteration: int
     ) -> BracketT:
         return BracketEVES(self, bracket_budgets, iteration)
 
@@ -216,7 +218,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
     """
 
     def __init__(
-        self, owner: EvolutionES, budgets: list[BudgetTuple], repetition_id: int
+        self, owner: EvolutionES, budgets: list[_BudgetTuple], repetition_id: int
     ):
         super().__init__(owner, budgets, repetition_id)
         self.search_space_without_fidelity = []

@@ -619,6 +619,7 @@ class GMMSampler:
         Defaults to 10000.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         tpe: TPE,

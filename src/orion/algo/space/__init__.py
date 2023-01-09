@@ -49,9 +49,8 @@ logger = logging.getLogger(__name__)
 def check_random_state(seed):
     """Return numpy global rng or RandomState if seed is specified"""
     if seed is None or seed is numpy.random:
-        rng = (
-            numpy.random.mtrand._rand
-        )  # pylint:disable=protected-access,c-extension-no-member
+        # pylint:disable=protected-access,c-extension-no-member
+        rng = numpy.random.mtrand._rand
     elif isinstance(seed, numpy.random.RandomState):
         rng = seed
     else:
@@ -59,8 +58,7 @@ def check_random_state(seed):
             rng = numpy.random.RandomState(seed)
         except Exception as e:
             raise ValueError(
-                "%r cannot be used to seed a numpy.random.RandomState"
-                " instance" % seed
+                f"{seed} cannot be used to seed a numpy.random.RandomState" " instance"
             ) from e
 
     return rng
@@ -77,12 +75,12 @@ def _to_snake_case(name: str) -> str:
     frags = []
 
     frag = []
-    for c in name:
-        if c.isupper() and frag:
+    for char in name:
+        if char.isupper() and frag:
             frags.append("".join(frag).lower())
             frag = []
 
-        frag.append(c)
+        frag.append(char)
 
     if frag:
         frags.append("".join(frag).lower())
@@ -205,8 +203,8 @@ class Dimension:
             and self.default_value not in self
         ):
             raise ValueError(
-                "{} is not a valid value for dimension: {}, "
-                "Can't set default value.".format(self.default_value, self.name)
+                "{self.default_value} is not a valid value for dimension: {self.name}, "
+                "Can't set default value."
             )
 
     def _get_hashable_members(self):
@@ -387,7 +385,6 @@ class Dimension:
         )
         return size
 
-    # pylint:disable=no-self-use
     @property
     def cardinality(self):
         """Return the number of all the possible points from `Dimension`.
@@ -530,7 +527,6 @@ class Real(Dimension):
 
         return samples
 
-    # pylint:disable=no-self-use
     def cast(self, point):
         """Cast a point to float
 
@@ -726,8 +722,9 @@ class Integer(Real, _Discrete):
         """Return the name of the prior"""
         return f"int_{super().prior_name}"
 
+    # pylint: disable=unused-argument
     @staticmethod
-    def get_cardinality(shape, interval):
+    def get_cardinality(shape, interval, *args):
         """Return the number of all the possible points based and shape and interval"""
         return int(interval[1] - interval[0] + 1) ** _get_shape_cardinality(shape)
 
@@ -961,6 +958,7 @@ class Fidelity(Dimension):
         """Return `high`"""
         return self.high
 
+    # pylint: disable=unused-argument
     @staticmethod
     def get_cardinality(shape, interval):
         """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
@@ -1058,7 +1056,7 @@ class Space(dict):
 
     def interval(self, alpha=1.0):
         """Return a list with the intervals for each contained dimension."""
-        res = list()
+        res = []
         for dim in self.values():
             if dim.type == "categorical":
                 res.append(dim.categories)
@@ -1080,20 +1078,19 @@ class Space(dict):
         """
         if not isinstance(key, str):
             raise TypeError(
-                "Keys registered to {} must be string types. "
-                "Provided: {}".format(self.__class__.__name__, key)
+                f"Keys registered to {self.__class__.__name__} must be string types. "
+                f"Provided: {key}"
             )
         if not isinstance(value, self.contains):
             raise TypeError(
-                "Values registered to {} must be {} types. "
-                "Provided: {}".format(
-                    self.__class__.__name__, self.contains.__name__, value
-                )
+                f"Values registered to {self.__class__.__name__} "
+                f"must be {self.contains.__name__} types. "
+                f"Provided: {value}"
             )
         if key in self:
             raise ValueError(
                 "There is already a Dimension registered with this name. "
-                "Register it with another name. Provided: {}".format(key)
+                f"Register it with another name. Provided: {key}"
             )
         super().__setitem__(key, value)
 
@@ -1109,7 +1106,7 @@ class Space(dict):
         if isinstance(trial, str):
             if not super().__contains__(trial):
                 raise ValueError("{trial} does not belong to the dimension")
-            return
+            return True
 
         flattened_params = flatten(trial.params)
         keys = set(flattened_params.keys())
@@ -1159,11 +1156,12 @@ class Space(dict):
 
     def items(self):
         """Return items sorted according to keys"""
+        # pylint: disable=consider-using-dict-items
         return [(k, self[k]) for k in self.keys()]
 
     def values(self):
         """Return values sorted according to keys"""
-        return [self[k] for k in self.keys()]
+        return [self[k] for k, v in self.keys()]
 
     def keys(self):
         """Return sorted keys"""
