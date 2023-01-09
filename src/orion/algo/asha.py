@@ -12,9 +12,9 @@ from typing import Sequence
 import numpy as np
 
 from orion.algo.hyperband import (
+    BudgetTuple,
     Hyperband,
     HyperbandBracket,
-    _BudgetTuple,
     display_budgets,
 )
 from orion.algo.space import Space
@@ -76,12 +76,12 @@ def compute_budgets(
         raise ValueError(BUDGET_ERROR.format(min_resources, max_resources, num_rungs))
 
     resources = [budgets[bracket_index:] for bracket_index in range(num_brackets)]
-    budgets_lists: list[list[_BudgetTuple]] = []
-    budgets_tab: dict[int, list[_BudgetTuple]] = defaultdict(list)
+    budgets_lists: list[list[BudgetTuple]] = []
+    budgets_tab: dict[int, list[BudgetTuple]] = defaultdict(list)
     for bracket_ressources in resources:
-        bracket_budgets: list[_BudgetTuple] = []
+        bracket_budgets: list[BudgetTuple] = []
         for i, min_ressources in enumerate(bracket_ressources[::-1]):
-            budget = _BudgetTuple(reduction_factor**i, min_ressources)
+            budget = BudgetTuple(reduction_factor**i, min_ressources)
             bracket_budgets.append(budget)
             budgets_tab[len(bracket_ressources) - i - 1].append(budget)
         budgets_lists.append(bracket_budgets[::-1])
@@ -212,9 +212,7 @@ class ASHA(Hyperband):
     def suggest(self, num: int) -> list[Trial]:
         return super().suggest(num)
 
-    def create_bracket(
-        self, budgets: list[_BudgetTuple], iteration: int
-    ) -> ASHABracket:
+    def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> ASHABracket:
         return ASHABracket(self, budgets, iteration)
 
 
@@ -235,7 +233,7 @@ class ASHABracket(HyperbandBracket[ASHA]):
     def __init__(
         self,
         owner: ASHA,
-        budgets: list[_BudgetTuple],
+        budgets: list[BudgetTuple],
         repetition_id: int,
     ):
         super().__init__(owner=owner, budgets=budgets, repetition_id=repetition_id)

@@ -44,12 +44,16 @@ Cannot build budgets below max_resources;
 """
 
 
-class _BudgetTuple(NamedTuple):
+class BudgetTuple(NamedTuple):
+    """Buget Tuple"""
+
     n_trials: int
     resource_budget: int | float
 
 
-class _RungDict(TypedDict):
+class RungDict(TypedDict):
+    """Rung Dict"""
+
     resources: int | float
     n_trials: int
     results: dict[str, tuple[float | None, Trial]]
@@ -57,13 +61,13 @@ class _RungDict(TypedDict):
 
 def compute_budgets(
     max_resources: float, reduction_factor: float
-) -> list[list[_BudgetTuple]]:
+) -> list[list[BudgetTuple]]:
     """Compute the budgets used for each execution of hyperband"""
     num_brackets = int(numpy.log(max_resources) / numpy.log(reduction_factor))
-    budgets: list[list[_BudgetTuple]] = []
-    budgets_tab: dict[int, list[_BudgetTuple]] = {}  # just for display consideration
+    budgets: list[list[BudgetTuple]] = []
+    budgets_tab: dict[int, list[BudgetTuple]] = {}  # just for display consideration
     for bracket_id in range(0, num_brackets + 1):
-        bracket_budgets: list[_BudgetTuple] = []
+        bracket_budgets: list[BudgetTuple] = []
         num_trials = int(
             numpy.ceil(
                 int((num_brackets + 1) / (num_brackets - bracket_id + 1))
@@ -75,7 +79,7 @@ def compute_budgets(
         for i in range(0, num_brackets - bracket_id + 1):
             n_i = int(num_trials / reduction_factor**i)
             min_i = int(min_resources * reduction_factor**i)
-            budget_tuple = _BudgetTuple(n_i, min_i)
+            budget_tuple = BudgetTuple(n_i, min_i)
             bracket_budgets.append(budget_tuple)
 
             if budgets_tab.get(i):
@@ -114,7 +118,7 @@ def tabulate_status(brackets: list[HyperbandBracket]) -> None:
 
 
 def display_budgets(
-    budgets_tab: dict[int, list[_BudgetTuple]],
+    budgets_tab: dict[int, list[BudgetTuple]],
     max_resources: Any,
     reduction_factor: Any,
 ) -> None:
@@ -206,7 +210,7 @@ class Hyperband(BaseAlgorithm, Generic[BracketT]):
         #     raise AttributeError("Reduction factor for Hyperband needs to be at least 2.")
 
         self.repetitions = repetitions
-        self.budgets: list[list[_BudgetTuple]] = []
+        self.budgets: list[list[BudgetTuple]] = []
         if self.reduction_factor >= 2:
             self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
             self.brackets = self.create_brackets()
@@ -216,7 +220,7 @@ class Hyperband(BaseAlgorithm, Generic[BracketT]):
         if seed is not None:
             self.seed_rng(seed)
 
-    def create_bracket(self, budgets: list[_BudgetTuple], iteration: int) -> BracketT:
+    def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> BracketT:
         return HyperbandBracket(self, budgets, iteration)
 
     def sample_from_bracket(self, bracket: BracketT, num: int) -> list[Trial]:
@@ -510,10 +514,10 @@ class HyperbandBracket(Generic[Owner]):
 
     """
 
-    def __init__(self, owner: Owner, budgets: list[_BudgetTuple], repetition_id: int):
+    def __init__(self, owner: Owner, budgets: list[BudgetTuple], repetition_id: int):
         self.owner = owner
-        self.rungs: list[_RungDict] = [
-            _RungDict(resources=budget, n_trials=n_trials, results=OrderedDict())
+        self.rungs: list[RungDict] = [
+            RungDict(resources=budget, n_trials=n_trials, results=OrderedDict())
             for n_trials, budget in budgets
         ]
         self.seed = None

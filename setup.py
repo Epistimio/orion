@@ -12,6 +12,7 @@ with open("tests/requirements.txt") as f:
     tests_require = f.readlines()
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
+    "orion.algo.base",
     "orion.algo.mofa",
     "orion.algo.dehb",
     "orion.algo.pbt",
