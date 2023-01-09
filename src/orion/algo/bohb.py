@@ -9,7 +9,7 @@ import copy
 import numpy as np
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.parallel_strategy import strategy_factory
+from orion.algo.base.parallel_strategy import strategy_factory
 from orion.algo.space import Fidelity
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.module_import import ImportOptional
