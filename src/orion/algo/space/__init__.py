@@ -58,7 +58,8 @@ def check_random_state(seed):
             rng = numpy.random.RandomState(seed)
         except Exception as e:
             raise ValueError(
-                f"'{seed}' cannot be used to seed a numpy.random.RandomState" " instance"
+                f"'{seed}' cannot be used to seed a numpy.random.RandomState"
+                " instance"
             ) from e
 
     return rng
