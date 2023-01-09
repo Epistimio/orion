@@ -58,7 +58,7 @@ def check_random_state(seed):
             rng = numpy.random.RandomState(seed)
         except Exception as e:
             raise ValueError(
-                f"{seed} cannot be used to seed a numpy.random.RandomState" " instance"
+                f"'{seed}' cannot be used to seed a numpy.random.RandomState" " instance"
             ) from e
 
     return rng
@@ -203,7 +203,7 @@ class Dimension:
             and self.default_value not in self
         ):
             raise ValueError(
-                "{self.default_value} is not a valid value for dimension: {self.name}, "
+                f"{self.default_value} is not a valid value for dimension: {self.name}, "
                 "Can't set default value."
             )
 
