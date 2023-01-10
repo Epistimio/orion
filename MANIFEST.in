@@ -32,6 +32,7 @@ recursive-include dashboard/build *
 include tests/requirements.txt
 include .pre-commit-config.yaml
 include CITATION.bib
+exclude docs/src/_static/logos/orion_logo.ai
 
 # Include examples
 recursive-include examples *.md *.py *.pkl *.yaml *.ipynb */requirements.txt
