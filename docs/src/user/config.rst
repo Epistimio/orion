@@ -86,6 +86,7 @@ Full Example of Global Configuration
 ------------------------------------
 
 .. code-block:: yaml
+
     storage:
       database:
         host: orion_db.pkl
