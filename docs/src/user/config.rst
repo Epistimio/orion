@@ -90,7 +90,7 @@ Full Example of Global Configuration
       database:
         host: orion_db.pkl
         type: pickleddb
-    
+
     experiment:
         algorithms:
             random:
