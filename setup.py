@@ -148,7 +148,8 @@ setup_args = dict(
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
-        "numpy>=1.17",
+        # Issue #1061 Pending update of hebo
+        "numpy>=1.17,<1.24",
         "scipy",
         "gitpython",
         "filelock",
