@@ -977,7 +977,7 @@ class Fidelity(Dimension):
         if self.base != 2:
             args += [f"base={self.base}"]
 
-        return "fidelity({", ".join(args)})"
+        return f"fidelity({', '.join(args)})"
 
     def validate(self):
         """Do not do anything."""
