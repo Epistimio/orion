@@ -294,6 +294,7 @@ class Dimension:
 
     def __repr__(self):
         """Represent the object as a string."""
+        # pylint:disable=consider-using-f-string
         return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5}, default value={6})".format(
             self.__class__.__name__,
             self.name,
@@ -332,9 +333,7 @@ class Dimension:
         if prior_name == "norm":
             prior_name = "normal"
 
-        return "{prior_name}({args})".format(
-            prior_name=prior_name, args=", ".join(args)
-        )
+        return f"{prior_name}({', '.join(args)})"
 
     def get_string(self):
         """Build the string corresponding to current dimension"""
@@ -352,7 +351,7 @@ class Dimension:
         else:
             raise TypeError(
                 "Dimension's name must be either string or None. "
-                "Provided: {}, of type: {}".format(value, type(value))
+                f"Provided: {value}, of type: {type(value)}"
             )
 
     @property
@@ -444,9 +443,7 @@ class Real(Dimension):
         self._high = kwargs.pop("high", numpy.inf)
         if self._high <= self._low:
             raise ValueError(
-                "Lower bound {} has to be less than upper bound {}".format(
-                    self._low, self._high
-                )
+                "Lower bound {self._low} has to be less than upper bound {self._high}"
             )
 
         precision = kwargs.pop("precision", 4)
@@ -455,7 +452,7 @@ class Real(Dimension):
         else:
             raise TypeError(
                 "Precision should be a non-negative int or None, "
-                "instead was {} of type {}.".format(precision, type(precision))
+                "instead was {precision} of type {type(precision)}."
             )
 
         super().__init__(name, prior, *args, **kwargs)
@@ -522,8 +519,8 @@ class Real(Dimension):
                 break
             if not nice:
                 raise ValueError(
-                    "Improbable bounds: (low={}, high={}). "
-                    "Please make interval larger.".format(self._low, self._high)
+                    f"Improbable bounds: (low={self._low}, high={self._high}). "
+                    "Please make interval larger."
                 )
 
         return samples
@@ -833,16 +830,15 @@ class Categorical(Dimension):
             prior = list(zip(cats, probs))
 
         prior = map(
-            lambda x: "{0[0]}: {0[1]:.2f}".format(x)
-            if not isinstance(x, _Ellipsis)
-            else str(x),
+            lambda x: f"{x[0]}: {x[1]:.2f}" if not isinstance(x, _Ellipsis) else str(x),
             prior,
         )
 
         prior = "{" + ", ".join(prior) + "}"
 
-        return "Categorical(name={}, prior={}, shape={}, default value={})".format(
-            self.name, prior, self.shape, self.default_value
+        return (
+            f"Categorical(name={self.name}, prior={prior}, shape={self.shape}, "
+            f"default value={self.default_value})"
         )
 
     def get_prior_string(self):
@@ -854,7 +850,7 @@ class Categorical(Dimension):
 
         cats = [repr(c) for c in self.categories]
         if all(p == self._probs[0] for p in self._probs):
-            prior = "[{}]".format(", ".join(cats))
+            prior = f"[{', '.join(cats)}]"
         else:
             probs = list(zip(cats, self._probs))
             prior = "{" + ", ".join(f"{c}: {p:.2f}" for c, p in probs) + "}"
@@ -866,7 +862,7 @@ class Categorical(Dimension):
         if self.default_value is not self.NO_DEFAULT_VALUE:
             args += [f"default_value={repr(self.default_value)}"]
 
-        return "choices({args})".format(args=", ".join(args))
+        return f"choices({', '.join(args)})"
 
     @property
     def get_prior(self):
@@ -981,7 +977,7 @@ class Fidelity(Dimension):
         if self.base != 2:
             args += [f"base={self.base}"]
 
-        return "fidelity({})".format(", ".join(args))
+        return "fidelity({", ".join(args)})"
 
     def validate(self):
         """Do not do anything."""
@@ -1001,8 +997,9 @@ class Fidelity(Dimension):
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "{}(name={}, low={}, high={}, base={})".format(
-            self.__class__.__name__, self.name, self.low, self.high, self.base
+        return (
+            f"{self.__class__.__name__}(name={self.name}, low={self.low}, "
+            f"high={self.high}, base={self.base})"
         )
 
     def __contains__(self, value):

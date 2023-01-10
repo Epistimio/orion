@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Tree-structured Parzen Estimator Approach
 =========================================

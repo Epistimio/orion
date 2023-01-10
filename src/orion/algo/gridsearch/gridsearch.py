@@ -94,7 +94,7 @@ def real_grid(dim: Real, num: int):
     else:
         raise TypeError(
             "Grid Search only supports `loguniform`, `uniform` and `choices`: "
-            "`{}`".format(dim.prior_name)
+            f"`{dim.prior_name}`"
         )
 
 

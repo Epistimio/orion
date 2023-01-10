@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 A Novel Bandit-Based Approach to Hyperparameter Optimization
 ============================================================
@@ -142,8 +143,9 @@ def display_budgets(
             table_row += st
         table_str += table_row + "\n"
     table_str += col_format_str.format(*col_sub_list)
-    table_str += "max resource={}, eta={}, trials number of one execution={}\n".format(
-        max_resources, reduction_factor, total_trials
+    table_str += (
+        f"max resource={max_resources}, eta={reduction_factor}, "
+        f"trials number of one execution={total_trials}\n"
     )
     logger.info(table_str)
 
@@ -701,7 +703,7 @@ class HyperbandBracket(Generic[Owner]):
 
             trials = []
             for candidate in self.get_candidates(rung_id):
-                # pylint: disable=logging-format-interpolation
+                # pylint: disable=logging-format-interpolation,consider-using-f-string
                 logger.debug(
                     "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
                     "rung {new_rung} with fidelity {new_fidelity}".format(
@@ -743,6 +745,7 @@ class HyperbandBracket(Generic[Owner]):
 
     def __repr__(self) -> str:
         """Return representation of bracket with fidelity levels"""
+        # pylint: disable=consider-using-f-string
         return "{}(resource={}, repetition id={})".format(
             self.__class__.__name__,
             [rung["resources"] for rung in self.rungs],
