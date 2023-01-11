@@ -287,19 +287,18 @@ class Runner:
 
         while self.is_running:
             try:
+                # Get new trials for our free workers
+                with self.stat.time("sample"):
+                    new_trials = self.sample()
+
+                # Scatter the new trials to our free workers
+                with self.stat.time("scatter"):
+                    scattered = self.scatter(new_trials)
 
                 # Protected will prevent Keyboard interrupts from
                 # happening in the middle of the scatter-gather process
                 # that we can be sure that completed trials are observed
                 with Protected():
-
-                    # Get new trials for our free workers
-                    with self.stat.time("sample"):
-                        new_trials = self.sample()
-
-                    # Scatter the new trials to our free workers
-                    with self.stat.time("scatter"):
-                        scattered = self.scatter(new_trials)
 
                     # Gather the results of the workers that have finished
                     with self.stat.time("gather"):
