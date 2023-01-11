@@ -8,8 +8,8 @@ Checks for the presence of a configuration.
 """
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
+from orion.core.io import experiment_builder
+from orion.core.utils import backward
 
 
 class PresenceStage:
@@ -43,7 +43,7 @@ class PresenceStage:
         """Check if configuration file has valid database configuration."""
         config = experiment_builder.get_cmd_config(self.cmdargs)
 
-        if not len(config):
+        if len(config) == 0:
             return "Skipping", "Missing configuration file."
 
         if "database" not in config.get("storage", {}):

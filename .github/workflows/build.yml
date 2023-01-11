@@ -102,7 +102,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox (and all extra dependencies)
-      run: tox -e py-all
+      run: tox -e py-all -- --color=no
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
@@ -135,7 +135,7 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test long algorithms with tox
-      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }}
+      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }} --color=no
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
@@ -160,7 +160,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -e py
+      run: tox -e py -- --color=no
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
@@ -199,7 +199,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
       - name: Test with tox
-        run: tox -e mongodb
+        run: tox -e mongodb -- --color=no
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -244,7 +244,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -e backward-compatibility
+      run: tox -e backward-compatibility -- --color=no
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
