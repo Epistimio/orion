@@ -38,7 +38,7 @@ class CreationStage:
         try:
             db = database_factory.create(db_type, **database)
         except ValueError as ex:
-            raise CheckError(str(ex))
+            raise CheckError(str(ex)) from ex
 
         if not db.is_connected:
             raise CheckError("Database failed to connect after creation.")

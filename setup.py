@@ -11,11 +11,27 @@ repo_root = os.path.dirname(os.path.abspath(__file__))
 with open("tests/requirements.txt") as f:
     tests_require = f.readlines()
 
-packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
-    "orion.algo",
-    "orion.algo.mofa",
+
+# Builtin algo plugins that are built-in
+algos = [
+    "orion.algo.asha",
+    "orion.algo.axoptimizer",
+    "orion.algo.bohb",
     "orion.algo.dehb",
+    "orion.algo.evolution_es",
+    "orion.algo.gridsearch",
+    "orion.algo.hebo",
+    "orion.algo.hyperband",
+    "orion.algo.mofa",
+    "orion.algo.nevergradoptimizer",
     "orion.algo.pbt",
+    "orion.algo.random",
+    "orion.algo.tpe",
+]
+
+packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
+    "orion.algo.base",
+    "orion.algo.space",
     "orion.analysis",
     "orion.benchmark",
     "orion.client",
@@ -85,7 +101,11 @@ setup_args = dict(
     author="Epistímio",
     author_email="xavier.bouthillier@umontreal.ca",
     url="https://github.com/epistimio/orion",
-    packages=packages,
+    packages=packages + algos,
+    namespace_packages=[
+        "orion",
+        "orion.algo",
+    ],
     package_dir={"": "src"},
     data_files=dashboard_files,
     include_package_data=True,
@@ -129,7 +149,8 @@ setup_args = dict(
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
-        "numpy>=1.17",
+        # Issue #1061 Pending update of hebo
+        "numpy>=1.17,<1.24",
         "scipy",
         "gitpython",
         "filelock",

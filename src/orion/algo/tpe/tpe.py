@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Tree-structured Parzen Estimator Approach
 =========================================
@@ -12,7 +13,7 @@ from scipy.stats import norm
 from scipy.stats.distributions import rv_frozen
 
 from orion.algo.base import BaseAlgorithm
-from orion.algo.parallel_strategy import ParallelStrategy, strategy_factory
+from orion.algo.base.parallel_strategy import ParallelStrategy, strategy_factory
 from orion.algo.space import Integer, Real, Space
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
@@ -619,6 +620,7 @@ class GMMSampler:
         Defaults to 10000.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         tpe: TPE,

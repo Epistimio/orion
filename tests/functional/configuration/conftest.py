@@ -1,6 +1,6 @@
 """Common fixtures and utils for configuration tests."""
 from orion.algo.base import BaseAlgorithm
-from orion.algo.parallel_strategy import ParallelStrategy
+from orion.algo.base.parallel_strategy import ParallelStrategy
 
 
 def __init__(self, *args, **params):
