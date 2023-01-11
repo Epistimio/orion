@@ -88,6 +88,7 @@ class PipelineExplore(BaseExplore):
 
     """
 
+    # pylint: disable=super-init-not-called
     def __init__(self, explore_configs):
         self.pipeline = []
         for explore_config in explore_configs:
@@ -167,6 +168,7 @@ class PerturbExplore(BaseExplore):
 
     """
 
+    # pylint: disable=super-init-not-called
     def __init__(self, factor=1.2, volatility=0.0001):
         self.factor = factor
         self.volatility = volatility
@@ -230,6 +232,7 @@ class PerturbExplore(BaseExplore):
 
         return new_dim_value
 
+    # pylint: disable=unused-argument
     def perturb_cat(self, rng, dim_value, dim):
         """Perturb categorical dimension
 
@@ -320,6 +323,7 @@ class ResampleExplore(BaseExplore):
 
     """
 
+    # pylint: disable=super-init-not-called
     def __init__(self, probability=0.2):
         self.probability = probability
 
