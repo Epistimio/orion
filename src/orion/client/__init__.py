@@ -266,7 +266,7 @@ def _build_experiment(
             knowledge_base=knowledge_base,
         )
     except RaceCondition:
-        log.debug("Try creating a new experiment aagain")
+        log.debug("Try creating a new experiment again")
         # Try again, but if it fails again, raise. Race conditions due to version increment should
         # only occur once in a short window of time unless code version is changing at a crazy pace.
         try:

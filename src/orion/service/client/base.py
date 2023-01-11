@@ -62,7 +62,7 @@ class RemoteTrial:
         # to avoid having invisible issues.
         data = trial.to_dict()
 
-        small_trial = dict()
+        small_trial = {}
         small_trial["db_id"] = str(data["_id"])
         small_trial["params_id"] = str(data["id"])
         small_trial["_params"] = data["params"]
@@ -78,10 +78,12 @@ class RemoteTrial:
     # =========
 
     def to_dict(self):
+        """Convert a remote trial into a json friendly dictionary"""
         return dict(_id=ObjectId(self.db_id), id=self.params_id, params=self._params)
 
     @property
     def id(self):
+        """Returns the parameter hash"""
         return self.params_id
 
     @property
@@ -91,6 +93,7 @@ class RemoteTrial:
 
     @property
     def status(self):
+        """Returns the status of the trial, Remote trials are always reserved"""
         return "reserved"
 
 
@@ -109,17 +112,18 @@ def raise_remote_exception(typename, args):
 
 
     """
-    type = ALLOWED_EXCEPTION.get(typename)
+    exectype = ALLOWED_EXCEPTION.get(typename)
 
-    if type is None:
+    if exectype is None:
         if len(args) == 1:
             args[0] = typename + ": " + args[0]
 
         raise RemoteException(*args)
 
-    raise type(*args)
+    raise exectype(*args)
 
 
+# pylint: disable=too-few-public-methods
 class BaseClientREST:
     """Standard handling of REST requests for orion endpoints"""
 
@@ -139,4 +143,4 @@ class BaseClientREST:
         if result.status_code >= 200 and result.status_code < 300 and status == 0:
             return payload.pop("result")
 
-        raise_remote_exception(**payload.pop("exception"))
+        return raise_remote_exception(**payload.pop("exception"))

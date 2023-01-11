@@ -16,16 +16,19 @@ from orion.testing.mongod import mongod
 log = logging.getLogger(__name__)
 
 
-def wait(p):
+def wait(process):
+    """Wait for a process to finish"""
     acc = 0
-    while p.is_alive() and acc < 2:
+    while process.is_alive() and acc < 2:
         acc += 0.01
         time.sleep(0.01)
 
 
+# pylint: disable=too-few-public-methods
 class AuthenticationServiceMock(AuthenticationServiceInterface):
     """Simple authentication service for testing"""
 
+    # pylint: disable=super-init-not-called
     def __init__(self, config) -> None:
         self.tok_to_user = {
             "Tok1": ("User1", "Pass1"),
@@ -34,6 +37,7 @@ class AuthenticationServiceMock(AuthenticationServiceInterface):
         }
 
     def authenticate(self, token):
+        """Authenticate a user given its API token"""
         username, password = self.tok_to_user.get(token, NO_CREDENTIAL)
 
         log.debug("Authenticated %s => %s", token, username)
@@ -42,39 +46,38 @@ class AuthenticationServiceMock(AuthenticationServiceInterface):
 
 @contextmanager
 def service(port, address, servicectx) -> None:
-    import time
-
+    """Launch a orion service on the given port and address"""
     from orion.service.service import main
 
     servicectx.auth = servicectx.auth or AuthenticationServiceMock(servicectx)
 
     log.debug("Launching service port: %d", port)
-    p = multiprocessing.Process(target=main, args=(address, port, servicectx))
-    p.start()
+    proc = multiprocessing.Process(target=main, args=(address, port, servicectx))
+    proc.start()
 
     # The server takes a bit of time to setup
     time.sleep(1)
 
     try:
-        yield p
+        yield proc
     finally:
         # raise KeyboardInterrupt for regular shutdown
-        os.kill(p.pid, signal.SIGINT)
-        wait(p)
+        os.kill(proc.pid, signal.SIGINT)
+        wait(proc)
 
-        if p.is_alive():
+        if proc.is_alive():
             log.debug("process still alive after sigint")
             # notify the process we want to terminate it with SIGTERM
-            p.terminate()
-            wait(p)
+            proc.terminate()
+            wait(proc)
 
-        if p.is_alive():
+        if proc.is_alive():
             log.debug("process still alive after sigterm")
             # process is taking too long kill it
-            p.kill()
-            wait(p)
+            proc.kill()
+            wait(proc)
 
-        p.join()
+        proc.join()
 
 
 def get_free_ports(number=1):
@@ -101,24 +104,30 @@ MONGO_DB_PORT = None
 
 @contextmanager
 def server():
+    """Launch a new mongodb server and an orion service for testing"""
+    # pylint: disable=global-statement
     global MONGO_DB_PORT
 
-    MONGO_DB_PORT, HTTP_PORT = get_free_ports(2)
-    MONGO_DB_ADDRESS = "localhost"
-    ENDPOINT = f"http://localhost:{HTTP_PORT}"
+    # pylint: disable=unbalanced-tuple-unpacking
+    mongodb_port, http_port = get_free_ports(2)
+    MONGO_DB_PORT = mongodb_port
+
+    mongodb_address = "localhost"
+    endpoint = f"http://localhost:{http_port}"
 
     servicectx = ServiceContext()
-    servicectx.database.host = MONGO_DB_ADDRESS
-    servicectx.database.port = MONGO_DB_PORT
+    servicectx.database.host = mongodb_address
+    servicectx.database.port = mongodb_port
 
     log.debug("Launching mongodb port: %d", servicectx.database.port)
 
     with mongod(servicectx.database.port, servicectx.database.host):
-        with service(HTTP_PORT, "localhost", servicectx):
-            yield ENDPOINT, MONGO_DB_PORT
+        with service(http_port, "localhost", servicectx):
+            yield endpoint, mongodb_port
 
 
 def get_mongo_admin(port=MONGO_DB_PORT, owner=None):
+    """Return an admin connection to a mongodb connection"""
     db = MongoDB(
         name="orion",
         host="localhost",

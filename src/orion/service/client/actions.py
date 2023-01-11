@@ -1,16 +1,23 @@
+"""Implements experiment actions to query and modify the database"""
+
 from orion.service.client.base import BaseClientREST, RemoteTrial
 
 
 class ClientActionREST(BaseClientREST):
+    """Implements user actions and queries"""
+
     def __init__(self, experiment, endpoint, token) -> None:
         super().__init__(endpoint, token)
         self.experiment = experiment
 
     @property
     def experiment_name(self):
+        """Returnsthe experiment name"""
         return self.experiment.name
 
+    # pylint: disable=unused-argument
     def insert(self, params, results=None, reserve=False):
+        """Insert a new trial provided by the user"""
         payload = self._post(
             "insert",
             experiment_name=self.experiment_name,
@@ -22,6 +29,7 @@ class ClientActionREST(BaseClientREST):
         return self._to_trial(payload.get("result", None))
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
+        """Fetch all non completed trials"""
         payload = self._post(
             "fetch_noncompleted_trials",
             experiment_name=self.experiment_name,
@@ -31,6 +39,7 @@ class ClientActionREST(BaseClientREST):
         return self._to_trials(payload.get("result", []))
 
     def fetch_pending_trials(self, with_evc_tree=False):
+        """Fetch all trials that are remains"""
         payload = self._post(
             "fetch_pending_trials",
             experiment_name=self.experiment_name,
@@ -40,6 +49,8 @@ class ClientActionREST(BaseClientREST):
         return self._to_trials(payload.get("result", []))
 
     def fetch_trials_by_status(self, status, with_evc_tree=False):
+        """Fetch all the trials with a given status"""
+
         payload = self._post(
             "fetch_trials_by_status",
             experiment_name=self.experiment_name,
@@ -50,6 +61,7 @@ class ClientActionREST(BaseClientREST):
         return self._to_trials(payload.get("result", []))
 
     def get_trial(self, trial=None, uid=None):
+        """Retrieve a given trial"""
 
         # uid is db_id here
         if trial is not None:
@@ -64,6 +76,7 @@ class ClientActionREST(BaseClientREST):
         return self._to_trial(payload.get("result"))
 
     def fetch_trials(self, with_evc_tree=False):
+        """Fetch all the trials of the current experiment"""
         payload = self._post(
             "fetch_trials",
             experiment_name=self.experiment_name,

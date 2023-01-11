@@ -1,3 +1,7 @@
+"""The broker instantiate ExperimentClient once and reuse them.
+It prevents parallel access of the same resource.
+"""
+
 import datetime
 import logging
 import multiprocessing as mp
@@ -8,7 +12,7 @@ from typing import Dict
 from orion.service.broker.broker import (
     ExperimentBroker,
     RequestContext,
-    build_experiment_client,
+    create_experiment_client,
 )
 
 log = logging.getLogger(__name__)
@@ -29,16 +33,19 @@ class RemoteExperimentBroker(ExperimentBroker):
     All the requests from a single client are processed sequentially by a single process,
     this means there are no race conditions or locks necessary.
 
-    Because the operations execute a lot of IO we might be able to have a lot more processes running
-    than we have cores, given the fork stays pretty light and does not copy too much from the parent.
+    Because the operations execute a lot of IO
+    we might be able to have a lot more processes running
+    than we have cores, given the fork stays pretty light and
+    does not copy too much from the parent.
 
     This is harder to scale because each users need to be routed to the same server all the time.
     in the worst case the process can still be recreated though (i.e if the original server dies)
     """
 
+    # pylint: disable=super-init-not-called
     def __init__(self) -> None:
         self.manager = mp.Manager()
-        self.experiments: Dict[str, ExperimentContext] = dict()
+        self.experiments: Dict[str, ExperimentContext] = {}
 
     def __enter__(self):
         return self
@@ -47,6 +54,7 @@ class RemoteExperimentBroker(ExperimentBroker):
         self.stop()
 
     def stop(self):
+        """Free all the underlying workers and ExperimentClient"""
         log.debug("Closing queues")
         for ctx in self.experiments.values():
             ctx.request_queue.put(dict(function="stop"))
@@ -58,6 +66,7 @@ class RemoteExperimentBroker(ExperimentBroker):
         self.manager.shutdown()
 
     def new_experiment(self, request: RequestContext):
+        """Create a new experiment client with an assigned worker"""
         log.debug("Spawning new experiment")
 
         experiment = ExperimentContext()
@@ -77,6 +86,7 @@ class RemoteExperimentBroker(ExperimentBroker):
         return result
 
     def suggest(self, request: RequestContext):
+        """Suggest a new trial"""
         experiment_name = request.data.pop("experiment_name")
         experiment = self.experiments.get((request.token, experiment_name), None)
 
@@ -102,13 +112,11 @@ class RemoteExperimentBroker(ExperimentBroker):
 
         return dict(status=0, result=dict(trials=[trial]))
 
-    def resume_from_experiment(experiment_name):
-        pass
-
-    def resume_from_trial(trial_id):
-        pass
+    def resume_from_experiment(self, experiment_name):
+        """Resume an experiment, create a new ExperimentClient and assign it to a worker"""
 
     def experiment_request(self, token, experiment_name, function, *args, **kwargs):
+        """Queue a remote function call"""
         ctx = self.experiments.get((token, experiment_name))
         if ctx is None:
             ctx = self.resume_experiment()
@@ -119,6 +127,7 @@ class RemoteExperimentBroker(ExperimentBroker):
 
 
 def experiment_worker(request: RequestContext, experiment: ExperimentContext):
+    """Experiment worker, wait for client requests and return replies"""
     running = False
     client = None
 
@@ -129,10 +138,11 @@ def experiment_worker(request: RequestContext, experiment: ExperimentContext):
         experiment.result_queue.put(dict(status=1, error=str(exception)))
 
     try:
-        client = build_experiment_client(request)
+        client = create_experiment_client(request)
         success(dict(experiment_name=str(client.name)))
         running = True
 
+    # pylint: disable=broad-except
     except Exception as err:
         traceback.print_exc()
         error(err)
@@ -152,11 +162,12 @@ def experiment_worker(request: RequestContext, experiment: ExperimentContext):
 
         try:
             args = rpc_request.pop("arg", [])
-            kwargs = rpc_request.pop("kwargs", dict())
+            kwargs = rpc_request.pop("kwargs", {})
 
             result = getattr(client, function)(*args, **kwargs)
             success(result)
 
+        # pylint: disable=broad-except
         except Exception as err:
             traceback.print_exc()
             error(err)

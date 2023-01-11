@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class AuthenticationError(Exception):
-    pass
+    """Returned when the user could not be authenticated"""
 
 
 def exception_to_dict(exception: Exception):
@@ -64,7 +64,7 @@ class QueryRoute:
     def on_post(self, req: falcon.Request, resp: falcon.Response) -> None:
         """Force status to be set, and send back an error on exception"""
         log.debug("received request")
-        resp.media = dict()
+        resp.media = {}
 
         try:
             msg = req.get_media()
@@ -86,6 +86,7 @@ class QueryRoute:
             resp.status = falcon.HTTP_200
             return
 
+        # pylint: disable=broad-except
         except Exception as err:
             log.error(traceback.format_exc())
 
@@ -262,6 +263,7 @@ class OrionService:
 def main(
     address: str = "localhost", port: int = 8080, servicectx=ServiceContext()
 ) -> None:
+    """Launch an orion service"""
 
     logging.basicConfig(
         format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",

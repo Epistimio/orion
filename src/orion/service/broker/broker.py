@@ -1,3 +1,7 @@
+"""Brokers handle the request to the orion code,
+they are the bridge between the API and orion python
+
+"""
 from __future__ import annotations
 
 import logging
@@ -24,6 +28,8 @@ def error(exception) -> dict:
 
 @dataclass
 class Database:
+    """Database configuration"""
+
     database: str = "orion"
     host: str = "localhost"
     port: int = 8123
@@ -138,6 +144,7 @@ def retrieve_experiment_client(request: RequestContext, name) -> ExperimentClien
     return client
 
 
+# pylint: disable=too-many-public-methods
 class ExperimentBroker:
     """Broker allocates the necessary resources to run the HPO on our side.
     trials are done on the user' side
@@ -154,7 +161,9 @@ class ExperimentBroker:
         self.stop()
 
     def stop(self):
-        pass
+        """If the broker allocates resources that persist across requests.
+        Calling this will free them.
+        """
 
     def new_experiment(self, request: RequestContext):
         """Create a new experiment"""

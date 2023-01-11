@@ -77,6 +77,7 @@ class WorkonClientREST(BaseClientREST):
         self._pacemakers[trial.id].start()
 
     def release(self, trial, status="interrupted"):
+        """Release a trial after work on it finished"""
         experiment_name = self.experiment_name
 
         if experiment_name is None:
@@ -147,6 +148,7 @@ class WorkonClientREST(BaseClientREST):
         return not self.heartbeat(trial)
 
     def close(self):
+        """Release all the resources reserved by the client"""
         if self._pacemakers:
             raise RuntimeError(
                 f"There is still reserved trials: {self._pacemakers.keys()}\n"
@@ -155,6 +157,7 @@ class WorkonClientREST(BaseClientREST):
             )
 
     def release_all(self):
+        """Release all trials that remains to other client can pick them up"""
         pacemakers = list(self._pacemakers.items())
 
         for k, v in pacemakers:

@@ -1,3 +1,4 @@
+"""Simple broker that recreates the ExperimentClient on every request"""
 import datetime
 import logging
 from typing import Dict
@@ -18,10 +19,6 @@ from orion.service.client.base import RemoteTrial
 log = logging.getLogger(__name__)
 
 
-class ObserverError(Exception):
-    pass
-
-
 class LocalExperimentBroker(ExperimentBroker):
     """Creates an experiment client for each request and process the request.
     Parallel requests will instantiate different clients which might generate race conditions,
@@ -38,8 +35,10 @@ class LocalExperimentBroker(ExperimentBroker):
         log.debug("Spawning new experiment")
 
         client = create_experiment_client(request)
+        # pylint: disable=protected-access
         euid = str(client._experiment.id)
 
+        # pylint: disable=protected-access
         return success(
             dict(
                 experiment_name=str(client.name),
@@ -76,18 +75,16 @@ class LocalExperimentBroker(ExperimentBroker):
         client = retrieve_experiment_client(request, experiment_name)
         storage = client.storage
 
-        trial_id = request.data.get("trial_id")
         trial_hash = request.data.pop("trial_hash")
-
-        euid = request.data.pop("euid")
         results = request.data.get("results")
 
+        # pylint: disable=protected-access
         trial = storage.get_trial(uid=trial_hash, experiment_uid=client._experiment.id)
 
         assert trial is not None, "Trial not found"
         client.observe(trial, results)
 
-        return success(dict())
+        return success({})
 
     def is_done(self, request: RequestContext) -> Dict:
         experiment_name = request.data.pop("experiment_name")
@@ -102,6 +99,7 @@ class LocalExperimentBroker(ExperimentBroker):
         storage = get_storage_for_user(request)
         trial_id = request.data.get("trial_id")
 
+        # pylint: disable=protected-access
         results = storage._db._db["trials"].update_one(
             {
                 "_id": ObjectId(trial_id),
@@ -130,7 +128,7 @@ class LocalExperimentBroker(ExperimentBroker):
             raise ValueError(f"Trial {trial_hash} does not exist in database.")
 
         client.release(trial, status)
-        return success(dict())
+        return success({})
 
     def insert(self, request: RequestContext) -> Dict:
         experiment_name = request.data.pop("experiment_name")
