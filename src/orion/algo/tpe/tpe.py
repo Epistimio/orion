@@ -16,6 +16,7 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.base.parallel_strategy import ParallelStrategy, strategy_factory
 from orion.algo.space import Integer, Real, Space
 from orion.core.utils import format_trials
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -395,8 +396,12 @@ class TPE(BaseAlgorithm):
         below_trials, above_trials = self.split_trials()
 
         for dimension in self.space.values():
-            dim_below_trials = [trial.params[dimension.name] for trial in below_trials]
-            dim_above_trials = [trial.params[dimension.name] for trial in above_trials]
+            dim_below_trials = [
+                flatten(trial.params)[dimension.name] for trial in below_trials
+            ]
+            dim_above_trials = [
+                flatten(trial.params)[dimension.name] for trial in above_trials
+            ]
 
             if dimension.type == "real":
                 dim_samples = self._sample_real_dimension(
@@ -422,7 +427,7 @@ class TPE(BaseAlgorithm):
             elif dimension.type == "fidelity":
                 # fidelity dimension
                 trial = self.space.sample(1)[0]
-                dim_samples = trial.params[dimension.name]
+                dim_samples = flatten(trial.params)[dimension.name]
             else:
                 raise NotImplementedError()
 

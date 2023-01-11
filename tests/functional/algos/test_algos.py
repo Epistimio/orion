@@ -205,7 +205,15 @@ rosenbrock_with_fidelity = CustomRosenbrock(max_trials=30, with_fidelity=True)
 space = rosenbrock.get_search_space()
 space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
 
+nested_space = {
+    "x": {"value": space_with_fidelity["x"], "noise": space_with_fidelity["noise"]}
+}
+
 multidim_rosenbrock = MultiDimRosenbrock(max_trials=30, with_fidelity=False)
+
+
+def nested_rosenbrock(x: dict[str, float]) -> list[dict]:
+    return rosenbrock_with_fidelity(x["value"], x["noise"])
 
 
 def branching_rosenbrock(
@@ -214,7 +222,7 @@ def branching_rosenbrock(
     with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
         f.write(trial.params_repr() + "\n")
 
-    return rosenbrock(x, noise)
+    return rosenbrock_with_fidelity(x, noise)
 
 
 @pytest.mark.parametrize(
@@ -311,6 +319,32 @@ def test_cardinality_stop_loguniform(algorithm: dict):
     else:
         assert len(trials) == 10
     assert trials[-1].status == "completed"
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    algorithm_configs.values(),
+    ids=list(algorithm_configs.keys()),
+)
+def test_with_nested_spaces(algorithm: dict):
+    """Test a scenario with nested space."""
+    exp = workon(
+        nested_rosenbrock,
+        nested_space,
+        algorithms=algorithm,
+        max_trials=30,
+    )
+
+    assert exp.configuration["algorithms"] == algorithm
+
+    trials = exp.fetch_trials()
+    assert len(trials) >= 30 or exp.algorithms.is_done
+    assert trials[-1].status == "completed"
+    assert set(trials[-1].params.keys()) == {"x"}
+    assert set(trials[-1].params["x"].keys()) == {"value", "noise"}
+
+    trials = [trial for trial in trials if trial.status == "completed"]
+    assert all(trial.objective is not None for trial in trials)
 
 
 @pytest.mark.parametrize(
