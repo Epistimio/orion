@@ -33,7 +33,7 @@ class ExperimentBranchBuilder:
     Parameters
     ----------
     conflicts: Conflicts
-        Object reprenting a group of conflicts
+        Object representing a group of conflicts
     manual_resolution: bool, optional
         Starts the prompt to resolve manually the conflicts. Use system's default if not provided.
     branch_from: str, optional

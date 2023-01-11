@@ -87,7 +87,8 @@ Full Example of Global Configuration
 
 .. code-block:: yaml
 
-    database:
+    storage:
+      database:
         host: orion_db.pkl
         type: pickleddb
 

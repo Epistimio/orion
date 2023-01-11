@@ -12,12 +12,6 @@ Examples
 >>> storage_factory.create('track', uri='file://orion_test.json')
 >>> storage_factory.create('legacy', experiment=...)
 
-Notes
------
-When retrieving an already initialized Storage object you should use `get_storage`.
-`storage_factory.create()` should only be used for initialization purposes as `get_storage`
-raises more granular error messages.
-
 """
 from __future__ import annotations
 

@@ -161,6 +161,57 @@ retrieve individual experiments as well as a list of all your experiments.
    :statuscode 400: When an invalid query parameter is passed in the request.
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
+.. http:get:: /experiments/status/:name
+
+   Retrieve the stats of the existing experiment named ``name``.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+        "trials_completed": 40,
+        "best_trials_id": "955c77e7f567c2625f48546188a6cda1",
+        "best_evaluation": -0.788720013597263,
+        "start_time": "2019-11-25 16:02:02.872583",
+        "finish_time": "2019-11-27 21:13:27.043519",
+        "max_trials": 40,
+        "nb_trials": 40,
+        "progress": 1,
+        "trial_status_count": {
+          "completed": 40
+        },
+        "elapsed_time": "2 days, 5:11:24.006755",
+        "sum_of_trials_time": "8 days, 23:15:15.594405",
+        "eta": "0:00:00",
+        "eta_milliseconds": 0
+      }
+
+   :query version: Optional version of the experiment to retrieve. If unspecified, the latest
+      version of the experiment is retrieved.
+
+   :>json trials_completed: The number of trials completed.
+   :>json best_trial_id: The best trial ID.
+   :>json best_evaluation: Best evaluation.
+   :>json start_time: The timestamp when the experiment started.
+   :>json finish_time: The timestamp when the experiment finished.
+   :>json max_trials: The number of max trials for this experiment.
+   :>json nb_trials: The current number of trials in this experiment.
+   :>json progress: Floating value between 0 and 1 representing experiment progression.
+   :>json trial_status_count: A dictionary mapping trial status to number of trials with this status in the experiment.
+   :>json elapsed_time: The time elapsed since experiment started.
+   :>json sum_of_trials_time: The sum of trials execution times.
+   :>json eta: The estimation of remaining time for experiment to finish.
+   :>json eta_milliseconds: The ETA in milliseconds (convenient for usages in Javascript).
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
 Trials
 ------
 

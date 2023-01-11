@@ -267,7 +267,7 @@ class Conflicts:
 
         Parameters
         ----------
-        conflict: `orion.ore.evc.conflicts.Conflict`
+        conflict: `orion.core.evc.conflicts.Conflict`
             Conflict object to call `try_resolve`.
         silence_errors: bool
             If True, errors raised on execution of conflict.try_resolve will be caught and

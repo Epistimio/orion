@@ -37,6 +37,7 @@
    auto_tutorials/code_4_parallelism
    tutorials/cluster
    tutorials/pytorch_a2c_ppo
+   tutorials/speechbrain_tutorial
 
 .. toctree::
    :caption: Plugins
@@ -71,5 +72,6 @@
    developer/documenting
    developer/ci
    developer/release
+   developer/logos
 
 .. Don't fetch reference/viz

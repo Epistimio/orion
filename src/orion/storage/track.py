@@ -118,7 +118,7 @@ class TrialAdapter:
 
     """
 
-    def __init__(self, storage_trial, orion_trial=None, objective=None, **kwargs):
+    def __init__(self, storage_trial, orion_trial=None, objective=None):
         self.storage = copy.deepcopy(storage_trial)
         self.memory = orion_trial
         self.session_group = None
@@ -150,11 +150,12 @@ class TrialAdapter:
         return self.storage.group_id
 
     @property
-    def hearbeat(self):
-        """See `~orion.core.worker.trial.Trial`"""
-        return datetime.datetime.utcfromtimestamp(
-            self.storage.metadata.get("heartbeat", 0)
-        )
+    def heartbeat(self):
+        """Trial Heartbeat"""
+        heartbeat = self.storage.metadata.get("heartbeat")
+        if heartbeat:
+            return datetime.datetime.utcfromtimestamp(heartbeat)
+        return None
 
     @property
     def id(self):
@@ -310,14 +311,6 @@ class TrialAdapter:
     def end_time(self, value):
         """See `~orion.core.worker.trial.Trial`"""
         self.storage.metadata["end_time"] = value
-
-    @property
-    def heartbeat(self):
-        """Trial Heartbeat"""
-        heartbeat = self.storage.metadata.get("heartbeat")
-        if heartbeat:
-            return datetime.datetime.utcfromtimestamp(heartbeat)
-        return None
 
     @property
     def parents(self):
