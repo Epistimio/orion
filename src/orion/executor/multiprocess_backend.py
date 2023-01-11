@@ -63,10 +63,6 @@ class _Future(Future):
         return self.future.ready()
 
     def successful(self):
-        # Python 3.6 raise assertion error
-        if not self.ready():
-            raise ValueError()
-
         return self.future.successful()
 
 
@@ -81,6 +77,7 @@ class Pool(PyPool):
 
         v = sys.version_info
 
+        # 3.7 Support #1046
         #  < 3.8 use self._ctx
         # >= 3.8 ctx as an argument
         if v.major == 3 and v.minor >= 8:
