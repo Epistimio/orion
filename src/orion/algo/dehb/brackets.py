@@ -11,9 +11,9 @@ try:
 
     IMPORT_ERROR = None
 except ImportError as exc:
-
+    # pylint: disable=too-few-public-methods
     class SHBracketManagerImpl:
-        pass
+        """Dummy implementation for optional import"""
 
     IMPORT_ERROR = exc
 
@@ -21,6 +21,7 @@ except ImportError as exc:
 logger = logging.getLogger(__name__)
 
 
+# pylint: disable=too-few-public-methods
 class SHBracketManager(SHBracketManagerImpl):
     """Override the default implementation to ignore duplicated trials in budget accounting"""
 

@@ -18,6 +18,7 @@ with ImportOptional("Ax") as import_optional:
     from ax.service.utils.instantiation import ObjectiveProperties
 
 if import_optional.failed:
+    # pylint: disable=invalid-name
     AxClient = None  # noqa: F811
     ObjectiveProperties = None  # noqa: F811
 

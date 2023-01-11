@@ -175,7 +175,10 @@ class RegistryMapping(Mapping[Trial, "list[Trial]"]):
         return original_trial_id
 
     def __repr__(self) -> str:
-        return f"{type(self).__qualname__}({list((trial, self.get_trials(trial)) for trial in self)})"
+        return (
+            f"{type(self).__qualname__}"
+            f"({list((trial, self.get_trials(trial)) for trial in self)})"
+        )
 
 
 def _get_id(trial: Trial) -> str:
