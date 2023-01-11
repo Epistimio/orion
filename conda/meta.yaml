@@ -31,7 +31,7 @@ requirements:
     - plotly
     - python-kaleido
     - requests
-    - pandas <=1.4.4
+    - pandas
     - falcon
     - falcon-cors
     - gunicorn

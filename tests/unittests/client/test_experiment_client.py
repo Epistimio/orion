@@ -959,3 +959,19 @@ def test_user_executor_is_not_deleted():
 
     future = executor.submit(function, 2, 2)
     assert future.get() == 4, "Executor was not closed & can still be used"
+
+
+def main(*args, **kwargs):
+    return [dict(name="objective", type="objective", value=101)]
+
+
+def test_run_experiment_twice():
+    """"""
+
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        client.workon(main, max_trials=10)
+
+        client._experiment.max_trials = 20
+        client._experiment.algorithms.algorithm.max_trials = 20
+
+        client.workon(main, max_trials=20)

@@ -12,6 +12,7 @@ import logging
 import falcon
 from falcon_cors import CORS, CORSMiddleware
 
+from orion.serving.benchmarks_resource import BenchmarksResource
 from orion.serving.experiments_resource import ExperimentsResource
 from orion.serving.plots_resources import PlotsResource
 from orion.serving.runtime import RuntimeResource
@@ -109,6 +110,7 @@ class WebApi(falcon.API):
         # Create our resources
         root_resource = RuntimeResource(self.storage)
         experiments_resource = ExperimentsResource(self.storage)
+        benchmarks_resource = BenchmarksResource(self.storage)
         trials_resource = TrialsResource(self.storage)
         plots_resource = PlotsResource(self.storage)
 
@@ -116,6 +118,13 @@ class WebApi(falcon.API):
         self.add_route("/", root_resource)
         self.add_route("/experiments", experiments_resource)
         self.add_route("/experiments/{name}", experiments_resource, suffix="experiment")
+        self.add_route("/benchmarks", benchmarks_resource)
+        self.add_route("/benchmarks/{name}", benchmarks_resource, suffix="benchmark")
+        self.add_route(
+            "/experiments/status/{name}",
+            experiments_resource,
+            suffix="experiment_status",
+        )
         self.add_route(
             "/trials/{experiment_name}", trials_resource, suffix="trials_in_experiment"
         )

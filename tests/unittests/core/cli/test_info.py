@@ -568,7 +568,7 @@ def test_format_stats(dummy_trial):
         best_evaluation=0.1,
         start_time="yesterday",
         finish_time="now",
-        duration="way too long",
+        elapsed_time="way too long",
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
@@ -587,7 +587,7 @@ def test_format_stats(dummy_trial):
             c: Some
         start time: yesterday
         finish time: now
-        duration: way too long
+        elapsed_time: way too long
         """
     )
 
@@ -650,7 +650,7 @@ def test_format_info(algorithm_dict, dummy_trial):
         best_evaluation=0.1,
         start_time="yesterday",
         finish_time="now",
-        duration="way too long",
+        elapsed_time="way too long",
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
@@ -727,7 +727,7 @@ def test_format_info(algorithm_dict, dummy_trial):
             c: Some
         start time: yesterday
         finish time: now
-        duration: way too long
+        elapsed_time: way too long
 
         """
     )

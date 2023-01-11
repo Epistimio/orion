@@ -39,11 +39,12 @@ def add_subparser(parser):
 def main(args):
     """Starts an application server to serve http requests"""
     config = experiment_builder.get_cmd_config(args)
+    gunicorn_config = config.get("gunicorn", {})
 
     storage = setup_storage(config.get("storage"))
     web_api = WebApi(storage, config)
 
-    gunicorn_app = GunicornApp(web_api)
+    gunicorn_app = GunicornApp(web_api, options=gunicorn_config)
     gunicorn_app.run()
 
 

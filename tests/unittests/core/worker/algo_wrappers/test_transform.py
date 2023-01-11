@@ -48,7 +48,17 @@ class TestSpaceTransformWrapper(AlgoWrapperTests):
 
         assert algo_wrapper.space is space
 
-        with pytest.raises(ValueError, match="not contained in space:"):
+        with pytest.raises(ValueError, match="yolo is missing"):
+            invalid_trial = Trial(
+                params=[
+                    dict(name="yolo2", value=0, type="real"),
+                    dict(name="yolo3", value=3.5, type="real"),
+                ],
+                status="new",
+            )
+            algo_wrapper._verify_trial(invalid_trial)
+
+        with pytest.raises(ValueError, match="does not belong to the dimension"):
             invalid_trial = format_trials.tuple_to_trial((("asdfa", 2), 10, 3.5), space)
             algo_wrapper._verify_trial(invalid_trial)
 
@@ -59,7 +69,6 @@ class TestSpaceTransformWrapper(AlgoWrapperTests):
 
         # transform point
         ttrial = tspace.transform(trial)
-        # TODO: https://github.com/Epistimio/orion/issues/804
         assert ttrial in tspace
 
         # Transformed point is not in original space

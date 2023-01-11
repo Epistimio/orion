@@ -76,8 +76,4 @@ class SpaceTransform(TransformWrapper[AlgoT]):
 
     def _verify_trial(self, trial: Trial, space: Space | None = None) -> None:
         space = space or self.space
-        if trial not in space:
-            raise ValueError(
-                f"Trial {trial.id} not contained in space:"
-                f"\nParams: {trial.params}\nSpace: {space}"
-            )
+        space.assert_contains(trial)

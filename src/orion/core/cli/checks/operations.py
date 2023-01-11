@@ -38,7 +38,7 @@ class OperationsStage:
         try:
             database.write("test", {"index": "value"})
         except Exception as ex:
-            raise CheckError(str(ex))
+            raise CheckError(str(ex)) from ex
 
         return "Success", ""
 
@@ -49,9 +49,9 @@ class OperationsStage:
         try:
             result = database.read("test", {"index": "value"})
         except Exception as ex:
-            raise CheckError(str(ex))
+            raise CheckError(str(ex)) from ex
 
-        if not len(result):
+        if len(result) == 0:
             raise CheckError("Expected 'value', received nothing.")
 
         return "Success", ""

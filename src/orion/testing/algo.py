@@ -13,7 +13,7 @@ import pytest
 
 import orion.algo.base
 from orion.algo.base import BaseAlgorithm
-from orion.algo.parallel_strategy import strategy_factory
+from orion.algo.base.parallel_strategy import strategy_factory
 from orion.algo.space import Space
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
@@ -880,7 +880,9 @@ class BaseParallelStrategyTests:
         """Test that strategy can handle trials that has objective but status is not
         properly set to completed."""
         corrupted_trial = self.get_corrupted_trial()
-        with caplog.at_level(logging.WARNING, logger="orion.algo.parallel_strategy"):
+        with caplog.at_level(
+            logging.WARNING, logger="orion.algo.base.parallel_strategy"
+        ):
             trial = self.create_strategy().infer(corrupted_trial)
 
         match = "Trial `{}` has an objective but status is not completed".format(
@@ -892,7 +894,9 @@ class BaseParallelStrategyTests:
         assert trial.objective.value == corrupted_trial.objective.value
 
     def test_handle_noncompleted_trials(self, caplog):
-        with caplog.at_level(logging.WARNING, logger="orion.algo.parallel_strategy"):
+        with caplog.at_level(
+            logging.WARNING, logger="orion.algo.base.parallel_strategy"
+        ):
             self.create_strategy().infer(self.get_noncompleted_trial())
 
         assert (
