@@ -18,10 +18,9 @@ import math
 import typing
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Generator, Generic, TypeVar
+from typing import Generator, Generic, Literal, TypeVar
 
 import pandas
-from typing_extensions import Literal
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
