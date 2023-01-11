@@ -9,12 +9,12 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.1.0
+    rev: v2.2.1
     hooks:
       - id: codespell
-        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont"]
+        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/src/yarn.lock,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont"]
   - repo: https://github.com/PyCQA/flake8
-    rev: 3.9.2
+    rev: 5.0.4
     hooks:
       - id: flake8
         args:
@@ -29,7 +29,7 @@ repos:
       - id: isort
         args: ["--profile", "black"]
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.34.0
+    rev: v2.37.3
     hooks:
       - id: pyupgrade
         args: ["--py38-plus"]

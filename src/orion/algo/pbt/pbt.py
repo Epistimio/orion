@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Population Based Training
 =========================
@@ -33,6 +34,7 @@ https://orion.readthedocs.io/en/develop/user/algorithms.html#pbt
 
 
 def get_objective(trial: Trial) -> float:
+    """Retrieve the objective value from a trial or returns inf"""
     if trial.objective and trial.objective.value is not None:
         return trial.objective.value
 
@@ -45,6 +47,7 @@ def compute_fidelities(
     high: numpy.ndarray | float,
     base: float,
 ) -> list[float]:
+    """Compute fidelities"""
     if base == 1:
         fidelities = numpy.linspace(low, high, num=n_branching + 1, endpoint=True)
     else:
@@ -364,8 +367,9 @@ class PBT(BaseAlgorithm):
             branched_trial = trial.branch(
                 params={self.fidelity_dim.name: self.fidelity_dim.low}
             )
-            # NOTE: We are using branching as a simple way to update the fidelity, we should not keep the
-            #       parent id since it is not a mutation from a parent trial.
+            # NOTE: We are using branching as a simple way to update the fidelity,
+            #       we should not keep the parent id since it is not a mutation
+            #       from a parent trial.
             branched_trial.parent = None
             self.register(branched_trial)
             trials.append(branched_trial)
@@ -831,6 +835,7 @@ class LineageNode(TreeNode[Trial]):
         """
         return LineageNode(new_trial, parent=self)
 
+    # pylint: disable=protected-access
     def set_jump(self, node: LineageNode) -> None:
         """Set the jump to given node
 

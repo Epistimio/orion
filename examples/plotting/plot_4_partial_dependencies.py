@@ -63,7 +63,7 @@ fig
 #    parameters
 #      <name>: <value>
 #
-# Even for a simple 2-d search space, the partial dependency is very useful. We see very cleary in this example
+# Even for a simple 2-d search space, the partial dependency is very useful. We see very clearly in this example
 # the optimal regions for both hyperparameters and we can see as well that the optimal region for
 # learning rates is larger when the dropout is low, and narrower when dropout approaches 0.5.
 #

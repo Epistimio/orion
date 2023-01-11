@@ -341,4 +341,5 @@ class TestTrialItem:
             "parameters": {"x": 1},
             "objective": 0.05,
             "statistics": {"a": 10, "b": 5},
+            "status": "completed",
         }

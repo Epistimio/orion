@@ -42,6 +42,7 @@ def build_trial_response(trial: Trial) -> dict:
         "statistics": {
             statistic.name: statistic.value for statistic in trial.statistics
         },
+        "status": trial.status,
     }
 
 
@@ -87,7 +88,7 @@ def build_experiment_response(
     }
 
     stats = experiment.stats
-    if stats:
+    if stats.trials_completed:
         data["trialsCompleted"] = stats.trials_completed
         data["startTime"] = str(stats.start_time)
         data["endTime"] = str(stats.finish_time)
