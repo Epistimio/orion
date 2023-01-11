@@ -17,6 +17,7 @@ import numpy as np
 from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket
 from orion.algo.space import Space
 from orion.core.utils import format_trials
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -271,8 +272,9 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
         for trial_index in range(population_range):
             objective, trial = rung_trials[trial_index]
             self.owner.performance[trial_index] = objective
+            trial_params = flatten(trial.params)
             for ith_dim in self.search_space_without_fidelity:
-                self.owner.population[ith_dim][trial_index] = trial.params[
+                self.owner.population[ith_dim][trial_index] = trial_params[
                     self.space[ith_dim].name
                 ]
 

@@ -23,6 +23,7 @@ from typing import Any
 from orion.algo.base.registry import Registry
 from orion.algo.space import Space
 from orion.core.utils import GenericFactory
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -306,7 +307,7 @@ class BaseAlgorithm:
             fidelity_dim = self.space[fidelity_index]
             _, max_fidelity_value = fidelity_dim.interval()
             for trial in self.registry:
-                fidelity_value = trial.params[fidelity_index]
+                fidelity_value = flatten(trial.params)[fidelity_index]
                 if fidelity_value >= max_fidelity_value:
                     n_suggested_with_max_fidelity += 1
             return n_suggested_with_max_fidelity >= self.space.cardinality
@@ -332,7 +333,7 @@ class BaseAlgorithm:
                 return trial.status == "completed"
             return (
                 trial.status == "completed"
-                and trial.params[fidelity_index] >= max_fidelity_value
+                and flatten(trial.params)[fidelity_index] >= max_fidelity_value
             )
 
         return sum(map(_is_completed, self.registry)) >= self.max_trials
