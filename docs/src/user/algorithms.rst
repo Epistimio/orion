@@ -674,6 +674,10 @@ a library of algorithms for hyperparameter search.
 HEBO
 ----
 
+.. warning::
+
+   HEBO package does not work with numpy>=1.24.0.
+
 
 Evolutionary algorithms from the `HEBO`_ repository are made available in Orion. There are a wide
 range of configutaion options for these algorithms, including the choice of model, evolutionary
