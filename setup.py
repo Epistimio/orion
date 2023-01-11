@@ -75,7 +75,8 @@ extras_require = {
     "pb2": ["GPy", "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
-        "numpy",
+        # Issue #1061 Pending update of hebo
+        "numpy>=1.17,<1.24",
         "pymoo==0.5.0",
         "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
     ],
@@ -148,8 +149,7 @@ setup_args = dict(
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
-        # Issue #1061 Pending update of hebo
-        "numpy>=1.17,<1.24",
+        "numpy",
         "scipy",
         "gitpython",
         "filelock",
