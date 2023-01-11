@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from logging import getLogger as get_logger
 from typing import Any, Callable
 
-from orion.algo.registry import Registry, RegistryMapping
+from orion.algo.base.registry import Registry, RegistryMapping
 from orion.algo.space import Space
 from orion.core.worker.algo_wrappers.algo_wrapper import AlgoT, AlgoWrapper
 from orion.core.worker.transformer import ReshapedSpace, TransformedSpace

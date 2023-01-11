@@ -9,7 +9,6 @@ import logging
 from collections import defaultdict
 from typing import Sequence
 
-import numpy
 import numpy as np
 
 from orion.algo.hyperband import (
@@ -61,9 +60,9 @@ def compute_budgets(
         )
         num_brackets = num_rungs
 
-    budgets = numpy.logspace(
-        numpy.log(min_resources) / numpy.log(reduction_factor),
-        numpy.log(max_resources) / numpy.log(reduction_factor),
+    budgets = np.logspace(
+        np.log(min_resources) / np.log(reduction_factor),
+        np.log(max_resources) / np.log(reduction_factor),
         num_rungs,
         base=reduction_factor,
     )
@@ -122,7 +121,7 @@ class ASHA(Hyperband):
         resource required for optimisation but decreases the bias towards stragglers.
         Default: 1
     repetitions: int
-        Number of execution of ASHA. Default is numpy.inf which means to
+        Number of execution of ASHA. Default is np.inf which means to
         run ASHA until no new trials can be suggested.
 
     """
@@ -133,7 +132,7 @@ class ASHA(Hyperband):
         seed: int | Sequence[int] | None = None,
         num_rungs: int | None = None,
         num_brackets: int = 1,
-        repetitions: int | float = numpy.inf,
+        repetitions: int | float = np.inf,
     ):
         super().__init__(space, seed=seed, repetitions=repetitions)
 
@@ -147,8 +146,8 @@ class ASHA(Hyperband):
 
         if num_rungs is None:
             num_rungs = int(
-                numpy.log(self.max_resources / self.min_resources)
-                / numpy.log(self.reduction_factor)
+                np.log(self.max_resources / self.min_resources)
+                / np.log(self.reduction_factor)
                 + 1
             )
 
@@ -166,7 +165,9 @@ class ASHA(Hyperband):
 
         self.seed_rng(seed)
 
+    # pylint: disable=missing-function-docstring
     def compute_bracket_idx(self, num: int) -> np.ndarray:
+        # pylint: disable=invalid-name
         def assign_resources(
             n: int, remainings: np.ndarray, totals: np.ndarray
         ) -> np.ndarray:
@@ -174,8 +175,8 @@ class ASHA(Hyperband):
                 return remainings
 
             ratios = remainings / totals
-            fractions = numpy.nan_to_num(ratios / ratios.sum(), nan=0)
-            index = numpy.argmax(fractions)
+            fractions = np.nan_to_num(ratios / ratios.sum(), nan=0)
+            index = np.argmax(fractions)
             remainings[index] -= 1
             n -= 1
             if n > 0:
@@ -184,10 +185,10 @@ class ASHA(Hyperband):
             return remainings
 
         assert self.brackets is not None
-        remainings = numpy.asarray(
+        remainings = np.asarray(
             [bracket.remainings for bracket in self.brackets], dtype=np.int64
         )
-        totals = numpy.asarray(
+        totals = np.asarray(
             [bracket.rungs[0]["n_trials"] for bracket in self.brackets], dtype=np.int64
         )
         remainings_after = copy.deepcopy(remainings)

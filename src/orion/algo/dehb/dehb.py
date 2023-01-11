@@ -27,8 +27,9 @@ with ImportOptional("DEHB") as import_optional:
 
 if import_optional.failed:
 
+    # pylint: disable=function-redefined,too-few-public-methods
     class DEHBImpl:  # noqa: F811
-        pass
+        """Dummy implementation for optional imports"""
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,8 @@ FIX_MODES = ["random", "clip"]
 
 
 class RungResult(NamedTuple):
+    """NamedTuple"""
+
     cost: int | float
     fitness: float
 
@@ -133,7 +136,7 @@ class _CustomDEHBImpl(DEHBImpl):
             self.de[budget].fitness[parent_id] = fitness
 
         # NOTE: This dictionary seams useless in dehb source code.
-        info: dict = dict()
+        info: dict = {}
         # updating incumbents
         if self.de[budget].fitness[parent_id] < self.inc_score:
             self._update_incumbents(
@@ -311,7 +314,7 @@ class DEHB(BaseAlgorithm):
         self.rung: int | None = None
         self.seed = seed
         self.job_infos: defaultdict[str, list] = defaultdict(list)
-        self.job_results: dict[str, RungResult] = dict()
+        self.job_results: dict[str, RungResult] = {}
         self.duplicates: defaultdict[str, int] = defaultdict(int)
 
         configspace = convert_space(self.space)
@@ -373,6 +376,7 @@ class DEHB(BaseAlgorithm):
     @property
     def is_done(self) -> bool:
         """Return True, if an algorithm holds that there can be no further improvement."""
+        # pylint: disable=protected-access
         return self.dehb._is_run_budget_exhausted(None, self.rung, None)
 
     def sample_to_trial(self, sample: numpy.ndarray, fidelity: int) -> Trial:
@@ -416,6 +420,7 @@ class DEHB(BaseAlgorithm):
             if self.is_done:
                 break
 
+            # pylint: disable=protected-access
             job_info: dict = self.dehb._get_next_job()
             job_info["done"] = 0
 
