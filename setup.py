@@ -39,7 +39,7 @@ extras_require = {
         "sphinx_gallery",
     ],
     "dask": ["dask[complete]"],
-    "ray": ["ray[complete]"],
+    "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
     "configspace": ["ConfigSpace"],

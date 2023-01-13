@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+from orion.core.utils.module_import import ImportOptional
 from orion.executor.base import (
     AsyncException,
     AsyncResult,
@@ -9,11 +10,12 @@ from orion.executor.base import (
     Future,
 )
 
-try:
+with ImportOptional("ray") as import_optional:
     import ray
 
     HAS_RAY = True
-except ImportError:
+
+if import_optional.failed:
     HAS_RAY = False
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,6 @@ class Ray(BaseExecutor):
     def __init__(
         self,
         n_workers=-1,
-        runtime_env=None,
         **config,
     ):
         super().__init__(n_workers=n_workers)
@@ -64,23 +65,11 @@ class Ray(BaseExecutor):
         if not HAS_RAY:
             raise ImportError("Ray must be installed to use Ray executor.")
         self.config = config
+
         if not ray.is_initialized():
-            if runtime_env is None:
-                ray.init()
-            else:
-                ray.init(
-                    runtime_env={
-                        "working_dir": "/Users/simonolivier/DevOrion/orion/tests/unittests/executor"
-                    }
-                )
+            ray.init(**self.config)
             self.initialized = True
-            print("Ray was initiated with runtime_env : ", runtime_env)
-
-    def __getstate__(self):
-        return super().__getstate__()
-
-    def __setstate__(self, state):
-        super().__setstate__(state)
+            logger.debug("Ray was initiated with runtime_env : %s", **config)
 
     def close(self):
         if self.initialized:
@@ -95,10 +84,12 @@ class Ray(BaseExecutor):
 
     def submit(self, function, *args, **kwargs):
         try:
-            if ray.is_initialized():
-                remote_g = ray.remote(function)
-                return _Future(remote_g.remote(*args, **kwargs))
-            raise ExecutorClosed()
+            if not ray.is_initialized():
+                raise ExecutorClosed()
+
+            remote_g = ray.remote(function)
+            return _Future(remote_g.remote(*args, **kwargs))
+
         except Exception as e:
             if str(e).startswith(
                 "Tried sending message after closing.  Status: closed"
