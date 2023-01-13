@@ -9,11 +9,13 @@ Hyperparameters and some Orion configuration. We will also be using
 `Comet <https://www.comet.com/>`_ for monitoring our experiments.
 Installation
 ^^^^^^^^^^^^
-For this tutorial everything that we need to download can be can be found in the ``requirements.txt``
-file located in the ``examples/huggingface`` repository.
+For this tutorial everything that we need to install can be can be found in the ``requirements.txt``
+file located in the ``examples/huggingface`` repository. You can then install the requirements
+with ``pip``.
 
-.. include:: /../../examples/huggingface/requirements.txt
-   :literal:
+.. code-block:: bash
+
+   $ pip install -r examples/huggingface/requirements.txt
 
 Imports
 ^^^^^^^
@@ -121,7 +123,7 @@ And that is it ! If the variables are set and comet-ml is downloaded, HuggingFac
 automatically upload your data to Comet, you simply have to go to your profile on their site
 and see your experiments.
 
-It is important to note here that we can swap the Comet logger to many others, suc as WandB,
+It is important to note here that we can swap the Comet logger to many others, such as WandB,
 MLFlow, Neptune and ClearML. You can see the complete list in the HuggingFace documentation
 `HF callbacks <https://huggingface.co/docs/transformers/main_classes/callback#callbacks>`_
 
@@ -198,8 +200,8 @@ Hydra-Orion-Sweeper plugin.
 
    $ python3 main.py -m
 
-Visualizing data
-^^^^^^^^^^^^^^^^
+Visualizing results
+^^^^^^^^^^^^^^^^^^^
 With Orion, after your experiment has finished running, you can easily visualize your results
 using `regret plots <https://orion.readthedocs.io/en/stable/auto_examples/plot_1_regret.html>`_
 and `partial dependencies plots
