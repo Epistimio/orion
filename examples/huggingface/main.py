@@ -33,27 +33,27 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-st",
-        "--size_train_dataset",
+        "--size-train-dataset",
         help="Number of samples to use from training data set. If not specified, use complete dataset",
         type=int,
         required=False,
     )
     parser.add_argument(
         "-se",
-        "--size_eval_dataset",
+        "--size-eval-dataset",
         help="Number of samples to use from evaluation data set. If not specified, use complete dataset",
         type=int,
         required=False,
     )
     parser.add_argument(
         "-f",
-        "--freeze_base_model",
+        "--freeze-base-model",
         help="Freeze parameters of base model during training",
         action="store_true",
         required=False,
     )
     parser.add_argument(
-        "-lr", "--learning_rate", help="Learning rate", type=float, required=False
+        "-lr", "--learning-rate", help="Learning rate", type=float, required=False
     )
     parser.add_argument(
         "-e",
@@ -142,7 +142,7 @@ def get_free_gpu():
 def main(cfg: DictConfig) -> float:
     print("args", cfg)
 
-    # Get command line arguments and apply hyperparaters to training arguments
+    # Get command line arguments and apply hyperparameters to training arguments
     args = cfg.args
 
     # Logger setup
@@ -157,6 +157,7 @@ def main(cfg: DictConfig) -> float:
     else:
         device = "cpu"
 
+    # We only use the device to print out what HF should be using by default
     logger.info("Compute device: %s", device)
 
     batch_size = 16
@@ -175,7 +176,7 @@ def main(cfg: DictConfig) -> float:
     print("Training arguments:", training_args)
 
     # Load a dataset
-    dataset_name = "wmt16"  # others: yelp_review_full, rotten_tomatoes
+    dataset_name = "wmt16"
     logger.info("Dataset: %s", dataset_name)
 
     raw_dataset = load_dataset(
@@ -187,22 +188,13 @@ def main(cfg: DictConfig) -> float:
     # Create tokenizer and tokenize the dataset
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
 
-    if "mbart" in model_checkpoint:
-        tokenizer.src_lang = "en-XX"
-        tokenizer.tgt_lang = "ro-RO"
-
-    if model_checkpoint in ["t5-small", "t5-base", "t5-larg", "t5-3b", "t5-11b"]:
-        prefix = "translate English to Romanian: "
-    else:
-        prefix = ""
-
     max_input_length = 128
     max_target_length = 128
     source_lang = "en"
     target_lang = "ro"
 
     def preprocess_function(examples):
-        inputs = [prefix + ex[source_lang] for ex in examples["translation"]]
+        inputs = [ex[source_lang] for ex in examples["translation"]]
         targets = [ex[target_lang] for ex in examples["translation"]]
         model_inputs = tokenizer(inputs, max_length=max_input_length, truncation=True)
 
@@ -266,7 +258,7 @@ def main(cfg: DictConfig) -> float:
         decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
         result = metric.compute(predictions=decoded_preds, references=decoded_labels)
-        result = {"bleu": result["score"]}
+        result = {"sacrebleu": result["score"]}
 
         prediction_lens = [
             np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds
@@ -289,7 +281,6 @@ def main(cfg: DictConfig) -> float:
                 )
                 return control_copy
 
-    # cometCallb = CometCallback()
     trainer = Seq2SeqTrainer(
         model,
         training_args,
@@ -310,7 +301,7 @@ def main(cfg: DictConfig) -> float:
     print("GPU memory reserved:", torch.cuda.memory_reserved(0))
     print("GPU memory allocated:", torch.cuda.memory_allocated(0))
 
-    return -eval_metrics["eval_bleu"]
+    return -eval_metrics["eval_sacrebleu"]
 
 
 # =======================================================================
