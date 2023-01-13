@@ -7,11 +7,17 @@ Hydra, with the `Hydra_Orion_Sweeper <https://github.com/Epistimio/hydra_orion_s
 Hydra is essentially a framework for configuring applications. We will use it to define our
 Hyperparameters and some Orion configuration. We will also be using
 `Comet <https://www.comet.com/>`_ for monitoring our experiments.
+Installation
+^^^^^^^^^^^^
+For this tutorial everything that we need to download can be can be found in the ``requirements.txt``
+file located in the ``examples/huggingface`` repository.
+
+.. include:: /../../examples/huggingface/requirements.txt
+   :literal:
 
 Imports
 ^^^^^^^
-You will need to import some modules using pip, such as ``datasets``, ``transformers``,
-``hydra-orion-sweeper`` and ``comet-ml``.
+You will now need to import thes modules.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
@@ -23,7 +29,8 @@ Hydra configuration file
 
 Notice here how the arguments that are not defined will be set at ``None``, which will be
 overridden by default values or not used at all. This serves as a replacement for parsing arguments
-in the command line, but is integrated with Orion, which makes the usability really good.
+in the command line, but is integrated with Orion, which makes it more practical
+to manage search spaces of hyperparameters.
 
 .. literalinclude:: /../../examples/huggingface/config.yaml
   :language: yaml
@@ -44,6 +51,11 @@ experiment ``uuid`` and ``${hydra.sweeper.orion.trial}`` for the ``trial_id``.
 In the code, you can now specify the output directory to the trainer with the
 ``output_dir`` parameter. ``os.getcwd()`` specifies the current working dir.
 
+Including these options will create different folders for each trial, under different ones for
+each experiment and even different ones for each sweep. You do not have to add them all, but it
+can be quite useful when you don't want 2 trials writing their cache in the same file, which
+could result in an error.
+
 .. code-block:: python
 
     output_dir=str(os.getcwd())+"/test_trainer",
@@ -61,7 +73,7 @@ We also are going to be using this main function as the entry point of the progr
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 63-68, 229-230
+  :lines: 141-146, 310-311
 
 With the ``hydra-orion-sweeper``, this function needs to return the objective. You have 3 choices
 for what you can return :
@@ -82,7 +94,7 @@ our objective that we want to minimize.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 213
+  :lines: 304
 
 Comet
 ^^^^^
@@ -97,7 +109,7 @@ Now that it is installed, we simply have to set some environment variables, such
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 7-10
+  :lines: 8-13
 
 You can also set them in your working environment. If you are to set them in python, however,
 you need to make sure to set them before importing ``transformers``.
@@ -108,6 +120,10 @@ This is the one you are going to use here.
 And that is it ! If the variables are set and comet-ml is downloaded, HuggingFace will
 automatically upload your data to Comet, you simply have to go to your profile on their site
 and see your experiments.
+
+It is important to note here that we can swap the Comet logger to many others, suc as WandB,
+MLFlow, Neptune and ClearML. You can see the complete list in the HuggingFace documentation
+`HF callbacks <https://huggingface.co/docs/transformers/main_classes/callback#callbacks>`_
 
 Example code
 ^^^^^^^^^^^^
@@ -131,45 +147,45 @@ the dataset cache will be stored
 
 .. literalinclude:: /../../examples/huggingface/main.py
    :language: python
-   :lines: 178,181-183
+   :lines: 179,182-184
 
 We then prepare our training and evaluation datasets. In this example, we want to evaluate our
 model with the validation dataset and the training dataset.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 204-236
+  :lines: 196-229
 
 For the metric, we are going to use ``sacrebleu``. We can also set a ``cache_dir`` here for the
 metric cache files. The ``compute_metrics`` function goes as follows :
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 246-249, 255-276
+  :lines: 238-240, 247-268
 
 Now we have to create the actual Trainer, a ``Seq2SeqTrainer`` as mentioned previously.
 It is very much like a classic ``Trainer`` from HuggingFace.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 293-301
+  :lines: 284-292
 
 HuggingFace will log the evaluation from the ``eval_dataset`` to Comet. Since we also want the
 evaluation from the training dataset, we will have to implement something called a
 ``CustomCallback``. The one I made for this tutorial takes the ``trainer`` and the dataset we want
-to add (In our case, our train dataset) as parameters.
+to add (in our case, our train dataset) as parameters.
 We can then rewrite some callback functions, such as ``on_epoch_end()``.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 278-291,303
+  :lines: 270-282,294
 
 All that is left to do now is to train the model, and once it's finish training, send the data to
 Orion by returning it.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
-  :lines: 304-306, 313
+  :lines: 295-297, 304
 
 For more details, feel free to simply go look at the code, in ``examples/huggingface/main.py``
 
@@ -181,3 +197,12 @@ Hydra-Orion-Sweeper plugin.
 .. code-block:: bash
 
    $ python3 main.py -m
+
+Visualizing data
+^^^^^^^^^^^^^^^^
+With Orion, after your experiment has finished running, you can easily visualize your results
+using `regret plots <https://orion.readthedocs.io/en/stable/auto_examples/plot_1_regret.html>`_
+and `partial dependencies plots
+<https://orion.readthedocs.io/en/stable/auto_examples/plot_4_partial_dependencies.html>`_
+These are very helpful to see what is happening during the optimization, and what can be ajusted
+if necessary.
