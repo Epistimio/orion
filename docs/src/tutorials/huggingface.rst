@@ -17,7 +17,7 @@ file located in the ``examples/huggingface`` repository.
 
 Imports
 ^^^^^^^
-You will now need to import thes modules.
+You will now need to import these modules.
 
 .. literalinclude:: /../../examples/huggingface/main.py
   :language: python
@@ -204,5 +204,5 @@ With Orion, after your experiment has finished running, you can easily visualize
 using `regret plots <https://orion.readthedocs.io/en/stable/auto_examples/plot_1_regret.html>`_
 and `partial dependencies plots
 <https://orion.readthedocs.io/en/stable/auto_examples/plot_4_partial_dependencies.html>`_
-These are very helpful to see what is happening during the optimization, and what can be ajusted
+These are very helpful to see what is happening during the optimization, and what can be adjusted
 if necessary.
