@@ -213,7 +213,13 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ["_version", "utils._appdirs", "nevergrad", "torch"]
+autodoc_mock_imports = [
+    "_version",
+    "utils._appdirs",
+    "nevergrad",
+    "torch",
+    "sqlalchemy",
+]
 
 # -- Gallery configuration -----------------------------------------------
 

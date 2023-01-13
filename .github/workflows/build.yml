@@ -148,7 +148,7 @@ jobs:
 
   test_no_extras:
     needs: [pre-commit, pretest]
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python 3.9

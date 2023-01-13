@@ -10,3 +10,7 @@ database:
   type: 'pickleddb'
   name: 'orion_test'
   host: '${FILE}'
+
+storage:
+  uri: sqlite://
+  token: tok

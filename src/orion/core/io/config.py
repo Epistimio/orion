@@ -456,6 +456,9 @@ class Configuration:
     def from_dict(self, config):
         """Set the configuration from a dictionary"""
 
+        if config is None:
+            return
+
         logger.debug("Setting config to %s", config)
         logger.debug("Config was %s", repr(self))
 

@@ -2,6 +2,7 @@
 """Collection of tests for :mod:`orion.core.worker.producer`."""
 import contextlib
 import copy
+import datetime
 import threading
 import time
 
@@ -31,7 +32,7 @@ base_experiment = {
     "metadata": {
         "user": "default_user",
         "user_script": "abc",
-        "datetime": "2017-11-23T02:00:00",
+        "datetime": datetime.datetime.fromisoformat("2017-11-23T02:00:00"),
         "orion_version": "XYZ",
     },
     "algorithms": {

@@ -77,7 +77,6 @@ from __future__ import annotations
 
 import copy
 import datetime
-import getpass
 import logging
 import pprint
 import sys
@@ -85,6 +84,7 @@ import typing
 from typing import Any, TypeVar
 
 import orion.core
+import orion.core.utils.compat
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
@@ -864,7 +864,7 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode="x", **config)
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-locals
     def create_experiment(
         self,
         name: str,
@@ -934,9 +934,11 @@ class ExperimentBuilder:
             knowledge_base=knowledge_base,
         )
 
+        username = orion.core.utils.compat.getuser()
+
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
         working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
-        metadata = _default(metadata, {"user": _default(user, getpass.getuser())})
+        metadata = _default(metadata, {"user": _default(user, username)})
         refers = _default(refers, dict(parent_id=None, root_id=None, adapter=[]))
         refers["adapter"] = _instantiate_adapters(refers.get("adapter", []))  # type: ignore
 

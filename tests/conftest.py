@@ -2,17 +2,19 @@
 """Common fixtures and utils for unittests and functional tests."""
 from __future__ import annotations
 
-import getpass
+import datetime
 import os
 from typing import Any
 
 import numpy
 import pytest
 import yaml
+from freezegun import freeze_time
 from pymongo import MongoClient
 
 import orion.core
 import orion.core.utils.backward as backward
+import orion.core.utils.compat
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.io import resolve_config
@@ -23,7 +25,8 @@ from orion.storage.base import storage_factory
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
-from orion.testing import OrionState, mocked_datetime
+
+from orion.testing import OrionState, default_datetime
 
 
 def pytest_addoption(parser):
@@ -364,14 +367,38 @@ def mock_infer_versioning_metadata(monkeypatch):
 @pytest.fixture()
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "userxyz")
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "userxyz")
+
+
+@pytest.fixture()
+def with_user_tsirif(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'tsirif'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "tsirif")
+
+
+@pytest.fixture()
+def with_user_bouthilx(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "bouthilx")
+
+
+@pytest.fixture()
+def with_user_dendi(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'dendi'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "dendi")
+
+
+@pytest.fixture()
+def with_user_corneau(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'corneau'``."""
+    monkeypatch.setattr(orion.core.utils.compat, "getuser", lambda: "corneau")
 
 
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    with mocked_datetime(monkeypatch) as datetime:
-        yield datetime.utcnow()
+    with freeze_time(default_datetime()):
+        yield datetime.datetime.utcnow()
 
 
 @pytest.fixture(scope="function")

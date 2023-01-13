@@ -63,7 +63,7 @@ class Legacy(BaseStorageProtocol):
 
     """
 
-    def __init__(self, database=None, setup=True):
+    def __init__(self, database=None, setup=True, **kwargs):
         self._db = setup_database(database)
 
         if setup:

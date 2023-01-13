@@ -22,6 +22,12 @@ from orion.core.worker.producer import Producer
 from orion.serving.webapi import WebApi
 from orion.testing.state import OrionState
 
+
+def default_datetime():
+    """Return default datetime"""
+    return datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+
 base_experiment = {
     "name": "default_name",
     "version": 0,
@@ -29,7 +35,7 @@ base_experiment = {
         "user": "default_user",
         "user_script": "abc",
         "priors": {"x": "uniform(0, 10)"},
-        "datetime": "2017-11-23T02:00:00",
+        "datetime": datetime.datetime.fromisoformat("2017-11-23T02:00:00"),
         "orion_version": "XYZ",
     },
     "algorithms": {"random": {"seed": 1}},
@@ -39,18 +45,13 @@ base_trial = {
     "experiment": "default_name",
     "status": "new",  # new, reserved, suspended, completed, broken
     "worker": None,
-    "submit_time": "2017-11-23T02:00:00",
+    "submit_time": datetime.datetime.fromisoformat("2017-11-23T02:00:00"),
     "start_time": None,
     "end_time": None,
     "heartbeat": None,
     "results": [],
     "params": [],
 }
-
-
-def default_datetime():
-    """Return default datetime"""
-    return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
 all_status = ["completed", "broken", "reserved", "interrupted", "suspended", "new"]
@@ -244,24 +245,6 @@ def falcon_client(exp_config=None, trial_config=None, statuses=None):
         falcon_client = testing.TestClient(WebApi(cfg.storage, {}))
 
         yield cfg, experiment, exp_client, falcon_client
-
-
-class MockDatetime(datetime.datetime):
-    """Fake Datetime"""
-
-    @classmethod
-    def utcnow(cls):
-        """Return our random/fixed datetime"""
-        return default_datetime()
-
-
-@contextlib.contextmanager
-def mocked_datetime(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    with monkeypatch.context() as m:
-        m.setattr(datetime, "datetime", MockDatetime)
-
-        yield MockDatetime
 
 
 class AssertNewFile:

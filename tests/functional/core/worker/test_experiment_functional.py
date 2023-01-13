@@ -2,10 +2,12 @@
 """Collection of functional tests for :mod:`orion.core.worker.experiment`."""
 import logging
 
+from freezegun import freeze_time
+
 from orion.client import build_experiment, get_experiment
 from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.trial import Trial
-from orion.testing import mocked_datetime
+from orion.testing import default_datetime
 from orion.testing.evc import (
     build_child_experiment,
     build_root_experiment,
@@ -146,7 +148,7 @@ def test_fix_lost_trials_in_evc(storage, monkeypatch):
 
     `fix_lost_trials` is tested more carefully in experiment's unit-tests (without the EVC).
     """
-    with disable_duplication(monkeypatch), mocked_datetime(monkeypatch):
+    with disable_duplication(monkeypatch), freeze_time(default_datetime()):
         build_evc_tree(list(range(5)))
 
     for exp_name in ["root", "parent", "experiment", "child", "grand-child"]:

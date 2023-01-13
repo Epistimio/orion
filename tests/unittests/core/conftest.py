@@ -2,7 +2,7 @@
 """Common fixtures and utils for tests."""
 
 import copy
-import getpass
+import datetime
 import os
 
 import pytest
@@ -16,7 +16,6 @@ from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
-from orion.testing import MockDatetime
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, "sample_config.yml")
@@ -138,24 +137,6 @@ def fixed_suggestion(fixed_suggestion_value, space):
     return format_trials.tuple_to_trial(fixed_suggestion_value, space)
 
 
-@pytest.fixture()
-def with_user_tsirif(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'tsirif'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "tsirif")
-
-
-@pytest.fixture()
-def with_user_bouthilx(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "bouthilx")
-
-
-@pytest.fixture()
-def with_user_dendi(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'dendi'``."""
-    monkeypatch.setattr(getpass, "getuser", lambda: "dendi")
-
-
 dendi_exp_config = dict(
     name="supernaedo2-dendi",
     space={
@@ -186,9 +167,9 @@ dendi_base_trials = [
     {
         "status": "completed",
         "worker": 12512301,
-        "submit_time": MockDatetime(2017, 11, 22, 23),
+        "submit_time": datetime.datetime(2017, 11, 22, 23),
         "start_time": None,
-        "end_time": MockDatetime(2017, 11, 22, 23),
+        "end_time": datetime.datetime(2017, 11, 22, 23),
         "results": [{"name": None, "type": "objective", "value": 3}],
         "params": [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
@@ -199,9 +180,9 @@ dendi_base_trials = [
     {
         "status": "completed",
         "worker": 23415151,
-        "submit_time": MockDatetime(2017, 11, 23, 0),
+        "submit_time": datetime.datetime(2017, 11, 23, 0),
         "start_time": None,
-        "end_time": MockDatetime(2017, 11, 23, 0),
+        "end_time": datetime.datetime(2017, 11, 23, 0),
         "results": [
             {"name": "yolo", "type": "objective", "value": 10},
             {"name": "contra", "type": "constraint", "value": 1.2},
@@ -220,9 +201,9 @@ dendi_base_trials = [
     {
         "status": "completed",
         "worker": 1251231,
-        "submit_time": MockDatetime(2017, 11, 22, 23),
+        "submit_time": datetime.datetime(2017, 11, 22, 23),
         "start_time": None,
-        "end_time": MockDatetime(2017, 11, 22, 22),
+        "end_time": datetime.datetime(2017, 11, 22, 22),
         "results": [
             {"name": None, "type": "objective", "value": 2},
             {"name": "naedw_grad", "type": "gradient", "value": [-0.1, 2]},
@@ -236,7 +217,7 @@ dendi_base_trials = [
     {
         "status": "new",
         "worker": None,
-        "submit_time": MockDatetime(2017, 11, 23, 1),
+        "submit_time": datetime.datetime(2017, 11, 23, 1),
         "start_time": None,
         "end_time": None,
         "results": [{"name": None, "type": "objective", "value": None}],
@@ -249,7 +230,7 @@ dendi_base_trials = [
     {
         "status": "new",
         "worker": None,
-        "submit_time": MockDatetime(2017, 11, 23, 2),
+        "submit_time": datetime.datetime(2017, 11, 23, 2),
         "start_time": None,
         "end_time": None,
         "results": [{"name": None, "type": "objective", "value": None}],
@@ -266,8 +247,8 @@ dendi_base_trials = [
     {
         "status": "interrupted",
         "worker": None,
-        "submit_time": MockDatetime(2017, 11, 23, 3),
-        "start_time": MockDatetime(2017, 11, 23, 3),
+        "submit_time": datetime.datetime(2017, 11, 23, 3),
+        "start_time": datetime.datetime(2017, 11, 23, 3),
         "end_time": None,
         "results": [{"name": None, "type": "objective", "value": None}],
         "params": [
@@ -283,8 +264,8 @@ dendi_base_trials = [
     {
         "status": "suspended",
         "worker": None,
-        "submit_time": MockDatetime(2017, 11, 23, 4),
-        "start_time": MockDatetime(2017, 11, 23, 4),
+        "submit_time": datetime.datetime(2017, 11, 23, 4),
+        "start_time": datetime.datetime(2017, 11, 23, 4),
         "end_time": None,
         "results": [{"name": None, "type": "objective", "value": None}],
         "params": [

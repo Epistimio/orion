@@ -92,6 +92,7 @@ class BaseOrionState:
         self._workers = _select(workers, [])
         self._resources = _select(resources, [])
         self._lies = _select(lies, [])
+        self.expname_to_uid = dict()
 
         # In case of track we also store the inserted object
         # so the user can compare in tests the different values
@@ -107,7 +108,7 @@ class BaseOrionState:
 
     def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = experiment_builder.build(name=name, version=version)
+        exp = experiment_builder.build(name=name, version=version, storage=self.storage)
         return exp
 
     def get_trial(self, index):
@@ -135,11 +136,26 @@ class BaseOrionState:
     def _set_tables(self):
         self.trials = []
         self.lies = []
+        exp_ids = set()
 
         for exp in self._experiments:
             self.storage.create_experiment(exp)
 
+            exp = self.storage.fetch_experiments(dict(name=exp["name"]))[0]
+            self.expname_to_uid[exp["name"]] = exp["_id"]
+
+            if exp["_id"] in exp_ids:
+                raise RuntimeError("Duplicate experiment during setup")
+
+            exp_ids.add(exp["_id"])
+            self.storage.initialize_algorithm_lock(exp["_id"], exp.get("algorithms"))
+
         for trial in self._trials:
+            exp_id = self.expname_to_uid.get(trial["experiment"], None)
+
+            if exp_id is not None:
+                trial["experiment"] = exp_id
+
             nt = self.storage.register_trial(Trial(**trial))
             self.trials.append(nt.to_dict())
 
@@ -248,7 +264,7 @@ class LegacyOrionState(BaseOrionState):
 
     def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = experiment_builder.build(name, version=version)
+        exp = experiment_builder.build(name, version=version, storage=self.storage)
         exp._id = exp.name
         return exp
 

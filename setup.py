@@ -56,6 +56,7 @@ extras_require = {
     ],
     "dask": ["dask[complete]"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
+    "sqlalchemy": ["sqlalchemy"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
     "configspace": ["ConfigSpace"],
     "ax": [
@@ -138,6 +139,7 @@ setup_args = dict(
         "BaseStorageProtocol": [
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",
+            "sqlalchemy = orion.storage.sql:SQLAlchemy",
         ],
         "BaseExecutor": [
             "singleexecutor = orion.executor.single_backend:SingleExecutor",
