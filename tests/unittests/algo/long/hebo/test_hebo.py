@@ -54,6 +54,10 @@ _pymoo_error = skip_or_xfail_mark(
     reason="causes an error in pymoo code (`self.sampling` is np.ndarray)",
     raises=AttributeError,
 )
+_pymoo_version = skip_or_xfail_mark(
+    reason="HEBO tests fail because of pymoo==0.5.0, see https://github.com/huawei-noah/HEBO/issues/19.",
+    raises=AttributeError,
+)
 _wrong_constructor_args = skip_or_xfail_mark(
     reason="ES class isn't receiving required constructor arguments",
     raises=TypeError,
@@ -67,7 +71,7 @@ _numpy_broadcasting_issue = skip_or_xfail_mark(
     raises=ValueError,
 )
 evolutionary_strategy_marks: dict[EvolutionStrategyName, list[pytest.MarkDecorator]] = {  # type: ignore
-    "nsga2": [],
+    "nsga2": [_pymoo_version],
     "de": [_poor_constructor],
     "brkga": [_poor_constructor],
     "cmaes": [_pymoo_error],

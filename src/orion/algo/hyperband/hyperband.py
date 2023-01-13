@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 A Novel Bandit-Based Approach to Hyperparameter Optimization
 ============================================================
@@ -45,11 +46,15 @@ Cannot build budgets below max_resources;
 
 
 class BudgetTuple(NamedTuple):
+    """Buget Tuple"""
+
     n_trials: int
     resource_budget: int | float
 
 
 class RungDict(TypedDict):
+    """Rung Dict"""
+
     resources: int | float
     n_trials: int
     results: dict[str, tuple[float | None, Trial]]
@@ -90,8 +95,8 @@ def compute_budgets(
     return budgets
 
 
+# pylint: disable=missing-function-docstring
 def tabulate_status(brackets: list[HyperbandBracket]) -> None:
-
     header = ["i"] + ["n_i", "r_i"] * len(brackets)
 
     data = []
@@ -114,7 +119,9 @@ def tabulate_status(brackets: list[HyperbandBracket]) -> None:
 
 
 def display_budgets(
-    budgets_tab: dict[int, list[BudgetTuple]], max_resources: Any, reduction_factor: Any
+    budgets_tab: dict[int, list[BudgetTuple]],
+    max_resources: Any,
+    reduction_factor: Any,
 ) -> None:
     """Display hyperband budget as a table in debug log"""
     num_brackets = len(budgets_tab[0])
@@ -136,8 +143,9 @@ def display_budgets(
             table_row += st
         table_str += table_row + "\n"
     table_str += col_format_str.format(*col_sub_list)
-    table_str += "max resource={}, eta={}, trials number of one execution={}\n".format(
-        max_resources, reduction_factor, total_trials
+    table_str += (
+        f"max resource={max_resources}, eta={reduction_factor}, "
+        f"trials number of one execution={total_trials}\n"
     )
     logger.info(table_str)
 
@@ -145,6 +153,7 @@ def display_budgets(
 BracketT = TypeVar("BracketT", bound="HyperbandBracket")
 
 
+# pylint: disable=too-many-public-methods
 class Hyperband(BaseAlgorithm, Generic[BracketT]):
     """Hyperband formulates hyperparameter optimization as a pure-exploration non-stochastic
     infinite-armed bandit problem where a predefined resource like iterations, data samples,
@@ -232,7 +241,6 @@ class Hyperband(BaseAlgorithm, Generic[BracketT]):
             # the registry.
             trial.parent = None
 
-            full_id = self.get_id(trial, ignore_fidelity=False, ignore_parent=False)
             id_wo_fidelity = self.get_id(
                 trial, ignore_fidelity=True, ignore_parent=True
             )
@@ -493,6 +501,7 @@ class Hyperband(BaseAlgorithm, Generic[BracketT]):
 Owner = TypeVar("Owner", bound=Hyperband)
 
 
+# pylint: disable=too-many-public-methods
 class HyperbandBracket(Generic[Owner]):
     """Bracket of rungs for the algorithm Hyperband.
 
@@ -694,7 +703,7 @@ class HyperbandBracket(Generic[Owner]):
 
             trials = []
             for candidate in self.get_candidates(rung_id):
-                # pylint: disable=logging-format-interpolation
+                # pylint: disable=logging-format-interpolation,consider-using-f-string
                 logger.debug(
                     "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
                     "rung {new_rung} with fidelity {new_fidelity}".format(
@@ -736,6 +745,7 @@ class HyperbandBracket(Generic[Owner]):
 
     def __repr__(self) -> str:
         """Return representation of bracket with fidelity levels"""
+        # pylint: disable=consider-using-f-string
         return "{}(resource={}, repetition id={})".format(
             self.__class__.__name__,
             [rung["resources"] for rung in self.rungs],

@@ -20,9 +20,10 @@ import logging
 from abc import abstractmethod
 from typing import Any
 
-from orion.algo.registry import Registry
+from orion.algo.base.registry import Registry
 from orion.algo.space import Space
 from orion.core.utils import GenericFactory
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -55,9 +56,9 @@ class BaseAlgorithm:
     must declare an algorithm's own parameters (tunable elements which could be set by
     configuration). This is done by passing them to `BaseAlgorithm.__init__()` by calling Python's
     super with a `Space` object as a positional argument plus algorithm's own parameters as keyword
-    arguments. The keys of the keyword arguments passed to `BaseAlgorithm.__init__()` are interpreted
-    as the algorithm's parameter names. So for example, a subclass could be as simple as this
-    (regarding the logistics, not an actual algorithm's implementation):
+    arguments. The keys of the keyword arguments passed to `BaseAlgorithm.__init__()` are
+    interpreted as the algorithm's parameter names. So for example, a subclass could be as simple
+    as this (regarding the logistics, not an actual algorithm's implementation):
 
     Examples
     --------
@@ -292,6 +293,7 @@ class BaseAlgorithm:
         """
         return self.has_completed_max_trials or self.has_suggested_all_possible_values()
 
+    # pylint: disable=invalid-name
     def has_suggested_all_possible_values(self) -> bool:
         """Returns True if the algorithm has more trials in its registry than the number of possible
         values in the search space.
@@ -305,7 +307,7 @@ class BaseAlgorithm:
             fidelity_dim = self.space[fidelity_index]
             _, max_fidelity_value = fidelity_dim.interval()
             for trial in self.registry:
-                fidelity_value = trial.params[fidelity_index]
+                fidelity_value = flatten(trial.params)[fidelity_index]
                 if fidelity_value >= max_fidelity_value:
                     n_suggested_with_max_fidelity += 1
             return n_suggested_with_max_fidelity >= self.space.cardinality
@@ -331,12 +333,12 @@ class BaseAlgorithm:
                 return trial.status == "completed"
             return (
                 trial.status == "completed"
-                and trial.params[fidelity_index] >= max_fidelity_value
+                and flatten(trial.params)[fidelity_index] >= max_fidelity_value
             )
 
         return sum(map(_is_completed, self.registry)) >= self.max_trials
 
-    # pylint:disable=no-self-use,unused-argument
+    # pylint: disable=unused-argument
     def score(self, trial: Trial) -> float:
         """Allow algorithm to evaluate `trial` based on a prediction about
         this parameter set's performance.
@@ -355,7 +357,7 @@ class BaseAlgorithm:
         """
         return 0
 
-    # pylint:disable=no-self-use,unused-argument
+    # pylint: disable=unused-argument
     def judge(self, trial: Trial, measurements: Any) -> dict | None:
         """Inform an algorithm about online `measurements` of a running trial.
 
@@ -400,7 +402,7 @@ class BaseAlgorithm:
         By default, returns a dictionary containing the attributes of `self` which are also
         constructor arguments.
         """
-        dict_form = dict()
+        dict_form = {}
         for attrname in self._param_names:
             if attrname.startswith("_"):  # Do not log _space or others in conf
                 continue
@@ -415,6 +417,7 @@ class BaseAlgorithm:
 
     @property
     def unwrapped(self):
+        """Return the algorithm without transforms"""
         return self
 
 
