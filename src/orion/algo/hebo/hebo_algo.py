@@ -77,6 +77,7 @@ class HeboModelState(TypedDict):
     """Typed dict for the state of the HEBO class from `hebo.optimizers.hebo`."""
 
     space: DesignSpace
+    # pylint: disable=invalid-name
     es: str
     X: pd.DataFrame
     y: np.ndarray

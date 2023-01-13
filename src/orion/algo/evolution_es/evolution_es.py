@@ -17,6 +17,7 @@ import numpy as np
 from orion.algo.hyperband import BudgetTuple, Hyperband, HyperbandBracket
 from orion.algo.space import Space
 from orion.core.utils import format_trials
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -123,7 +124,7 @@ class EvolutionES(Hyperband[BracketT]):
         such as multiply factor (times/divides by a multiply factor) and add factor
         (add/subtract by a multiply factor). The function must be defined by
         an importable string. If None, default
-        mutate function is used: ``orion.algo.mutate_functions.default_mutate``.
+        mutate function is used: ``orion.algo.evolution_es.mutate_functions.default_mutate``.
 
     """
 
@@ -175,10 +176,8 @@ class EvolutionES(Hyperband[BracketT]):
         self.brackets: list[BracketT] = self.create_brackets()
         self.seed_rng(seed)
 
-    def create_bracket(
-        self, bracket_budgets: list[BudgetTuple], iteration: int
-    ) -> BracketT:
-        return BracketEVES(self, bracket_budgets, iteration)
+    def create_bracket(self, budgets: list[BudgetTuple], iteration: int) -> BracketT:
+        return BracketEVES(self, budgets, iteration)
 
     @property
     def state_dict(self) -> dict:
@@ -231,7 +230,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
             else:
                 raise ValueError(f"Unsupported type for mutate: {owner.mutate}")
         function_string = self.mutate_attr.pop(
-            "function", "orion.algo.mutate_functions.default_mutate"
+            "function", "orion.algo.evolution_es.mutate_functions.default_mutate"
         )
         mod_name, func_name = function_string.rsplit(".", 1)
         mod = importlib.import_module(mod_name)
@@ -243,6 +242,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
 
     @property
     def space(self) -> Space:
+        """Return origin space"""
         return self.owner.space
 
     @property
@@ -272,8 +272,9 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
         for trial_index in range(population_range):
             objective, trial = rung_trials[trial_index]
             self.owner.performance[trial_index] = objective
+            trial_params = flatten(trial.params)
             for ith_dim in self.search_space_without_fidelity:
-                self.owner.population[ith_dim][trial_index] = trial.params[
+                self.owner.population[ith_dim][trial_index] = trial_params[
                     self.space[ith_dim].name
                 ]
 
@@ -288,6 +289,7 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
 
         return rung, population_range, red_team.tolist(), blue_team.tolist()
 
+    # pylint: disable=unused-argument
     def _mutate_population(
         self,
         red_team: Sequence[int],
@@ -302,10 +304,10 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
 
         if set(red_team) != set(blue_team):
             hurdles = np.zeros(1)
-            for i, _ in enumerate(red_team):
+            for i, red_value in enumerate(red_team):
                 winner, loser = (
                     (red_team, blue_team)
-                    if self.owner.performance[red_team[i]]
+                    if self.owner.performance[red_value]
                     < self.owner.performance[blue_team[i]]
                     else (blue_team, red_team)
                 )
@@ -385,11 +387,11 @@ class BracketEVES(HyperbandBracket[EvolutionES]):
         self.copy_winner(winner_id, loser_id)
         kwargs = copy.deepcopy(self.mutate_attr)
 
-        for i, _ in enumerate(select_genes_key_list):
-            space = self.space.values()[select_genes_key_list[i]]
-            old = self.owner.population[select_genes_key_list[i]][loser_id]
+        for value in select_genes_key_list:
+            space = self.space.values()[value]
+            old = self.owner.population[value][loser_id]
             new = self.mutate_func(space, self.owner.rng, old, **kwargs)
-            self.owner.population[select_genes_key_list[i]][loser_id] = new
+            self.owner.population[value][loser_id] = new
 
         self.owner.performance[loser_id] = -1
 
