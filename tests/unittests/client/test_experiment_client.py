@@ -1132,6 +1132,40 @@ class TestObserve:
             if not is_rest(factory):
                 assert trial.status == "completed"  # Still completed after __exit__
 
+    def test_observe_with_float(self, factory):
+        with factory(config, base_trial) as (cfg, experiment, client):
+            trial = Trial(**cfg.trials[1])
+            client.reserve(trial)
+
+            client.observe(trial, 10.0)
+            assert trial.status == "completed"
+            assert trial.objective.name == "objective"
+            assert trial.objective.type == "objective"
+            assert not client._pacemakers
+
+    def test_observe_with_float_and_name(self, factory):
+        with factory(config, base_trial) as (cfg, experiment, client):
+            trial = Trial(**cfg.trials[1])
+            client.reserve(trial)
+
+            client.observe(trial, 10.0, name="custom_objective")
+            assert trial.status == "completed"
+            assert trial.objective.name == "custom_objective"
+            assert trial.objective.type == "objective"
+            assert not client._pacemakers
+
+    def test_observe_with_invalid_type(self, factory):
+        with factory(config, base_trial) as (cfg, experiment, client):
+            trial = Trial(**cfg.trials[1])
+            client.reserve(trial)
+
+            with pytest.raises(TypeError):
+                client.observe(trial, "invalid")
+            assert trial.status == "reserved"
+            assert trial.objective is None
+            assert client._pacemakers[trial.id].is_alive()
+            client._pacemakers.pop(trial.id).stop()
+
 
 @pytest.mark.parametrize("factory", factories)
 def test_executor_receives_correct_worker_count(factory):

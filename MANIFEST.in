@@ -23,7 +23,7 @@ prune conda/
 prune .github/
 
 # Include src, tests, docs
-recursive-include docs *.rst *.py *.gitkeep *.png *.html *.txt *.gif
+recursive-include docs *.rst *.py *.gitkeep *.png *.html *.txt *.gif *.ai
 recursive-include examples *.rst
 prune docs/build
 prune docs/src/reference

@@ -3,6 +3,7 @@ Logos
 *****
 
 The following logos can be used to refer to Oríon.
+Logos were made by Guillaume Alain.
 
 Logo with grid
 ==============

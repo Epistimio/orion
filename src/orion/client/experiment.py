@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+import numbers
 import typing
 from contextlib import contextmanager
 from typing import Callable
@@ -596,7 +597,12 @@ class ExperimentClient:
         self._maintain_reservation(trial)
         return TrialCM(self, trial)
 
-    def observe(self, trial, results):
+    def observe(
+        self,
+        trial: Trial,
+        results: list[dict] | float,
+        name: str = "objective",
+    ) -> None:
         """Observe trial results
 
         Experiment must be in executable ('x') mode.
@@ -605,10 +611,13 @@ class ExperimentClient:
         ----------
         trial: `orion.core.worker.trial.Trial`
             Reserved trial to observe.
-        results: list
+        results: list or float
             Results to be set for the new trial. Results must have the format
             {name: <str>: type: <'objective', 'constraint' or 'gradient'>, value=<float>} otherwise
             a ValueError will be raised. If the results are invalid, the trial will not be released.
+            If `results` is a float, the result type will be 'objective'.
+        name: str
+            Name of the result if `results` is a float. Default: 'objective'.
 
         Returns
         -------
@@ -629,6 +638,9 @@ class ExperimentClient:
             If the format of trial result is invalid.
         """
         self._check_if_executable()
+
+        if isinstance(results, numbers.Number):
+            results = [dict(value=results, name=name, type="objective")]
 
         trial.results += [Trial.Result(**result) for result in results]
         raise_if_unreserved = True
