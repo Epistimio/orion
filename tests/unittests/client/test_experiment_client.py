@@ -1136,7 +1136,7 @@ class TestObserve:
         with factory(config, base_trial) as (cfg, experiment, client):
             with client.suggest() as trial:
                 client.observe(trial, 10.0)
-                
+
                 ref_trial = experiment.get_trial(uid=trial.id)
                 assert ref_trial.status == "completed"
                 assert ref_trial.objective.name == "objective"
@@ -1147,7 +1147,7 @@ class TestObserve:
         with factory(config, base_trial) as (cfg, experiment, client):
             with client.suggest() as trial:
                 client.observe(trial, 10.0, name="custom_objective")
-                
+
                 ref_trial = experiment.get_trial(uid=trial.id)
                 assert ref_trial.status == "completed"
                 assert ref_trial.objective.name == "custom_objective"
