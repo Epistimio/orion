@@ -1,5 +1,6 @@
 """Minimal API to run workon"""
 import logging
+import numbers
 from typing import Dict, List, Optional
 
 from orion.core.worker.trial import TrialCM
@@ -105,15 +106,23 @@ class WorkonClientREST(BaseClientREST):
                 )
 
     def observe(
-        self, trial: RemoteTrial, results: List[Dict], experiment_name=None
+        self,
+        trial: RemoteTrial,
+        results: List[Dict],
+        name: str = "objective",
+        experiment_name=None,
     ) -> None:
         """Observe the result of a given trial"""
         experiment_name = experiment_name or self.experiment_name
 
+        if isinstance(results, numbers.Number):
+            results = [dict(value=results, name=name, type="objective")]
+
         if experiment_name is None:
             raise ExperiementIsNotSetup("experiment_name is not set")
 
-        assert isinstance(results, list)
+        if not isinstance(results, list):
+            raise TypeError("Results need to be a float or a list of values")
 
         self._post(
             "observe",

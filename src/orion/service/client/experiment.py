@@ -3,8 +3,6 @@ a REST API instead of instantiating its own hyperparameter optimizer
 
 """
 
-import numbers
-
 import orion.core
 from orion.client.experiment import ExperimentClient
 from orion.core.utils.exceptions import BrokenExperiment
@@ -150,11 +148,7 @@ class ExperimentClientREST(ExperimentClient):
 
     def observe(self, trial, results, name: str = "objective"):
         """See `~ExperimentClient.observe`"""
-
-        if isinstance(results, numbers.Number):
-            results = [dict(value=results, name=name, type="objective")]
-
-        self.workon_client.observe(trial, results)
+        self.workon_client.observe(trial, results, name=name)
 
     def release(self, trial, status="interrupted"):
         """See `~ExperimentClient.release`"""
