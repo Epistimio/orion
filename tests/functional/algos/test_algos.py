@@ -331,14 +331,14 @@ def test_with_nested_spaces(algorithm: dict):
     exp = workon(
         nested_rosenbrock,
         nested_space,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_trials=30,
     )
 
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 30 or exp.algorithms.is_done
+    assert len(trials) >= 30 or exp.algorithm.is_done
     assert trials[-1].status == "completed"
     assert set(trials[-1].params.keys()) == {"x"}
     assert set(trials[-1].params["x"].keys()) == {"value", "noise"}
