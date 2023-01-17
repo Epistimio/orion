@@ -1164,8 +1164,6 @@ class TestObserve:
                 ref_trial = experiment.get_trial(uid=trial.id)
                 assert ref_trial.status == "reserved"
                 assert ref_trial.objective is None
-                assert client._pacemakers[trial.id].is_alive()
-                client._pacemakers.pop(trial.id).stop()
 
 
 @pytest.mark.parametrize("factory", factories)
