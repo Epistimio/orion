@@ -167,21 +167,18 @@ class PoolExecutor(BaseExecutor):
         if n_workers <= 0:
             n_workers = multiprocessing.cpu_count()
 
-        self.pool_config = dict(n_workers=n_workers, backend=backend)
+        self.pool_config = {"n_workers": n_workers, "backend": backend}
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __setstate__(self, state):
-        log.warning("Nesting executor")
-
+        log.warning("Nesting multiprocess executor")
         self.pool_config = state["pool_config"]
-
         backend = self.pool_config.get("backend", ThreadPool)
         n_workers = self.pool_config.get("n_workers", -1)
-
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __getstate__(self):
-        return dict(pool_config=self.pool_config)
+        return {"pool_config": self.pool_config}
 
     def __enter__(self):
         return self

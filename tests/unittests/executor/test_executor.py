@@ -273,7 +273,7 @@ def test_nested_submit_pool(backend):
 
 
 @pytest.mark.parametrize("backend", [multiprocess, thread])
-def test_nested_submit_failure(backend):
+def test_nested_submit_works(backend):
     with backend(5) as executor:
         [executor.submit(nested, executor) for i in range(5)]
 
