@@ -263,6 +263,9 @@ def nested_pool():
 
 @pytest.mark.parametrize("backend", backends)
 def test_nested_submit_pool(backend):
+    if backend is Dask:
+        pytest.skip("Dask does not support nesting")
+
     with backend(5) as executor:
         futures = [executor.submit(nested_pool) for i in range(5)]
 
