@@ -1,7 +1,13 @@
 import React from 'react';
-import ProgressBar from 'react-bootstrap/ProgressBar';
 import { Backend } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
+import { ExperimentStatusBar } from '../ExperimentStatusBar';
+
+/**
+ * TODO: Try to load bar only for displayed experiments in navbar (e.g. use progressive loading)
+ * TODO: Compute progress bar using max(nb_trials, max_trials) instead of number of trials
+ * TODO: If max_trials is infinite, display a message like N/A
+ */
 
 import {
   SideNav,
@@ -104,12 +110,7 @@ export class ExperimentNavBar extends React.Component {
           <span title={experiment}>{experiment}</span>
         </StructuredListCell>
         <StructuredListCell>
-          <ProgressBar>
-            <ProgressBar variant="success" now={35} key={1} />
-            <ProgressBar variant="warning" now={20} key={2} />
-            <ProgressBar variant="danger" now={10} key={3} />
-            <ProgressBar variant="info" now={15} key={4} />
-          </ProgressBar>
+          <ExperimentStatusBar name={experiment} />
         </StructuredListCell>
       </StructuredListRow>
     ));

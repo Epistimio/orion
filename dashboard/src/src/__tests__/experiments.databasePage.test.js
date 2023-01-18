@@ -61,6 +61,11 @@ test('Test if experiment trials are loaded', async () => {
   // Select an experiment
   expect(experiment).toBeInTheDocument();
   await user.click(experiment);
+  expect(
+    await screen.findByText(
+      `Loading trials for experiment "2-dim-shape-exp" ...`
+    )
+  ).toBeInTheDocument();
 
   // Check if trials are loaded
   await waitForExperimentToBeLoaded('2-dim-shape-exp');
