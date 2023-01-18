@@ -1,3 +1,4 @@
+import multiprocessing
 import time
 
 import pytest
@@ -235,7 +236,7 @@ def nested(executor):
     return sum(f.get() for f in futures)
 
 
-@pytest.mark.parametrize("backend", [xfail_dask_if_not_installed(Dask), SingleExecutor])
+@pytest.mark.parametrize("backend", backends)
 def test_nested_submit(backend):
     with backend(5) as executor:
         futures = [executor.submit(nested, executor) for i in range(5)]
@@ -246,17 +247,35 @@ def test_nested_submit(backend):
             assert r.value == 35
 
 
+def inc(a):
+    return a + 1
+
+
+def nested_pool():
+    data = [1, 2, 3, 4, 5, 6]
+    with multiprocessing.Pool(5) as p:
+        result = p.map_async(inc, data)
+        result.wait()
+        data = result.get()
+
+    return sum(data)
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_nested_submit_pool(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(nested_pool) for i in range(5)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            assert r.value == 27
+
+
 @pytest.mark.parametrize("backend", [multiprocess, thread])
 def test_nested_submit_failure(backend):
     with backend(5) as executor:
-
-        if backend == multiprocess:
-            exception = NotImplementedError
-        elif backend == thread:
-            exception = TypeError
-
-        with pytest.raises(exception):
-            [executor.submit(nested, executor) for i in range(5)]
+        [executor.submit(nested, executor) for i in range(5)]
 
 
 @pytest.mark.parametrize("executor", executors)

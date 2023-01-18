@@ -83,8 +83,8 @@ class Pool(PyPool):
         if v.major == 3 and v.minor >= 8:
             args = args[1:]
 
-        if Pool.ALLOW_DAEMON:
-            return Process(*args, **kwds)
+        if not Pool.ALLOW_DAEMON:
+            return PyPool.Process(*args, **kwds)
 
         return _Process(*args, **kwds)
 
@@ -167,13 +167,21 @@ class PoolExecutor(BaseExecutor):
         if n_workers <= 0:
             n_workers = multiprocessing.cpu_count()
 
+        self.pool_config = dict(n_workers=n_workers, backend=backend)
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __setstate__(self, state):
-        self.pool = state["pool"]
+        log.warning("Nesting executor")
+
+        self.pool_config = state["pool_config"]
+
+        backend = self.pool_config.get("backend", ThreadPool)
+        n_workers = self.pool_config.get("n_workers", -1)
+
+        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __getstate__(self):
-        return dict(pool=self.pool)
+        return dict(pool_config=self.pool_config)
 
     def __enter__(self):
         return self
