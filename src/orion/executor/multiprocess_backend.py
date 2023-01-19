@@ -86,7 +86,7 @@ class Pool(PyPool):
         if not Pool.ALLOW_DAEMON:
             return PyPool.Process(*args, **kwds)
 
-        return _Process(*args, **kwds)
+        return _Process(*args, **kwds, daemon=False)
 
     def shutdown(self):
         # NB: https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html
