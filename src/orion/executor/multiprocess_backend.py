@@ -173,7 +173,7 @@ class PoolExecutor(BaseExecutor):
     def __setstate__(self, state):
         log.warning("Nesting multiprocess executor")
         self.pool_config = state["pool_config"]
-        backend = self.pool_config.get("backend", ThreadPool)
+        backend = self.pool_config.get("backend")
         n_workers = self.pool_config.get("n_workers", -1)
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
