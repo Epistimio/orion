@@ -2,12 +2,7 @@ import React from 'react';
 import { Backend } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
 import { ExperimentStatusBar } from '../ExperimentStatusBar';
-
-/**
- * TODO: Try to load bar only for displayed experiments in navbar (e.g. use progressive loading)
- * TODO: Compute progress bar using max(nb_trials, max_trials) instead of number of trials
- * TODO: If max_trials is infinite, display a message like N/A
- */
+import InfiniteScroll from 'react-infinite-scroller';
 
 import {
   SideNav,
@@ -29,9 +24,14 @@ export class ExperimentNavBar extends React.Component {
     this.state = {
       experiments: null,
       search: '',
+      message: 'Loading experiments ...',
+      filteredExperiments: [],
+      renderedExperiments: [],
     };
     this.onSearch = this.onSearch.bind(this);
     this.onSwitchSelect = this.onSwitchSelect.bind(this);
+    this.loadMoreExperiments = this.loadMoreExperiments.bind(this);
+    this.hasMoreExperimentToLoad = this.hasMoreExperimentToLoad.bind(this);
   }
   render() {
     return (
@@ -42,19 +42,29 @@ export class ExperimentNavBar extends React.Component {
         isChildOfHeader={false}
         aria-label="Side navigation">
         <div className="experiments-wrapper">
-          <StructuredListWrapper className="experiments-list" selection>
-            <StructuredListHead>
-              <StructuredListRow head>
-                <StructuredListCell className="experiment-cell" head>
-                  Experiment
-                </StructuredListCell>
-                <StructuredListCell head>Status</StructuredListCell>
-              </StructuredListRow>
-            </StructuredListHead>
-            <StructuredListBody>
-              {this.renderExperimentsList()}
-            </StructuredListBody>
-          </StructuredListWrapper>
+          <InfiniteScroll
+            pageStart={0}
+            loadMore={page => this.loadMoreExperiments(page)}
+            hasMore={this.hasMoreExperimentToLoad()}
+            useWindow={false}
+            threshold={5}
+            initialLoad={true}>
+            <StructuredListWrapper className="experiments-list" selection>
+              <StructuredListHead>
+                <StructuredListRow head>
+                  <StructuredListCell className="experiment-cell" head>
+                    Experiment
+                  </StructuredListCell>
+                  <StructuredListCell head>Status</StructuredListCell>
+                </StructuredListRow>
+              </StructuredListHead>
+              <StructuredListBody>
+                {this.state.message !== null
+                  ? this.renderMessageRow(this.state.message)
+                  : this.renderExperimentsList(this.state.renderedExperiments)}
+              </StructuredListBody>
+            </StructuredListWrapper>
+          </InfiniteScroll>
         </div>
         <Search
           placeholder="Search experiment"
@@ -64,24 +74,7 @@ export class ExperimentNavBar extends React.Component {
       </SideNav>
     );
   }
-  renderExperimentsList() {
-    if (this.state.experiments === null)
-      return this.renderMessageRow('Loading experiments ...');
-    if (!this.state.experiments.length)
-      return this.renderMessageRow('No experiment available');
-    // Apply search.
-    let experiments;
-    if (this.state.search.length) {
-      // String to search
-      experiments = this.state.experiments.filter(
-        experiment => experiment.toLowerCase().indexOf(this.state.search) >= 0
-      );
-      if (!experiments.length)
-        return this.renderMessageRow('No matching experiment');
-    } else {
-      // No string to search, display all experiments
-      experiments = this.state.experiments;
-    }
+  renderExperimentsList(experiments) {
     return experiments.map(experiment => (
       <StructuredListRow
         label
@@ -132,21 +125,67 @@ export class ExperimentNavBar extends React.Component {
         const experiments = results.map(experiment => experiment.name);
         experiments.sort();
         if (this._isMounted) {
-          this.setState({ experiments });
+          this._updateInitialExperiments(experiments);
         }
       })
       .catch(error => {
         if (this._isMounted) {
-          this.setState({ experiments: [] });
+          this._updateInitialExperiments([]);
         }
       });
+  }
+  _updateInitialExperiments(experiments) {
+    if (!experiments.length) {
+      this.setState({
+        experiments,
+        search: '',
+        message: 'No experiment available',
+      });
+    } else {
+      this.setState({
+        experiments,
+        search: '',
+        message: null,
+        filteredExperiments: experiments,
+      });
+    }
   }
   componentWillUnmount() {
     this._isMounted = false;
   }
-
   onSearch(event) {
-    this.setState({ search: (event.target.value || '').toLowerCase() });
+    const search = (event.target.value || '').toLowerCase();
+    if (this.state.experiments === null || !this.state.experiments.length) {
+      this.setState({ search });
+    } else if (search.length) {
+      // Apply search.
+      const experiments = this.state.experiments.filter(
+        experiment => experiment.toLowerCase().indexOf(search) >= 0
+      );
+      if (!experiments.length) {
+        this.setState({
+          search,
+          message: 'No matching experiment',
+          filteredExperiments: [],
+          renderedExperiments: [],
+        });
+      } else {
+        this.setState({
+          search,
+          message: null,
+          filteredExperiments: experiments,
+          renderedExperiments: [],
+        });
+      }
+    } else {
+      // No string to search, display all experiments
+      this.setState({
+        search,
+        message: null,
+        filteredExperiments: this.state.experiments,
+        renderedExperiments: [],
+      });
+    }
   }
   onSwitchSelect(event, experiment, inputID) {
     // Prevent default behavior, as we entirely handle click here.
@@ -154,6 +193,25 @@ export class ExperimentNavBar extends React.Component {
     const toBeSelected = this.context.experiment !== experiment;
     document.getElementById(inputID).checked = toBeSelected;
     this.props.onSelectExperiment(toBeSelected ? experiment : null);
+  }
+  hasMoreExperimentToLoad() {
+    return (
+      this.state.renderedExperiments.length <
+      this.state.filteredExperiments.length
+    );
+  }
+  loadMoreExperiments(page) {
+    console.log(
+      `Loading experiment ${this.state.renderedExperiments.length + 1} / ${
+        this.state.filteredExperiments.length
+      } (scrolling iteration ${page})`
+    );
+    this.setState({
+      renderedExperiments: this.state.filteredExperiments.slice(
+        0,
+        this.state.renderedExperiments.length + 1
+      ),
+    });
   }
 }
 
