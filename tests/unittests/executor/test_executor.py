@@ -296,3 +296,63 @@ def test_executors_del_does_not_raise(backend):
         del executor.client
 
     del executor
+
+
+def pytorch_workon(pid):
+    import torch
+    from torchvision import datasets, transforms
+
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+        ]
+    )
+
+    dataset = datasets.MNIST(
+        f"../data/{pid}/",
+        train=True,
+        download=True,
+        transform=transform,
+    )
+
+    loader = torch.utils.data.DataLoader(dataset, num_workers=10, batch_size=64)
+
+    for i in loader:
+        pass
+
+    return i
+
+
+def check_pytorch_dataloader():
+    import sys
+
+    failures = 0
+
+    backends = [
+        thread,
+        multiprocess,
+        SingleExecutor,
+        Dask,
+    ]
+
+    for executor_ctor in backends:
+        try:
+            with executor_ctor(10) as executor:
+                futures = [executor.submit(pytorch_workon, i) for i in range(5)]
+
+                results = executor.async_get(futures, timeout=2)
+
+                for r in results:
+                    assert r.value == 27
+
+                print("[   OK]", executor_ctor)
+
+        except Exception as err:
+            print("[ FAIL]", executor_ctor, err)
+            failures += 1
+
+    sys.exit(failures)
+
+
+if __name__ == "__main__":
+    check_pytorch_dataloader()
