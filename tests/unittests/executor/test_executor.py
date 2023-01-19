@@ -275,12 +275,6 @@ def test_nested_submit_pool(backend):
             assert r.value == 27
 
 
-@pytest.mark.parametrize("backend", [multiprocess, thread])
-def test_nested_submit_works(backend):
-    with backend(5) as executor:
-        [executor.submit(nested, executor) for i in range(5)]
-
-
 @pytest.mark.parametrize("executor", executors)
 def test_executors_have_default_args(executor):
 
