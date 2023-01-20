@@ -86,7 +86,6 @@ class Ray(BaseExecutor):
         remote_g = ray.remote(function)
         return _Future(remote_g.remote(*args, **kwargs))
 
-
     def wait(self, futures):
         return [future.get() for future in futures]
 
