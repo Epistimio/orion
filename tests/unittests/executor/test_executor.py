@@ -268,7 +268,7 @@ def nested_pool():
 @pytest.mark.parametrize("backend", backends)
 def test_nested_submit_pool(backend):
     if backend is Dask:
-        pytest.skip("Dask does not support nesting")
+        pytest.xfail("Dask does not support nesting")
 
     with backend(5) as executor:
         futures = [executor.submit(nested_pool) for i in range(5)]
@@ -326,39 +326,28 @@ def pytorch_workon(pid):
     return i
 
 
-def check_pytorch_dataloader():
-    import sys
-    import traceback
+def has_pytorch():
+    try:
+        pass
 
-    failures = 0
-
-    backends = [
-        thread,
-        SingleExecutor,
-        multiprocess,
-        # Dask fails 100%
-        Dask,
-    ]
-
-    for executor_ctor in backends:
-        try:
-            with executor_ctor(2) as executor:
-                futures = [executor.submit(pytorch_workon, i) for i in range(2)]
-
-                results = executor.async_get(futures, timeout=2)
-
-                for r in results:
-                    assert r.value == 1
-
-                print("[   OK]", executor_ctor)
-
-        except Exception as err:
-            traceback.print_exc()
-            print("[ FAIL]", executor_ctor, err)
-            failures += 1
-
-    sys.exit(failures)
+        return True
+    except:
+        return False
 
 
-if __name__ == "__main__":
-    check_pytorch_dataloader()
+@pytest.mark.parametrize("backend", backends)
+def test_pytorch_dataloader(backend):
+    if backend is Dask:
+        pytest.xfail("Dask does not support nesting")
+
+    if not has_pytorch():
+        pytest.skip("Pytorch is not installed skipping")
+        return
+
+    with backend(2) as executor:
+        futures = [executor.submit(pytorch_workon, i) for i in range(2)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            assert r.value == 1
