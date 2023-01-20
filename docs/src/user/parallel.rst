@@ -79,5 +79,5 @@ Ray
 ----
 
 We can also use the ray executor backend. For more control with ray, you can see ray's
-documentation `here <https://docs.ray.io/en/latest/ray-core/package-ref.html#python-api >`__ for 
+documentation `here <https://docs.ray.io/en/latest/ray-core/package-ref.html#python-api>`__ for
 more information on ray and it's python api.
