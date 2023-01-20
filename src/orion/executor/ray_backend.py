@@ -13,10 +13,7 @@ from orion.executor.base import (
 with ImportOptional("ray") as import_optional:
     import ray
 
-    HAS_RAY = True
-
-if import_optional.failed:
-    HAS_RAY = False
+HAS_RAY = not import_optional.failed
 
 logger = logging.getLogger(__name__)
 
@@ -83,20 +80,12 @@ class Ray(BaseExecutor):
         return self
 
     def submit(self, function, *args, **kwargs):
-        try:
-            if not ray.is_initialized():
-                raise ExecutorClosed()
+        if not ray.is_initialized():
+            raise ExecutorClosed()
 
-            remote_g = ray.remote(function)
-            return _Future(remote_g.remote(*args, **kwargs))
+        remote_g = ray.remote(function)
+        return _Future(remote_g.remote(*args, **kwargs))
 
-        except Exception as e:
-            if str(e).startswith(
-                "Tried sending message after closing.  Status: closed"
-            ):
-                raise ExecutorClosed() from e
-
-            raise
 
     def wait(self, futures):
         return [future.get() for future in futures]
