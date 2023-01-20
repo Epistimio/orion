@@ -153,11 +153,13 @@ from orion.benchmark.task.base import BenchmarkTask
 
 class CustomRosenbrock(BenchmarkTask):
     def __init__(
-        self, max_trials: int = 30, with_fidelity: bool = False, seed: int = None
+        self, max_trials: int = 30, with_fidelity: bool = False, seed: int | None = None
     ):
         super().__init__(max_trials)
         self.seed = seed
         self.with_fidelity = with_fidelity
+
+        self.rng: numpy.random.RandomState
         self.initialize()
 
     def initialize(self):
@@ -403,11 +405,11 @@ def test_seeding(algorithm: dict):
     exp = workon(
         rosenbrock_with_fidelity,
         space_with_fidelity,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_trials=30,
     )
 
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials()
 
@@ -415,11 +417,11 @@ def test_seeding(algorithm: dict):
     rep_exp = workon(
         rosenbrock_with_fidelity,
         space_with_fidelity,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_trials=30,
     )
 
-    assert rep_exp.configuration["algorithms"] == algorithm
+    assert rep_exp.configuration["algorithm"] == algorithm
 
     rep_trials = rep_exp.fetch_trials()
 
