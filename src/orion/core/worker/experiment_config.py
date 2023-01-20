@@ -111,7 +111,7 @@ class ExperimentConfig(TypedDict):
     space: dict[str, Any]
     """ Object representing the optimization space. """
 
-    algorithms: dict[str, Any] | None
+    algorithm: dict[str, Any] | None
     """ Complete specification of the optimization and dynamical procedures taking place in the
     Experiment.
     """
@@ -146,6 +146,6 @@ class PartialExperimentConfig(ExperimentConfig, total=False):
     max_trials: int | None
     max_broken: int | None
     space: dict[str, Any]
-    algorithms: dict[str, Any] | None
+    algorithm: dict[str, Any] | None
     working_dir: str | None
     knowledge_base: dict[str, Any] | None

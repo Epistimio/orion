@@ -252,8 +252,8 @@ class TestAlgorithmConflict:
     def test_repr(self, old_config, new_config, algorithm_conflict):
         """Verify the representation of conflict for user interface"""
         repr_baseline = "{}\n   !=\n{}".format(
-            pprint.pformat(old_config["algorithms"]),
-            pprint.pformat(new_config["algorithms"]),
+            pprint.pformat(old_config["algorithm"]),
+            pprint.pformat(new_config["algorithm"]),
         )
         assert repr(algorithm_conflict) == repr_baseline
 

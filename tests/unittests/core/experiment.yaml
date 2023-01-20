@@ -26,7 +26,7 @@
   pool_size: 2
   max_trials: 1000
   working_dir: 
-  algorithms:
+  algorithm:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       seed: null
       value: 5
@@ -71,9 +71,9 @@
   max_trials: 1000
   working_dir: 
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       seed: null
       value: 5
@@ -105,7 +105,7 @@
   pool_size: 2
   max_trials: 1000
   working_dir: 
-  algorithms:
+  algorithm:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       seed: null
       value: 5
@@ -138,7 +138,7 @@
   max_trials: 1
   working_dir: 
   status: done
-  algorithms:
+  algorithm:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       seed: null
       value: 5
@@ -188,9 +188,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -232,9 +232,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -274,9 +274,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -322,9 +322,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -363,9 +363,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -404,9 +404,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -445,9 +445,9 @@
   # functional info
   status: pending  # pending, done, broken
 
-  # **complete** specification of algorithms used
+  # **complete** specification of algorithm used
   # user's configuration, but defaults are inferred
-  algorithms:
+  algorithm:
     random:
       seed: null
 
@@ -485,7 +485,7 @@
   status: pending  # pending, done, broken
 
   # TODO hack in fixtures since we can't define another valid algorithm as we only have random.
-  algorithms:
+  algorithm:
     random:
       seed: null
 

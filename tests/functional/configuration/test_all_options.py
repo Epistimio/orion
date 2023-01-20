@@ -424,7 +424,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "max_broken": 5,
             "working_dir": "here",
             "worker_trials": 5,
-            "algorithms": {"aa": {"b": "c", "d": {"e": "f"}}},
+            "algorithm": {"aa": {"b": "c", "d": {"e": "f"}}},
         }
     }
 
@@ -440,7 +440,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
         "max_trials": 75,
         "max_broken": 16,
         "working_dir": "in_db?",
-        "algorithms": {"ab": {"d": "i", "f": "g"}},
+        "algorithm": {"ab": {"d": "i", "f": "g"}},
         "space": {"/x": "uniform(0, 1)"},
         "metadata": {
             "VCS": {
@@ -484,7 +484,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "max_trials": 50,
             "max_broken": 15,
             "working_dir": "here_again",
-            "algorithms": {"ac": {"d": "e", "f": "g"}},
+            "algorithm": {"ac": {"d": "e", "f": "g"}},
         }
     }
 

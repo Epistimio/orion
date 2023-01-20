@@ -87,10 +87,10 @@ def _retrieve_status(experiment: Experiment) -> str:
 
 def _retrieve_algorithm(experiment: Experiment) -> dict:
     """Populates the `algorithm` key with the configuration of the experiment's algorithm."""
-    algorithm_name = list(experiment.algorithms.configuration.keys())[0]
+    algorithm_name = list(experiment.algorithm.configuration.keys())[0]
 
     result = {"name": algorithm_name}
-    result.update(experiment.algorithms.configuration[algorithm_name])
+    result.update(experiment.algorithm.configuration[algorithm_name])
     return result
 
 
