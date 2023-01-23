@@ -3,7 +3,7 @@ import { DEFAULT_BACKEND } from '../../../utils/queryServer';
 import { FeaturedTable } from './FeaturedTable';
 import { BackendContext } from '../../BackendContext';
 import { TrialsProvider } from './TrialsProvider';
-import { ExperimentStatusBar } from '../../components/ExperimentStatusBar';
+import { ExperimentStatusBar } from '../../components/ExperimentStatusBar/ExperimentStatusBar';
 
 /**
  * Singleton to provide experiment trials.

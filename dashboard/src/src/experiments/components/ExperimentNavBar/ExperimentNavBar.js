@@ -1,7 +1,7 @@
 import React from 'react';
 import { Backend } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
-import { ExperimentStatusBar } from '../ExperimentStatusBar';
+import { ExperimentStatusBar } from '../ExperimentStatusBar/ExperimentStatusBar';
 import InfiniteScroll from 'react-infinite-scroller';
 
 import {
