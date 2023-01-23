@@ -328,6 +328,8 @@ def pytorch_workon(pid):
 
 def has_pytorch():
     try:
+        pass
+
         return True
     except:
         return False
