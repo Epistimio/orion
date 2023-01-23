@@ -154,7 +154,7 @@ class ProfetTaskTests:
         assert min_c <= real_c.min() and min_c <= fake_c.min()
         assert real_c.max() <= max_c and fake_c.max() <= max_c
 
-    @pytest.mark.filterwarnings("Checkpoint file")
+    @pytest.mark.filterwarnings("ignore:Checkpoint file")
     @pytest.mark.timeout(30)
     @pytest.mark.parametrize("device_str", _devices)
     def test_attributes(
