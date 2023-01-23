@@ -40,7 +40,9 @@ def verify_query_parameters(parameters: dict, supported_parameters: list):
     for parameter in parameters:
         if parameter not in supported_parameters:
             description = _compose_error_message(parameter, supported_parameters)
-            raise falcon.HTTPBadRequest(title=ERROR_INVALID_PARAMETER, description=description)
+            raise falcon.HTTPBadRequest(
+                title=ERROR_INVALID_PARAMETER, description=description
+            )
 
 
 def verify_status(status):
@@ -51,7 +53,9 @@ def verify_status(status):
             list(Trial.allowed_stati)
         )
 
-        raise falcon.HTTPBadRequest(title=ERROR_INVALID_PARAMETER, description=description)
+        raise falcon.HTTPBadRequest(
+            title=ERROR_INVALID_PARAMETER, description=description
+        )
 
 
 def _compose_error_message(key: str, supported_parameters: list):
