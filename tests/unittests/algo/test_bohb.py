@@ -1,7 +1,7 @@
 """Perform integration tests for `orion.algo.bohb`."""
 import pytest
 
-from orion.algo.bohb import import_optional
+from orion.algo.bohb.bohb import import_optional
 from orion.testing.algo import BaseAlgoTests
 
 if import_optional.failed:
