@@ -135,7 +135,7 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test long algorithms with tox
-      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }} --color=no -n $(nproc --all)
+      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }} --color=no
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
