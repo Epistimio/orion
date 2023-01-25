@@ -110,14 +110,14 @@ def define_storage_config(config):
         "endpoint",
         option_type=str,
         default=None,
-        env_var="ORION_ENDPOINT",
+        env_var="ORION_STORAGE_ENDPOINT",
     )
 
     storage_config.add_option(
         "token",
         option_type=str,
         default=None,
-        env_var="ORION_TOKEN",
+        env_var="ORION_STORAGE_TOKEN",
     )
 
     config.storage = storage_config
