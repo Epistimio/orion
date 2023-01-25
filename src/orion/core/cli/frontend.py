@@ -114,7 +114,7 @@ def add_subparser(parser):
 
 def main(args):
     """Starts an application server to serve http requests"""
-    app = falcon.API()
+    app = falcon.App()
     resource = StaticResource(args)
     app.add_sink(resource.on_get)
 

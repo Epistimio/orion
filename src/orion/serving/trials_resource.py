@@ -44,7 +44,7 @@ class TrialsResource:
             trials = experiment.fetch_trials(with_ancestors)
 
         response = build_trials_response(trials)
-        resp.body = json.dumps(response)
+        resp.text = json.dumps(response)
 
     def on_get_trial_in_experiment(
         self, req: Request, resp: Response, experiment_name: str, trial_id: str
@@ -57,4 +57,4 @@ class TrialsResource:
         trial = retrieve_trial(experiment, trial_id)
 
         response = build_trial_response(trial)
-        resp.body = json.dumps(response)
+        resp.text = json.dumps(response)
