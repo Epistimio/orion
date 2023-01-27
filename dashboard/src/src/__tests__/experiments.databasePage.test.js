@@ -4,6 +4,7 @@ import {
   render,
   screen,
   queryByText,
+  queryAllByText,
   queryByTitle,
   fireEvent,
 } from '@testing-library/react';
@@ -344,13 +345,17 @@ test('Test (de)select columns', async () => {
   const valSubmitTime = '2019-11-19 15:41:16.985000';
   const valStartTime = '2019-11-19 15:41:16.996000';
   const valEndTime = '2019-11-19 21:58:02.820000';
+  const valStatus = 'completed';
   const valObjective = '-0.7881121864177159';
 
-  // Check first row for ID, submit time, start time, end time and objective
+  // Check first row
   expect(screen.queryByTitle(valID)).toBeInTheDocument();
   expect(queryByText(container, valSubmitTime)).toBeInTheDocument();
   expect(queryByText(container, valStartTime)).toBeInTheDocument();
   expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  // NB: All trials have status 'completed', so queryByText() will complain
+  // returning many elements, so we'd better use queryAllByText().
+  expect(queryAllByText(container, valStatus)).toHaveLength(10);
   expect(queryByText(container, valObjective)).toBeInTheDocument();
 
   // Locate options
@@ -360,12 +365,14 @@ test('Test (de)select columns', async () => {
   const optionSubmitTime = queryByText(multiSelect, 'Submit time');
   const optionStartTime = queryByText(multiSelect, 'Start time');
   const optionEndTime = queryByText(multiSelect, 'End time');
+  const optionStatus = queryByText(multiSelect, 'Status');
   const optionObjective = queryByText(multiSelect, 'Objective');
   const optionSelectAll = queryByText(multiSelect, '(select all)');
   expect(optionID).toBeInTheDocument();
   expect(optionSubmitTime).toBeInTheDocument();
   expect(optionStartTime).toBeInTheDocument();
   expect(optionEndTime).toBeInTheDocument();
+  expect(optionStatus).toBeInTheDocument();
   expect(optionObjective).toBeInTheDocument();
   expect(optionSelectAll).toBeInTheDocument();
 
@@ -375,6 +382,7 @@ test('Test (de)select columns', async () => {
   expect(queryByText(container, valSubmitTime)).toBeNull();
   expect(queryByText(container, valStartTime)).toBeInTheDocument();
   expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryAllByText(container, valStatus)).toHaveLength(10);
   expect(queryByText(container, valObjective)).toBeInTheDocument();
 
   // Deselect column objective and check first row
@@ -383,16 +391,19 @@ test('Test (de)select columns', async () => {
   expect(queryByText(container, valSubmitTime)).toBeNull();
   expect(queryByText(container, valStartTime)).toBeInTheDocument();
   expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryAllByText(container, valStatus)).toHaveLength(10);
   expect(queryByText(container, valObjective)).toBeNull();
 
-  // Deselect columns ID, start time, end time, and check first row
+  // Deselect columns ID, start time, end time, status, and check first row
   await user.click(optionID);
   await user.click(optionStartTime);
   await user.click(optionEndTime);
+  await user.click(optionStatus);
   expect(screen.queryByTitle(valID)).toBeNull();
   expect(queryByText(container, valSubmitTime)).toBeNull();
   expect(queryByText(container, valStartTime)).toBeNull();
   expect(queryByText(container, valEndTime)).toBeNull();
+  expect(queryByText(container, valStatus)).toBeNull();
   expect(queryByText(container, valObjective)).toBeNull();
 
   // Click to 'select all' and check that all columns are now visible in first row
@@ -401,6 +412,7 @@ test('Test (de)select columns', async () => {
   expect(queryByText(container, valSubmitTime)).toBeInTheDocument();
   expect(queryByText(container, valStartTime)).toBeInTheDocument();
   expect(queryByText(container, valEndTime)).toBeInTheDocument();
+  expect(queryAllByText(container, valStatus)).toHaveLength(10);
   expect(queryByText(container, valObjective)).toBeInTheDocument();
 });
 

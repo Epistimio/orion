@@ -36,7 +36,7 @@ Next we define the file ``bayes.yaml`` as this
 
     experiment:
         name: orion-with-bayes
-        algorithms: BayesianOptimizer
+        algorithm: BayesianOptimizer
 
 Then call ``orion hunt`` with the configuration file.
 

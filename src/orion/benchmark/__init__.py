@@ -212,9 +212,7 @@ class Benchmark:
             for _, exp in study.get_experiments():
                 exp_column = dict()
                 stats = exp.stats
-                exp_column["Algorithm"] = list(exp.configuration["algorithms"].keys())[
-                    0
-                ]
+                exp_column["Algorithm"] = list(exp.configuration["algorithm"].keys())[0]
                 exp_column["Experiment Name"] = exp.name
                 exp_column["Number Trial"] = len(exp.fetch_trials())
                 exp_column["Best Evaluation"] = stats.best_evaluation
@@ -405,7 +403,7 @@ class Study:
                 experiment = create_experiment(
                     experiment_name,
                     space=space,
-                    algorithms=algorithm.experiment_algorithm,
+                    algorithm=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                     storage=self.benchmark.storage,
                     executor=executor,
@@ -430,7 +428,7 @@ class Study:
         for _, experiment in self.get_experiments():
             trials = experiment.fetch_trials()
 
-            algorithm_name = list(experiment.configuration["algorithms"].keys())[0]
+            algorithm_name = list(experiment.configuration["algorithm"].keys())[0]
 
             if algorithm_tasks.get(algorithm_name, None) is None:
                 task_state = {
@@ -482,7 +480,7 @@ class Study:
         for repetition_index, experiment in self.experiments_info:
             if (
                 algorithms is None
-                or list(experiment.algorithms.configuration.keys())[0] in algorithms
+                or list(experiment.algorithm.configuration.keys())[0] in algorithms
             ):
                 exps.append((repetition_index, experiment))
         return exps

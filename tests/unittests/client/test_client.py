@@ -47,7 +47,7 @@ config = dict(
     max_trials=10,
     max_broken=5,
     working_dir="",
-    algorithms={"random": {"seed": 1}},
+    algorithm={"random": {"seed": 1}},
     refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
 )
 
@@ -208,8 +208,8 @@ class TestCreateExperiment:
             assert experiment.max_trials == orion.core.config.experiment.max_trials
             assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
-            assert experiment.algorithms
-            assert experiment.algorithms.configuration == {"random": {"seed": None}}
+            assert experiment.algorithm
+            assert experiment.algorithm.configuration == {"random": {"seed": None}}
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""
@@ -222,7 +222,7 @@ class TestCreateExperiment:
             assert exp_config["max_trials"] == config["max_trials"]
             assert exp_config["max_broken"] == config["max_broken"]
             assert exp_config["working_dir"] == config["working_dir"]
-            assert exp_config["algorithms"] == config["algorithms"]
+            assert exp_config["algorithm"] == config["algorithm"]
 
     def test_create_experiment_hit_no_branch(self, user_config):
         """Test creating an existing experiment by specifying all identical attributes."""
@@ -237,7 +237,7 @@ class TestCreateExperiment:
             assert exp_config["max_trials"] == config["max_trials"]
             assert exp_config["max_broken"] == config["max_broken"]
             assert exp_config["working_dir"] == config["working_dir"]
-            assert exp_config["algorithms"] == config["algorithms"]
+            assert exp_config["algorithm"] == config["algorithm"]
 
     def test_create_experiment_hit_no_config(self):
         """Test creating an existing experiment by specifying the name only."""
@@ -247,8 +247,8 @@ class TestCreateExperiment:
             assert experiment.name == config["name"]
             assert experiment.version == 1
             assert experiment.space.configuration == config["space"]
-            assert experiment.algorithms
-            assert experiment.algorithms.configuration == config["algorithms"]
+            assert experiment.algorithm
+            assert experiment.algorithm.configuration == config["algorithm"]
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
             assert experiment.working_dir == config["working_dir"]
@@ -265,8 +265,8 @@ class TestCreateExperiment:
 
             assert experiment.name == config["name"]
             assert experiment.version == 2
-            assert experiment.algorithms
-            assert experiment.algorithms.configuration == config["algorithms"]
+            assert experiment.algorithm
+            assert experiment.algorithm.configuration == config["algorithm"]
             assert experiment.max_trials == config["max_trials"]
             assert experiment.max_broken == config["max_broken"]
             assert experiment.working_dir == config["working_dir"]
@@ -439,10 +439,10 @@ class TestWorkon:
             foo,
             space={"x": "uniform(0, 10)"},
             max_trials=5,
-            algorithms={"random": {"seed": 5}},
+            algorithm={"random": {"seed": 5}},
         )
-        assert experiment.algorithms
-        algo = experiment.algorithms.unwrapped
+        assert experiment.algorithm
+        algo = experiment.algorithm.unwrapped
         assert isinstance(algo, Random)
         assert algo.seed == 5
 

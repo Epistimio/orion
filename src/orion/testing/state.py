@@ -259,11 +259,11 @@ class LegacyOrionState(BaseOrionState):
             self.database.write("experiments", self._experiments)
             for experiment in self._experiments:
                 self.storage.initialize_algorithm_lock(
-                    experiment["_id"], experiment.get("algorithms")
+                    experiment["_id"], experiment.get("algorithm")
                 )
                 # For tests that need a deterministic experiment id.
                 self.storage.initialize_algorithm_lock(
-                    experiment["name"], experiment.get("algorithms")
+                    experiment["name"], experiment.get("algorithm")
                 )
         if self._trials:
             self.database.write("trials", self._trials)

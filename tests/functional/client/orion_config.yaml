@@ -3,4 +3,4 @@ name: voila_voici
 pool_size: 1
 max_trials: 100
 
-algorithms: random
+algorithm: random

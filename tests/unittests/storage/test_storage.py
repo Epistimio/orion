@@ -772,7 +772,7 @@ class TestStorage:
             algo_state_lock = storage.get_algorithm_lock_info(uid=experiments[0]["_id"])
             assert isinstance(algo_state_lock, LockedAlgorithmState)
             assert algo_state_lock.state is None
-            assert algo_state_lock.configuration == experiments[0]["algorithms"]
+            assert algo_state_lock.configuration == experiments[0]["algorithm"]
 
     def test_delete_algorithm_lock(self, storage):
         if storage and storage["type"] == "track":

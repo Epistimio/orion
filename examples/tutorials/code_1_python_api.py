@@ -104,7 +104,7 @@ experiment.plot.regret().show()
 experiment = build_experiment(
     "tpe-rosenbrock",
     space=space,
-    algorithms={"tpe": {"n_initial_points": 5}},
+    algorithm={"tpe": {"n_initial_points": 5}},
     storage=storage,
 )
 
