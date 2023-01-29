@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
-test('Test experiment nav bar', async ({ page }) => {
+test('Test experiment nav bar scrolling', async ({ page }) => {
   await page.setViewportSize({width: 1920, height: 1080});
   await page.goto('localhost:3000');
 
