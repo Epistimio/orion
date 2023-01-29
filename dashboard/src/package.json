@@ -41,6 +41,7 @@
   "devDependencies": {
     "@commitlint/cli": "17.0.1",
     "@commitlint/config-conventional": "7.6.0",
+    "@playwright/test": "^1.30.0",
     "@testing-library/dom": "^8.17.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -50,6 +51,7 @@
     "prettier": "1.19.1",
     "puppeteer": "18.1.0",
     "sass": "1.52.1",
+    "serve": "^14.2.0",
     "wait-for-expect": "3.0.2"
   },
   "resolutions": {
