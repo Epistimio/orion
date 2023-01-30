@@ -75,7 +75,7 @@ jobs:
 
     - name: Upload Orion backend log
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: orion-backend-log-artifact-${{ matrix.node-version }}-${{ github.run_id }}-${{ github.run_number }}
         path: orion-backend-${{ matrix.node-version }}.log
