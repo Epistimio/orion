@@ -68,7 +68,7 @@ jobs:
     - name: Build dashboard
       run: yarn build
     - name: Serve build
-      run: ./node_modules/.bin/serve -l 3000 build/
+      run: ./node_modules/.bin/serve -l 3000 build/ &
 
     - name: Run Playwright tests
       run: yarn playwright test --project=chromium --reporter=line src/__tests__/example.spec.js
