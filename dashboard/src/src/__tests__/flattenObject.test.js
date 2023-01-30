@@ -1,3 +1,4 @@
+const { test, expect } = require('@playwright/test');
 import { flattenObject } from '../utils/flattenObject';
 
 test('test flatten object', () => {

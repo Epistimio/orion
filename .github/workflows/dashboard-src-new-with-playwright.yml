@@ -71,11 +71,4 @@ jobs:
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
     - name: Run Playwright tests
-      run: yarn playwright test --project=chromium --reporter=line src/__tests__/example.spec.js
-
-    - name: Upload Orion backend log
-      if: always()
-      uses: actions/upload-artifact@v2
-      with:
-        name: orion-backend-log-artifact-${{ matrix.node-version }}-${{ github.run_id }}-${{ github.run_number }}
-        path: orion-backend-${{ matrix.node-version }}.log
+      run: yarn playwright test --project=chromium --reporter=line src/__tests__/example.spec.js src/__tests__/flattenObject.test.js src/__tests__/queryServer.test.js

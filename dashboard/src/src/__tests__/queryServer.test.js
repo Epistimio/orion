@@ -1,3 +1,4 @@
+const { test, expect } = require('@playwright/test');
 import { Backend, DEFAULT_BACKEND } from '../utils/queryServer';
 
 test('test backend call', () => {
