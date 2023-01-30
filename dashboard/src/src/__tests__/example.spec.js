@@ -19,7 +19,7 @@ test('Test experiment nav bar scrolling', async ({ page }) => {
   const firstLoadedExperiments = await navBar.locator(
     '.experiments-wrapper .experiment-cell span[title]'
   );
-  await firstLoadedExperiments.waitFor();
+  await firstLoadedExperiments.first().waitFor();
   // For given hardcoded page size, we should have 16 default loaded experiments.
   await expect(firstLoadedExperiments).toHaveCount(16);
 
