@@ -72,11 +72,10 @@ jobs:
 
     - name: Run Playwright tests
       run: yarn playwright test --project=chromium --reporter=line src/__tests__/example.spec.js
-    - uses: actions/upload-artifact@v3
+
+    - name: Upload Orion backend log
       if: always()
+      uses: actions/upload-artifact@v3
       with:
-        name: playwright-report
-        path: |
-          orion-backend-${{ matrix.node-version }}.log
-          playwright-report/
-        retention-days: 30
+        name: orion-backend-log-artifact-${{ matrix.node-version }}
+        path: orion-backend-${{ matrix.node-version }}.log
