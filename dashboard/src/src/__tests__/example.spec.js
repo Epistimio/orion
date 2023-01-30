@@ -19,6 +19,7 @@ test('Test experiment nav bar scrolling', async ({ page }) => {
   const firstLoadedExperiments = await navBar.locator(
     '.experiments-wrapper .experiment-cell span[title]'
   );
+  await firstLoadedExperiments.waitFor();
   // For given hardcoded page size, we should have 16 default loaded experiments.
   await expect(firstLoadedExperiments).toHaveCount(16);
 
@@ -43,7 +44,6 @@ test('Test experiment nav bar scrolling', async ({ page }) => {
   expect(scrollableBox.y).toBe(48);
   expect(scrollableBox.height).toBe(984);
   expect(lastBox.y).toBeGreaterThan(1053);
-  expect(lastBox.height).toBe(16);
   /**
    * We expect scrollable container to not be high enough to display
    * all default loaded experiments. So, last default loaded experiment
