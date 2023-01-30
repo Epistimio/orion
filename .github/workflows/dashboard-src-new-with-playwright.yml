@@ -17,9 +17,10 @@ jobs:
   test-dashboard-src-with-playwright:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    # Playwright requires Node.js 14 or higher.
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [14.x, 16.x]
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
