@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test('Test experiment nav bar scrolling', async ({ page }) => {
   // Set a hardcoded page size.

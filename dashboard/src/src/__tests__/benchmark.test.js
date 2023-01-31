@@ -1,17 +1,6 @@
-import React from 'react';
-import App from '../App';
-import {
-  render,
-  waitFor,
-  queryByText,
-  findByText,
-  screen,
-  fireEvent,
-} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-/* Use MemoryRouter to isolate history for each test */
-import { MemoryRouter } from 'react-router-dom';
+import { test, expect } from '@playwright/test';
 
+/*
 // Since I updated dependencies in package.json, this seems necessary.
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -28,44 +17,47 @@ beforeEach(() => {
     })),
   });
 });
+*/
 
 /**
  * Return true if given DOM plot element contains all given texts.
- * @param plot - DOM element containing a plot
+ * @param plot - locator of DOM element containing a plot
  * @param texts - texts (strings) to search
  * @return {boolean} - true if plot contains all texts
  */
-function plotHasTexts(plot, texts) {
+async function plotHasTexts(plot, texts) {
   for (let text of texts) {
-    if (queryByText(plot, text) === null) return false;
+    const textFinder = await plot.getByText(text);
+    const count = await textFinder.count();
+    if (count === 0) return false;
   }
   return true;
 }
 
 /**
- * Check immediately (no async) that we find only 1 plot containing all given texts.
+ * Check that we find only 1 plot containing all given texts.
+ * @param page - page object
+ * @param plotId - plot ID
  * @param texts - texts to search
- * @return {boolean} - true if plot is found
  */
-function hasPlotImmediately(...texts) {
-  const plots = document.querySelectorAll('.orion-plot');
-  const filtered = [];
-  for (let plot of plots.values()) {
-    if (plotHasTexts(plot, texts)) {
-      filtered.push(plot);
-    }
-  }
-  return filtered.length === 1;
+async function lookupPlotById(page, plotId, ...texts) {
+  const plot = await page.locator(`#${plotId}`);
+  await plot.waitFor({ timeout: 120000 });
+  expect(await plotHasTexts(plot, texts)).toBe(true);
 }
 
 /**
- * Check that we find only 1 plot containing all given texts.
+ * Check immediately (no waiting) that we find a plot
+ * @param page - page object
+ * @param plotId - plot ID
  * @param texts - texts to search
+ * @return {boolean} - true if plot is found
  */
-async function lookupPlot(...texts) {
-  await waitFor(() => {
-    expect(hasPlotImmediately(...texts)).toBe(true);
-  }, global.CONFIG_WAIT_FOR_LONG);
+async function hasPlotByIdAndTextsImmediately(page, plotId, ...texts) {
+  const plot = await page.locator(`#${plotId}`);
+  const count = await plot.count();
+  if (count === 0) return false;
+  return await plotHasTexts(plot, texts);
 }
 
 /**
@@ -218,58 +210,180 @@ const AAWA2PlotsNoRandom = {
   ],
 };
 
-const AAWA2_all = [
-  AAWA2Plots.average_rank_branin,
-  AAWA2Plots.average_rank_rosenbrock,
-  AAWA2Plots.average_result_branin,
-  AAWA2Plots.average_result_rosenbrock,
-  AAWA2Plots.parallel_assessment_time_branin,
-  AAWA2Plots.parallel_assessment_time_rosenbrock,
-  AAWA2Plots.parallel_assessment_pa_branin,
-  AAWA2Plots.parallel_assessment_pa_rosenbrock,
-  AAWA2Plots.parallel_assessment_regret_branin,
-  AAWA2Plots.parallel_assessment_regret_rosenbrock,
+const AAWA2_all_with_id = [
+  [
+    'plot-all_assessments_webapi_2-AverageRank-Branin-rankings-random-tpe',
+    AAWA2Plots.average_rank_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageRank-RosenBrock-rankings-random-tpe',
+    AAWA2Plots.average_rank_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-Branin-regrets-random-tpe',
+    AAWA2Plots.average_result_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-RosenBrock-regrets-random-tpe',
+    AAWA2Plots.average_result_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-durations-random-tpe',
+    AAWA2Plots.parallel_assessment_time_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-durations-random-tpe',
+    AAWA2Plots.parallel_assessment_time_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-parallel_assessment-random-tpe',
+    AAWA2Plots.parallel_assessment_pa_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-parallel_assessment-random-tpe',
+    AAWA2Plots.parallel_assessment_pa_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-regrets-random-tpe',
+    AAWA2Plots.parallel_assessment_regret_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-regrets-random-tpe',
+    AAWA2Plots.parallel_assessment_regret_rosenbrock,
+  ],
 ];
-const AAWA2_average_rank = [
-  AAWA2Plots.average_rank_branin,
-  AAWA2Plots.average_rank_rosenbrock,
+const AAWA2_average_rank_with_id = [
+  [
+    'plot-all_assessments_webapi_2-AverageRank-Branin-rankings-random-tpe',
+    AAWA2Plots.average_rank_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageRank-RosenBrock-rankings-random-tpe',
+    AAWA2Plots.average_rank_rosenbrock,
+  ],
 ];
-const AAWA2_no_average_rank = [
-  AAWA2Plots.average_result_branin,
-  AAWA2Plots.average_result_rosenbrock,
-  AAWA2Plots.parallel_assessment_time_branin,
-  AAWA2Plots.parallel_assessment_time_rosenbrock,
-  AAWA2Plots.parallel_assessment_pa_branin,
-  AAWA2Plots.parallel_assessment_pa_rosenbrock,
-  AAWA2Plots.parallel_assessment_regret_branin,
-  AAWA2Plots.parallel_assessment_regret_rosenbrock,
+const AAWA2_no_average_rank_with_id = [
+  [
+    'plot-all_assessments_webapi_2-AverageResult-Branin-regrets-random-tpe',
+    AAWA2Plots.average_result_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-RosenBrock-regrets-random-tpe',
+    AAWA2Plots.average_result_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-durations-random-tpe',
+    AAWA2Plots.parallel_assessment_time_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-durations-random-tpe',
+    AAWA2Plots.parallel_assessment_time_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-parallel_assessment-random-tpe',
+    AAWA2Plots.parallel_assessment_pa_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-parallel_assessment-random-tpe',
+    AAWA2Plots.parallel_assessment_pa_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-regrets-random-tpe',
+    AAWA2Plots.parallel_assessment_regret_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-regrets-random-tpe',
+    AAWA2Plots.parallel_assessment_regret_rosenbrock,
+  ],
 ];
-const AAWA2_branin = [
-  AAWA2Plots.average_rank_branin,
-  AAWA2Plots.average_result_branin,
-  AAWA2Plots.parallel_assessment_time_branin,
-  AAWA2Plots.parallel_assessment_pa_branin,
-  AAWA2Plots.parallel_assessment_regret_branin,
+const AAWA2_branin_with_id = [
+  [
+    'plot-all_assessments_webapi_2-AverageRank-Branin-rankings-random-tpe',
+    AAWA2Plots.average_rank_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-Branin-regrets-random-tpe',
+    AAWA2Plots.average_result_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-durations-random-tpe',
+    AAWA2Plots.parallel_assessment_time_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-parallel_assessment-random-tpe',
+    AAWA2Plots.parallel_assessment_pa_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-regrets-random-tpe',
+    AAWA2Plots.parallel_assessment_regret_branin,
+  ],
 ];
-const AAWA2_no_branin = [
-  AAWA2Plots.average_rank_rosenbrock,
-  AAWA2Plots.average_result_rosenbrock,
-  AAWA2Plots.parallel_assessment_time_rosenbrock,
-  AAWA2Plots.parallel_assessment_pa_rosenbrock,
-  AAWA2Plots.parallel_assessment_regret_rosenbrock,
+const AAWA2_no_branin_with_id = [
+  [
+    'plot-all_assessments_webapi_2-AverageRank-RosenBrock-rankings-random-tpe',
+    AAWA2Plots.average_rank_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-RosenBrock-regrets-random-tpe',
+    AAWA2Plots.average_result_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-durations-random-tpe',
+    AAWA2Plots.parallel_assessment_time_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-parallel_assessment-random-tpe',
+    AAWA2Plots.parallel_assessment_pa_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-regrets-random-tpe',
+    AAWA2Plots.parallel_assessment_regret_rosenbrock,
+  ],
 ];
-const AAWA2_no_random = [
-  AAWA2PlotsNoRandom.average_rank_branin,
-  AAWA2PlotsNoRandom.average_rank_rosenbrock,
-  AAWA2PlotsNoRandom.average_result_branin,
-  AAWA2PlotsNoRandom.average_result_rosenbrock,
-  AAWA2PlotsNoRandom.parallel_assessment_time_branin,
-  AAWA2PlotsNoRandom.parallel_assessment_time_rosenbrock,
-  AAWA2PlotsNoRandom.parallel_assessment_pa_branin,
-  AAWA2PlotsNoRandom.parallel_assessment_pa_rosenbrock,
-  AAWA2PlotsNoRandom.parallel_assessment_regret_branin,
-  AAWA2PlotsNoRandom.parallel_assessment_regret_rosenbrock,
+const AAWA2_no_random_with_id = [
+  [
+    'plot-all_assessments_webapi_2-AverageRank-Branin-rankings-tpe',
+    AAWA2PlotsNoRandom.average_rank_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageRank-RosenBrock-rankings-tpe',
+    AAWA2PlotsNoRandom.average_rank_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-Branin-regrets-tpe',
+    AAWA2PlotsNoRandom.average_result_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-AverageResult-RosenBrock-regrets-tpe',
+    AAWA2PlotsNoRandom.average_result_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-durations-tpe',
+    AAWA2PlotsNoRandom.parallel_assessment_time_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-durations-tpe',
+    AAWA2PlotsNoRandom.parallel_assessment_time_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-parallel_assessment-tpe',
+    AAWA2PlotsNoRandom.parallel_assessment_pa_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-parallel_assessment-tpe',
+    AAWA2PlotsNoRandom.parallel_assessment_pa_rosenbrock,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-Branin-regrets-tpe',
+    AAWA2PlotsNoRandom.parallel_assessment_regret_branin,
+  ],
+  [
+    'plot-all_assessments_webapi_2-ParallelAssessment-RosenBrock-regrets-tpe',
+    AAWA2PlotsNoRandom.parallel_assessment_regret_rosenbrock,
+  ],
 ];
+
+function _test() {}
 
 test('Test sleep', async () => {
   let start = performance.now();
@@ -301,245 +415,289 @@ test('Test sleep', async () => {
   expect(diff).toBeLessThan(21000);
 });
 
-test('Test select benchmark', async () => {
-  const user = userEvent.setup();
-  render(<App />, { wrapper: MemoryRouter });
+test.describe('Test benchmark dashboard', () => {
+  test.beforeEach(async ({ page }) => {
+    // Set a hardcoded page size.
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    // Open Dashboard page.
+    await page.goto('localhost:3000');
+  });
 
-  // Switch to benchmarks page
-  const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
-  fireEvent.click(menu);
-  expect(
-    await screen.findByText(
-      /No benchmark selected/,
-      {},
-      global.CONFIG_WAIT_FOR_LONG
-    )
-  ).toBeInTheDocument();
-  // Get benchmark search field
-  const benchmarkField = await screen.findByPlaceholderText(
-    'Search a benchmark ...'
-  );
-  expect(benchmarkField).toBeInTheDocument();
+  test('Test select benchmark', async ({ page }) => {
+    // Check we are on home page and not benchmarks page
+    await expect(await page.getByText(/Landing Page/)).toHaveCount(1);
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(0);
 
-  // Select branin_baselines_webapi benchmark
-  await user.type(benchmarkField, 'branin');
-  await user.keyboard('{enter}');
-  expect(benchmarkField.value).toBe('branin_baselines_webapi');
-  const leftMenu = document.querySelector('.bx--structured-list');
-  expect(leftMenu).toBeInTheDocument();
-  expect(await findByText(leftMenu, /AverageResult/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /Branin/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /gridsearch/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /random/)).toBeInTheDocument();
-  expect(screen.queryByText(/No benchmark selected/)).toBeNull();
-  // Check plot
-  await lookupPlot(
-    'Average Regret',
-    'branin',
-    'Trials ordered by suggested time'
-  );
+    // Switch to benchmarks page
+    const menuBenchmark = await page.locator('nav > ul > li:nth-child(2)');
+    await expect(menuBenchmark).toHaveCount(1);
+    await expect(menuBenchmark).toBeVisible();
+    await menuBenchmark.click();
+    const menu = await menuBenchmark.getByTitle(
+      /Go to benchmarks visualizations/
+    );
+    await expect(menu).toHaveCount(1);
+    await expect(menu).toBeVisible();
+    await menu.click();
 
-  // Select all_algos_webapi benchmark
-  // Use backspace to clear field before typing new hint
-  await user.type(benchmarkField, '{Backspace>50/}all_algos');
-  await user.keyboard('{enter}');
-  expect(benchmarkField.value).toBe('all_algos_webapi');
-  expect(await findByText(leftMenu, /AverageResult/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /Branin/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /EggHolder/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /RosenBrock/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /gridsearch/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /random/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /tpe/)).toBeInTheDocument();
-  expect(screen.queryByText(/No benchmark selected/)).toBeNull();
-  // Check plots
-  await lookupPlot('Average Regret', 'branin');
-  await lookupPlot('Average Regret', 'eggholder');
-  await lookupPlot('Average Regret', 'rosenbrock');
+    // Check we are in benchmarks page and not to home page anymore
+    await expect(await page.getByText(/Landing Page/)).toHaveCount(0);
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
 
-  // Select all_assessments_webapi_2
-  await user.type(benchmarkField, '{Backspace>50/}all_asses');
-  await user.keyboard('{enter}');
-  expect(benchmarkField.value).toBe('all_assessments_webapi_2');
-  expect(await findByText(leftMenu, /AverageRank/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /AverageResult/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /ParallelAssessment/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /Branin/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /RosenBrock/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /random/)).toBeInTheDocument();
-  expect(await findByText(leftMenu, /tpe/)).toBeInTheDocument();
-  expect(screen.queryByText(/No benchmark selected/)).toBeNull();
-  // Check plots
-  // Assessment AverageRank
-  await lookupPlot(...AAWA2Plots.average_rank_branin);
-  await lookupPlot(...AAWA2Plots.average_rank_rosenbrock);
-  // Assessment AverageResult
-  await lookupPlot(...AAWA2Plots.average_result_branin);
-  await lookupPlot(...AAWA2Plots.average_result_rosenbrock);
-  // Assessment ParallelAssessment (which also have regret plots as AverageResult)
-  await lookupPlot(...AAWA2Plots.parallel_assessment_time_branin);
-  await lookupPlot(...AAWA2Plots.parallel_assessment_time_rosenbrock);
-  await lookupPlot(...AAWA2Plots.parallel_assessment_pa_branin);
-  await lookupPlot(...AAWA2Plots.parallel_assessment_pa_rosenbrock);
-  await lookupPlot(...AAWA2Plots.parallel_assessment_regret_branin);
-  await lookupPlot(...AAWA2Plots.parallel_assessment_regret_rosenbrock);
-});
+    // Get benchmark search field
+    const benchmarkField = await page.getByPlaceholder(
+      'Search a benchmark ...'
+    );
+    await expect(benchmarkField).toHaveCount(1);
 
-test('Test (de)select assessments', async () => {
-  const user = userEvent.setup();
-  render(<App />, { wrapper: MemoryRouter });
+    // Select branin_baselines_webapi benchmark
+    await benchmarkField.type('branin');
+    await benchmarkField.press('Enter');
+    expect(await benchmarkField.getAttribute('value')).toBe(
+      'branin_baselines_webapi'
+    );
+    const leftMenu = await page.locator('.bx--structured-list');
+    await expect(leftMenu).toHaveCount(1);
+    await expect(await leftMenu.getByText(/AverageResult/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/Branin/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/gridsearch/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/random/)).toHaveCount(1);
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(0);
+    // Check plot
+    await lookupPlotById(
+      page,
+      'plot-branin_baselines_webapi-AverageResult-Branin-regrets-gridsearch-random',
+      'Average Regret',
+      'branin',
+      'Trials ordered by suggested time'
+    );
 
-  // Switch to benchmarks page
-  const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
-  fireEvent.click(menu);
-  expect(
-    await screen.findByText(
-      /No benchmark selected/,
-      {},
-      global.CONFIG_WAIT_FOR_LONG
-    )
-  ).toBeInTheDocument();
-  // Get benchmark search field
-  const benchmarkField = await screen.findByPlaceholderText(
-    'Search a benchmark ...'
-  );
-  expect(benchmarkField).toBeInTheDocument();
-  // Select all_assessments_webapi_2
-  await user.type(benchmarkField, 'all_asses');
-  await user.keyboard('{enter}');
-  expect(benchmarkField.value).toBe('all_assessments_webapi_2');
+    // Select all_algos_webapi benchmark
+    // Use Ctrl+A then backspace to clear field before typing new hint
+    await benchmarkField.press('Control+A');
+    await benchmarkField.press('Backspace');
+    expect(await benchmarkField.getAttribute('value')).toBe('');
+    await benchmarkField.type('all_algos');
+    await benchmarkField.press('Enter');
+    expect(await benchmarkField.getAttribute('value')).toBe('all_algos_webapi');
+    await expect(await leftMenu.getByText(/AverageResult/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/Branin/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/EggHolder/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/RosenBrock/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/gridsearch/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/random/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/tpe/)).toHaveCount(1);
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(0);
+    // Check plots
+    await lookupPlotById(
+      page,
+      'plot-all_algos_webapi-AverageResult-Branin-regrets-gridsearch-random-tpe',
+      'Average Regret',
+      'branin'
+    );
+    await lookupPlotById(
+      page,
+      'plot-all_algos_webapi-AverageResult-EggHolder-regrets-gridsearch-random-tpe',
+      'Average Regret',
+      'eggholder'
+    );
+    await lookupPlotById(
+      page,
+      'plot-all_algos_webapi-AverageResult-RosenBrock-regrets-gridsearch-random-tpe',
+      'Average Regret',
+      'rosenbrock'
+    );
 
-  // Make sure all plots are there (10 plots)
-  for (let texts of AAWA2_all) {
-    await lookupPlot(...texts);
-  }
+    // Select all_assessments_webapi_2
+    await benchmarkField.press('Control+A');
+    await benchmarkField.press('Backspace');
+    expect(await benchmarkField.getAttribute('value')).toBe('');
+    await benchmarkField.type('all_asses');
+    await benchmarkField.press('Enter');
+    expect(await benchmarkField.getAttribute('value')).toBe(
+      'all_assessments_webapi_2'
+    );
+    await expect(await leftMenu.getByText(/AverageRank/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/AverageResult/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/ParallelAssessment/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/Branin/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/RosenBrock/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/random/)).toHaveCount(1);
+    await expect(await leftMenu.getByText(/tpe/)).toHaveCount(1);
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(0);
+    // Check plots
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      await lookupPlotById(page, plotId, ...texts);
+    }
+  });
 
-  // Select 1 assessment.
-  const inputAssessmentAverageRank = document.getElementById('assessment-0');
-  expect(inputAssessmentAverageRank).toBeInTheDocument();
-  expect(inputAssessmentAverageRank.checked).toBe(true);
+  test('Test (de)select assessments', async ({ page }) => {
+    // Switch to benchmarks page
+    const menuBenchmark = await page.locator('nav > ul > li:nth-child(2)');
+    await menuBenchmark.click();
+    const menu = await menuBenchmark.getByTitle(
+      /Go to benchmarks visualizations/
+    );
+    await menu.click();
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
 
-  // Deselect assessment
-  await user.click(inputAssessmentAverageRank);
-  expect(inputAssessmentAverageRank.checked).toBe(false);
-  await sleep(1000);
-  for (let texts of AAWA2_average_rank) {
-    expect(hasPlotImmediately(...texts)).toBe(false);
-  }
-  for (let texts of AAWA2_no_average_rank) {
-    expect(hasPlotImmediately(...texts)).toBe(true);
-  }
-  // Reselect assessment.
-  await user.click(inputAssessmentAverageRank);
-  expect(inputAssessmentAverageRank.checked).toBe(true);
-  await sleep(1000);
-  for (let texts of AAWA2_all) {
-    expect(hasPlotImmediately(...texts)).toBe(true);
-  }
-});
+    // Get benchmark search field
+    const benchmarkField = await page.getByPlaceholder(
+      'Search a benchmark ...'
+    );
+    // Select all_assessments_webapi_2
+    await benchmarkField.type('all_asses');
+    await benchmarkField.press('Enter');
+    expect(await benchmarkField.getAttribute('value')).toBe(
+      'all_assessments_webapi_2'
+    );
 
-test('Test (de)select tasks', async () => {
-  const user = userEvent.setup();
-  render(<App />, { wrapper: MemoryRouter });
+    // Make sure all plots are there (10 plots)
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      await lookupPlotById(page, plotId, ...texts);
+    }
 
-  // Switch to benchmarks page
-  const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
-  fireEvent.click(menu);
-  expect(
-    await screen.findByText(
-      /No benchmark selected/,
-      {},
-      global.CONFIG_WAIT_FOR_LONG
-    )
-  ).toBeInTheDocument();
-  // Get benchmark search field
-  const benchmarkField = await screen.findByPlaceholderText(
-    'Search a benchmark ...'
-  );
-  expect(benchmarkField).toBeInTheDocument();
-  // Select all_assessments_webapi_2
-  await user.type(benchmarkField, 'all_asses');
-  await user.keyboard('{enter}');
-  expect(benchmarkField.value).toBe('all_assessments_webapi_2');
+    // Select 1 assessment.
+    const inputAssessmentAverageRank = await page.locator('#assessment-0');
+    await expect(inputAssessmentAverageRank).toHaveCount(1);
+    await expect(inputAssessmentAverageRank).toBeChecked({ checked: true });
 
-  // Make sure all plots are there (10 plots)
-  for (let texts of AAWA2_all) {
-    await lookupPlot(...texts);
-  }
+    // Deselect assessment
+    await inputAssessmentAverageRank.uncheck({ force: true });
+    await expect(inputAssessmentAverageRank).toBeChecked({ checked: false });
 
-  // Select 1 task.
-  const inputTaskBranin = document.getElementById('task-0');
-  expect(inputTaskBranin).toBeInTheDocument();
-  expect(inputTaskBranin.checked).toBe(true);
+    await sleep(1000);
+    for (let [plotId, texts] of AAWA2_average_rank_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        false
+      );
+    }
+    for (let [plotId, texts] of AAWA2_no_average_rank_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        true
+      );
+    }
 
-  // Deselect task.
-  await user.click(inputTaskBranin);
-  expect(inputTaskBranin.checked).toBe(false);
-  await sleep(1000);
-  for (let texts of AAWA2_branin) {
-    expect(hasPlotImmediately(...texts)).toBe(false);
-  }
-  for (let texts of AAWA2_no_branin) {
-    expect(hasPlotImmediately(...texts)).toBe(true);
-  }
-  // Reselect task.
-  await user.click(inputTaskBranin);
-  expect(inputTaskBranin.checked).toBe(true);
-  await sleep(1000);
-  for (let texts of AAWA2_all) {
-    expect(hasPlotImmediately(...texts)).toBe(true);
-  }
-});
+    // Reselect assessment.
+    await inputAssessmentAverageRank.check({ force: true });
+    await expect(inputAssessmentAverageRank).toBeChecked({ checked: true });
+    await sleep(1000);
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        true
+      );
+    }
+  });
 
-test('Test (de)select algorithms', async () => {
-  const user = userEvent.setup();
-  render(<App />, { wrapper: MemoryRouter });
+  test('Test (de)select tasks', async ({ page }) => {
+    // Switch to benchmarks page
+    const menuBenchmark = await page.locator('nav > ul > li:nth-child(2)');
+    await menuBenchmark.click();
+    const menu = await menuBenchmark.getByTitle(
+      /Go to benchmarks visualizations/
+    );
+    await menu.click();
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
 
-  // Switch to benchmarks page
-  const menu = await screen.findByTitle(/Go to benchmarks visualizations/);
-  fireEvent.click(menu);
-  expect(
-    await screen.findByText(
-      /No benchmark selected/,
-      {},
-      global.CONFIG_WAIT_FOR_LONG
-    )
-  ).toBeInTheDocument();
-  // Get benchmark search field
-  const benchmarkField = await screen.findByPlaceholderText(
-    'Search a benchmark ...'
-  );
-  expect(benchmarkField).toBeInTheDocument();
-  // Select all_assessments_webapi_2
-  await user.type(benchmarkField, 'all_asses');
-  await user.keyboard('{enter}');
-  expect(benchmarkField.value).toBe('all_assessments_webapi_2');
+    // Get benchmark search field
+    const benchmarkField = await page.getByPlaceholder(
+      'Search a benchmark ...'
+    );
+    // Select all_assessments_webapi_2
+    await benchmarkField.type('all_asses');
+    await benchmarkField.press('Enter');
+    expect(await benchmarkField.getAttribute('value')).toBe(
+      'all_assessments_webapi_2'
+    );
 
-  // Make sure all plots are there (10 plots)
-  for (let texts of AAWA2_all) {
-    await lookupPlot(...texts);
-  }
+    // Make sure all plots are there (10 plots)
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      await lookupPlotById(page, plotId, ...texts);
+    }
 
-  // Select 1 algorithm.
-  const inputAlgorithmRandom = document.getElementById('algorithm-0');
-  expect(inputAlgorithmRandom).toBeInTheDocument();
-  expect(inputAlgorithmRandom.checked).toBe(true);
+    // Select 1 task.
+    const inputTaskBranin = await page.locator('#task-0');
+    await expect(inputTaskBranin).toHaveCount(1);
+    await expect(inputTaskBranin).toBeChecked({ checked: true });
 
-  // Deselect algorithm.
-  await user.click(inputAlgorithmRandom);
-  expect(inputAlgorithmRandom.checked).toBe(false);
-  await sleep(1000);
-  for (let texts of AAWA2_all) {
-    expect(hasPlotImmediately(...texts)).toBe(false);
-  }
-  for (let textsNoRandom of AAWA2_no_random) {
-    expect(hasPlotImmediately(...textsNoRandom)).toBe(true);
-  }
-  // Reselect algorithm.
-  await user.click(inputAlgorithmRandom);
-  expect(inputAlgorithmRandom.checked).toBe(true);
-  await sleep(1000);
-  for (let texts of AAWA2_all) {
-    expect(hasPlotImmediately(...texts)).toBe(true);
-  }
+    // Deselect task.
+    await inputTaskBranin.uncheck({ force: true });
+    await expect(inputTaskBranin).toBeChecked({ checked: false });
+    await sleep(1000);
+    for (let [plotId, texts] of AAWA2_branin_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        false
+      );
+    }
+    for (let [plotId, texts] of AAWA2_no_branin_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        true
+      );
+    }
+    // Reselect task.
+    await inputTaskBranin.check({ force: true });
+    await expect(inputTaskBranin).toBeChecked({ checked: true });
+    await sleep(1000);
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        true
+      );
+    }
+  });
+
+  test('Test (de)select algorithms', async ({ page }) => {
+    // Switch to benchmarks page
+    const menuBenchmark = await page.locator('nav > ul > li:nth-child(2)');
+    await menuBenchmark.click();
+    const menu = await menuBenchmark.getByTitle(
+      /Go to benchmarks visualizations/
+    );
+    await menu.click();
+    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
+
+    // Get benchmark search field
+    const benchmarkField = await page.getByPlaceholder(
+      'Search a benchmark ...'
+    );
+    // Select all_assessments_webapi_2
+    await benchmarkField.type('all_asses');
+    await benchmarkField.press('Enter');
+    expect(await benchmarkField.getAttribute('value')).toBe(
+      'all_assessments_webapi_2'
+    );
+
+    // Make sure all plots are there (10 plots)
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      await lookupPlotById(page, plotId, ...texts);
+    }
+
+    // Select 1 algorithm.
+    const inputAlgorithmRandom = await page.locator('#algorithm-0');
+    await expect(inputAlgorithmRandom).toHaveCount(1);
+    await expect(inputAlgorithmRandom).toBeChecked({ checked: true });
+
+    // Deselect algorithm.
+    await inputAlgorithmRandom.uncheck({ force: true });
+    await expect(inputAlgorithmRandom).toBeChecked({ checked: false });
+    await sleep(1000);
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        false
+      );
+    }
+    for (let [plotId, textsNoRandom] of AAWA2_no_random_with_id) {
+      expect(
+        await hasPlotByIdAndTextsImmediately(page, plotId, ...textsNoRandom)
+      ).toBe(true);
+    }
+    // Reselect algorithm.
+    await inputAlgorithmRandom.check({ force: true });
+    await expect(inputAlgorithmRandom).toBeChecked({ checked: true });
+    await sleep(1000);
+    for (let [plotId, texts] of AAWA2_all_with_id) {
+      expect(await hasPlotByIdAndTextsImmediately(page, plotId, ...texts)).toBe(
+        true
+      );
+    }
+  });
 });
