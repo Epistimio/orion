@@ -1,24 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-/*
-// Since I updated dependencies in package.json, this seems necessary.
-beforeEach(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(), // deprecated
-      removeListener: jest.fn(), // deprecated
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
-  });
-});
-*/
-
 /**
  * Return true if given DOM plot element contains all given texts.
  * @param plot - locator of DOM element containing a plot
@@ -382,8 +363,6 @@ const AAWA2_no_random_with_id = [
     AAWA2PlotsNoRandom.parallel_assessment_regret_rosenbrock,
   ],
 ];
-
-function _test() {}
 
 test('Test sleep', async () => {
   let start = performance.now();
