@@ -1,135 +1,116 @@
-import React from 'react';
-import App from '../App';
-import { render, fireEvent, waitFor, screen } from '@testing-library/react';
-/* Use MemoryRouter to isolate history for each test */
-import { MemoryRouter } from 'react-router-dom';
+import { test, expect } from '@playwright/test';
 
-// Since I updated dependencies in package.json, this seems necessary.
-beforeEach(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: jest.fn(), // deprecated
-      removeListener: jest.fn(), // deprecated
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
-    })),
+function _test() {}
+
+test.describe('Test experiments visualization page', () => {
+  test.beforeEach(async ({ page }) => {
+    // Set a hardcoded page size.
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    // Open Dashboard page.
+    await page.goto('localhost:3000');
   });
-});
 
-test('Test if we switch to visualization page', async () => {
-  // Load page
-  render(<App />, { wrapper: MemoryRouter });
-  // Let time for ExperimentNavBar to load experiments
-  // to prevent warnings about async calls not terminated
-  expect(
-    await screen.findByText(/2-dim-shape-exp/, {}, global.CONFIG_WAIT_FOR_LONG)
-  ).toBeInTheDocument();
+  test('Test if we switch to visualization page', async ({ page }) => {
+    // Let time for ExperimentNavBar to load experiments
+    const firstExperiment = await page.getByText(/2-dim-shape-exp/);
+    await firstExperiment.waitFor();
+    await expect(firstExperiment).toHaveCount(1);
 
-  // Make sure we are on default (landing) page
-  expect(screen.queryByText(/Landing Page/)).toBeInTheDocument();
+    // Make sure we are on default (landing) page
+    await expect(await page.getByText(/Landing Page/)).toHaveCount(1);
 
-  // Make sure we are not on visualizations page
-  expect(screen.queryByText(/Nothing to display/)).toBeNull();
+    // Make sure we are not on visualizations page
+    await expect(await page.getByText(/Nothing to display/)).toHaveCount(0);
 
-  // Get visualizations page link
-  const menu = screen.queryByTitle(/Go to experiments visualizations/);
-  expect(menu).toBeInTheDocument();
+    // Go to visualization page
 
-  // CLick on visualizations page link
-  fireEvent.click(menu);
+    const menuExperiments = await page.locator('nav > ul > li:nth-child(1)');
+    await expect(menuExperiments).toHaveCount(1);
+    await expect(menuExperiments).toBeVisible();
+    await menuExperiments.click();
+    const menu = await menuExperiments.getByTitle(
+      /Go to experiments visualizations/
+    );
+    await expect(menu).toHaveCount(1);
+    await expect(menu).toBeVisible();
+    await menu.click();
 
-  // Check we are on visualizations page
-  const elements = await screen.findAllByText(/Nothing to display/);
-  expect(elements.length).toBe(3);
-});
+    // Check we are on visualizations page
+    const elements = await page.getByText(/Nothing to display/);
+    await expect(elements).toHaveCount(3);
+  });
 
-test('Test if we can select and unselect experiments', async () => {
-  // Load page
-  render(<App />, { wrapper: MemoryRouter });
-  const experiment = await screen.findByText(
-    /2-dim-shape-exp/,
-    {},
-    global.CONFIG_WAIT_FOR_LONG
-  );
-  expect(experiment).toBeInTheDocument();
+  test('Test if we can select and unselect experiments', async ({ page }) => {
+    // Go to visualization page
+    const firstExperiment = await page.getByText(/2-dim-shape-exp/);
+    await firstExperiment.waitFor();
+    const menuExperiments = await page.locator('nav > ul > li:nth-child(1)');
+    await menuExperiments.click();
+    const menu = await menuExperiments.getByTitle(
+      /Go to experiments visualizations/
+    );
+    await menu.click();
+    // Check we are on visualizations page
+    await expect(await page.getByText(/Nothing to display/)).toHaveCount(3);
 
-  // Switch to visualizations page
-  const menu = screen.queryByTitle(/Go to experiments visualizations/);
-  fireEvent.click(menu);
-  expect((await screen.findAllByText(/Nothing to display/)).length).toBe(3);
+    // Select an experiment
+    await firstExperiment.click();
 
-  // Select an experiment
-  expect(experiment).toBeInTheDocument();
-  fireEvent.click(experiment);
+    // Check if plots are loaded
+    for (let plotTitle of [
+      /Regret for experiment '2-dim-shape-exp'/,
+      /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i,
+      /LPI for experiment '2-dim-shape-exp'/,
+    ]) {
+      const plot = await page.getByText(plotTitle);
+      await plot.waitFor();
+      await expect(plot).toHaveCount(1);
+    }
 
-  // Check if plots are loaded
-  // Wait enough (3 seconds) to let plots load
-  await waitFor(() => {
-    expect(
-      screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
-    ).toBeInTheDocument();
-  }, global.CONFIG_WAIT_FOR_LONG);
-  expect(
-    await screen.findByText(
-      /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i
-    )
-  ).toBeInTheDocument();
-  expect(
-    await screen.findByText(/LPI for experiment '2-dim-shape-exp'/)
-  ).toBeInTheDocument();
+    // Unselect experiment
+    const row = await page.getByTitle(/unselect experiment '2-dim-shape-exp'/);
+    await expect(row).toHaveCount(1);
+    expect(await row.evaluate(node => node.tagName.toLowerCase())).toBe(
+      'label'
+    );
+    await row.click();
 
-  // Unselect experiment
-  const row = screen.queryByTitle(/unselect experiment '2-dim-shape-exp'/);
-  expect(row).toBeInTheDocument();
-  expect(row.tagName.toLowerCase()).toBe('label');
-  fireEvent.click(row);
-  expect((await screen.findAllByText(/Nothing to display/)).length).toBe(3);
-  expect(
-    screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
-  ).toBeNull();
-  expect(
-    screen.queryByText(
-      /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i
-    )
-  ).toBeNull();
-  expect(screen.queryByText(/LPI for experiment '2-dim-shape-exp'/)).toBeNull();
+    await expect(await page.getByText(/Nothing to display/)).toHaveCount(3);
+    for (let plotTitle of [
+      /Regret for experiment '2-dim-shape-exp'/,
+      /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i,
+      /LPI for experiment '2-dim-shape-exp'/,
+    ]) {
+      const plot = await page.getByText(plotTitle);
+      await expect(plot).toHaveCount(0);
+    }
 
-  // re-select experiment and check if plots are loaded
-  fireEvent.click(experiment);
-  await waitFor(() => {
-    expect(
-      screen.queryByText(/Regret for experiment '2-dim-shape-exp'/)
-    ).toBeInTheDocument();
-  }, global.CONFIG_WAIT_FOR_LONG);
-  expect(
-    await screen.findByText(
-      /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i
-    )
-  ).toBeInTheDocument();
-  expect(
-    await screen.findByText(/LPI for experiment '2-dim-shape-exp'/)
-  ).toBeInTheDocument();
+    // re-select experiment and check if plots are loaded
+    await firstExperiment.click();
+    for (let plotTitle of [
+      /Regret for experiment '2-dim-shape-exp'/,
+      /Parallel Coordinates PLot for experiment '2-dim-shape-exp'/i,
+      /LPI for experiment '2-dim-shape-exp'/,
+    ]) {
+      const plot = await page.getByText(plotTitle);
+      await plot.waitFor();
+      await expect(plot).toHaveCount(1);
+    }
 
-  // Select another experiment and check if plots are loaded
-  const anotherExperiment = await screen.findByText(/tpe-rosenbrock/);
-  expect(anotherExperiment).toBeInTheDocument();
-  fireEvent.click(anotherExperiment);
-  await waitFor(() => {
-    expect(
-      screen.queryByText(/Regret for experiment 'tpe-rosenbrock'/)
-    ).toBeInTheDocument();
-  }, global.CONFIG_WAIT_FOR_LONG);
-  expect(
-    await screen.findByText(
-      /Parallel Coordinates PLot for experiment 'tpe-rosenbrock'/i
-    )
-  ).toBeInTheDocument();
-  expect(
-    await screen.findByText(/LPI for experiment 'tpe-rosenbrock'/)
-  ).toBeInTheDocument();
+    // Select another experiment and check if plots are loaded
+    const searchField = await page.getByPlaceholder('Search experiment');
+    await searchField.type('tpe-rosenbrock');
+    const anotherExperiment = await page.getByText(/tpe-rosenbrock/);
+    await expect(anotherExperiment).toHaveCount(1);
+    await anotherExperiment.click();
+    for (let plotTitle of [
+      /Regret for experiment 'tpe-rosenbrock'/,
+      /Parallel Coordinates PLot for experiment 'tpe-rosenbrock'/i,
+      /LPI for experiment 'tpe-rosenbrock'/,
+    ]) {
+      const plot = await page.getByText(plotTitle);
+      await plot.waitFor();
+      await expect(plot).toHaveCount(1);
+    }
+  });
 });

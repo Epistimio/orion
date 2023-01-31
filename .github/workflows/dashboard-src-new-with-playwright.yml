@@ -71,4 +71,4 @@ jobs:
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
     - name: Run Playwright tests
-      run: yarn playwright test --project=chromium --reporter=line src/__tests__/benchmark.test.js src/__tests__/ExperimentNavBar.test.js src/__tests__/flattenObject.test.js src/__tests__/queryServer.test.js
+      run: yarn playwright test --project=chromium --reporter=line src/__tests__/benchmark.test.js src/__tests__/ExperimentNavBar.test.js src/__tests__/flattenObject.test.js src/__tests__/queryServer.test.js src/__tests__/VisualizationsPage.test.js

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { performance } from 'perf_hooks';
 
 /**
  * Return true if given DOM plot element contains all given texts.
