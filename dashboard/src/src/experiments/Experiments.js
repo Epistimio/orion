@@ -38,15 +38,15 @@ class Experiments extends Component {
   renderPage() {
     switch (this.props.match.params.page || 'landing') {
       case 'landing':
-        return <LandingPage key={this.state.experiment} />;
+        return <LandingPage />;
       case 'status':
-        return <StatusPage key={this.state.experiment} />;
+        return <StatusPage />;
       case 'visualizations':
-        return <VisualizationsPage key={this.state.experiment} />;
+        return <VisualizationsPage />;
       case 'database':
-        return <DatabasePage key={this.state.experiment} />;
+        return <DatabasePage />;
       case 'configuration':
-        return <ConfigurationPage key={this.state.experiment} />;
+        return <ConfigurationPage />;
       default:
         break;
     }

@@ -160,13 +160,7 @@ const ModalStateManager = ({
   );
 };
 
-export function FeaturedTable({
-  columns,
-  data,
-  experiment,
-  trialStatus,
-  nbTrials,
-}) {
+export function FeaturedTable({ columns, data, experiment }) {
   const defaultColumnOrder = [];
   collectLeafColumnIndices(columns, defaultColumnOrder);
   const [columnOrder, setColumnOrder] = React.useState(defaultColumnOrder);
@@ -252,10 +246,7 @@ export function FeaturedTable({
                     Experiment Trials for "{experimentWords}"
                   </h4>
                   <p className="bx--data-table-header__description">
-                    {nbTrials} trial(s) for experiment "{experimentWords}"
-                    {trialStatus && nbTrials !== data.length
-                      ? `, ${data.length} displayed for status "${trialStatus}"`
-                      : ''}
+                    {data.length} trial(s) for experiment "{experimentWords}"
                   </p>
                 </div>
               </Column>

@@ -3,7 +3,6 @@ import { DEFAULT_BACKEND } from '../../../utils/queryServer';
 import { FeaturedTable } from './FeaturedTable';
 import { BackendContext } from '../../BackendContext';
 import { TrialsProvider } from './TrialsProvider';
-import { ExperimentStatusBar } from '../../components/ExperimentStatusBar/ExperimentStatusBar';
 
 /**
  * Singleton to provide experiment trials.
@@ -17,8 +16,7 @@ class DatabasePage extends React.Component {
   static contextType = BackendContext;
   constructor(props) {
     super(props);
-    this.state = { experiment: null, trials: null, trialStatus: null };
-    this.onSelectTrialStatus = this.onSelectTrialStatus.bind(this);
+    this.state = { experiment: null, trials: null };
   }
   render() {
     if (this.state.experiment === null)
@@ -28,26 +26,16 @@ class DatabasePage extends React.Component {
     if (this.state.trials === false)
       return `Unable to load trials for experiment "${this.state.experiment}".`;
     return (
-      <div className="database-container">
-        <ExperimentStatusBar
-          name={this.state.experiment}
-          withInfo={true}
-          focus={this.state.trialStatus}
-          onFocus={this.onSelectTrialStatus}
-        />
-        <FeaturedTable
-          columns={this.state.trials.headers}
-          data={
-            this.state.trialStatus === null
-              ? this.state.trials.trials
-              : this.state.trials.trials.filter(
-                  trial => trial.status === this.state.trialStatus
-                )
-          }
-          experiment={this.state.experiment}
-          trialStatus={this.state.trialStatus}
-          nbTrials={this.state.trials.trials.length}
-        />
+      <div className="bx--grid bx--grid--full-width bx--grid--no-gutter database-page">
+        <div className="bx--row database-page__r1">
+          <div className="bx--col-lg-16">
+            <FeaturedTable
+              columns={this.state.trials.headers}
+              data={this.state.trials.trials}
+              experiment={this.state.experiment}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -86,12 +74,6 @@ class DatabasePage extends React.Component {
             this.setState({ trials: false });
           }
         });
-    });
-  }
-  onSelectTrialStatus(trialStatus) {
-    console.log(`Db page on focus ${trialStatus}`);
-    this.setState({
-      trialStatus: this.state.trialStatus === trialStatus ? null : trialStatus,
     });
   }
 }
