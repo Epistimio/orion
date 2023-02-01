@@ -7,7 +7,7 @@ def main():
     storage = setup_storage(
         {
             "database": {
-                "host": ".github/workflows/orion/db_dashboard_full.pkl",
+                "host": ".github/workflows/orion/db_dashboard_full_with_uncompleted_experiments.pkl",
                 "type": "pickleddb",
             }
         }
@@ -18,6 +18,10 @@ def main():
     with pickle_db.locked_database(write=False) as database:
         for collection_name in database._db.keys():
             print(f"[{collection_name}]")
+            # Clean Mongo DB first
+            for element in mongo_db.read(collection_name):
+                mongo_db.remove(collection_name, {"_id": element["_id"]})
+            # Fill Mongo DB
             data = database.read(collection_name)
             mongo_db.write(collection_name, data)
     print("Pickle to Mongo DB done.")
