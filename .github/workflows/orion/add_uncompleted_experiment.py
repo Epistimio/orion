@@ -1,6 +1,6 @@
 """
 Helper script to add an uncompleted experiment to
-db_dashboard_full_with_uncompleted_experiment.pkl
+db_dashboard_full_with_uncompleted_experiments.pkl
 built from a copy of db_dashboard_full.pkl
 """
 from datetime import datetime, timedelta
@@ -107,14 +107,14 @@ def main():
     storage = setup_storage(
         {
             "database": {
-                "host": ".github/workflows/orion/db_dashboard_full_with_uncompleted_experiment.pkl",
+                "host": ".github/workflows/orion/db_dashboard_full_with_uncompleted_experiments.pkl",
                 "type": "pickleddb",
             }
         }
     )
     pickle_db = storage._db
 
-    # Insert new experiments into db_dashboard_full_with_uncompleted_experiment.pkl
+    # Insert new experiments into db_dashboard_full_with_uncompleted_experiments.pkl
     for new_exp_def in NEW_EXPERIMENT_DEFINITIONS:
         new_experiment = base_experiment.copy()
         new_experiment["name"] = new_exp_def["name"]
