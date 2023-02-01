@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-function _test() {}
-
 test.describe('Test experiments visualization page', () => {
   test.beforeEach(async ({ page }) => {
     // Set a hardcoded page size.
@@ -41,9 +39,10 @@ test.describe('Test experiments visualization page', () => {
   });
 
   test('Test if we can select and unselect experiments', async ({ page }) => {
-    // Go to visualization page
     const firstExperiment = await page.getByText(/2-dim-shape-exp/);
     await firstExperiment.waitFor();
+
+    // Go to visualization page
     const menuExperiments = await page.locator('nav > ul > li:nth-child(1)');
     await menuExperiments.click();
     const menu = await menuExperiments.getByTitle(
