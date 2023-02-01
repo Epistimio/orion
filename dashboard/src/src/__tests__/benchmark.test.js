@@ -421,8 +421,10 @@ test.describe('Test benchmark dashboard', () => {
     await menu.click();
 
     // Check we are in benchmarks page and not to home page anymore
+    const benchmarksPlaceholder = await page.getByText(/No benchmark selected/);
+    await benchmarksPlaceholder.waitFor();
     await expect(await page.getByText(/Landing Page/)).toHaveCount(0);
-    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
+    await expect(benchmarksPlaceholder).toHaveCount(1);
 
     // Get benchmark search field
     const benchmarkField = await page.getByPlaceholder(
@@ -519,7 +521,9 @@ test.describe('Test benchmark dashboard', () => {
       /Go to benchmarks visualizations/
     );
     await menu.click();
-    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
+    const benchmarksPlaceholder = await page.getByText(/No benchmark selected/);
+    await benchmarksPlaceholder.waitFor();
+    await expect(benchmarksPlaceholder).toHaveCount(1);
 
     // Get benchmark search field
     const benchmarkField = await page.getByPlaceholder(
@@ -577,7 +581,9 @@ test.describe('Test benchmark dashboard', () => {
       /Go to benchmarks visualizations/
     );
     await menu.click();
-    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
+    const benchmarksPlaceholder = await page.getByText(/No benchmark selected/);
+    await benchmarksPlaceholder.waitFor();
+    await expect(benchmarksPlaceholder).toHaveCount(1);
 
     // Get benchmark search field
     const benchmarkField = await page.getByPlaceholder(
@@ -633,7 +639,9 @@ test.describe('Test benchmark dashboard', () => {
       /Go to benchmarks visualizations/
     );
     await menu.click();
-    await expect(await page.getByText(/No benchmark selected/)).toHaveCount(1);
+    const benchmarksPlaceholder = await page.getByText(/No benchmark selected/);
+    await benchmarksPlaceholder.waitFor();
+    await expect(benchmarksPlaceholder).toHaveCount(1);
 
     // Get benchmark search field
     const benchmarkField = await page.getByPlaceholder(
