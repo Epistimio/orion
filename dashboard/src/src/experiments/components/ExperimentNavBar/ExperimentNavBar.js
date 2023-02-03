@@ -1,7 +1,7 @@
 import React from 'react';
-import ProgressBar from 'react-bootstrap/ProgressBar';
 import { Backend } from '../../../utils/queryServer';
 import { BackendContext } from '../../BackendContext';
+import { ExperimentStatusBar } from '../ExperimentStatusBar/ExperimentStatusBar';
 import InfiniteScroll from 'react-infinite-scroller';
 
 import {
@@ -103,12 +103,7 @@ export class ExperimentNavBar extends React.Component {
           <span title={experiment}>{experiment}</span>
         </StructuredListCell>
         <StructuredListCell>
-          <ProgressBar>
-            <ProgressBar variant="success" now={35} key={1} />
-            <ProgressBar variant="warning" now={20} key={2} />
-            <ProgressBar variant="danger" now={10} key={3} />
-            <ProgressBar variant="info" now={15} key={4} />
-          </ProgressBar>
+          <ExperimentStatusBar name={experiment} />
         </StructuredListCell>
       </StructuredListRow>
     ));
