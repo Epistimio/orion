@@ -8,7 +8,7 @@ function floatToPercent(value) {
   return Math.round(value * 100);
 }
 
-const StatusToProgress = {
+export const StatusToProgress = {
   new: 'new', // NB: user-made / we don't need to display trial status "new" in progress bar
   reserved: 'info',
   suspended: 'suspended', // user-made
