@@ -17,6 +17,28 @@ export const StatusToProgress = {
   broken: 'danger',
 };
 
+/**
+ * Format date to locale in format "YYYY/MM/DD HH:MM:SS"
+ * @param date {Date}
+ */
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hour = date.getHours();
+  const mins = date.getMinutes();
+  const secs = date.getSeconds();
+  return `${year}/${month
+    .toString()
+    .padStart(2, '0')}/${day
+    .toString()
+    .padStart(2, '0')} ${hour
+    .toString()
+    .padStart(2, '0')}:${mins
+    .toString()
+    .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
 export class ExperimentStatusBar extends React.Component {
   _isMounted = false;
   constructor(props) {
@@ -27,7 +49,7 @@ export class ExperimentStatusBar extends React.Component {
   render() {
     if (this.state.status === null)
       return (
-        <div>
+        <div className="experiment-progress-bar">
           <ProgressBar
             now={100}
             variant="running"
@@ -39,7 +61,7 @@ export class ExperimentStatusBar extends React.Component {
       );
     if (this.state.status === false)
       return (
-        <div>
+        <div className="experiment-progress-bar">
           <ProgressBar
             variant="danger"
             label="error"
@@ -49,21 +71,21 @@ export class ExperimentStatusBar extends React.Component {
         </div>
       );
     return (
-      <div>
+      <div className="experiment-progress-bar">
         {this.props.withInfo ? this.renderExperimentInfo() : ''}
         {this.props.withInfo ? (
           <Grid fullWidth className="mb-2">
             <Row>
               <Column>
                 <strong>Elapsed time</strong>:&nbsp;
-                <code>{this.state.status.duration}</code>
+                <code>{this.state.status.elapsed_time}</code>
                 <Tooltip>
                   Time elapsed since the beginning of the HPO execution
                 </Tooltip>
               </Column>
               <Column className="text-sm-center">
                 <strong>Sum of trials time</strong>:&nbsp;
-                <code>{this.state.status.whole_clock_time}</code>
+                <code>{this.state.status.sum_of_trials_time}</code>
                 <Tooltip>Sum of trials execution time</Tooltip>
               </Column>
               <Column className="text-sm-right">
@@ -75,10 +97,12 @@ export class ExperimentStatusBar extends React.Component {
                     ? 0
                     : this.state.status.eta === 'infinite'
                     ? '\u221E'
-                    : `${this.state.status.eta} @ ${new Date(
-                        new Date().getTime() +
-                          this.state.status.eta_milliseconds
-                      ).toLocaleString()}`}
+                    : `${this.state.status.eta} @ ${formatDate(
+                        new Date(
+                          new Date().getTime() +
+                            this.state.status.eta_milliseconds
+                        )
+                      )}`}
                 </code>
                 <Tooltip>Estimated time for experiment to finish</Tooltip>
               </Column>
@@ -87,7 +111,7 @@ export class ExperimentStatusBar extends React.Component {
         ) : (
           ''
         )}
-        <div {...(this.props.withInfo ? { className: 'mb-2' } : {})}>
+        <div className={`main-bar ${this.props.withInfo ? 'mb-2' : ''}`}>
           {this.state.status.max_trials === 'infinite' ? (
             <ProgressBar
               striped={true}
@@ -111,7 +135,7 @@ export class ExperimentStatusBar extends React.Component {
           )}
         </div>
         {this.props.withInfo ? (
-          <Grid className="mb-4">
+          <Grid className="mb-4 experiment-legend">
             <Row>
               <Column className="d-flex flex-row">
                 {[
@@ -163,7 +187,7 @@ export class ExperimentStatusBar extends React.Component {
       },
     ];
     return (
-      <div>
+      <div className="experiment-info">
         <h3 className="text-center mb-2">Experiment "{this.props.name}"</h3>
         <Grid className="mb-3">
           {rows.map((row, indexRow) => (
