@@ -108,7 +108,7 @@ def _dump(src_db, dst_db, collection_names, experiment=None, version=None):
             exp_data = sorted(experiments, key=lambda d: d["version"])[0]
         else:
             (exp_data,) = experiments
-        logger.info(f"Found experiment {exp_data['name']}.{exp_data['version']}")
+        logger.info(f"Found experiment {exp_data['name']}-v{exp_data['version']}")
         # Dump selected experiments
         logger.info(f"Dumping experiment {experiment}")
         dst_db.write("experiments", exp_data)
