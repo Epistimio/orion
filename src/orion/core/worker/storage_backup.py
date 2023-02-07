@@ -205,14 +205,15 @@ def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmark
             (dst_experiment,) = dst_experiments
             if resolve == "ignore":
                 logger.info(
-                    f'Ignored experiment already in dst: '
+                    f"Ignored experiment already in dst: "
                     f'{experiment["name"]}.{experiment["version"]}'
                 )
                 continue
             if resolve == "overwrite":
                 # We must remove experiment data in dst
                 logger.info(
-                    f'Overwrite experiment in dst: {experiment["name"]}.{experiment["version"]}'
+                    f'Overwrite experiment in dst: '
+                    f'{dst_experiment["name"]}.{dst_experiment["version"]}'
                 )
                 for collection in EXPERIMENT_RELATED_COLLECTIONS:
                     queries_to_delete.setdefault(collection, []).append(

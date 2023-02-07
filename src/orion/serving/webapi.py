@@ -151,6 +151,9 @@ class WebApi(falcon.App):
         )
         self.add_route("/dump", storage_resource, suffix="dump")
         self.add_route("/load", storage_resource, suffix="load")
+        self.add_route(
+            "/import-status/{name}", storage_resource, suffix="import_status"
+        )
 
     def start(self):
         """A hook to when a Gunicorn worker calls run()."""
