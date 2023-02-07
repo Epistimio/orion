@@ -9,6 +9,7 @@ import json
 import logging
 import multiprocessing
 import os
+import traceback
 import uuid
 from datetime import datetime
 from queue import Empty
@@ -69,12 +70,18 @@ class ImportTask:
     """
 
     # String representation of task status
-    IMPORT_STATUS = {0: "run", -1: "fail", 1: "success"}
+    IMPORT_STATUS = {0: "active", -1: "error", 1: "finished"}
 
     def __init__(self):
         self.task_id = str(uuid.uuid4())
         self.notifications = Notifications()
+        self.progress_message = multiprocessing.Array("c", 512)
+        self.progress_value = multiprocessing.Value("d", 0.0)
         self.completed = multiprocessing.Value("i", 0)
+
+    def set_progress(self, message: str, progress: float):
+        self.progress_message.value = message.encode()
+        self.progress_value.value = progress
 
     def is_completed(self):
         """Return True if task is completed"""
@@ -93,9 +100,17 @@ def _import_data(task: ImportTask, storage, load_host, resolve, name, version):
     try:
         print("Import starting.", task.task_id)
         logging.basicConfig(stream=task.notifications, force=True)
-        load_database(storage, load_host, resolve, name, version)
+        load_database(
+            storage,
+            load_host,
+            resolve,
+            name,
+            version,
+            progress_callback=task.set_progress,
+        )
         task.set_completed(success=True)
     except Exception as exc:
+        traceback.print_tb(exc.__traceback__)
         print("Import error.", exc)
         # Add error message to shared messages
         task.notifications.write(f"Error: {exc}")
@@ -202,6 +217,8 @@ class StorageResource:
         resp.body = json.dumps(
             {
                 "messages": latest_messages,
+                "progress_message": self.current_task.progress_message.value.decode(),
+                "progress_value": self.current_task.progress_value.value,
                 "status": ImportTask.IMPORT_STATUS[self.current_task.completed.value],
             }
         )

@@ -25,6 +25,30 @@ COLLECTIONS = {"experiments", "algo", "benchmarks", "trials"}
 EXPERIMENT_RELATED_COLLECTIONS = {"algo", "trials"}
 
 
+STEP_COLLECT_EXPERIMENTS = 0
+STEP_CHECK_BENCHMARKS = 1
+STEP_CHECK_DST_EXPERIMENTS = 2
+STEP_CHECK_SRC_EXPERIMENTS = 3
+STEP_DELETE_OLD_DATA = 4
+STEP_INSERT_NEW_DATA = 5
+STEP_NAMES = [
+    "Collect source experiments to load",
+    "Check benchmarks",
+    "Check destination experiments",
+    "Check source experiments",
+    "Delete data to replace in destination",
+    "Insert new data in destination",
+]
+
+
+def _describe_import_progress(step, value, total, callback=None):
+    print("STEP", step + 1, STEP_NAMES[step], value, total)
+    if callback:
+        if total == 0:
+            value = total = 1
+        callback(STEP_NAMES[step], (step + (value / total)) / len(STEP_NAMES))
+
+
 def dump_database(storage, dump_host, name=None, version=None):
     """Dump a database
     :param storage: storage of database to dump
@@ -46,7 +70,9 @@ def dump_database(storage, dump_host, name=None, version=None):
         _dump(orig_db, db, COLLECTIONS, name, version)
 
 
-def load_database(storage, load_host, resolve, name=None, version=None):
+def load_database(
+    storage, load_host, resolve, name=None, version=None, progress_callback=None
+):
     """Import data into a database
     :param storage: storage of destination database to load into
     :param load_host: file path containing data to import
@@ -68,6 +94,7 @@ def load_database(storage, load_host, resolve, name=None, version=None):
     dst_db = storage._db
     import_benchmarks = False
     with src_db.locked_database(write=False) as src_database:
+        _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 0, 1, progress_callback)
         if name is None:
             import_benchmarks = True
             # Retrieve all src experiments for export
@@ -87,10 +114,16 @@ def load_database(storage, load_host, resolve, name=None, version=None):
             logger.info(
                 f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
             )
+        _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 1, 1, progress_callback)
         preparation = _prepare_import(
-            src_database, dst_db, resolve, experiments, import_benchmarks
+            src_database,
+            dst_db,
+            resolve,
+            experiments,
+            import_benchmarks,
+            progress_callback=progress_callback,
         )
-        _execute_import(dst_db, *preparation)
+        _execute_import(dst_db, *preparation, progress_callback=progress_callback)
 
 
 def _dump(src_db, dst_db, collection_names, name=None, version=None):
@@ -143,7 +176,14 @@ def _dump(src_db, dst_db, collection_names, name=None, version=None):
             )
 
 
-def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmarks=True):
+def _prepare_import(
+    src_database,
+    dst_db,
+    resolve,
+    experiments,
+    import_benchmarks=True,
+    progress_callback=None,
+):
     """Prepare importation.
 
     Compute all changes to apply to make import and return changes as dictionaries.
@@ -161,7 +201,11 @@ def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmark
     data_to_add = {}
 
     if import_benchmarks:
-        for src_benchmark in src_database.read(COL_BENCHMARKS):
+        src_benchmarks = src_database.read(COL_BENCHMARKS)
+        for i, src_benchmark in enumerate(src_benchmarks):
+            _describe_import_progress(
+                STEP_CHECK_BENCHMARKS, i, len(src_benchmarks), progress_callback
+            )
             dst_benchmarks = dst_db.read(
                 COL_BENCHMARKS, {"name": src_benchmark["name"]}
             )
@@ -187,7 +231,14 @@ def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmark
             # Delete benchmark database ID so that a new one will be generated on insertion
             del src_benchmark["_id"]
             data_to_add.setdefault(COL_BENCHMARKS, []).append(src_benchmark)
+        _describe_import_progress(
+            STEP_CHECK_BENCHMARKS,
+            len(src_benchmarks),
+            len(src_benchmarks),
+            progress_callback,
+        )
 
+    _describe_import_progress(STEP_CHECK_DST_EXPERIMENTS, 0, 1, progress_callback)
     all_dst_experiments = dst_db.read("experiments")
     last_experiment_id = max((data["_id"] for data in all_dst_experiments), default=0)
     last_versions = {}
@@ -195,8 +246,12 @@ def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmark
         name = dst_exp["name"]
         version = dst_exp["version"]
         last_versions[name] = max(last_versions.get(name, 0), version)
+    _describe_import_progress(STEP_CHECK_DST_EXPERIMENTS, 1, 1, progress_callback)
 
-    for experiment in experiments:
+    for i, experiment in enumerate(experiments):
+        _describe_import_progress(
+            STEP_CHECK_SRC_EXPERIMENTS, i, len(experiments), progress_callback
+        )
         dst_experiments = dst_db.read(
             "experiments",
             {"name": experiment["name"], "version": experiment["version"]},
@@ -212,7 +267,7 @@ def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmark
             if resolve == "overwrite":
                 # We must remove experiment data in dst
                 logger.info(
-                    f'Overwrite experiment in dst: '
+                    f"Overwrite experiment in dst: "
                     f'{dst_experiment["name"]}.{dst_experiment["version"]}'
                 )
                 for collection in EXPERIMENT_RELATED_COLLECTIONS:
@@ -265,11 +320,19 @@ def _prepare_import(src_database, dst_db, resolve, experiments, import_benchmark
         data_to_add.setdefault(COL_TRIALS, []).extend(
             trial.to_dict() for trial in trials
         )
+    _describe_import_progress(
+        STEP_CHECK_SRC_EXPERIMENTS,
+        len(experiments),
+        len(experiments),
+        progress_callback,
+    )
 
     return queries_to_delete, data_to_add
 
 
-def _execute_import(dst_db, queries_to_delete: dict, data_to_add: dict):
+def _execute_import(
+    dst_db, queries_to_delete: dict, data_to_add: dict, progress_callback=None
+):
     """Execute import
     :param dst_db: destination database where to apply changes
     :param queries_to_delete: dictionary mapping a collection name to a list of queries to use
@@ -277,12 +340,27 @@ def _execute_import(dst_db, queries_to_delete: dict, data_to_add: dict):
     :param data_to_add: dictionary mapping a collection name to a list of data to add
     """
 
+    total_queries = sum(len(queries) for queries in queries_to_delete.values())
+    i_query = 0
     for collection_name, queries in queries_to_delete.items():
         logger.info(
             f"Deleting from {len(queries)} queries into collection {collection_name}"
         )
         for query in queries:
+            _describe_import_progress(
+                STEP_DELETE_OLD_DATA, i_query, total_queries, progress_callback
+            )
             dst_db.remove(collection_name, query)
-    for collection_name, data in data_to_add.items():
+            i_query += 1
+    _describe_import_progress(
+        STEP_DELETE_OLD_DATA, total_queries, total_queries, progress_callback
+    )
+    for i, (collection_name, data) in enumerate(data_to_add.items()):
+        _describe_import_progress(
+            STEP_INSERT_NEW_DATA, i, len(data_to_add), progress_callback
+        )
         logger.info(f"Writing {len(data)} data into collection {collection_name}")
         dst_db.write(collection_name, data)
+    _describe_import_progress(
+        STEP_INSERT_NEW_DATA, len(data_to_add), len(data_to_add), progress_callback
+    )
