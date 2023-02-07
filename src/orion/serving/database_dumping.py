@@ -47,9 +47,12 @@ class DatabaseDumpingResource:
         name = req.get_param("name")
         version = req.get_param_as_int("version")
         dump_host = _gen_dump_host_file()
+        download_suffix = "" if name is None else f" {name}"
+        if download_suffix and version is not None:
+            download_suffix = f"{download_suffix}.{version}"
         try:
             dump_database(self.storage, dump_host, experiment=name, version=version)
-            resp.downloadable_as = f"dump-{datetime.now()}.pkl"
+            resp.downloadable_as = f"dump{download_suffix if download_suffix else ''} ({datetime.now()}).pkl"
             resp.content_type = "application/octet-stream"
             with open(dump_host, "rb") as file:
                 resp.data = file.read()
