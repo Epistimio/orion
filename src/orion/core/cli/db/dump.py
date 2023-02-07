@@ -66,7 +66,7 @@ def dump_database(orig_db, dump_host, experiment=None, version=None):
     """
     dump_host = os.path.abspath(dump_host)
     if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(orig_db.host):
-        raise DatabaseError("Cannot dump pickleddb to itself.")
+        raise DatabaseError(f"Source ({orig_db.host}) and target ({dump_host}) cannot be the same.")
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
     db = dst_storage._db
     logger.info(f"Dump to {db}")
