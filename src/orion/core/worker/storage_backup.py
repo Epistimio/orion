@@ -41,14 +41,6 @@ STEP_NAMES = [
 ]
 
 
-def _describe_import_progress(step, value, total, callback=None):
-    print("STEP", step + 1, STEP_NAMES[step], value, total)
-    if callback:
-        if total == 0:
-            value = total = 1
-        callback(STEP_NAMES[step], (step + (value / total)) / len(STEP_NAMES))
-
-
 def dump_database(storage, dump_host, name=None, version=None):
     """Dump a database
     :param storage: storage of database to dump
@@ -365,3 +357,11 @@ def _execute_import(
     _describe_import_progress(
         STEP_INSERT_NEW_DATA, len(data_to_add), len(data_to_add), progress_callback
     )
+
+
+def _describe_import_progress(step, value, total, callback=None):
+    print("STEP", step + 1, STEP_NAMES[step], value, total)
+    if callback:
+        if total == 0:
+            value = total = 1
+        callback(STEP_NAMES[step], (step + (value / total)) / len(STEP_NAMES))
