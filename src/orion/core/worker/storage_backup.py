@@ -55,11 +55,7 @@ def dump_database(storage, dump_host, name=None, version=None):
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
     db = dst_storage._db
     logger.info(f"Dump to {db}")
-    if isinstance(orig_db, PickledDB):
-        with orig_db.locked_database(write=False) as database:
-            _dump(database, db, COLLECTIONS, name, version)
-    else:
-        _dump(orig_db, db, COLLECTIONS, name, version)
+    _dump(orig_db, db, COLLECTIONS, name, version)
 
 
 def load_database(
