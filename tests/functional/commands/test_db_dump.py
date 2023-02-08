@@ -90,7 +90,7 @@ def test_dump_one_experiment(three_experiments_family_same_name_with_trials, cap
         # We must have dumped version 1
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 1
-        assert len(algos) == len(exp_data["algorithms"]) == 1
+        assert len(algos) == len(exp_data["algorithm"]) == 1
         # This experiment must have 12 trials (children included)
         assert len(trials) == 12
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -116,7 +116,7 @@ def test_dump_one_experiment_other_version(
         (exp_data,) = experiments
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithms"]) == 1
+        assert len(algos) == len(exp_data["algorithm"]) == 1
         # This experiment must have only 6 trials
         assert len(trials) == 6
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
