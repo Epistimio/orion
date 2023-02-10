@@ -455,6 +455,9 @@ def three_experiments_family_same_name_with_trials(
 ):
     """Create three experiments, two of them with the same name but different versions and one
     with a child, and add trials including children trials.
+
+    Add algorithm state for one experiment.
+    Add benchmarks to database.
     """
     exp1 = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
     exp2 = experiment_builder.build(name="test_single_exp", version=2, storage=storage)
@@ -492,4 +495,63 @@ def three_experiments_family_same_name_with_trials(
                 {"my_algo_state": "some_data", "my_other_state_data": "some_other_data"}
             )
         },
+    )
+
+    # Add benchmarks, copied from db_dashboard_full.pkl
+    orionstate.database.write(
+        "benchmarks",
+        [
+            {
+                "_id": 1,
+                "algorithms": ["gridsearch", "random"],
+                "name": "branin_baselines_webapi",
+                "targets": [
+                    {
+                        "assess": {"AverageResult": {"repetitions": 10}},
+                        "task": {"Branin": {"max_trials": 50}},
+                    }
+                ],
+            },
+            {
+                "_id": 2,
+                "algorithms": [
+                    "gridsearch",
+                    "random",
+                    {"tpe": {"n_initial_points": 20}},
+                ],
+                "name": "all_algos_webapi",
+                "targets": [
+                    {
+                        "assess": {"AverageResult": {"repetitions": 3}},
+                        "task": {
+                            "Branin": {"max_trials": 10},
+                            "EggHolder": {"dim": 4, "max_trials": 20},
+                            "RosenBrock": {"dim": 3, "max_trials": 10},
+                        },
+                    }
+                ],
+            },
+            {
+                "_id": 3,
+                "algorithms": ["random", {"tpe": {"n_initial_points": 20}}],
+                "name": "all_assessments_webapi_2",
+                "targets": [
+                    {
+                        "assess": {
+                            "AverageRank": {"repetitions": 3},
+                            "AverageResult": {"repetitions": 3},
+                            "ParallelAssessment": {
+                                "executor": "joblib",
+                                "n_workers": (1, 2, 4, 8),
+                                "repetitions": 3,
+                            },
+                        },
+                        "task": {
+                            "Branin": {"max_trials": 10},
+                            "RosenBrock": {"dim": 3, "max_trials": 10},
+                        },
+                    }
+                ],
+            },
+        ],
     )

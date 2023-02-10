@@ -35,7 +35,7 @@ def test_dump_default(three_experiments_family_same_name_with_trials, capsys):
         assert len(dumped_db.read("experiments")) == 3
         assert len(dumped_db.read("algo")) == 3
         assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 0
+        assert len(dumped_db.read("benchmarks")) == 3
     finally:
         clean_dump("dump.pkl")
 
@@ -71,7 +71,7 @@ def test_dump_to_specified_output(
         assert len(dumped_db.read("experiments")) == 3
         assert len(dumped_db.read("algo")) == 3
         assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 0
+        assert len(dumped_db.read("benchmarks")) == 3
     finally:
         clean_dump(dump_path)
 

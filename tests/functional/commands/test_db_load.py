@@ -7,6 +7,9 @@ import orion.core.cli
 from orion.storage.base import setup_storage
 
 LOAD_DATA = os.path.join(os.path.dirname(__file__), "orion_db_load_test_data.pickled")
+LOAD_DATA_WITH_BENCHMARKS = os.path.join(
+    os.path.dirname(__file__), "orion_db_load_test_data_with_benchmarks.pickled"
+)
 
 
 # TODO: Test loading benchmarks
@@ -40,7 +43,7 @@ def test_empty_database(empty_database):
 
 def test_load_all(empty_database):
     """Test load all database"""
-    assert os.path.isfile(LOAD_DATA)
+    assert os.path.isfile(LOAD_DATA_WITH_BENCHMARKS)
     storage = setup_storage()
     loaded_db = storage._db
     assert len(loaded_db.read("benchmarks")) == 0
@@ -48,12 +51,12 @@ def test_load_all(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r ignore")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore")
     with loaded_db.locked_database(write=False) as internal_db:
         collections = set(internal_db._db.keys())
     assert collections == {"experiments", "algo", "trials", "benchmarks"}
 
-    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("benchmarks")) == 3
     assert len(loaded_db.read("experiments")) == 3
     assert len(loaded_db.read("trials")) == 24
     # TODO: We should expect 6 algorithms, but only 3 are returned
@@ -73,23 +76,23 @@ def test_load_ignore(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r ignore")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
     algos = loaded_db.read("algo")
-    assert len(benchmarks) == 0
+    assert len(benchmarks) == 3
     assert len(experiments) == 3
     assert len(trials) == 24
     assert len(algos) == 3
 
-    execute(f"db load {LOAD_DATA} -r ignore")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore")
     # Duplicated data should be ignored, so we must expect same number of data and same IDs.
     new_benchmarks = loaded_db.read("benchmarks")
     new_experiments = loaded_db.read("experiments")
     new_trials = loaded_db.read("trials")
     new_algos = loaded_db.read("algo")
-    assert len(new_benchmarks) == 0
+    assert len(new_benchmarks) == 3
     assert len(new_experiments) == 3
     assert len(new_trials) == 24
     assert len(new_algos) == 3
@@ -107,23 +110,23 @@ def test_load_overwrite(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r overwrite")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
     algos = loaded_db.read("algo")
-    assert len(benchmarks) == 0
+    assert len(benchmarks) == 3
     assert len(experiments) == 3
     assert len(trials) == 24
     assert len(algos) == 3
 
-    execute(f"db load {LOAD_DATA} -r overwrite")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite")
     # Duplicated data should be overwritten, so we must expect same number of data
     new_benchmarks = loaded_db.read("benchmarks")
     new_experiments = loaded_db.read("experiments")
     new_trials = loaded_db.read("trials")
     new_algos = loaded_db.read("algo")
-    assert len(new_benchmarks) == 0
+    assert len(new_benchmarks) == 3
     assert len(new_experiments) == 3
     assert len(new_trials) == 24
     assert len(new_algos) == 3
@@ -134,8 +137,10 @@ def test_load_overwrite(empty_database):
     # So, new IDs may be similar to old ones, so it's useless to compare them.
 
 
-def test_load_bump(empty_database):
+def test_load_bump_no_benchmarks(empty_database):
     """Test load all database with --resolve --bump"""
+    data_source = LOAD_DATA
+
     storage = setup_storage()
     loaded_db = storage._db
     assert len(loaded_db.read("benchmarks")) == 0
@@ -143,7 +148,7 @@ def test_load_bump(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r bump")
+    execute(f"db load {data_source} -r bump")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
@@ -153,7 +158,7 @@ def test_load_bump(empty_database):
     assert len(trials) == 24
     assert len(algos) == 3
 
-    execute(f"db load {LOAD_DATA} -r bump")
+    execute(f"db load {data_source} -r bump")
     # Duplicated data should be bumped, so we must expect twice quantity of data.
     new_benchmarks = loaded_db.read("benchmarks")
     new_experiments = loaded_db.read("experiments")
@@ -164,7 +169,7 @@ def test_load_bump(empty_database):
     assert len(new_trials) == 24 * 2
     assert len(new_algos) == 3 * 2
 
-    execute(f"db load {LOAD_DATA} -r bump")
+    execute(f"db load {data_source} -r bump")
     # Duplicated data should be bumped, so we must expect thrice quantity of data.
     third_benchmarks = loaded_db.read("benchmarks")
     third_experiments = loaded_db.read("experiments")
@@ -176,6 +181,46 @@ def test_load_bump(empty_database):
     assert len(third_algos) == 3 * 3
 
 
+def test_load_bump_with_benchmarks(empty_database, capsys):
+    """Test load all database with --resolve --bump"""
+    data_source = LOAD_DATA_WITH_BENCHMARKS
+
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    # First execution should pass, as destination contains nothing.
+    execute(f"db load {data_source} -r bump")
+    benchmarks = loaded_db.read("benchmarks")
+    experiments = loaded_db.read("experiments")
+    trials = loaded_db.read("trials")
+    algos = loaded_db.read("algo")
+    assert len(benchmarks) == 3
+    assert len(experiments) == 3
+    assert len(trials) == 24
+    assert len(algos) == 3
+
+    # New execution should fail, as benchmarks don't currently support bump.
+    execute(f"db load {data_source} -r bump", assert_code=1)
+    captured = capsys.readouterr()
+    assert (
+        captured.err.strip()
+        == "Error: Can't bump benchmark version, as benchmarks do not currently support versioning."
+    )
+    # Destination should have not changed.
+    new_benchmarks = loaded_db.read("benchmarks")
+    new_experiments = loaded_db.read("experiments")
+    new_trials = loaded_db.read("trials")
+    new_algos = loaded_db.read("algo")
+    assert new_benchmarks == benchmarks
+    assert new_experiments == experiments
+    assert new_trials == trials
+    assert new_algos == algos
+
+
 def test_load_one_experiment(empty_database):
     """Test load experiment test_single_exp"""
     storage = setup_storage()
@@ -185,7 +230,8 @@ def test_load_one_experiment(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp")
+    assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
     trials = loaded_db.read("trials")
@@ -194,7 +240,7 @@ def test_load_one_experiment(empty_database):
     # We must have dumped version 1
     assert exp_data["name"] == "test_single_exp"
     assert exp_data["version"] == 1
-    assert len(algos) == len(exp_data["algorithms"]) == 1
+    assert len(algos) == len(exp_data["algorithm"]) == 1
     # This experiment must have 12 trials (children included)
     assert len(trials) == 12
     assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -210,7 +256,8 @@ def test_load_one_experiment_other_version(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp -v 2")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp -v 2")
+    assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
     trials = loaded_db.read("trials")
@@ -218,7 +265,7 @@ def test_load_one_experiment_other_version(empty_database):
     (exp_data,) = experiments
     assert exp_data["name"] == "test_single_exp"
     assert exp_data["version"] == 2
-    assert len(algos) == len(exp_data["algorithms"]) == 1
+    assert len(algos) == len(exp_data["algorithm"]) == 1
     # This experiment must have only 6 trials
     assert len(trials) == 6
     assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -235,7 +282,8 @@ def test_load_one_experiment_ignore(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp")
+    assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
     trials = loaded_db.read("trials")
@@ -243,7 +291,7 @@ def test_load_one_experiment_ignore(empty_database):
     assert len(algos) == 1
     assert len(trials) == 12
 
-    execute(f"db load {LOAD_DATA} -r ignore -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp")
     new_experiments = loaded_db.read("experiments")
     new_algos = loaded_db.read("algo")
     new_trials = loaded_db.read("trials")
@@ -266,7 +314,8 @@ def test_load_one_experiment_overwrite(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r overwrite -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite -n test_single_exp")
+    assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
     trials = loaded_db.read("trials")
@@ -274,7 +323,7 @@ def test_load_one_experiment_overwrite(empty_database):
     assert len(algos) == 1
     assert len(trials) == 12
 
-    execute(f"db load {LOAD_DATA} -r overwrite -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite -n test_single_exp")
     new_experiments = loaded_db.read("experiments")
     new_algos = loaded_db.read("algo")
     new_trials = loaded_db.read("trials")
@@ -297,7 +346,8 @@ def test_load_one_experiment_bump(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA} -r bump -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp")
+    assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
     algos = loaded_db.read("algo")
@@ -305,7 +355,7 @@ def test_load_one_experiment_bump(empty_database):
     assert len(algos) == 1
     assert len(trials) == 12
 
-    execute(f"db load {LOAD_DATA} -r bump -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp")
     # Duplicated data should be bumped, so we must expect twice quantity of data.
     new_experiments = loaded_db.read("experiments")
     new_trials = loaded_db.read("trials")
@@ -314,7 +364,7 @@ def test_load_one_experiment_bump(empty_database):
     assert len(new_algos) == 1 * 2
     assert len(new_trials) == 12 * 2
 
-    execute(f"db load {LOAD_DATA} -r bump -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp")
     # Duplicated data should be bumped, so we must expect thrice quantity of data.
     third_experiments = loaded_db.read("experiments")
     third_trials = loaded_db.read("trials")
