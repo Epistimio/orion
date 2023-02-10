@@ -401,7 +401,8 @@ def _execute_import(
         i_query += 1
     for query_delete_experiment in queries_to_delete[COL_EXPERIMENTS]:
         logger.info(
-            f"Deleting from {len(queries_to_delete[COL_EXPERIMENTS])} queries into {COL_EXPERIMENTS}"
+            f"Deleting from {len(queries_to_delete[COL_EXPERIMENTS])} queries "
+            f"into {COL_EXPERIMENTS}"
         )
         dst_storage.delete_experiment(uid=query_delete_experiment["_id"])
         _describe_import_progress(
