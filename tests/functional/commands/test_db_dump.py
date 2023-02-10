@@ -2,9 +2,11 @@
 """Perform functional tests for db dump."""
 
 import os
+import pickle
 
 import orion.core.cli
 from orion.core.io.database.pickleddb import PickledDB
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -31,7 +33,7 @@ def test_dump_default(three_experiments_family_same_name_with_trials, capsys):
             collections = set(internal_db._db.keys())
         assert collections == {"experiments", "algo", "trials", "benchmarks"}
         assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 6
+        assert len(dumped_db.read("algo")) == 3
         assert len(dumped_db.read("trials")) == 24
         assert len(dumped_db.read("benchmarks")) == 0
     finally:
@@ -67,7 +69,7 @@ def test_dump_to_specified_output(
             collections = set(internal_db._db.keys())
         assert collections == {"experiments", "algo", "trials", "benchmarks"}
         assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 6
+        assert len(dumped_db.read("algo")) == 3
         assert len(dumped_db.read("trials")) == 24
         assert len(dumped_db.read("benchmarks")) == 0
     finally:
@@ -76,6 +78,18 @@ def test_dump_to_specified_output(
 
 def test_dump_one_experiment(three_experiments_family_same_name_with_trials, capsys):
     """Test dump only experiment test_single_exp (no version specified)"""
+
+    # Check src algo state
+    src_storage = setup_storage()
+    src_exps = src_storage.fetch_experiments({"name": "test_single_exp", "version": 1})
+    assert len(src_exps) == 1
+    (src_exp,) = src_exps
+    src_alg = src_storage.get_algorithm_lock_info(uid=src_exp["_id"])
+    assert src_alg.state == {
+        "my_algo_state": "some_data",
+        "my_other_state_data": "some_other_data",
+    }
+
     assert not os.path.exists("dump.pkl")
     try:
         execute("db dump -n test_single_exp")
@@ -90,7 +104,10 @@ def test_dump_one_experiment(three_experiments_family_same_name_with_trials, cap
         # We must have dumped version 1
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 1
+        # Check dumped algo
         assert len(algos) == len(exp_data["algorithm"]) == 1
+        (algo,) = algos
+        assert src_alg.state == pickle.loads(algo["state"])
         # This experiment must have 12 trials (children included)
         assert len(trials) == 12
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)

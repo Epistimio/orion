@@ -2,6 +2,7 @@
 """Common fixtures and utils for unittests and functional tests."""
 import copy
 import os
+import pickle
 import zlib
 
 import pytest
@@ -481,3 +482,14 @@ def three_experiments_family_same_name_with_trials(
         x_value += 1
     # exp1 should have 12 trials (including child trials)
     # exp2 and exp3 should have 6 trials each
+
+    # Add some algo data for exp1
+    orionstate.database.read_and_write(
+        collection_name="algo",
+        query={"experiment": exp1.id},
+        data={
+            "state": pickle.dumps(
+                {"my_algo_state": "some_data", "my_other_state_data": "some_other_data"}
+            )
+        },
+    )

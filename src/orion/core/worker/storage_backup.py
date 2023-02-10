@@ -11,7 +11,7 @@ import os
 from orion.core.io.database import DatabaseError
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.worker.trial import Trial
-from orion.storage.base import setup_storage
+from orion.storage.base import BaseStorageProtocol, setup_storage
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -41,21 +41,24 @@ STEP_NAMES = [
 ]
 
 
-def dump_database(storage, dump_host, name=None, version=None):
+def dump_database(storage: BaseStorageProtocol, dump_host, name=None, version=None):
     """Dump a database
     :param storage: storage of database to dump
     :param dump_host: file path to dump into (dumped file will be a pickled file)
     :param name: (optional) name of experiment to dump (by default, full database is dumped)
     :param version: (optional) version of experiment to dump
     """
-    orig_db = storage._db
     dump_host = os.path.abspath(dump_host)
-    if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(orig_db.host):
-        raise DatabaseError("Cannot dump pickleddb to itself.")
+    # For pickled databases, make sure src is not dst
+    if hasattr(storage, "_db"):
+        orig_db = storage._db
+        if isinstance(orig_db, PickledDB) and dump_host == os.path.abspath(
+            orig_db.host
+        ):
+            raise DatabaseError("Cannot dump pickleddb to itself.")
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
-    db = dst_storage._db
-    logger.info(f"Dump to {db}")
-    _dump(orig_db, db, COLLECTIONS, name, version)
+    logger.info(f"Dump to {dump_host}")
+    _dump(storage, dst_storage, name, version)
 
 
 def load_database(
@@ -95,7 +98,7 @@ def load_database(
             experiments = src_database.read("experiments", query)
             if not experiments:
                 raise DatabaseError(
-                    f"No experiment found with query {query}. Nothing to dump."
+                    f"No experiment found with query {query}. Nothing to import."
                 )
             if len(experiments) > 1:
                 experiments = sorted(experiments, key=lambda d: d["version"])[:1]
@@ -114,12 +117,16 @@ def load_database(
         _execute_import(dst_db, *preparation, progress_callback=progress_callback)
 
 
-def _dump(src_db, dst_db, collection_names, name=None, version=None):
+def _dump(
+    src_storage: BaseStorageProtocol,
+    dst_storage: BaseStorageProtocol,
+    name=None,
+    version=None,
+):
     """
-    Dump data from database to db.
-    :param src_db: input database
-    :param dst_db: output database
-    :param collection_names: set of collection names to dump
+    Dump data from source storage to destination storage.
+    :param src_storage: input storage
+    :param dst_storage: output storage
     :param name: (optional) if provided, dump only
         data related to experiment with this name
     :param version: (optional) version of experiment to dump
@@ -127,17 +134,21 @@ def _dump(src_db, dst_db, collection_names, name=None, version=None):
     # Get collection names in a set
     if name is None:
         # Nothing to filter, dump everything
-        for collection_name in collection_names:
-            logger.info(f"Dumping collection {collection_name}")
-            data = src_db.read(collection_name)
-            dst_db.write(collection_name, data)
+        # Dump benchmarks
+        logger.info("Dumping benchmarks")
+        for benchmark in src_storage.fetch_benchmark({}):
+            dst_storage.create_benchmark(benchmark)
+        # Dump experiments
+        logger.info("Dumping experiments, algos and trials")
+        for i, src_exp in enumerate(src_storage.fetch_experiments({})):
+            logger.info(f"Dumping experiment {i + 1}")
+            _dump_experiment(src_storage, dst_storage, src_exp)
     else:
         # Get experiments with given name
-        assert "experiments" in collection_names
         query = {"name": name}
         if version is not None:
             query["version"] = version
-        experiments = src_db.read("experiments", query)
+        experiments = src_storage.fetch_experiments(query)
         if not experiments:
             raise DatabaseError(
                 f"No experiment found with query {query}. Nothing to dump."
@@ -147,21 +158,27 @@ def _dump(src_db, dst_db, collection_names, name=None, version=None):
         else:
             (exp_data,) = experiments
         logger.info(f"Found experiment {exp_data['name']}.{exp_data['version']}")
-        # Dump selected experiments
+        # Dump selected experiments and related data
         logger.info(f"Dumping experiment {name}")
-        dst_db.write("experiments", exp_data)
-        # Dump data related to selected experiments (do not dump other experiments)
-        for collection_name in sorted(collection_names - {"experiments"}):
-            filtered_data = [
-                element
-                for element in src_db.read(collection_name)
-                if element.get("experiment", None) == exp_data["_id"]
-            ]
-            dst_db.write(collection_name, filtered_data)
-            logger.info(
-                f"Written {len(filtered_data)} filtered data "
-                f"for collection {collection_name}"
-            )
+        _dump_experiment(src_storage, dst_storage, exp_data)
+
+
+def _dump_experiment(src_storage, dst_storage, src_exp):
+    """Dump a single experiment and related data from src to dst storage."""
+    algo_lock_info = src_storage.get_algorithm_lock_info(uid=src_exp["_id"])
+    logger.info("\tGot algo lock")
+    # Dump experiment and algo
+    dst_storage.create_experiment(
+        src_exp,
+        algo_locked=algo_lock_info.locked,
+        algo_state=algo_lock_info.state,
+        algo_heartbeat=algo_lock_info.heartbeat,
+    )
+    logger.info("\tCreated exp")
+    # Dump trials
+    for trial in src_storage.fetch_trials(uid=src_exp["_id"]):
+        dst_storage.register_trial(trial)
+    logger.info("\tDumped trials")
 
 
 def _prepare_import(
