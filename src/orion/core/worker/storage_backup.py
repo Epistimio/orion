@@ -79,42 +79,41 @@ def load_database(
     src_storage = setup_storage(
         {"database": {"host": os.path.abspath(load_host), "type": "pickleddb"}}
     )
-    src_db = src_storage._db
-    logger.info(f"Loaded src {src_db}")
+    src_database = src_storage._db
+    logger.info(f"Loaded src {src_database}")
 
     dst_db = storage._db
     import_benchmarks = False
-    with src_db.locked_database(write=False) as src_database:
-        _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 0, 1, progress_callback)
-        if name is None:
-            import_benchmarks = True
-            # Retrieve all src experiments for export
-            experiments = src_database.read("experiments")
-        else:
-            # Find experiments based on given name and version
-            query = {"name": name}
-            if version is not None:
-                query["version"] = version
-            experiments = src_database.read("experiments", query)
-            if not experiments:
-                raise DatabaseError(
-                    f"No experiment found with query {query}. Nothing to import."
-                )
-            if len(experiments) > 1:
-                experiments = sorted(experiments, key=lambda d: d["version"])[:1]
-            logger.info(
-                f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
+    _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 0, 1, progress_callback)
+    if name is None:
+        import_benchmarks = True
+        # Retrieve all src experiments for export
+        experiments = src_database.read("experiments")
+    else:
+        # Find experiments based on given name and version
+        query = {"name": name}
+        if version is not None:
+            query["version"] = version
+        experiments = src_database.read("experiments", query)
+        if not experiments:
+            raise DatabaseError(
+                f"No experiment found with query {query}. Nothing to import."
             )
-        _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 1, 1, progress_callback)
-        preparation = _prepare_import(
-            src_database,
-            dst_db,
-            resolve,
-            experiments,
-            import_benchmarks,
-            progress_callback=progress_callback,
+        if len(experiments) > 1:
+            experiments = sorted(experiments, key=lambda d: d["version"])[:1]
+        logger.info(
+            f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
         )
-        _execute_import(dst_db, *preparation, progress_callback=progress_callback)
+    _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 1, 1, progress_callback)
+    preparation = _prepare_import(
+        src_database,
+        dst_db,
+        resolve,
+        experiments,
+        import_benchmarks,
+        progress_callback=progress_callback,
+    )
+    _execute_import(dst_db, *preparation, progress_callback=progress_callback)
 
 
 def _dump(
