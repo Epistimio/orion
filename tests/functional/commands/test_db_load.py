@@ -101,7 +101,7 @@ def test_load_ignore(empty_database):
     assert len(common_indices(algos, new_algos)) == 3
 
 
-def test_load_overwrite(empty_database):
+def test_load_overwrite(empty_database, capsys):
     """Test load all database with --resolve overwrite"""
     storage = setup_storage()
     loaded_db = storage._db
@@ -131,10 +131,66 @@ def test_load_overwrite(empty_database):
     assert len(new_trials) == 24
     assert len(new_algos) == 3
 
-    # NB:
-    # New IDs are computed based on existing ones in destination database,
-    # and experiments are inserted after all new IDs are computed.
-    # So, new IDs may be similar to old ones, so it's useless to compare them.
+    # Check output to verify progress callback messages
+    captured = capsys.readouterr()
+    assert captured.err.strip() == ""
+    assert (
+        captured.out.strip()
+        == """
+STEP 1 Collect source experiments to load 0 1
+STEP 1 Collect source experiments to load 1 1
+STEP 2 Check benchmarks 0 3
+STEP 2 Check benchmarks 1 3
+STEP 2 Check benchmarks 2 3
+STEP 2 Check benchmarks 3 3
+STEP 3 Check destination experiments 0 1
+STEP 3 Check destination experiments 1 1
+STEP 4 Check source experiments 0 3
+STEP 4 Check source experiments 1 3
+STEP 4 Check source experiments 2 3
+STEP 4 Check source experiments 3 3
+STEP 5 Delete data to replace in destination 0 0
+STEP 6 Insert new data in destination 0 6
+STEP 6 Insert new data in destination 1 6
+STEP 6 Insert new data in destination 2 6
+STEP 6 Insert new data in destination 3 6
+STEP 6 Insert new data in destination 4 6
+STEP 6 Insert new data in destination 5 6
+STEP 6 Insert new data in destination 6 6
+STEP 1 Collect source experiments to load 0 1
+STEP 1 Collect source experiments to load 1 1
+STEP 2 Check benchmarks 0 3
+STEP 2 Check benchmarks 1 3
+STEP 2 Check benchmarks 2 3
+STEP 2 Check benchmarks 3 3
+STEP 3 Check destination experiments 0 1
+STEP 3 Check destination experiments 1 1
+STEP 4 Check source experiments 0 3
+STEP 4 Check source experiments 1 3
+STEP 4 Check source experiments 2 3
+STEP 4 Check source experiments 3 3
+STEP 5 Delete data to replace in destination 0 12
+STEP 5 Delete data to replace in destination 1 12
+STEP 5 Delete data to replace in destination 2 12
+STEP 5 Delete data to replace in destination 3 12
+STEP 5 Delete data to replace in destination 4 12
+STEP 5 Delete data to replace in destination 5 12
+STEP 5 Delete data to replace in destination 6 12
+STEP 5 Delete data to replace in destination 7 12
+STEP 5 Delete data to replace in destination 8 12
+STEP 5 Delete data to replace in destination 9 12
+STEP 5 Delete data to replace in destination 10 12
+STEP 5 Delete data to replace in destination 11 12
+STEP 5 Delete data to replace in destination 12 12
+STEP 6 Insert new data in destination 0 6
+STEP 6 Insert new data in destination 1 6
+STEP 6 Insert new data in destination 2 6
+STEP 6 Insert new data in destination 3 6
+STEP 6 Insert new data in destination 4 6
+STEP 6 Insert new data in destination 5 6
+STEP 6 Insert new data in destination 6 6
+""".strip()
+    )
 
 
 def test_load_bump_no_benchmarks(empty_database):
@@ -330,11 +386,6 @@ def test_load_one_experiment_overwrite(empty_database):
     assert len(new_experiments) == 1
     assert len(new_algos) == 1
     assert len(new_trials) == 12
-
-    # NB: As destination contains only 1 experiment which is overwritten,
-    # old experiment is deleted before new one is inserted, so that
-    # we may get again same IDs (e.g. ID `1` for experiment).
-    # So, we won't check IDs here.
 
 
 def test_load_one_experiment_bump(empty_database):
