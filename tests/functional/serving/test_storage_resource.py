@@ -412,6 +412,9 @@ def test_load_unknown_experiment():
             if progress["status"] != "active":
                 break
             time.sleep(0.010)
+        # Check final task status (error expected, progress not finished)
+        assert progress["status"] == "error"
+        assert progress["progress_value"] < 1.0
         # Check we have messages
         # Last message must be an error message
         assert messages
@@ -421,11 +424,8 @@ def test_load_unknown_experiment():
         )
         assert (
             messages[-1]
-            == "Error: No experiment found with query {'name': 'unknown'}. Nothing to dump."
+            == "Error: No experiment found with query {'name': 'unknown'}. Nothing to import."
         )
-        # Check final task status (error expected, progress not finished)
-        assert progress["status"] == "error"
-        assert progress["progress_value"] < 1.0
 
         # Check expected data count in database (must be still empty)
         assert len(dst_db.read("experiments")) == 0

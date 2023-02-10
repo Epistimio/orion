@@ -61,12 +61,20 @@ class Notifications:
 
 
 class ImportTask:
-    """Wrapper to represent an import task.
+    """Wrapper to represent an import task. Used to monitor task progress.
 
     Properties:
     - task_id: task ID, used to identify the task in web API
     - notifications: stream handler with shared queue to capture task messages
+    - progress_message: latest progress message
+    - progress_value: latest progress (0 <= floating value <= 1)
     - completed: shared status: 0 for running, -1 for failure, 1 for success
+
+    There is two ways to monitor task:
+    - either get messages collected in stream handler queue.
+      Stream handler collects all messages printed or logged in task.
+    - either regularly check latest message in progress_message.
+      Progress message only describe the latest step running in task.
     """
 
     # String representation of task status
