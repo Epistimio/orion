@@ -10,7 +10,6 @@ import os
 
 from orion.core.io.database import DatabaseError
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol, setup_storage
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,6 @@ COL_TRIALS = "trials"
 
 COLLECTIONS = {"experiments", "algo", "benchmarks", "trials"}
 EXPERIMENT_RELATED_COLLECTIONS = {"algo", "trials"}
-
 
 STEP_COLLECT_EXPERIMENTS = 0
 STEP_CHECK_BENCHMARKS = 1
@@ -41,14 +39,22 @@ STEP_NAMES = [
 ]
 
 
-def dump_database(storage: BaseStorageProtocol, dump_host, name=None, version=None):
+def dump_database(storage, dump_host, name=None, version=None):
     """Dump a database
-    :param storage: storage of database to dump
-    :param dump_host: file path to dump into (dumped file will be a pickled file)
-    :param name: (optional) name of experiment to dump (by default, full database is dumped)
-    :param version: (optional) version of experiment to dump
+
+    Parameters
+    ----------
+    storage: BaseStorageProtocol
+        storage of database to dump
+    dump_host:
+        file path to dump into (dumped file will be a pickled file)
+    name:
+        (optional) name of experiment to dump (by default, full database is dumped)
+    version:
+        (optional) version of experiment to dump
     """
     dump_host = os.path.abspath(dump_host)
+
     # For pickled databases, make sure src is not dst
     if hasattr(storage, "_db"):
         orig_db = storage._db
@@ -56,6 +62,7 @@ def dump_database(storage: BaseStorageProtocol, dump_host, name=None, version=No
             orig_db.host
         ):
             raise DatabaseError("Cannot dump pickleddb to itself.")
+
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
     logger.info(f"Dump to {dump_host}")
     _dump(storage, dst_storage, name, version)
@@ -65,36 +72,54 @@ def load_database(
     storage, load_host, resolve, name=None, version=None, progress_callback=None
 ):
     """Import data into a database
-    :param storage: storage of destination database to load into
-    :param load_host: file path containing data to import
-        (should be a pickled file representing a PickledDB)
-    :param resolve: policy to resolve import conflict. Either 'ignore', 'overwrite' or 'bump'
-        'ignore' will ignore imported data on conflict
-        'overwrite' will overwrite old data in destination database on conflict
-        'bump' will bump imported data version before adding it,
-            if data with same ID is found in destination
-    :param name: (optional) name of experiment to import (by default, whole file is imported)
-    :param version: (optional) version of experiment to import
-    """
-    src_storage = setup_storage(
-        {"database": {"host": os.path.abspath(load_host), "type": "pickleddb"}}
-    )
-    src_database = src_storage._db
-    logger.info(f"Loaded src {src_database}")
 
-    dst_db = storage._db
+    Parameters
+    ----------
+    storage: BaseStorageProtocol
+        storage of destination database to load into
+    load_host:
+        file path containing data to import
+        (should be a pickled file representing a PickledDB)
+    resolve:
+        policy to resolve import conflict. Either 'ignore', 'overwrite' or 'bump'.
+        - 'ignore' will ignore imported data on conflict
+        - 'overwrite' will overwrite old data in destination database on conflict
+        - 'bump' will bump imported data version before adding it,
+          if data with same ID is found in destination
+    name:
+        (optional) name of experiment to import (by default, whole file is imported)
+    version:
+        (optional) version of experiment to import
+    progress_callback:
+        Optional callback to report progression. Receives 2 parameters:
+        - step description (string)
+        - overall progress (0 <= floating value <= 1)
+    """
+    load_host = os.path.abspath(load_host)
+
+    # For pickled databases, make sure src is not dst
+    if hasattr(storage, "_db"):
+        dst_db = storage._db
+        if isinstance(dst_db, PickledDB) and load_host == os.path.abspath(dst_db.host):
+            raise DatabaseError("Cannot load pickleddb to itself.")
+
+    src_storage: BaseStorageProtocol = setup_storage(
+        {"database": {"host": load_host, "type": "pickleddb"}}
+    )
+    logger.info(f"Loaded src {load_host}")
+
     import_benchmarks = False
     _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 0, 1, progress_callback)
     if name is None:
         import_benchmarks = True
         # Retrieve all src experiments for export
-        experiments = src_database.read("experiments")
+        experiments = src_storage.fetch_experiments({})
     else:
         # Find experiments based on given name and version
         query = {"name": name}
         if version is not None:
             query["version"] = version
-        experiments = src_database.read("experiments", query)
+        experiments = src_storage.fetch_experiments(query)
         if not experiments:
             raise DatabaseError(
                 f"No experiment found with query {query}. Nothing to import."
@@ -105,30 +130,31 @@ def load_database(
             f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
         )
     _describe_import_progress(STEP_COLLECT_EXPERIMENTS, 1, 1, progress_callback)
+
     preparation = _prepare_import(
-        src_database,
-        dst_db,
+        src_storage,
+        storage,
         resolve,
         experiments,
         import_benchmarks,
         progress_callback=progress_callback,
     )
-    _execute_import(dst_db, *preparation, progress_callback=progress_callback)
+    _execute_import(storage, *preparation, progress_callback=progress_callback)
 
 
-def _dump(
-    src_storage: BaseStorageProtocol,
-    dst_storage: BaseStorageProtocol,
-    name=None,
-    version=None,
-):
-    """
-    Dump data from source storage to destination storage.
-    :param src_storage: input storage
-    :param dst_storage: output storage
-    :param name: (optional) if provided, dump only
-        data related to experiment with this name
-    :param version: (optional) version of experiment to dump
+def _dump(src_storage, dst_storage, name=None, version=None):
+    """Dump data from source storage to destination storage.
+
+    Parameters
+    ----------
+    src_storage: BaseStorageProtocol
+        input storage
+    dst_storage: BaseStorageProtocol
+        output storage
+    name:
+        (optional) if provided, dump only data related to experiment with this name
+    version:
+        (optional) version of experiment to dump
     """
     # Get collection names in a set
     if name is None:
@@ -181,8 +207,8 @@ def _dump_experiment(src_storage, dst_storage, src_exp):
 
 
 def _prepare_import(
-    src_database,
-    dst_db,
+    src_storage,
+    dst_storage,
     resolve,
     experiments,
     import_benchmarks=True,
@@ -192,13 +218,25 @@ def _prepare_import(
 
     Compute all changes to apply to make import and return changes as dictionaries.
 
-    :param src_database: database to import from
-    :param dst_db: database to import into
-    :param resolve: resolve policy
-    :param experiments: experiments to import from src_database into dst_db
-    :param import_benchmarks: if True, benchmarks will be also imported from src_database
-    :return: a couple (queries to delete, data to add) representing
-        changes to apply to dst_db to make import
+    Parameters
+    ----------
+    src_storage: BaseStorageProtocol
+        storage to import from
+    dst_storage: BaseStorageProtocol
+        storage to import into
+    resolve:
+        resolve policy
+    experiments:
+        experiments to import from src_storage into dst_storage
+    import_benchmarks:
+        if True, benchmarks will be also imported from src_database
+    progress_callback:
+        See :func:`load_database`
+
+    Returns
+    -------
+    A couple (queries to delete, data to add) representing
+    changes to apply to dst_storage to make import
     """
     assert resolve in ("ignore", "overwrite", "bump")
 
@@ -206,13 +244,13 @@ def _prepare_import(
     data_to_add = {}
 
     if import_benchmarks:
-        src_benchmarks = src_database.read(COL_BENCHMARKS)
+        src_benchmarks = src_storage.fetch_benchmark({})
         for i, src_benchmark in enumerate(src_benchmarks):
             _describe_import_progress(
                 STEP_CHECK_BENCHMARKS, i, len(src_benchmarks), progress_callback
             )
-            dst_benchmarks = dst_db.read(
-                COL_BENCHMARKS, {"name": src_benchmark["name"]}
+            dst_benchmarks = dst_storage.fetch_benchmark(
+                {"name": src_benchmark["name"]}
             )
             if dst_benchmarks:
                 (dst_benchmark,) = dst_benchmarks
@@ -244,22 +282,24 @@ def _prepare_import(
         )
 
     _describe_import_progress(STEP_CHECK_DST_EXPERIMENTS, 0, 1, progress_callback)
-    all_dst_experiments = dst_db.read("experiments")
+    all_dst_experiments = dst_storage.fetch_experiments({})
+    # Dictionary mapping dst exp name to exp version to list of exps with same name and version
+    dst_exp_map = {}
     last_experiment_id = max((data["_id"] for data in all_dst_experiments), default=0)
     last_versions = {}
     for dst_exp in all_dst_experiments:
         name = dst_exp["name"]
         version = dst_exp["version"]
         last_versions[name] = max(last_versions.get(name, 0), version)
+        dst_exp_map.setdefault(name, {}).setdefault(version, []).append(dst_exp)
     _describe_import_progress(STEP_CHECK_DST_EXPERIMENTS, 1, 1, progress_callback)
 
     for i, experiment in enumerate(experiments):
         _describe_import_progress(
             STEP_CHECK_SRC_EXPERIMENTS, i, len(experiments), progress_callback
         )
-        dst_experiments = dst_db.read(
-            "experiments",
-            {"name": experiment["name"], "version": experiment["version"]},
+        dst_experiments = dst_exp_map.get(experiment["name"], {}).get(
+            experiment["version"], []
         )
         if dst_experiments:
             (dst_experiment,) = dst_experiments
@@ -297,34 +337,27 @@ def _prepare_import(
             )
 
         # Get data related to experiment to import.
-        algos = src_database.read("algo", {"experiment": experiment["_id"]})
-        trials = [
-            Trial(**data)
-            for data in src_database.read("trials", {"experiment": experiment["_id"]})
-        ]
+        algo = src_storage.get_algorithm_lock_info(uid=experiment["_id"])
+        trials = src_storage.fetch_trials(uid=experiment["_id"])
 
         # Generate new experiment ID
         new_experiment_id = last_experiment_id + 1
         last_experiment_id = new_experiment_id
         experiment["_id"] = new_experiment_id
-        # Update algos and trials: set new experiment ID and remove algo/trials database IDs,
+        # Update trials: set new experiment ID and remove trials database IDs,
         # so that new IDs will be generated at insertion.
         # Trial parents are identified using trial identifier (trial.id)
         # which is not related to trial database ID (trial.id_override).
         # So, we can safely remove trial database ID.
-        for algo in algos:
-            algo["experiment"] = new_experiment_id
-            del algo["_id"]
         for trial in trials:
             trial.experiment = new_experiment_id
             trial.id_override = None
 
-        # Write data
+        # Set data to add
         data_to_add.setdefault(COL_EXPERIMENTS, []).append(experiment)
-        data_to_add.setdefault(COL_ALGOS, []).extend(algos)
-        data_to_add.setdefault(COL_TRIALS, []).extend(
-            trial.to_dict() for trial in trials
-        )
+        # Link algo with new experiment ID
+        data_to_add.setdefault(COL_ALGOS, {})[new_experiment_id] = algo
+        data_to_add.setdefault(COL_TRIALS, {})[new_experiment_id] = trials
     _describe_import_progress(
         STEP_CHECK_SRC_EXPERIMENTS,
         len(experiments),
@@ -336,38 +369,98 @@ def _prepare_import(
 
 
 def _execute_import(
-    dst_db, queries_to_delete: dict, data_to_add: dict, progress_callback=None
+    dst_storage, queries_to_delete, data_to_add, progress_callback=None
 ):
     """Execute import
-    :param dst_db: destination database where to apply changes
-    :param queries_to_delete: dictionary mapping a collection name to a list of queries to use
+
+    Parameters
+    ----------
+    dst_storage: BaseStorageProtocol
+        destination storage where to apply changes
+    queries_to_delete: dict
+        dictionary mapping a collection name to a list of queries to use
         to find and delete data
-    :param data_to_add: dictionary mapping a collection name to a list of data to add
+    data_to_add: dict
+        dictionary mapping a collection name to a list of data to add
+    progress_callback:
+        See :func:`load_database`
     """
 
     total_queries = sum(len(queries) for queries in queries_to_delete.values())
+    for collection_name in COLLECTIONS:
+        queries_to_delete.setdefault(collection_name, ())
     i_query = 0
-    for collection_name, queries in queries_to_delete.items():
+    for query_delete_benchmark in queries_to_delete[COL_BENCHMARKS]:
         logger.info(
-            f"Deleting from {len(queries)} queries into collection {collection_name}"
+            f"Deleting from {len(queries_to_delete[COL_BENCHMARKS])} queries into {COL_BENCHMARKS}"
         )
-        for query in queries:
-            _describe_import_progress(
-                STEP_DELETE_OLD_DATA, i_query, total_queries, progress_callback
-            )
-            dst_db.remove(collection_name, query)
-            i_query += 1
+        dst_storage.delete_benchmark(query_delete_benchmark)
+        _describe_import_progress(
+            STEP_DELETE_OLD_DATA, i_query, total_queries, progress_callback
+        )
+        i_query += 1
+    for query_delete_experiment in queries_to_delete[COL_EXPERIMENTS]:
+        logger.info(
+            f"Deleting from {len(queries_to_delete[COL_EXPERIMENTS])} queries into {COL_EXPERIMENTS}"
+        )
+        dst_storage.delete_experiment(uid=query_delete_experiment["_id"])
+        _describe_import_progress(
+            STEP_DELETE_OLD_DATA, i_query, total_queries, progress_callback
+        )
+        i_query += 1
+    for query_delete_trials in queries_to_delete[COL_TRIALS]:
+        logger.info(
+            f"Deleting from {len(queries_to_delete[COL_TRIALS])} queries into {COL_TRIALS}"
+        )
+        dst_storage.delete_trials(uid=query_delete_trials["experiment"])
+        _describe_import_progress(
+            STEP_DELETE_OLD_DATA, i_query, total_queries, progress_callback
+        )
+        i_query += 1
+    for query_delete_algo in queries_to_delete[COL_ALGOS]:
+        logger.info(
+            f"Deleting from {len(queries_to_delete[COL_ALGOS])} queries into {COL_ALGOS}"
+        )
+        dst_storage.delete_algorithm_lock(uid=query_delete_algo["experiment"])
+        _describe_import_progress(
+            STEP_DELETE_OLD_DATA, i_query, total_queries, progress_callback
+        )
+        i_query += 1
+
     _describe_import_progress(
         STEP_DELETE_OLD_DATA, total_queries, total_queries, progress_callback
     )
-    for i, (collection_name, data) in enumerate(data_to_add.items()):
+
+    nb_data_to_add = len(data_to_add.get(COL_BENCHMARKS, ())) + len(
+        data_to_add.get(COL_EXPERIMENTS, ())
+    )
+    i_data = 0
+
+    for new_benchmark in data_to_add.get(COL_BENCHMARKS, ()):
+        dst_storage.create_benchmark(new_benchmark)
         _describe_import_progress(
-            STEP_INSERT_NEW_DATA, i, len(data_to_add), progress_callback
+            STEP_INSERT_NEW_DATA, i_data, nb_data_to_add, progress_callback
         )
-        logger.info(f"Writing {len(data)} data into collection {collection_name}")
-        dst_db.write(collection_name, data)
+        i_data += 1
+
+    for new_experiment in data_to_add.get(COL_EXPERIMENTS, ()):
+        new_algo = data_to_add[COL_ALGOS][new_experiment["_id"]]
+        new_trials = data_to_add[COL_TRIALS][new_experiment["_id"]]
+        dst_storage.create_experiment(
+            new_experiment,
+            algo_locked=new_algo.locked,
+            algo_state=new_algo.state,
+            algo_heartbeat=new_algo.heartbeat,
+        )
+        for trial in new_trials:
+            dst_storage.register_trial(trial)
+        _describe_import_progress(
+            STEP_INSERT_NEW_DATA, i_data, nb_data_to_add, progress_callback
+        )
+        i_data += 1
+
     _describe_import_progress(
-        STEP_INSERT_NEW_DATA, len(data_to_add), len(data_to_add), progress_callback
+        STEP_INSERT_NEW_DATA, nb_data_to_add, nb_data_to_add, progress_callback
     )
 
 

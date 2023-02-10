@@ -191,6 +191,10 @@ class BaseStorageProtocol:
         """Fetch all benchmarks that match the query"""
         raise NotImplementedError()
 
+    def delete_benchmark(self, query: dict):
+        """Delete benchmarks that match given query"""
+        raise NotImplementedError()
+
     def create_experiment(
         self,
         config: ExperimentConfig,

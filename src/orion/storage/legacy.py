@@ -110,6 +110,10 @@ class Legacy(BaseStorageProtocol):
         """Fetch all benchmarks that match the query"""
         return self._db.read("benchmarks", query, selection)
 
+    def delete_benchmark(self, query: dict):
+        """See :func:`orion.storage.base.BaseStorageProtocol.delete_benchmark`"""
+        return self._db.remove("benchmarks", query)
+
     def create_experiment(
         self, config, algo_locked=0, algo_state=None, algo_heartbeat=None
     ):
