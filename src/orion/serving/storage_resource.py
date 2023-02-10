@@ -107,7 +107,7 @@ def _import_data(task: ImportTask, storage, load_host, resolve, name, version):
     """
     try:
         print("Import starting.", task.task_id)
-        logging.basicConfig(stream=task.notifications, force=True)
+        logging.basicConfig(stream=task.notifications, force=True, level=logging.INFO)
         load_database(
             storage,
             load_host,
