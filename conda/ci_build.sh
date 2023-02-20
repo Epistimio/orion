@@ -11,6 +11,7 @@ conda config --set channel_priority strict
 
 pip uninstall -y setuptools
 conda install -c anaconda setuptools
+conda install conda-build
 
 conda update -q conda
 conda info -a
