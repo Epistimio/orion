@@ -32,7 +32,8 @@ def get_dashboard_build_path():
 
     NB (2023/02/20): It seems that, depending on installation, additional files may
     be installed in `<sys.prefix>/local` instead of just `<sys.prefix>`.
-    More info: https://stackoverflow.com/questions/14211575/any-python-function-to-get-data-files-root-directory#comment99087548_14211600
+    More info:
+    https://stackoverflow.com/questions/14211575/any-python-function-to-get-data-files-root-directory#comment99087548_14211600
     """
     current_file_path = __file__
     if current_file_path.startswith(sys.prefix):
