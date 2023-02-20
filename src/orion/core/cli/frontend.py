@@ -38,11 +38,15 @@ def get_dashboard_build_path():
     if current_file_path.startswith(sys.prefix):
         dashboard_build_path = os.path.join(sys.prefix, "orion-dashboard", "build")
         if not os.path.isdir(dashboard_build_path):
-            dashboard_build_path = os.path.join(sys.prefix, "local", "orion-dashboard", "build")
+            dashboard_build_path = os.path.join(
+                sys.prefix, "local", "orion-dashboard", "build"
+            )
     elif current_file_path.startswith(site.USER_BASE):
         dashboard_build_path = os.path.join(site.USER_BASE, "orion-dashboard", "build")
         if not os.path.isdir(dashboard_build_path):
-            dashboard_build_path = os.path.join(site.USER_BASE, "local", "orion-dashboard", "build")
+            dashboard_build_path = os.path.join(
+                site.USER_BASE, "local", "orion-dashboard", "build"
+            )
     else:
         dashboard_build_path = os.path.abspath(
             os.path.join(
