@@ -34,6 +34,15 @@ def add_subparser(parser):
         help="Output file path (default: dump.pkl)",
     )
 
+    dump_parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Whether to force overwrite if destination file already exists. "
+        "If specified, delete destination file and recreate a new one from scratch. "
+        "Otherwise (default), raise an error if destination file already exists.",
+    )
+
     dump_parser.set_defaults(func=main)
 
     return dump_parser
@@ -49,4 +58,5 @@ def main(args):
         args["output"],
         name=config.get("name"),
         version=config.get("version"),
+        overwrite=args["force"],
     )

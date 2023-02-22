@@ -40,6 +40,36 @@ def test_dump_default(three_experiments_family_same_name_with_trials, capsys):
         clean_dump("dump.pkl")
 
 
+def test_dump_overwrite(three_experiments_family_same_name_with_trials, capsys):
+    """Test dump with overwrite argument"""
+    assert not os.path.exists("dump.pkl")
+    try:
+        execute("db dump")
+        assert os.path.isfile("dump.pkl")
+        dumped_db = PickledDB("dump.pkl")
+        assert len(dumped_db.read("experiments")) == 3
+        assert len(dumped_db.read("algo")) == 3
+        assert len(dumped_db.read("trials")) == 24
+        assert len(dumped_db.read("benchmarks")) == 3
+
+        # No overwrite by default. Should fail.
+        execute("db dump", assert_code=1)
+        captured = capsys.readouterr()
+        assert captured.err.strip().startswith(
+            "Error: Export output already exists (specify `--force` to overwrite) at"
+        )
+
+        # Overwrite. Should pass.
+        execute("db dump --force")
+        assert os.path.isfile("dump.pkl")
+        assert len(dumped_db.read("experiments")) == 3
+        assert len(dumped_db.read("algo")) == 3
+        assert len(dumped_db.read("trials")) == 24
+        assert len(dumped_db.read("benchmarks")) == 3
+    finally:
+        clean_dump("dump.pkl")
+
+
 def test_dump_unknown_experiment(
     three_experiments_family_same_name_with_trials, capsys
 ):

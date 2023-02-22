@@ -39,7 +39,7 @@ STEP_NAMES = [
 ]
 
 
-def dump_database(storage, dump_host, name=None, version=None):
+def dump_database(storage, dump_host, name=None, version=None, overwrite=False):
     """Dump a database
 
     Parameters
@@ -52,6 +52,10 @@ def dump_database(storage, dump_host, name=None, version=None):
         (optional) name of experiment to dump (by default, full database is dumped)
     version:
         (optional) version of experiment to dump
+    overwrite:
+        (optional) define how to manage destination file if already exists.
+        If false (default), raise an exception.
+        If true, delete existing file and create a new one with dumped data.
     """
     dump_host = os.path.abspath(dump_host)
 
@@ -62,6 +66,24 @@ def dump_database(storage, dump_host, name=None, version=None):
             orig_db.host
         ):
             raise DatabaseError("Cannot dump pickleddb to itself.")
+
+    if os.path.exists(dump_host):
+        if overwrite:
+            # NB: The existing file may have been created to lock file name,
+            # for e.g. if called from Web API, to avoid different API calls
+            # using same file name. In such case, deleting the file may allow
+            # another web API call to lock file name just before the file
+            # is recreated. To prevent this, it's better to just erase file
+            # content, instead of delete/recreate it.
+            with open(dump_host, "wb"):
+                pass
+            assert os.path.exists(dump_host)
+            assert os.stat(dump_host).st_size == 0
+            logger.info(f"Overwriting previous output at {dump_host}")
+        else:
+            raise DatabaseError(
+                f"Export output already exists (specify `--force` to overwrite) at {dump_host}"
+            )
 
     dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
     logger.info(f"Dump to {dump_host}")
