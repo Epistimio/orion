@@ -53,7 +53,7 @@ def main(args):
     """Script to import storage"""
     config = experiment_builder.get_cmd_config(args)
     storage = setup_storage(config.get("storage"))
-    logger.info(f"Loaded dst {storage._db}")
+    logger.info(f"Loaded dst {storage}")
     load_database(
         storage,
         load_host=args["file"],

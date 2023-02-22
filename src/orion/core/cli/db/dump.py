@@ -43,7 +43,7 @@ def main(args):
     """Script to dump storage"""
     config = experiment_builder.get_cmd_config(args)
     storage = setup_storage(config.get("storage"))
-    logger.info(f"Loaded {storage._db}")
+    logger.info(f"Loaded src {storage}")
     dump_database(
         storage,
         args["output"],
