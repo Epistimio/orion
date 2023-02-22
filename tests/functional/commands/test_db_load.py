@@ -330,18 +330,18 @@ def test_load_one_experiment(empty_database):
     trials = loaded_db.read("trials")
     assert len(experiments) == 1
     (exp_data,) = experiments
-    # We must have dumped version 1
+    # We must have dumped version 2
     assert exp_data["name"] == "test_single_exp"
-    assert exp_data["version"] == 1
+    assert exp_data["version"] == 2
     assert len(algos) == len(exp_data["algorithm"]) == 1
-    # This experiment must have 12 trials (children included)
-    assert len(trials) == 12
+    # This experiment must have only 6 trials
+    assert len(trials) == 6
     assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
     assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
 
 
 def test_load_one_experiment_other_version(empty_database):
-    """Test load version 2 of experiment test_single_exp"""
+    """Test load version 1 of experiment test_single_exp"""
     storage = setup_storage()
     loaded_db = storage._db
     assert len(loaded_db.read("benchmarks")) == 0
@@ -349,7 +349,7 @@ def test_load_one_experiment_other_version(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 2")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -357,10 +357,10 @@ def test_load_one_experiment_other_version(empty_database):
     assert len(experiments) == 1
     (exp_data,) = experiments
     assert exp_data["name"] == "test_single_exp"
-    assert exp_data["version"] == 2
+    assert exp_data["version"] == 1
     assert len(algos) == len(exp_data["algorithm"]) == 1
-    # This experiment must have only 6 trials
-    assert len(trials) == 6
+    # This experiment must have 12 trials (children included)
+    assert len(trials) == 12
     assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
     assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
 
@@ -375,7 +375,7 @@ def test_load_one_experiment_ignore(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -384,7 +384,7 @@ def test_load_one_experiment_ignore(empty_database):
     assert len(algos) == 1
     assert len(trials) == 12
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp -v 1")
     new_experiments = loaded_db.read("experiments")
     new_algos = loaded_db.read("algo")
     new_trials = loaded_db.read("trials")
@@ -407,7 +407,7 @@ def test_load_one_experiment_overwrite(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -416,7 +416,7 @@ def test_load_one_experiment_overwrite(empty_database):
     assert len(algos) == 1
     assert len(trials) == 12
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite -n test_single_exp -v 1")
     new_experiments = loaded_db.read("experiments")
     new_algos = loaded_db.read("algo")
     new_trials = loaded_db.read("trials")
@@ -434,7 +434,7 @@ def test_load_one_experiment_bump(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
@@ -443,7 +443,7 @@ def test_load_one_experiment_bump(empty_database):
     assert len(algos) == 1
     assert len(trials) == 12
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp -v 1")
     # Duplicated data should be bumped, so we must expect twice quantity of data.
     new_experiments = loaded_db.read("experiments")
     new_trials = loaded_db.read("trials")
@@ -452,7 +452,7 @@ def test_load_one_experiment_bump(empty_database):
     assert len(new_algos) == 1 * 2
     assert len(new_trials) == 12 * 2
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp -v 1")
     # Duplicated data should be bumped, so we must expect thrice quantity of data.
     third_experiments = loaded_db.read("experiments")
     third_trials = loaded_db.read("trials")

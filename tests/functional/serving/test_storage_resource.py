@@ -139,12 +139,12 @@ def test_dump_one_experiment(client, ephemeral_storage):
         trials = dumped_db.read("trials")
         assert len(experiments) == 1
         (exp_data,) = experiments
-        # We must have dumped version 1
+        # We must have dumped version 2
         assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 1
+        assert exp_data["version"] == 2
         assert len(algos) == len(exp_data["algorithms"]) == 1
-        # This experiment must have 12 trials (children included)
-        assert len(trials) == 12
+        # This experiment must have only 6 trials
+        assert len(trials) == 6
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
         assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
     finally:
@@ -152,9 +152,9 @@ def test_dump_one_experiment(client, ephemeral_storage):
 
 
 def test_dump_one_experiment_other_version(client, ephemeral_storage):
-    """Test dump version 2 of experiment test_single_exp"""
+    """Test dump version 1 of experiment test_single_exp"""
     _load_data(ephemeral_storage)
-    response = client.simulate_get("/dump?name=test_single_exp&version=2")
+    response = client.simulate_get("/dump?name=test_single_exp&version=1")
     host = _gen_host_file()
     try:
         with open(host, "wb") as file:
@@ -166,12 +166,12 @@ def test_dump_one_experiment_other_version(client, ephemeral_storage):
         trials = dumped_db.read("trials")
         assert len(experiments) == 1
         (exp_data,) = experiments
-        # We must have dumped version 2
+        # We must have dumped version 1
         assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 2
+        assert exp_data["version"] == 1
         assert len(algos) == len(exp_data["algorithms"]) == 1
-        # This experiment must have only 6 trials
-        assert len(trials) == 6
+        # This experiment must have 12 trials (children included)
+        assert len(trials) == 12
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
         assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
     finally:
@@ -300,12 +300,12 @@ def test_load_one_experiment():
 
         assert len(experiments) == 1
         (exp_data,) = experiments
-        # We must have dumped version 1
+        # We must have loaded version 2
         assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 1
+        assert exp_data["version"] == 2
         assert len(algos) == len(exp_data["algorithms"]) == 1
-        # This experiment must have 12 trials (children included)
-        assert len(trials) == 12
+        # This experiment must have only 6 trials
+        assert len(trials) == 6
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
         assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
 
@@ -335,7 +335,7 @@ def test_load_one_experiment_other_version():
 
         # Generate body and header for request /load
         body, headers = _gen_multipart_form_form_load(
-            LOAD_DATA, "ignore", "test_single_exp", "2"
+            LOAD_DATA, "ignore", "test_single_exp", "1"
         )
 
         task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
@@ -366,11 +366,12 @@ def test_load_one_experiment_other_version():
 
         assert len(experiments) == 1
         (exp_data,) = experiments
+        # We must have loaded version 1
         assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 2
+        assert exp_data["version"] == 1
         assert len(algos) == len(exp_data["algorithms"]) == 1
-        # This experiment must have only 6 trials
-        assert len(trials) == 6
+        # This experiment must have 12 trials (children included)
+        assert len(trials) == 12
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
         assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
 

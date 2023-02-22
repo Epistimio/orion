@@ -461,7 +461,7 @@ into a PickledDB and download it as PKL file.
 
    :query name: Optional name of experiment to export. It unspecified, whole database is dumped.
    :query version: Optional version of the experiment to retrieve.
-      If unspecified and name is specified, the **oldest** version of the experiment is exported.
+      If unspecified and name is specified, the **latest** version of the experiment is exported.
       If both name and version are unspecified, whole database is dumped.
 
    :statuscode 404: When an error occurred during dumping.
@@ -487,7 +487,7 @@ The database loading resource allow to import data from a PKL file
 
    :query name: Optional name of experiment to import. If unspecified, whole data from PKL file is imported.
    :query version: Optional version of experiment to import.
-      If unspecified and name is specified, the **oldest** version of the experiment is imported.
+      If unspecified and name is specified, the **latest** version of the experiment is imported.
       If both name and version are unspceified, whole data from PKL file is imported.
 
    **Example response**

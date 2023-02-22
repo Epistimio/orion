@@ -108,6 +108,33 @@ def test_dump_to_specified_output(
 
 def test_dump_one_experiment(three_experiments_family_same_name_with_trials, capsys):
     """Test dump only experiment test_single_exp (no version specified)"""
+    assert not os.path.exists("dump.pkl")
+    try:
+        execute("db dump -n test_single_exp")
+        assert os.path.isfile("dump.pkl")
+        dumped_db = PickledDB("dump.pkl")
+        assert len(dumped_db.read("benchmarks")) == 0
+        experiments = dumped_db.read("experiments")
+        algos = dumped_db.read("algo")
+        trials = dumped_db.read("trials")
+        assert len(experiments) == 1
+        (exp_data,) = experiments
+        # We must have dumped version 2
+        assert exp_data["name"] == "test_single_exp"
+        assert exp_data["version"] == 2
+        assert len(algos) == len(exp_data["algorithm"]) == 1
+        # This experiment must have only 6 trials
+        assert len(trials) == 6
+        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
+        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+    finally:
+        clean_dump("dump.pkl")
+
+
+def test_dump_one_experiment_other_version(
+    three_experiments_family_same_name_with_trials, capsys
+):
+    """Test dump version 1 of experiment test_single_exp"""
 
     # Check src algo state
     src_storage = setup_storage()
@@ -122,7 +149,7 @@ def test_dump_one_experiment(three_experiments_family_same_name_with_trials, cap
 
     assert not os.path.exists("dump.pkl")
     try:
-        execute("db dump -n test_single_exp")
+        execute("db dump -n test_single_exp -v 1")
         assert os.path.isfile("dump.pkl")
         dumped_db = PickledDB("dump.pkl")
         assert len(dumped_db.read("benchmarks")) == 0
@@ -131,7 +158,6 @@ def test_dump_one_experiment(three_experiments_family_same_name_with_trials, cap
         trials = dumped_db.read("trials")
         assert len(experiments) == 1
         (exp_data,) = experiments
-        # We must have dumped version 1
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 1
         # Check dumped algo
@@ -140,32 +166,6 @@ def test_dump_one_experiment(three_experiments_family_same_name_with_trials, cap
         assert src_alg.state == pickle.loads(algo["state"])
         # This experiment must have 12 trials (children included)
         assert len(trials) == 12
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
-    finally:
-        clean_dump("dump.pkl")
-
-
-def test_dump_one_experiment_other_version(
-    three_experiments_family_same_name_with_trials, capsys
-):
-    """Test dump version 2 of experiment test_single_exp"""
-    assert not os.path.exists("dump.pkl")
-    try:
-        execute("db dump -n test_single_exp -v 2")
-        assert os.path.isfile("dump.pkl")
-        dumped_db = PickledDB("dump.pkl")
-        assert len(dumped_db.read("benchmarks")) == 0
-        experiments = dumped_db.read("experiments")
-        algos = dumped_db.read("algo")
-        trials = dumped_db.read("trials")
-        assert len(experiments) == 1
-        (exp_data,) = experiments
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        # This experiment must have only 6 trials
-        assert len(trials) == 6
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
         assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
     finally:

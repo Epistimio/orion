@@ -51,7 +51,8 @@ def dump_database(storage, dump_host, name=None, version=None, overwrite=False):
     name:
         (optional) name of experiment to dump (by default, full database is dumped)
     version:
-        (optional) version of experiment to dump
+        (optional) version of experiment to dump.
+        By default, use the latest version of provided `name`.
     overwrite:
         (optional) define how to manage destination file if already exists.
         If false (default), raise an exception.
@@ -112,7 +113,8 @@ def load_database(
     name:
         (optional) name of experiment to import (by default, whole file is imported)
     version:
-        (optional) version of experiment to import
+        (optional) version of experiment to import.
+        By default, use the latest version of provided `name`.
     progress_callback:
         Optional callback to report progression. Receives 2 parameters:
         - step description (string)
@@ -148,7 +150,7 @@ def load_database(
                 f"No experiment found with query {query}. Nothing to import."
             )
         if len(experiments) > 1:
-            experiments = sorted(experiments, key=lambda d: d["version"])[:1]
+            experiments = sorted(experiments, key=lambda d: d["version"])[-1:]
         logger.info(
             f"Found experiment {experiments[0]['name']}.{experiments[0]['version']}"
         )
@@ -201,10 +203,7 @@ def _dump(src_storage, dst_storage, name=None, version=None):
             raise DatabaseError(
                 f"No experiment found with query {query}. Nothing to dump."
             )
-        if len(experiments) > 1:
-            exp_data = sorted(experiments, key=lambda d: d["version"])[0]
-        else:
-            (exp_data,) = experiments
+        exp_data = sorted(experiments, key=lambda d: d["version"])[-1]
         logger.info(f"Found experiment {exp_data['name']}.{exp_data['version']}")
         # Dump selected experiments and related data
         logger.info(f"Dumping experiment {name}")
