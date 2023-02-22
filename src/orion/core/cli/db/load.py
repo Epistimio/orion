@@ -37,11 +37,11 @@ def add_subparser(parser):
         "--resolve",
         type=str,
         choices=("ignore", "overwrite", "bump"),
-        required=True,
         help="Strategy to resolve conflicts: "
         "'ignore', 'overwrite' or 'bump' "
         "(bump version of imported experiment). "
-        "When overwriting, prior trials will be deleted.",
+        "When overwriting, prior trials will be deleted. "
+        "If not specified, an exception will be raised on any conflict detected.",
     )
 
     load_parser.set_defaults(func=main)

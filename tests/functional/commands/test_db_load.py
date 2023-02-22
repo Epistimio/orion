@@ -51,7 +51,7 @@ def test_load_all(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
     with loaded_db.locked_database(write=False) as internal_db:
         collections = set(internal_db._db.keys())
     assert collections == {"experiments", "algo", "trials", "benchmarks"}
@@ -67,6 +67,43 @@ def test_load_all(empty_database):
     assert len(loaded_db.read("algo")) == 3
 
 
+def test_load_again_without_resolve(empty_database, capsys):
+    """Test load all database twice without resolve in second call"""
+    storage = setup_storage()
+    loaded_db = storage._db
+    assert len(loaded_db.read("benchmarks")) == 0
+    assert len(loaded_db.read("experiments")) == 0
+    assert len(loaded_db.read("trials")) == 0
+    assert len(loaded_db.read("algo")) == 0
+
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
+    benchmarks = loaded_db.read("benchmarks")
+    experiments = loaded_db.read("experiments")
+    trials = loaded_db.read("trials")
+    algos = loaded_db.read("algo")
+    assert len(benchmarks) == 3
+    assert len(experiments) == 3
+    assert len(trials) == 24
+    assert len(algos) == 3
+
+    # Again
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}", assert_code=1)
+    captured = capsys.readouterr()
+    assert (
+        captured.err.strip()
+        == "Error: Conflict detected without strategy to resolve (None) for benchmark branin_baselines_webapi"
+    )
+    # Destination should have not changed
+    new_benchmarks = loaded_db.read("benchmarks")
+    new_experiments = loaded_db.read("experiments")
+    new_trials = loaded_db.read("trials")
+    new_algos = loaded_db.read("algo")
+    assert new_benchmarks == benchmarks
+    assert new_experiments == experiments
+    assert new_trials == trials
+    assert new_algos == algos
+
+
 def test_load_ignore(empty_database):
     """Test load all database with --resolve ignore"""
     storage = setup_storage()
@@ -76,7 +113,7 @@ def test_load_ignore(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
@@ -110,7 +147,7 @@ def test_load_overwrite(empty_database, capsys):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
@@ -204,7 +241,7 @@ def test_load_bump_no_benchmarks(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {data_source} -r bump")
+    execute(f"db load {data_source}")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
@@ -249,7 +286,7 @@ def test_load_bump_with_benchmarks(empty_database, capsys):
     assert len(loaded_db.read("algo")) == 0
 
     # First execution should pass, as destination contains nothing.
-    execute(f"db load {data_source} -r bump")
+    execute(f"db load {data_source}")
     benchmarks = loaded_db.read("benchmarks")
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")
@@ -286,7 +323,7 @@ def test_load_one_experiment(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -312,7 +349,7 @@ def test_load_one_experiment_other_version(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp -v 2")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 2")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -338,7 +375,7 @@ def test_load_one_experiment_ignore(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -370,7 +407,7 @@ def test_load_one_experiment_overwrite(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     algos = loaded_db.read("algo")
@@ -397,7 +434,7 @@ def test_load_one_experiment_bump(empty_database):
     assert len(loaded_db.read("trials")) == 0
     assert len(loaded_db.read("algo")) == 0
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp")
+    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
     assert len(loaded_db.read("benchmarks")) == 0
     experiments = loaded_db.read("experiments")
     trials = loaded_db.read("trials")

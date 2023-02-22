@@ -69,7 +69,7 @@ def dump_database(storage, dump_host, name=None, version=None):
 
 
 def load_database(
-    storage, load_host, resolve, name=None, version=None, progress_callback=None
+    storage, load_host, resolve=None, name=None, version=None, progress_callback=None
 ):
     """Import data into a database
 
@@ -81,7 +81,8 @@ def load_database(
         file path containing data to import
         (should be a pickled file representing a PickledDB)
     resolve:
-        policy to resolve import conflict. Either 'ignore', 'overwrite' or 'bump'.
+        policy to resolve import conflict. Either None, 'ignore', 'overwrite' or 'bump'.
+        - None will raise an exception on any conflict detected
         - 'ignore' will ignore imported data on conflict
         - 'overwrite' will overwrite old data in destination database on conflict
         - 'bump' will bump imported data version before adding it,
@@ -134,8 +135,8 @@ def load_database(
     preparation = _prepare_import(
         src_storage,
         storage,
-        resolve,
         experiments,
+        resolve,
         import_benchmarks,
         progress_callback=progress_callback,
     )
@@ -209,8 +210,8 @@ def _dump_experiment(src_storage, dst_storage, src_exp):
 def _prepare_import(
     src_storage,
     dst_storage,
-    resolve,
     experiments,
+    resolve=None,
     import_benchmarks=True,
     progress_callback=None,
 ):
@@ -224,10 +225,10 @@ def _prepare_import(
         storage to import from
     dst_storage: BaseStorageProtocol
         storage to import into
-    resolve:
-        resolve policy
     experiments:
         experiments to import from src_storage into dst_storage
+    resolve:
+        resolve policy
     import_benchmarks:
         if True, benchmarks will be also imported from src_database
     progress_callback:
@@ -238,7 +239,7 @@ def _prepare_import(
     A couple (queries to delete, data to add) representing
     changes to apply to dst_storage to make import
     """
-    assert resolve in ("ignore", "overwrite", "bump")
+    assert resolve is None or resolve in ("ignore", "overwrite", "bump")
 
     queries_to_delete = {}
     data_to_add = {}
@@ -270,6 +271,11 @@ def _prepare_import(
                     raise DatabaseError(
                         "Can't bump benchmark version, "
                         "as benchmarks do not currently support versioning."
+                    )
+                else:  # resolve is None or unknown
+                    raise DatabaseError(
+                        f"Conflict detected without strategy to resolve ({resolve}) "
+                        f"for benchmark {src_benchmark['name']}"
                     )
             # Delete benchmark database ID so that a new one will be generated on insertion
             del src_benchmark["_id"]
@@ -330,6 +336,11 @@ def _prepare_import(
                 logger.info(
                     f'Bumped version of src experiment: {experiment["name"]}, '
                     f"from {old_version} to {new_version}"
+                )
+            else:  # resolve is None or unknown
+                raise DatabaseError(
+                    f"Conflict detected without strategy to resolve ({resolve}) "
+                    f"for experiment {experiment['name']}.{experiment['version']}"
                 )
         else:
             logger.info(
