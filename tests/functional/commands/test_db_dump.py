@@ -82,6 +82,8 @@ def test_dump_unknown_experiment(
             "Error: No experiment found with query {'name': 'i-dont-exist'}. Nothing to dump."
         )
     finally:
+        # Output file is created as soon as dst storage object is created in dump_database()
+        # So, we still need to delete it here
         clean_dump("dump.pkl")
 
 
