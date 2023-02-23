@@ -21,9 +21,6 @@ from falcon import Request, Response
 from orion.core.io.database import DatabaseError
 from orion.core.worker.storage_backup import dump_database, load_database
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 
 def _gen_host_file(basename="dump"):
     """Generate a temporary file where data could be saved.
