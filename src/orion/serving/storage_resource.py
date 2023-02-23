@@ -13,6 +13,7 @@ import traceback
 import uuid
 from datetime import datetime
 from queue import Empty
+from tempfile import NamedTemporaryFile
 
 import falcon
 from falcon import Request, Response
@@ -27,18 +28,11 @@ logger.setLevel(logging.DEBUG)
 def _gen_host_file(basename="dump"):
     """Generate a temporary file where data could be saved.
 
-    Create an empty file without collision in working directory.
+    Create an empty file without collision.
     Return name of generated file.
     """
-    index = 0
-    while True:
-        file_name = f"{basename}{index}.pkl"
-        try:
-            with open(file_name, "x"):
-                return file_name
-        except FileExistsError:
-            index += 1
-            continue
+    with NamedTemporaryFile(prefix=f"{basename}_", suffix=".pkl", delete=False) as tf:
+        return tf.name
 
 
 class Notifications:
