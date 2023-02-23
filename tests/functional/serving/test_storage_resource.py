@@ -44,7 +44,7 @@ def _random_string(length: int):
     return "".join(random.choice(domain) for _ in range(length))
 
 
-def _gen_multipart_form_form_load(file: str, resolve: str, name="", version=""):
+def _gen_multipart_form_for_load(file: str, resolve: str, name="", version=""):
     """Generate multipart form body and headers for /load request with uploaded file.
     Help (2022/11/08):
     https://stackoverflow.com/a/45703104
@@ -210,7 +210,7 @@ def test_load_all():
         assert len(dst_db.read("algo")) == 0
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_form_load(LOAD_DATA, "ignore")
+        body, headers = _gen_multipart_form_for_load(LOAD_DATA, "ignore")
 
         # Test /load and /import-status 5 times with resolve=ignore
         # to check if data are effectively ignored on conflict
@@ -268,7 +268,7 @@ def test_load_one_experiment():
         assert len(dst_db.read("algo")) == 0
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_form_load(
+        body, headers = _gen_multipart_form_for_load(
             LOAD_DATA, "ignore", "test_single_exp"
         )
 
@@ -334,7 +334,7 @@ def test_load_one_experiment_other_version():
         assert len(dst_db.read("algo")) == 0
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_form_load(
+        body, headers = _gen_multipart_form_for_load(
             LOAD_DATA, "ignore", "test_single_exp", "1"
         )
 
@@ -400,7 +400,7 @@ def test_load_unknown_experiment():
         assert len(dst_db.read("algo")) == 0
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_form_load(LOAD_DATA, "ignore", "unknown")
+        body, headers = _gen_multipart_form_for_load(LOAD_DATA, "ignore", "unknown")
 
         task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
             "task"
