@@ -450,8 +450,8 @@ def three_experiments_same_name_with_trials(
 
 
 @pytest.fixture
-def three_experiments_family_same_name_with_trials(
-    three_experiments_family_same_name, orionstate, storage
+def three_experiments_branch_same_name_trials_benchmarks(
+    three_experiments_branch_same_name, orionstate, storage
 ):
     """Create three experiments, two of them with the same name but different versions and one
     with a child, and add trials including children trials.

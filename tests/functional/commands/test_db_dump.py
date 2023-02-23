@@ -22,7 +22,7 @@ def clean_dump(dump_path):
             os.unlink(path)
 
 
-def test_dump_default(three_experiments_family_same_name_with_trials, capsys):
+def test_dump_default(three_experiments_branch_same_name_trials_benchmarks, capsys):
     """Test dump with default arguments"""
     assert not os.path.exists("dump.pkl")
     try:
@@ -40,7 +40,7 @@ def test_dump_default(three_experiments_family_same_name_with_trials, capsys):
         clean_dump("dump.pkl")
 
 
-def test_dump_overwrite(three_experiments_family_same_name_with_trials, capsys):
+def test_dump_overwrite(three_experiments_branch_same_name_trials_benchmarks, capsys):
     """Test dump with overwrite argument"""
     assert not os.path.exists("dump.pkl")
     try:
@@ -71,7 +71,7 @@ def test_dump_overwrite(three_experiments_family_same_name_with_trials, capsys):
 
 
 def test_dump_unknown_experiment(
-    three_experiments_family_same_name_with_trials, capsys
+    three_experiments_branch_same_name_trials_benchmarks, capsys
 ):
     """Test dump unknown experiment"""
     assert not os.path.exists("dump.pkl")
@@ -86,7 +86,7 @@ def test_dump_unknown_experiment(
 
 
 def test_dump_to_specified_output(
-    three_experiments_family_same_name_with_trials, capsys
+    three_experiments_branch_same_name_trials_benchmarks, capsys
 ):
     """Test dump to a specified output file"""
     dump_path = "test.pkl"
@@ -106,7 +106,9 @@ def test_dump_to_specified_output(
         clean_dump(dump_path)
 
 
-def test_dump_one_experiment(three_experiments_family_same_name_with_trials, capsys):
+def test_dump_one_experiment(
+    three_experiments_branch_same_name_trials_benchmarks, capsys
+):
     """Test dump only experiment test_single_exp (no version specified)"""
     assert not os.path.exists("dump.pkl")
     try:
@@ -132,7 +134,7 @@ def test_dump_one_experiment(three_experiments_family_same_name_with_trials, cap
 
 
 def test_dump_one_experiment_other_version(
-    three_experiments_family_same_name_with_trials, capsys
+    three_experiments_branch_same_name_trials_benchmarks, capsys
 ):
     """Test dump version 1 of experiment test_single_exp"""
 
