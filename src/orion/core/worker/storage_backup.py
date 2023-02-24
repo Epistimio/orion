@@ -205,6 +205,14 @@ def _dump(src_storage, dst_storage, name=None, version=None):
             )
         exp_data = sorted(experiments, key=lambda d: d["version"])[-1]
         logger.info(f"Found experiment {exp_data['name']}.{exp_data['version']}")
+        # As we dump only 1 experiment, remove parent links if exist
+        if exp_data["refers"]:
+            if exp_data["refers"]["root_id"] is not None:
+                logger.info("Removing reference to root experiment before dumping")
+                exp_data["refers"]["root_id"] = None
+            if exp_data["refers"]["parent_id"] is not None:
+                logger.info("Removing reference to parent experiment before dumping")
+                exp_data["refers"]["parent_id"] = None
         # Dump selected experiments and related data
         logger.info(f"Dumping experiment {name}")
         _dump_experiment(src_storage, dst_storage, exp_data)

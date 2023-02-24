@@ -458,6 +458,11 @@ def three_experiments_branch_same_name_trials_benchmarks(
 
     Add algorithm state for one experiment.
     Add benchmarks to database.
+
+    NB: It seems 2 experiments are children:
+    * test_single_exp_child.1 child of test_single_exp.2
+    * test_single_exp.2 child of test_single_exp.1
+    * test_single_exp.1 has no parent
     """
     exp1 = experiment_builder.build(name="test_single_exp", version=1, storage=storage)
     exp2 = experiment_builder.build(name="test_single_exp", version=2, storage=storage)

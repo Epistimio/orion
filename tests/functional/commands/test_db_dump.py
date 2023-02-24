@@ -22,6 +22,78 @@ def clean_dump(dump_path):
             os.unlink(path)
 
 
+def _check_db(
+    db: PickledDB, nb_exps, nb_algos, nb_trials, nb_benchmarks, nb_child_exps=0
+):
+    """Check number of expected data in given database."""
+    experiments = db.read("experiments")
+    assert len(experiments) == nb_exps
+    assert len(db.read("algo")) == nb_algos
+    assert len(db.read("trials")) == nb_trials
+    assert len(db.read("benchmarks")) == nb_benchmarks
+
+    # Check we have expected number of child experiments.
+    exp_map = {exp["_id"]: exp for exp in experiments}
+    assert len(exp_map) == nb_exps
+    child_exps = []
+    for exp in experiments:
+        parent = exp["refers"]["parent_id"]
+        if parent is not None:
+            assert parent in exp_map
+            child_exps.append(exp)
+    assert len(child_exps) == nb_child_exps
+
+
+def _check_exp(
+    db: PickledDB, name, version, nb_trials, nb_child_trials=0, algo_state=None
+):
+    """Check experiment.
+    - Check if we found experiment.
+    - Check if we found exactly 1 algorithm for this experiment.
+    - Check algo state if algo_state is provided
+    - Check if we found expected number of trials for this experiment.
+    - Check if we found expecter number of child trials into experiment trials.
+    """
+    experiments = db.read("experiments", {"name": name, "version": version})
+    assert len(experiments) == 1
+    (experiment,) = experiments
+    algos = db.read("algo", {"experiment": experiment["_id"]})
+    trials = db.read("trials", {"experiment": experiment["_id"]})
+    assert len(algos) == 1
+    assert len(trials) == nb_trials
+
+    if algo_state is not None:
+        (algo,) = algos
+        assert algo_state == pickle.loads(algo["state"])
+
+    trial_map = {trial["id"]: trial for trial in trials}
+    assert len(trial_map) == nb_trials
+    child_trials = []
+    for trial in trials:
+        parent = trial["parent"]
+        if parent is not None:
+            assert parent in trial_map
+            child_trials.append(trial)
+    assert len(child_trials) == nb_child_trials
+
+
+def _assert_tested_db_structure(dumped_db):
+    """Check counts and experiments for database from specific fixture
+    `three_experiments_branch_same_name_trials_benchmarks`.
+    """
+    _check_db(
+        dumped_db,
+        nb_exps=3,
+        nb_algos=3,
+        nb_trials=24,
+        nb_benchmarks=3,
+        nb_child_exps=2,
+    )
+    _check_exp(dumped_db, "test_single_exp", 1, nb_trials=12, nb_child_trials=6)
+    _check_exp(dumped_db, "test_single_exp", 2, nb_trials=6)
+    _check_exp(dumped_db, "test_single_exp_child", 1, nb_trials=6)
+
+
 def test_dump_default(three_experiments_branch_same_name_trials_benchmarks, capsys):
     """Test dump with default arguments"""
     assert not os.path.exists("dump.pkl")
@@ -29,13 +101,7 @@ def test_dump_default(three_experiments_branch_same_name_trials_benchmarks, caps
         execute("db dump")
         assert os.path.isfile("dump.pkl")
         dumped_db = PickledDB("dump.pkl")
-        with dumped_db.locked_database(write=False) as internal_db:
-            collections = set(internal_db._db.keys())
-        assert collections == {"experiments", "algo", "trials", "benchmarks"}
-        assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 3
-        assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 3
+        _assert_tested_db_structure(dumped_db)
     finally:
         clean_dump("dump.pkl")
 
@@ -47,10 +113,7 @@ def test_dump_overwrite(three_experiments_branch_same_name_trials_benchmarks, ca
         execute("db dump")
         assert os.path.isfile("dump.pkl")
         dumped_db = PickledDB("dump.pkl")
-        assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 3
-        assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 3
+        _assert_tested_db_structure(dumped_db)
 
         # No overwrite by default. Should fail.
         execute("db dump", assert_code=1)
@@ -62,10 +125,7 @@ def test_dump_overwrite(three_experiments_branch_same_name_trials_benchmarks, ca
         # Overwrite. Should pass.
         execute("db dump --force")
         assert os.path.isfile("dump.pkl")
-        assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 3
-        assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 3
+        _assert_tested_db_structure(dumped_db)
     finally:
         clean_dump("dump.pkl")
 
@@ -97,13 +157,7 @@ def test_dump_to_specified_output(
         execute(f"db dump -o {dump_path}")
         assert os.path.isfile(dump_path)
         dumped_db = PickledDB(dump_path)
-        with dumped_db.locked_database(write=False) as internal_db:
-            collections = set(internal_db._db.keys())
-        assert collections == {"experiments", "algo", "trials", "benchmarks"}
-        assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 3
-        assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 3
+        _assert_tested_db_structure(dumped_db)
     finally:
         clean_dump(dump_path)
 
@@ -117,20 +171,8 @@ def test_dump_one_experiment(
         execute("db dump -n test_single_exp")
         assert os.path.isfile("dump.pkl")
         dumped_db = PickledDB("dump.pkl")
-        assert len(dumped_db.read("benchmarks")) == 0
-        experiments = dumped_db.read("experiments")
-        algos = dumped_db.read("algo")
-        trials = dumped_db.read("trials")
-        assert len(experiments) == 1
-        (exp_data,) = experiments
-        # We must have dumped version 2
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        # This experiment must have only 6 trials
-        assert len(trials) == 6
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+        _check_db(dumped_db, nb_exps=1, nb_algos=1, nb_trials=6, nb_benchmarks=0)
+        _check_exp(dumped_db, "test_single_exp", 2, nb_trials=6)
     finally:
         clean_dump("dump.pkl")
 
@@ -156,21 +198,14 @@ def test_dump_one_experiment_other_version(
         execute("db dump -n test_single_exp -v 1")
         assert os.path.isfile("dump.pkl")
         dumped_db = PickledDB("dump.pkl")
-        assert len(dumped_db.read("benchmarks")) == 0
-        experiments = dumped_db.read("experiments")
-        algos = dumped_db.read("algo")
-        trials = dumped_db.read("trials")
-        assert len(experiments) == 1
-        (exp_data,) = experiments
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 1
-        # Check dumped algo
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        (algo,) = algos
-        assert src_alg.state == pickle.loads(algo["state"])
-        # This experiment must have 12 trials (children included)
-        assert len(trials) == 12
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+        _check_db(dumped_db, nb_exps=1, nb_algos=1, nb_trials=12, nb_benchmarks=0)
+        _check_exp(
+            dumped_db,
+            "test_single_exp",
+            1,
+            nb_trials=12,
+            nb_child_trials=6,
+            algo_state=src_alg.state,
+        )
     finally:
         clean_dump("dump.pkl")
