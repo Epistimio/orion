@@ -12,7 +12,7 @@ LOAD_DATA_WITH_BENCHMARKS = os.path.join(
 )
 
 
-# TODO: Test loading benchmarks
+# TODO: Test trial parents links and experiment parents links in loaded data
 
 
 def execute(command, assert_code=0):
