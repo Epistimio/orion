@@ -4,6 +4,7 @@ import copy
 import os
 import pickle
 import zlib
+from tempfile import NamedTemporaryFile
 
 import pytest
 import yaml
@@ -11,6 +12,7 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
+from orion.core.worker.storage_backup import dump_database
 from orion.core.worker.trial import Trial
 
 
@@ -450,14 +452,13 @@ def three_experiments_same_name_with_trials(
 
 
 @pytest.fixture
-def three_experiments_branch_same_name_trials_benchmarks(
+def three_experiments_branch_same_name_trials(
     three_experiments_branch_same_name, orionstate, storage
 ):
     """Create three experiments, two of them with the same name but different versions and one
     with a child, and add trials including children trials.
 
     Add algorithm state for one experiment.
-    Add benchmarks to database.
 
     NB: It seems 2 experiments are children:
     * test_single_exp_child.1 child of test_single_exp.2
@@ -502,6 +503,17 @@ def three_experiments_branch_same_name_trials_benchmarks(
         },
     )
 
+
+@pytest.fixture
+def three_experiments_branch_same_name_trials_benchmarks(
+    three_experiments_branch_same_name_trials, orionstate, storage
+):
+    """Create three experiments, two of them with the same name but different versions and one
+    with a child, and add trials including children trials.
+
+    Add algorithm state for one experiment.
+    Add benchmarks to database.
+    """
     # Add benchmarks, copied from db_dashboard_full.pkl
     orionstate.database.write(
         "benchmarks",
@@ -560,3 +572,47 @@ def three_experiments_branch_same_name_trials_benchmarks(
             },
         ],
     )
+
+
+@pytest.fixture
+def pkl_experiments(three_experiments_branch_same_name_trials, orionstate, storage):
+    """Dump three_experiments_branch_same_name_trials to a PKL file"""
+    with NamedTemporaryFile(prefix="dumped_", suffix=".pkl", delete=False) as tf:
+        pkl_path = tf.name
+    dump_database(storage, pkl_path, overwrite=True)
+    return pkl_path
+
+
+@pytest.fixture
+def pkl_experiments_and_benchmarks(
+    three_experiments_branch_same_name_trials_benchmarks, orionstate, storage
+):
+    """Dump three_experiments_branch_same_name_trials_benchmarks to a PKL file"""
+    with NamedTemporaryFile(prefix="dumped_", suffix=".pkl", delete=False) as tf:
+        pkl_path = tf.name
+    dump_database(storage, pkl_path, overwrite=True)
+    return pkl_path
+
+
+@pytest.fixture
+def other_empty_database():
+    """Get an empty database and associated configuration file.
+
+    To be used where we need both global config (e.g. for pkl_* fixtures)
+    and another config for an empty database.
+    """
+    from orion.storage.base import setup_storage
+
+    with NamedTemporaryFile(prefix="empty_", suffix=".pkl", delete=False) as tf:
+        pkl_path = tf.name
+    with NamedTemporaryFile(prefix="orion_config_", suffix=".yaml", delete=False) as tf:
+        config_content = f"""
+storage:
+    database:
+        type: 'pickleddb'
+        host: '{pkl_path}'
+""".lstrip()
+        tf.write(config_content.encode())
+        cfg_path = tf.name
+    storage = setup_storage({"database": {"type": "pickleddb", "host": pkl_path}})
+    return storage, cfg_path

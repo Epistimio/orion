@@ -6,13 +6,9 @@ import os
 import orion.core.cli
 from orion.storage.base import setup_storage
 
-LOAD_DATA = os.path.join(os.path.dirname(__file__), "orion_db_load_test_data.pickled")
-LOAD_DATA_WITH_BENCHMARKS = os.path.join(
-    os.path.dirname(__file__), "orion_db_load_test_data_with_benchmarks.pickled"
-)
+from .test_db_dump import _assert_tested_db_structure, _check_db, _check_exp
 
-
-# TODO: Test trial parents links and experiment parents links in loaded data
+# TODO: Test trial parents links and experiment root links in loaded data
 
 
 def execute(command, assert_code=0):
@@ -21,11 +17,32 @@ def execute(command, assert_code=0):
     assert returncode == assert_code
 
 
-def common_indices(data_list1, data_list2):
-    """Return set of common indices from two lists of data"""
-    return {element["_id"] for element in data_list1} & {
-        element["_id"] for element in data_list2
-    }
+def _check_empty_db(loaded_db):
+    """Check that given database is empty"""
+    _check_db(loaded_db, nb_exps=0, nb_algos=0, nb_trials=0, nb_benchmarks=0)
+
+
+def _check_unique_import_test_single_expV1(loaded_db, nb_versions=1):
+    """Check all versions of original experiment test_single_exp.1 in given database"""
+    _check_db(
+        loaded_db,
+        nb_exps=1 * nb_versions,
+        nb_algos=1 * nb_versions,
+        nb_trials=12 * nb_versions,
+        nb_benchmarks=0,
+    )
+    for i in range(nb_versions):
+        _check_exp(
+            loaded_db,
+            "test_single_exp",
+            1 + i,
+            nb_trials=12,
+            nb_child_trials=6,
+            algo_state={
+                "my_algo_state": "some_data",
+                "my_other_state_data": "some_other_data",
+            },
+        )
 
 
 def test_empty_database(empty_database):
@@ -35,138 +52,68 @@ def test_empty_database(empty_database):
     with db.locked_database(write=False) as internal_db:
         collections = set(internal_db._db.keys())
     assert collections == {"experiments", "algo", "trials", "benchmarks"}
-    assert len(db.read("experiments")) == 0
-    assert len(db.read("algo")) == 0
-    assert len(db.read("trials")) == 0
-    assert len(db.read("benchmarks")) == 0
+    _check_db(db, nb_exps=0, nb_algos=0, nb_trials=0, nb_benchmarks=0)
 
 
-def test_load_all(empty_database):
+def test_load_all(other_empty_database, pkl_experiments_and_benchmarks):
     """Test load all database"""
-    assert os.path.isfile(LOAD_DATA_WITH_BENCHMARKS)
-    storage = setup_storage()
+    assert os.path.isfile(pkl_experiments_and_benchmarks)
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
-    with loaded_db.locked_database(write=False) as internal_db:
-        collections = set(internal_db._db.keys())
-    assert collections == {"experiments", "algo", "trials", "benchmarks"}
-
-    assert len(loaded_db.read("benchmarks")) == 3
-    assert len(loaded_db.read("experiments")) == 3
-    assert len(loaded_db.read("trials")) == 24
-    # TODO: We should expect 6 algorithms, but only 3 are returned
-    # It seems config `three_experiments_family_same_name` contains 3 supplementary algorithms
-    # that are not related to experiments registered in the database. So, when dumping from this config
-    # then loading from dumped data, only algorithms related to available experiments are loaded,
-    # and there are only 3 such algorithms (1 per experiment)
-    assert len(loaded_db.read("algo")) == 3
+    execute(f"db load {pkl_experiments_and_benchmarks} -c {cfg_path}")
+    _assert_tested_db_structure(loaded_db)
 
 
-def test_load_again_without_resolve(empty_database, capsys):
+def test_load_again_without_resolve(
+    other_empty_database, pkl_experiments_and_benchmarks, capsys
+):
     """Test load all database twice without resolve in second call"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_db(loaded_db, nb_exps=0, nb_algos=0, nb_trials=0, nb_benchmarks=0)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
-    benchmarks = loaded_db.read("benchmarks")
-    experiments = loaded_db.read("experiments")
-    trials = loaded_db.read("trials")
-    algos = loaded_db.read("algo")
-    assert len(benchmarks) == 3
-    assert len(experiments) == 3
-    assert len(trials) == 24
-    assert len(algos) == 3
+    execute(f"db load {pkl_experiments_and_benchmarks} -c {cfg_path}")
+    _assert_tested_db_structure(loaded_db)
 
     # Again
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}", assert_code=1)
+    execute(f"db load {pkl_experiments_and_benchmarks}", assert_code=1)
     captured = capsys.readouterr()
     assert (
         captured.err.strip()
         == "Error: Conflict detected without strategy to resolve (None) for benchmark branin_baselines_webapi"
     )
     # Destination should have not changed
-    new_benchmarks = loaded_db.read("benchmarks")
-    new_experiments = loaded_db.read("experiments")
-    new_trials = loaded_db.read("trials")
-    new_algos = loaded_db.read("algo")
-    assert new_benchmarks == benchmarks
-    assert new_experiments == experiments
-    assert new_trials == trials
-    assert new_algos == algos
+    _assert_tested_db_structure(loaded_db)
 
 
-def test_load_ignore(empty_database):
+def test_load_ignore(other_empty_database, pkl_experiments_and_benchmarks):
     """Test load all database with --resolve ignore"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
-    benchmarks = loaded_db.read("benchmarks")
-    experiments = loaded_db.read("experiments")
-    trials = loaded_db.read("trials")
-    algos = loaded_db.read("algo")
-    assert len(benchmarks) == 3
-    assert len(experiments) == 3
-    assert len(trials) == 24
-    assert len(algos) == 3
+    execute(f"db load {pkl_experiments_and_benchmarks} -c {cfg_path}")
+    _assert_tested_db_structure(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore")
+    execute(f"db load {pkl_experiments_and_benchmarks} -r ignore -c {cfg_path}")
     # Duplicated data should be ignored, so we must expect same number of data and same IDs.
-    new_benchmarks = loaded_db.read("benchmarks")
-    new_experiments = loaded_db.read("experiments")
-    new_trials = loaded_db.read("trials")
-    new_algos = loaded_db.read("algo")
-    assert len(new_benchmarks) == 3
-    assert len(new_experiments) == 3
-    assert len(new_trials) == 24
-    assert len(new_algos) == 3
-    assert len(common_indices(experiments, new_experiments)) == 3
-    assert len(common_indices(trials, new_trials)) == 24
-    assert len(common_indices(algos, new_algos)) == 3
+    _assert_tested_db_structure(loaded_db)
 
 
-def test_load_overwrite(empty_database, capsys):
+def test_load_overwrite(other_empty_database, pkl_experiments_and_benchmarks, capsys):
     """Test load all database with --resolve overwrite"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS}")
-    benchmarks = loaded_db.read("benchmarks")
-    experiments = loaded_db.read("experiments")
-    trials = loaded_db.read("trials")
-    algos = loaded_db.read("algo")
-    assert len(benchmarks) == 3
-    assert len(experiments) == 3
-    assert len(trials) == 24
-    assert len(algos) == 3
+    execute(f"db load {pkl_experiments_and_benchmarks} -c {cfg_path}")
+    _assert_tested_db_structure(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite")
-    # Duplicated data should be overwritten, so we must expect same number of data
-    new_benchmarks = loaded_db.read("benchmarks")
-    new_experiments = loaded_db.read("experiments")
-    new_trials = loaded_db.read("trials")
-    new_algos = loaded_db.read("algo")
-    assert len(new_benchmarks) == 3
-    assert len(new_experiments) == 3
-    assert len(new_trials) == 24
-    assert len(new_algos) == 3
+    execute(f"db load {pkl_experiments_and_benchmarks} -r overwrite -c {cfg_path}")
+    # We expect same data structure after overwriting
+    _assert_tested_db_structure(loaded_db)
 
     # Check output to verify progress callback messages
     captured = capsys.readouterr()
@@ -230,71 +177,78 @@ STEP 6 Insert new data in destination 6 6
     )
 
 
-def test_load_bump_no_benchmarks(empty_database):
+def test_load_bump_no_benchmarks(other_empty_database, pkl_experiments):
     """Test load all database with --resolve --bump"""
-    data_source = LOAD_DATA
+    data_source = pkl_experiments
 
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {data_source}")
-    benchmarks = loaded_db.read("benchmarks")
-    experiments = loaded_db.read("experiments")
-    trials = loaded_db.read("trials")
-    algos = loaded_db.read("algo")
-    assert len(benchmarks) == 0
-    assert len(experiments) == 3
-    assert len(trials) == 24
-    assert len(algos) == 3
+    execute(f"db load {data_source} -c {cfg_path}")
+    _check_db(
+        loaded_db,
+        nb_exps=3,
+        nb_algos=3,
+        nb_trials=24,
+        nb_benchmarks=0,
+        nb_child_exps=2,
+    )
+    _check_exp(loaded_db, "test_single_exp", 1, nb_trials=12, nb_child_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 2, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp_child", 1, nb_trials=6)
 
-    execute(f"db load {data_source} -r bump")
+    execute(f"db load {data_source} -r bump -c {cfg_path}")
     # Duplicated data should be bumped, so we must expect twice quantity of data.
-    new_benchmarks = loaded_db.read("benchmarks")
-    new_experiments = loaded_db.read("experiments")
-    new_trials = loaded_db.read("trials")
-    new_algos = loaded_db.read("algo")
-    assert len(new_benchmarks) == 0
-    assert len(new_experiments) == 3 * 2
-    assert len(new_trials) == 24 * 2
-    assert len(new_algos) == 3 * 2
+    _check_db(
+        loaded_db,
+        nb_exps=3 * 2,
+        nb_algos=3 * 2,
+        nb_trials=24 * 2,
+        nb_benchmarks=0,
+        nb_child_exps=2 * 2,
+    )
+    _check_exp(loaded_db, "test_single_exp", 1, nb_trials=12, nb_child_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 2, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp_child", 1, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 3, nb_trials=12, nb_child_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 4, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp_child", 2, nb_trials=6)
 
-    execute(f"db load {data_source} -r bump")
+    execute(f"db load {data_source} -r bump -c {cfg_path}")
     # Duplicated data should be bumped, so we must expect thrice quantity of data.
-    third_benchmarks = loaded_db.read("benchmarks")
-    third_experiments = loaded_db.read("experiments")
-    third_trials = loaded_db.read("trials")
-    third_algos = loaded_db.read("algo")
-    assert len(third_benchmarks) == 0
-    assert len(third_experiments) == 3 * 3
-    assert len(third_trials) == 24 * 3
-    assert len(third_algos) == 3 * 3
+    _check_db(
+        loaded_db,
+        nb_exps=3 * 3,
+        nb_algos=3 * 3,
+        nb_trials=24 * 3,
+        nb_benchmarks=0,
+        nb_child_exps=2 * 3,
+    )
+    _check_exp(loaded_db, "test_single_exp", 1, nb_trials=12, nb_child_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 2, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp_child", 1, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 3, nb_trials=12, nb_child_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 4, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp_child", 2, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 5, nb_trials=12, nb_child_trials=6)
+    _check_exp(loaded_db, "test_single_exp", 6, nb_trials=6)
+    _check_exp(loaded_db, "test_single_exp_child", 3, nb_trials=6)
 
 
-def test_load_bump_with_benchmarks(empty_database, capsys):
-    """Test load all database with --resolve --bump"""
-    data_source = LOAD_DATA_WITH_BENCHMARKS
+def test_load_bump_with_benchmarks(
+    other_empty_database, pkl_experiments_and_benchmarks, capsys
+):
+    """Test load all database with benchmarks and --resolve --bump"""
+    data_source = pkl_experiments_and_benchmarks
 
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
     # First execution should pass, as destination contains nothing.
-    execute(f"db load {data_source}")
-    benchmarks = loaded_db.read("benchmarks")
-    experiments = loaded_db.read("experiments")
-    trials = loaded_db.read("trials")
-    algos = loaded_db.read("algo")
-    assert len(benchmarks) == 3
-    assert len(experiments) == 3
-    assert len(trials) == 24
-    assert len(algos) == 3
+    execute(f"db load {data_source} -c {cfg_path}")
+    _assert_tested_db_structure(loaded_db)
 
     # New execution should fail, as benchmarks don't currently support bump.
     execute(f"db load {data_source} -r bump", assert_code=1)
@@ -304,159 +258,94 @@ def test_load_bump_with_benchmarks(empty_database, capsys):
         == "Error: Can't bump benchmark version, as benchmarks do not currently support versioning."
     )
     # Destination should have not changed.
-    new_benchmarks = loaded_db.read("benchmarks")
-    new_experiments = loaded_db.read("experiments")
-    new_trials = loaded_db.read("trials")
-    new_algos = loaded_db.read("algo")
-    assert new_benchmarks == benchmarks
-    assert new_experiments == experiments
-    assert new_trials == trials
-    assert new_algos == algos
+    _assert_tested_db_structure(loaded_db)
 
 
-def test_load_one_experiment(empty_database):
+def test_load_one_experiment(other_empty_database, pkl_experiments_and_benchmarks):
     """Test load experiment test_single_exp"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp")
-    assert len(loaded_db.read("benchmarks")) == 0
-    experiments = loaded_db.read("experiments")
-    algos = loaded_db.read("algo")
-    trials = loaded_db.read("trials")
-    assert len(experiments) == 1
-    (exp_data,) = experiments
-    # We must have dumped version 2
-    assert exp_data["name"] == "test_single_exp"
-    assert exp_data["version"] == 2
-    assert len(algos) == len(exp_data["algorithm"]) == 1
-    # This experiment must have only 6 trials
-    assert len(trials) == 6
-    assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-    assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -n test_single_exp -c {cfg_path}"
+    )
+    _check_db(loaded_db, nb_exps=1, nb_algos=1, nb_trials=6, nb_benchmarks=0)
+    _check_exp(loaded_db, "test_single_exp", 2, nb_trials=6)
 
 
-def test_load_one_experiment_other_version(empty_database):
+def test_load_one_experiment_other_version(
+    other_empty_database, pkl_experiments_and_benchmarks
+):
     """Test load version 1 of experiment test_single_exp"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
-    assert len(loaded_db.read("benchmarks")) == 0
-    experiments = loaded_db.read("experiments")
-    algos = loaded_db.read("algo")
-    trials = loaded_db.read("trials")
-    assert len(experiments) == 1
-    (exp_data,) = experiments
-    assert exp_data["name"] == "test_single_exp"
-    assert exp_data["version"] == 1
-    assert len(algos) == len(exp_data["algorithm"]) == 1
-    # This experiment must have 12 trials (children included)
-    assert len(trials) == 12
-    assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-    assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -n test_single_exp -v 1 -c {cfg_path}"
+    )
+    _check_unique_import_test_single_expV1(loaded_db)
 
 
-def test_load_one_experiment_ignore(empty_database):
+def test_load_one_experiment_ignore(
+    other_empty_database, pkl_experiments_and_benchmarks
+):
     """Test load experiment test_single_exp with --resolve ignore"""
 
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
-    assert len(loaded_db.read("benchmarks")) == 0
-    experiments = loaded_db.read("experiments")
-    algos = loaded_db.read("algo")
-    trials = loaded_db.read("trials")
-    assert len(experiments) == 1
-    assert len(algos) == 1
-    assert len(trials) == 12
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -n test_single_exp -v 1 -c {cfg_path}"
+    )
+    _check_unique_import_test_single_expV1(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r ignore -n test_single_exp -v 1")
-    new_experiments = loaded_db.read("experiments")
-    new_algos = loaded_db.read("algo")
-    new_trials = loaded_db.read("trials")
-    assert len(new_experiments) == 1
-    assert len(new_algos) == 1
-    assert len(new_trials) == 12
-
-    # IDs should have not changed
-    assert len(common_indices(experiments, new_experiments)) == 1
-    assert len(common_indices(algos, new_algos)) == 1
-    assert len(common_indices(new_trials, trials)) == 12
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -r ignore -n test_single_exp -v 1 -c {cfg_path}"
+    )
+    _check_unique_import_test_single_expV1(loaded_db)
 
 
-def test_load_one_experiment_overwrite(empty_database):
+def test_load_one_experiment_overwrite(
+    other_empty_database, pkl_experiments_and_benchmarks
+):
     """Test load experiment test_single_exp with --resolve overwrite"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
-    assert len(loaded_db.read("benchmarks")) == 0
-    experiments = loaded_db.read("experiments")
-    algos = loaded_db.read("algo")
-    trials = loaded_db.read("trials")
-    assert len(experiments) == 1
-    assert len(algos) == 1
-    assert len(trials) == 12
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -n test_single_exp -v 1 -c {cfg_path}"
+    )
+    _check_unique_import_test_single_expV1(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r overwrite -n test_single_exp -v 1")
-    new_experiments = loaded_db.read("experiments")
-    new_algos = loaded_db.read("algo")
-    new_trials = loaded_db.read("trials")
-    assert len(new_experiments) == 1
-    assert len(new_algos) == 1
-    assert len(new_trials) == 12
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -r overwrite -n test_single_exp -v 1 -c {cfg_path}"
+    )
+    _check_unique_import_test_single_expV1(loaded_db)
 
 
-def test_load_one_experiment_bump(empty_database):
+def test_load_one_experiment_bump(other_empty_database, pkl_experiments_and_benchmarks):
     """Test load experiment test_single_exp with --resolve bump"""
-    storage = setup_storage()
+    storage, cfg_path = other_empty_database
     loaded_db = storage._db
-    assert len(loaded_db.read("benchmarks")) == 0
-    assert len(loaded_db.read("experiments")) == 0
-    assert len(loaded_db.read("trials")) == 0
-    assert len(loaded_db.read("algo")) == 0
+    _check_empty_db(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -n test_single_exp -v 1")
-    assert len(loaded_db.read("benchmarks")) == 0
-    experiments = loaded_db.read("experiments")
-    trials = loaded_db.read("trials")
-    algos = loaded_db.read("algo")
-    assert len(experiments) == 1
-    assert len(algos) == 1
-    assert len(trials) == 12
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -n test_single_exp -v 1 -c {cfg_path}"
+    )
+    _check_unique_import_test_single_expV1(loaded_db)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp -v 1")
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -r bump -n test_single_exp -v 1 -c {cfg_path}"
+    )
     # Duplicated data should be bumped, so we must expect twice quantity of data.
-    new_experiments = loaded_db.read("experiments")
-    new_trials = loaded_db.read("trials")
-    new_algos = loaded_db.read("algo")
-    assert len(new_experiments) == 1 * 2
-    assert len(new_algos) == 1 * 2
-    assert len(new_trials) == 12 * 2
+    _check_unique_import_test_single_expV1(loaded_db, nb_versions=2)
 
-    execute(f"db load {LOAD_DATA_WITH_BENCHMARKS} -r bump -n test_single_exp -v 1")
+    execute(
+        f"db load {pkl_experiments_and_benchmarks} -r bump -n test_single_exp -v 1 -c {cfg_path}"
+    )
     # Duplicated data should be bumped, so we must expect thrice quantity of data.
-    third_experiments = loaded_db.read("experiments")
-    third_trials = loaded_db.read("trials")
-    third_algos = loaded_db.read("algo")
-    assert len(third_experiments) == 1 * 3
-    assert len(third_algos) == 1 * 3
-    assert len(third_trials) == 12 * 3
+    _check_unique_import_test_single_expV1(loaded_db, nb_versions=3)

@@ -12,6 +12,7 @@ import random
 import string
 import time
 
+import pytest
 from falcon import testing
 
 from orion.core.io.database.pickleddb import PickledDB
@@ -20,15 +21,11 @@ from orion.serving.storage_resource import _gen_host_file
 from orion.serving.webapi import WebApi
 from orion.storage.base import setup_storage
 
-LOAD_DATA = os.path.join(
-    os.path.dirname(__file__), "..", "commands", "orion_db_load_test_data.pickled"
-)
 
-
-def _load_data(ephemeral_storage):
+@pytest.fixture
+def ephemeral_loaded(ephemeral_storage, pkl_experiments):
     """Load test data in ephemeral storage. To be used before testing /dump requests."""
-    assert os.path.isfile(LOAD_DATA)
-    load_database(ephemeral_storage.storage, LOAD_DATA, resolve="ignore")
+    load_database(ephemeral_storage.storage, pkl_experiments, resolve="ignore")
 
 
 def _clean_dump(dump_path):
@@ -104,9 +101,8 @@ def _gen_multipart_form_for_load(file: str, resolve: str, name="", version=""):
     return buff.getvalue(), headers
 
 
-def test_dump_all(client, ephemeral_storage):
+def test_dump_all(client, ephemeral_loaded):
     """Test simple call to /dump"""
-    _load_data(ephemeral_storage)
     response = client.simulate_get("/dump")
     host = _gen_host_file()
     try:
@@ -124,9 +120,8 @@ def test_dump_all(client, ephemeral_storage):
         _clean_dump(host)
 
 
-def test_dump_one_experiment(client, ephemeral_storage):
+def test_dump_one_experiment(client, ephemeral_loaded):
     """Test dump only experiment test_single_exp (no version specified)"""
-    _load_data(ephemeral_storage)
     response = client.simulate_get("/dump?name=test_single_exp")
     host = _gen_host_file()
     try:
@@ -142,7 +137,7 @@ def test_dump_one_experiment(client, ephemeral_storage):
         # We must have dumped version 2
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithms"]) == 1
+        assert len(algos) == len(exp_data["algorithm"]) == 1
         # This experiment must have only 6 trials
         assert len(trials) == 6
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -151,9 +146,8 @@ def test_dump_one_experiment(client, ephemeral_storage):
         _clean_dump(host)
 
 
-def test_dump_one_experiment_other_version(client, ephemeral_storage):
+def test_dump_one_experiment_other_version(client, ephemeral_loaded):
     """Test dump version 1 of experiment test_single_exp"""
-    _load_data(ephemeral_storage)
     response = client.simulate_get("/dump?name=test_single_exp&version=1")
     host = _gen_host_file()
     try:
@@ -169,7 +163,7 @@ def test_dump_one_experiment_other_version(client, ephemeral_storage):
         # We must have dumped version 1
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 1
-        assert len(algos) == len(exp_data["algorithms"]) == 1
+        assert len(algos) == len(exp_data["algorithm"]) == 1
         # This experiment must have 12 trials (children included)
         assert len(trials) == 12
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -178,9 +172,8 @@ def test_dump_one_experiment_other_version(client, ephemeral_storage):
         _clean_dump(host)
 
 
-def test_dump_unknown_experiment(client, ephemeral_storage):
+def test_dump_unknown_experiment(client, ephemeral_loaded):
     """Test dump unknown experiment"""
-    _load_data(ephemeral_storage)
     response = client.simulate_get("/dump?name=unknown")
     assert response.status == "404 Not Found"
     assert response.json == {
@@ -189,7 +182,7 @@ def test_dump_unknown_experiment(client, ephemeral_storage):
     }
 
 
-def test_load_all():
+def test_load_all(pkl_experiments):
     """Test both /load and /import-status"""
 
     # Create empty PKL file as destination database
@@ -210,7 +203,7 @@ def test_load_all():
         assert len(dst_db.read("algo")) == 0
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(LOAD_DATA, "ignore")
+        body, headers = _gen_multipart_form_for_load(pkl_experiments, "ignore")
 
         # Test /load and /import-status 5 times with resolve=ignore
         # to check if data are effectively ignored on conflict
@@ -247,7 +240,7 @@ def test_load_all():
         _clean_dump(host)
 
 
-def test_load_one_experiment():
+def test_load_one_experiment(pkl_experiments):
     """Test both /load and /import-status for one experiment"""
 
     # Create empty PKL file as destination database
@@ -269,7 +262,7 @@ def test_load_one_experiment():
 
         # Generate body and header for request /load
         body, headers = _gen_multipart_form_for_load(
-            LOAD_DATA, "ignore", "test_single_exp"
+            pkl_experiments, "ignore", "test_single_exp"
         )
 
         task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
@@ -303,7 +296,7 @@ def test_load_one_experiment():
         # We must have loaded version 2
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithms"]) == 1
+        assert len(algos) == len(exp_data["algorithm"]) == 1
         # This experiment must have only 6 trials
         assert len(trials) == 6
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -313,7 +306,7 @@ def test_load_one_experiment():
         _clean_dump(host)
 
 
-def test_load_one_experiment_other_version():
+def test_load_one_experiment_other_version(pkl_experiments):
     """Test both /load and /import-status for one experiment with specific version"""
 
     # Create empty PKL file as destination database
@@ -335,7 +328,7 @@ def test_load_one_experiment_other_version():
 
         # Generate body and header for request /load
         body, headers = _gen_multipart_form_for_load(
-            LOAD_DATA, "ignore", "test_single_exp", "1"
+            pkl_experiments, "ignore", "test_single_exp", "1"
         )
 
         task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
@@ -369,7 +362,7 @@ def test_load_one_experiment_other_version():
         # We must have loaded version 1
         assert exp_data["name"] == "test_single_exp"
         assert exp_data["version"] == 1
-        assert len(algos) == len(exp_data["algorithms"]) == 1
+        assert len(algos) == len(exp_data["algorithm"]) == 1
         # This experiment must have 12 trials (children included)
         assert len(trials) == 12
         assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
@@ -379,7 +372,7 @@ def test_load_one_experiment_other_version():
         _clean_dump(host)
 
 
-def test_load_unknown_experiment():
+def test_load_unknown_experiment(pkl_experiments):
     """Test both /load and /import-status for an unknown experiment"""
 
     # Create empty PKL file as destination database
@@ -400,7 +393,9 @@ def test_load_unknown_experiment():
         assert len(dst_db.read("algo")) == 0
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(LOAD_DATA, "ignore", "unknown")
+        body, headers = _gen_multipart_form_for_load(
+            pkl_experiments, "ignore", "unknown"
+        )
 
         task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
             "task"

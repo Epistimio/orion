@@ -9,6 +9,17 @@ from typing import Any
 import numpy
 import pytest
 import yaml
+
+# Import pkl_* fixtures for tests in test_storage_resource
+# Need to also import parent fixtures to make fixtures work
+from functional.commands.conftest import (
+    one_experiment,
+    pkl_experiments,
+    pkl_experiments_and_benchmarks,
+    three_experiments_branch_same_name,
+    three_experiments_branch_same_name_trials,
+    two_experiments_same_name,
+)
 from pymongo import MongoClient
 
 import orion.core
@@ -20,6 +31,14 @@ from orion.core.io.database import database_factory
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
 from orion.storage.base import storage_factory
+
+# 'Use' imported fixtures here, to avoid being considered as unused imports by formatting tools
+assert one_experiment
+assert two_experiments_same_name
+assert three_experiments_branch_same_name
+assert three_experiments_branch_same_name_trials
+assert pkl_experiments
+assert pkl_experiments_and_benchmarks
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
