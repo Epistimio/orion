@@ -7,6 +7,7 @@ import pytest
 
 import orion.core.cli
 from orion.core.io.database.pickleddb import PickledDB
+from orion.storage.base import setup_storage
 
 
 def execute(command, assert_code=0):
@@ -20,6 +21,17 @@ def clean_dump(dump_path):
     for path in (dump_path, f"{dump_path}.lock"):
         if os.path.isfile(path):
             os.unlink(path)
+
+
+def test_default_storage(three_experiments_branch_same_name):
+    """Check default storage from three_experiments_branch_same_name"""
+    storage = setup_storage()
+    experiments = storage._db.read("experiments")
+    algos = storage._db.read("algo")
+    # We have 3 experiments in storage
+    assert len(experiments) == 3
+    # But we have 6 algos. We should expect 3 (one per experiment)
+    assert len(algos) == 6
 
 
 def test_dump_default(
