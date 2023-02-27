@@ -251,6 +251,7 @@ class _Graph:
         return [self.node_to_data[node] for node in self.get_sorted_nodes()]
 
     def get_sorted_links(self):
+        """Return sorted edges (node, child)"""
         for node in self.get_sorted_nodes():
             for child in sorted(self.parent_to_children[node]) or [None]:
                 yield node, child
@@ -401,6 +402,7 @@ def _dump_experiment(src_storage, dst_storage, src_exp, src_to_dst_id: dict):
     # Dump trials
     for trial in src_storage.fetch_trials(uid=src_id):
         trial.experiment = src_to_dst_id[trial.experiment]
+        trial.id_override = None
         dst_storage.register_trial(trial)
     logger.info("\tDumped trials")
 
@@ -489,7 +491,6 @@ def _prepare_import(
     all_dst_experiments = dst_storage.fetch_experiments({})
     # Dictionary mapping dst exp name to exp version to list of exps with same name and version
     dst_exp_map = {}
-    last_experiment_id = max((data["_id"] for data in all_dst_experiments), default=0)
     last_versions = {}
     for dst_exp in all_dst_experiments:
         name = dst_exp["name"]
@@ -497,6 +498,23 @@ def _prepare_import(
         last_versions[name] = max(last_versions.get(name, 0), version)
         dst_exp_map.setdefault(name, {}).setdefault(version, []).append(dst_exp)
     _describe_import_progress(STEP_CHECK_DST_EXPERIMENTS, 1, 1, progress_callback)
+
+    if len(experiments) == 1:
+        # As we load only 1 experiment, remove parent links if exist
+        (exp_data,) = experiments
+        if exp_data["refers"]:
+            if exp_data["refers"]["root_id"] is not None:
+                logger.info("Removing reference to root experiment before loading")
+                exp_data["refers"]["root_id"] = None
+            if exp_data["refers"]["parent_id"] is not None:
+                logger.info("Removing reference to parent experiment before loading")
+                exp_data["refers"]["parent_id"] = None
+    else:
+        # Load experiments ordered from parents to children,
+        # so that we can get new parent IDs from dst
+        # before writing children.
+        graph = get_experiment_parent_links(experiments)
+        experiments = graph.get_sorted_data()
 
     for i, experiment in enumerate(experiments):
         _describe_import_progress(
@@ -528,7 +546,7 @@ def _prepare_import(
                 )
             elif resolve == "bump":
                 old_version = experiment["version"]
-                new_version = last_versions.get(experiment["name"], 0) + 1
+                new_version = last_versions[experiment["name"]] + 1
                 last_versions[experiment["name"]] = new_version
                 experiment["version"] = new_version
                 logger.info(
@@ -548,25 +566,12 @@ def _prepare_import(
         # Get data related to experiment to import.
         algo = src_storage.get_algorithm_lock_info(uid=experiment["_id"])
         trials = src_storage.fetch_trials(uid=experiment["_id"])
-
-        # Generate new experiment ID
-        new_experiment_id = last_experiment_id + 1
-        last_experiment_id = new_experiment_id
-        experiment["_id"] = new_experiment_id
-        # Update trials: set new experiment ID and remove trials database IDs,
-        # so that new IDs will be generated at insertion.
-        # Trial parents are identified using trial identifier (trial.id)
-        # which is not related to trial database ID (trial.id_override).
-        # So, we can safely remove trial database ID.
-        for trial in trials:
-            trial.experiment = new_experiment_id
-            trial.id_override = None
-
+        # We will use experiment key to link experiment to related data.
+        exp_key = _get_exp_key(experiment)
         # Set data to add
         data_to_add.setdefault(COL_EXPERIMENTS, []).append(experiment)
-        # Link algo with new experiment ID
-        data_to_add.setdefault(COL_ALGOS, {})[new_experiment_id] = algo
-        data_to_add.setdefault(COL_TRIALS, {})[new_experiment_id] = trials
+        data_to_add.setdefault(COL_ALGOS, {})[exp_key] = algo
+        data_to_add.setdefault(COL_TRIALS, {})[exp_key] = trials
     _describe_import_progress(
         STEP_CHECK_SRC_EXPERIMENTS,
         len(experiments),
@@ -594,6 +599,8 @@ def _execute_import(
     progress_callback:
         See :func:`load_database`
     """
+
+    # Delete data
 
     total_queries = sum(len(queries) for queries in queries_to_delete.values())
     for collection_name in COLLECTIONS:
@@ -641,6 +648,8 @@ def _execute_import(
         STEP_DELETE_OLD_DATA, total_queries, total_queries, progress_callback
     )
 
+    # Add data
+
     nb_data_to_add = len(data_to_add.get(COL_BENCHMARKS, ())) + len(
         data_to_add.get(COL_EXPERIMENTS, ())
     )
@@ -653,16 +662,40 @@ def _execute_import(
         )
         i_data += 1
 
-    for new_experiment in data_to_add.get(COL_EXPERIMENTS, ()):
-        new_algo = data_to_add[COL_ALGOS][new_experiment["_id"]]
-        new_trials = data_to_add[COL_TRIALS][new_experiment["_id"]]
+    src_to_dst_id = {}
+    for src_exp in data_to_add.get(COL_EXPERIMENTS, ()):
+        # Remove src exp ID, so that new ID will be generated at insertion.
+        src_id = src_exp.pop("_id")
+        assert src_id not in src_to_dst_id
+        # Update experiment parent ID
+        old_parent_id = _get_exp_parent_id(src_exp)
+        if old_parent_id is not None:
+            _set_exp_parent_id(src_exp, src_to_dst_id[old_parent_id])
+
+        exp_key = _get_exp_key(src_exp)
+        new_algo = data_to_add[COL_ALGOS][exp_key]
+        new_trials = data_to_add[COL_TRIALS][exp_key]
+        # Insert experiment and algo
         dst_storage.create_experiment(
-            new_experiment,
+            src_exp,
             algo_locked=new_algo.locked,
             algo_state=new_algo.state,
             algo_heartbeat=new_algo.heartbeat,
         )
+        # Link experiment src ID to dst ID
+        (dst_exp,) = dst_storage.fetch_experiments(
+            {"name": src_exp["name"], "version": src_exp["version"]}
+        )
+        src_to_dst_id[src_id] = dst_exp["_id"]
+        # Insert trials
         for trial in new_trials:
+            # Set trial parent to new dst exp ID
+            trial.experiment = src_to_dst_id[trial.experiment]
+            # Remove src trial database ID, so that new ID will be generated at insertion.
+            # Trial parents are identified using trial identifier (trial.id)
+            # which is not related to trial database ID (trial.id_override).
+            # So, we can safely remove trial database ID.
+            trial.id_override = None
             dst_storage.register_trial(trial)
         _describe_import_progress(
             STEP_INSERT_NEW_DATA, i_data, nb_data_to_add, progress_callback
