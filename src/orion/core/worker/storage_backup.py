@@ -167,139 +167,6 @@ def load_database(
     _execute_import(storage, *preparation, progress_callback=progress_callback)
 
 
-class _Graph:
-    """Helper class to build experiments or trials graph.
-
-    A node is a unique key representing a data.
-    E.g. for experiment, a node is experiment key (name + version).
-
-    Attributes
-    ----------
-    node_to_data:
-        Dictionary mapping a node to node data.
-        E.g. for experiment, map experiment key to experiment object.
-    parent_to_children:
-        Dictionary mapping a node to list of children nodes.
-    child_to_parent:
-        Dictionary mapping a node to parent node.
-        We assume a node can have at most 1 parent.
-    """
-
-    def __init__(self, node_to_data: dict):
-        """Initialize.
-
-        Parameters
-        ----------
-        node_to_data:
-            Dictionary mapping key (used as node) to related object.
-        """
-        self.node_to_data = node_to_data
-        self.parent_to_children = {node: [] for node in self.node_to_data}
-        self.child_to_parent = {}
-
-    def add_link(self, parent, child):
-        """Link parent node to child node."""
-        # We assume a node has only 1 parent
-        assert child not in self.child_to_parent
-        self.parent_to_children[parent].append(child)
-        self.child_to_parent[child] = parent
-
-    def copy(self):
-        """Create a copy of this graph.
-
-        Used to generate a work copy without modifying original graph.
-        """
-        graph = _Graph({})
-        graph.node_to_data = self.node_to_data.copy()
-        graph.parent_to_children = self.parent_to_children.copy()
-        graph.child_to_parent = self.child_to_parent.copy()
-        return graph
-
-    def pop(self):
-        """Remove a node which has no parent. Should be called on a graph copy."""
-        node_to_pop = None
-        for parent in self.parent_to_children:
-            if parent not in self.child_to_parent:
-                node_to_pop = parent
-                break
-        if node_to_pop is None:
-            # If there are no more node to remove,
-            # graph should be empty.
-            assert not self.parent_to_children
-            assert not self.child_to_parent
-        else:
-            for child in self.parent_to_children.pop(node_to_pop):
-                del self.child_to_parent[child]
-        return node_to_pop
-
-    def get_sorted_nodes(self) -> list:
-        """Return list of sorted nodes from parents to children.
-
-        Assume there are no cycles.
-        """
-        graph = self.copy()
-        sorted_nodes = []
-        while True:
-            node = graph.pop()
-            if node is None:
-                break
-            sorted_nodes.append(node)
-        return sorted_nodes
-
-    def get_sorted_data(self) -> list:
-        """Return list of sorted data from parents to children."""
-        return [self.node_to_data[node] for node in self.get_sorted_nodes()]
-
-    def get_sorted_links(self):
-        """Return sorted edges (node, child)"""
-        for node in self.get_sorted_nodes():
-            for child in sorted(self.parent_to_children[node]) or [None]:
-                yield node, child
-
-
-def _get_exp_key(exp: dict) -> tuple:
-    """Return experiment key as tuple (name, version)"""
-    return exp["name"], exp["version"]
-
-
-def _get_exp_parent_id(exp: dict):
-    """Get experiment parent ID or None if unavailable"""
-    return exp.get("refers", {}).get("parent_id", None)
-
-
-def _set_exp_parent_id(exp: dict, parent_id):
-    """Set experiment parent ID"""
-    exp.setdefault("refers", {})["parent_id"] = parent_id
-
-
-def get_experiment_parent_links(experiments: list) -> _Graph:
-    """Generate experiments graphs based on experiment parents.
-
-    Does not currently check experiment roots.
-    """
-    graph = _Graph({_get_exp_key(exp): exp for exp in experiments})
-    exp_id_to_key = {exp["_id"]: _get_exp_key(exp) for exp in experiments}
-    for exp in experiments:
-        parent_id = _get_exp_parent_id(exp)
-        if parent_id is not None:
-            parent_key = exp_id_to_key[parent_id]
-            child_key = _get_exp_key(exp)
-            graph.add_link(parent_key, child_key)
-    return graph
-
-
-def get_trial_parent_links(trials: list) -> _Graph:
-    """Generate trials graph based on trial parents. Not yet used."""
-    trial_map = {trial["id"]: trial for trial in trials}
-    graph = _Graph(trial_map)
-    for trial in trials:
-        parent = trial["parent"]
-        if parent is not None:
-            assert parent in trial_map
-            graph.add_link(parent, trial["id"])
-    return graph
-
-
 def _dump(src_storage, dst_storage, name=None, version=None):
     """Dump data from source storage to destination storage.
 
@@ -400,10 +267,15 @@ def _dump_experiment(src_storage, dst_storage, src_exp, src_to_dst_id: dict):
     )
     src_to_dst_id[src_id] = dst_exp["_id"]
     # Dump trials
+    trial_old_to_new_id = {}
     for trial in src_storage.fetch_trials(uid=src_id):
+        old_id = trial.id
         trial.experiment = src_to_dst_id[trial.experiment]
         trial.id_override = None
-        dst_storage.register_trial(trial)
+        if trial.parent is not None:
+            trial.parent = trial_old_to_new_id[trial.parent]
+        dst_trial = dst_storage.register_trial(trial)
+        trial_old_to_new_id[old_id] = dst_trial.id
     logger.info("\tDumped trials")
 
 
@@ -688,7 +560,11 @@ def _execute_import(
         )
         src_to_dst_id[src_id] = dst_exp["_id"]
         # Insert trials
+        trial_old_to_new_id = {}
         for trial in new_trials:
+            old_id = trial.id
+            if trial.parent is not None:
+                trial.parent = trial_old_to_new_id[trial.parent]
             # Set trial parent to new dst exp ID
             trial.experiment = src_to_dst_id[trial.experiment]
             # Remove src trial database ID, so that new ID will be generated at insertion.
@@ -696,7 +572,8 @@ def _execute_import(
             # which is not related to trial database ID (trial.id_override).
             # So, we can safely remove trial database ID.
             trial.id_override = None
-            dst_storage.register_trial(trial)
+            dst_trial = dst_storage.register_trial(trial)
+            trial_old_to_new_id[old_id] = dst_trial.id
         _describe_import_progress(
             STEP_INSERT_NEW_DATA, i_data, nb_data_to_add, progress_callback
         )
@@ -713,3 +590,146 @@ def _describe_import_progress(step, value, total, callback=None):
         if total == 0:
             value = total = 1
         callback(STEP_NAMES[step], (step + (value / total)) / len(STEP_NAMES))
+
+
+class _Graph:
+    """Helper class to build experiments or trials graph.
+
+    A node is a unique key representing a data.
+    E.g. for experiment, a node is experiment key (name + version).
+
+    Attributes
+    ----------
+    node_to_data:
+        Dictionary mapping a node to node data.
+        E.g. for experiment, map experiment key to experiment object.
+    parent_to_children:
+        Dictionary mapping a node to list of children nodes.
+    child_to_parent:
+        Dictionary mapping a node to parent node.
+        We assume a node can have at most 1 parent.
+    """
+
+    def __init__(self, node_to_data: dict):
+        """Initialize.
+
+        Parameters
+        ----------
+        node_to_data:
+            Dictionary mapping key (used as node) to related object.
+        """
+        self.node_to_data = node_to_data
+        self.parent_to_children = {node: [] for node in self.node_to_data}
+        self.child_to_parent = {}
+
+    def add_link(self, parent, child):
+        """Link parent node to child node."""
+        # We assume a node has only 1 parent
+        assert child not in self.child_to_parent
+        self.parent_to_children[parent].append(child)
+        self.child_to_parent[child] = parent
+
+    def copy(self):
+        """Create a copy of this graph.
+
+        Used to generate a work copy without modifying original graph.
+        """
+        graph = _Graph({})
+        graph.node_to_data = self.node_to_data.copy()
+        graph.parent_to_children = self.parent_to_children.copy()
+        graph.child_to_parent = self.child_to_parent.copy()
+        return graph
+
+    def pop(self):
+        """Remove a node which has no parent. Should be called on a graph copy."""
+        node_to_pop = None
+        for parent in self.parent_to_children:
+            if parent not in self.child_to_parent:
+                node_to_pop = parent
+                break
+        if node_to_pop is None:
+            # If there are no more node to remove,
+            # graph should be empty.
+            assert not self.parent_to_children
+            assert not self.child_to_parent
+        else:
+            for child in self.parent_to_children.pop(node_to_pop):
+                del self.child_to_parent[child]
+        return node_to_pop
+
+    def get_sorted_nodes(self) -> list:
+        """Return list of sorted nodes from parents to children.
+
+        Assume there are no cycles.
+        """
+        graph = self.copy()
+        sorted_nodes = []
+        while True:
+            node = graph.pop()
+            if node is None:
+                break
+            sorted_nodes.append(node)
+        return sorted_nodes
+
+    def get_sorted_data(self) -> list:
+        """Return list of sorted data from parents to children."""
+        return [self.node_to_data[node] for node in self.get_sorted_nodes()]
+
+    def get_sorted_links(self):
+        """Return sorted edges (node, child)"""
+        for node in self.get_sorted_nodes():
+            for child in sorted(self.parent_to_children[node]) or [None]:
+                yield node, child
+
+
+def get_experiment_parent_links(experiments: list) -> _Graph:
+    """Generate experiments graphs based on experiment parents.
+
+    Does not currently check experiment roots.
+    """
+    graph = _Graph({_get_exp_key(exp): exp for exp in experiments})
+    exp_id_to_key = {exp["_id"]: _get_exp_key(exp) for exp in experiments}
+    for exp in experiments:
+        parent_id = _get_exp_parent_id(exp)
+        if parent_id is not None:
+            parent_key = exp_id_to_key[parent_id]
+            child_key = _get_exp_key(exp)
+            graph.add_link(parent_key, child_key)
+    return graph
+
+
+def get_trial_parent_links(trials: list) -> _Graph:
+    """Generate trials graph based on trial parents. Not yet used."""
+    trial_map = {_get_trial_key(trial): trial for trial in trials}
+    graph = _Graph(trial_map)
+    for trial in trials:
+        parent = _get_trial_parent(trial)
+        if parent is not None:
+            assert parent in trial_map
+            graph.add_link(parent, _get_trial_key(trial))
+    return graph
+
+
+def _get_trial_key(trial):
+    """Return trial key, as trial ID"""
+    return trial["id"] if isinstance(trial, dict) else trial.id
+
+
+def _get_trial_parent(trial):
+    """Return trial parent"""
+    return trial["parent"] if isinstance(trial, dict) else trial.parent
+
+
+def _get_exp_key(exp: dict) -> tuple:
+    """Return experiment key as tuple (name, version)"""
+    return exp["name"], exp["version"]
+
+
+def _get_exp_parent_id(exp: dict):
+    """Get experiment parent ID or None if unavailable"""
+    return exp.get("refers", {}).get("parent_id", None)
+
+
+def _set_exp_parent_id(exp: dict, parent_id):
+    """Set experiment parent ID"""
+    exp.setdefault("refers", {})["parent_id"] = parent_id

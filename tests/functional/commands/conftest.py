@@ -13,7 +13,11 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.worker.storage_backup import dump_database
+from orion.core.worker.storage_backup import (
+    dump_database,
+    get_experiment_parent_links,
+    get_trial_parent_links,
+)
 from orion.core.worker.trial import Trial
 
 
@@ -647,13 +651,22 @@ class _Helpers:
         assert len(child_exps) == nb_child_exps
 
     @staticmethod
-    def check_exp(db, name, version, nb_trials, nb_child_trials=0, algo_state=None):
+    def check_exp(
+        db,
+        name,
+        version,
+        nb_trials,
+        nb_child_trials=0,
+        algo_state=None,
+        trial_links=None,
+    ):
         """Check experiment.
         - Check if we found experiment.
         - Check if we found exactly 1 algorithm for this experiment.
         - Check algo state if algo_state is provided
         - Check if we found expected number of trials for this experiment.
         - Check if we found expecter number of child trials into experiment trials.
+        - Check if we found expected trial links if provided.
         """
         experiments = db.read("experiments", {"name": name, "version": version})
         assert len(experiments) == 1
@@ -677,6 +690,13 @@ class _Helpers:
                 child_trials.append(trial)
         assert len(child_trials) == nb_child_trials
 
+        if trial_links is not None:
+            trial_graph = get_trial_parent_links(trials)
+            given_links = sorted(trial_graph.get_sorted_links())
+            trial_links = sorted(trial_links)
+            assert len(trial_links) == len(given_links)
+            assert trial_links == given_links
+
     @staticmethod
     def check_empty_db(loaded_db):
         """Check that given database is empty"""
@@ -695,7 +715,6 @@ class _Helpers:
         # that are not related to experiments registered in the database. So, when dumping from this config
         # then loading from dumped data, only algorithms related to available experiments are loaded,
         # and there are only 3 such algorithms (1 per experiment)
-        from orion.core.worker.storage_backup import get_experiment_parent_links
 
         _Helpers.check_db(
             dumped_db,
@@ -753,6 +772,7 @@ class _Helpers:
         nb_child_trials=0,
         nb_versions=1,
         algo_state=None,
+        trial_links=None,
     ):
         """Check all versions of an experiment in given database"""
         _Helpers.check_db(
@@ -770,6 +790,7 @@ class _Helpers:
                 nb_trials=nb_trials,
                 nb_child_trials=nb_child_trials,
                 algo_state=algo_state,
+                trial_links=trial_links,
             )
 
     @staticmethod
@@ -786,6 +807,38 @@ class _Helpers:
                 "my_algo_state": "some_data",
                 "my_other_state_data": "some_other_data",
             },
+            trial_links=[
+                (
+                    "9dbe618878008376d0ef47dba77b4175",
+                    "7bc7d88c3f84329ae15667af1fc5eba0",
+                ),
+                ("7bc7d88c3f84329ae15667af1fc5eba0", None),
+                (
+                    "68e541fa91d9017a50fe534c2e70e34c",
+                    "0caeb769dd8becc1c5064d3638128948",
+                ),
+                ("0caeb769dd8becc1c5064d3638128948", None),
+                (
+                    "ebd7c227cd7d1911c3b56daa9d02b2c2",
+                    "0e6dce570d2bec70b0c7e26ba6aab617",
+                ),
+                ("0e6dce570d2bec70b0c7e26ba6aab617", None),
+                (
+                    "26da495bc13561b163e1e67654c913d4",
+                    "7fbcacb8b1a6fd12d57f8b84de009c42",
+                ),
+                ("7fbcacb8b1a6fd12d57f8b84de009c42", None),
+                (
+                    "284af14179121d0e8df8e7fc856f5920",
+                    "a40d030ff08ebbb7d97ecffaf93fe1f6",
+                ),
+                ("a40d030ff08ebbb7d97ecffaf93fe1f6", None),
+                (
+                    "938087683a168d4640ee3f72942d2d16",
+                    "44dc1dd034b0dddca891847b8aac31fb",
+                ),
+                ("44dc1dd034b0dddca891847b8aac31fb", None),
+            ],
         )
 
     @staticmethod
