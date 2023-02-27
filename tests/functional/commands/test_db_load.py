@@ -3,7 +3,10 @@
 
 import os
 
+import pytest
+
 import orion.core.cli
+from orion.core.io.database.pickleddb import PickledDB
 from orion.storage.base import setup_storage
 
 # TODO: Test trial parents links and experiment root links in loaded data
@@ -72,10 +75,26 @@ def test_load_ignore(
 
     execute(f"db load {pkl_experiments_and_benchmarks} -c {cfg_path}")
     testing_helpers.assert_tested_db_structure(loaded_db)
+    testing_helpers.assert_tested_trial_status(loaded_db)
+
+    # Change something in PKL file to check that changes are ignored
+    src_db = PickledDB(pkl_experiments_and_benchmarks)
+    testing_helpers.assert_tested_trial_status(src_db)
+    for trial in src_db.read("trials"):
+        trial["status"] = "new"
+        src_db.write("trials", trial, query={"_id": trial["_id"]})
+    testing_helpers.assert_tested_db_structure(src_db)
+    # Trials status checking should fail for PKL file
+    with pytest.raises(AssertionError):
+        testing_helpers.assert_tested_trial_status(src_db)
+    # ... And pass for a specific count
+    testing_helpers.assert_tested_trial_status(src_db, counts={"new": 24})
 
     execute(f"db load {pkl_experiments_and_benchmarks} -r ignore -c {cfg_path}")
-    # Duplicated data should be ignored, so we must expect same number of data and same IDs.
+    # Duplicated data should be ignored, so we must expect same data.
     testing_helpers.assert_tested_db_structure(loaded_db)
+    # Trials status should have not been modified in dst database.
+    testing_helpers.assert_tested_trial_status(loaded_db)
 
 
 def test_load_overwrite(
@@ -88,10 +107,29 @@ def test_load_overwrite(
 
     execute(f"db load {pkl_experiments_and_benchmarks} -c {cfg_path}")
     testing_helpers.assert_tested_db_structure(loaded_db)
+    testing_helpers.assert_tested_trial_status(loaded_db)
+
+    # Change something in PKL file to check that changes are ignored
+    src_db = PickledDB(pkl_experiments_and_benchmarks)
+    testing_helpers.assert_tested_trial_status(src_db)
+    for trial in src_db.read("trials"):
+        trial["status"] = "new"
+        src_db.write("trials", trial, query={"_id": trial["_id"]})
+    testing_helpers.assert_tested_db_structure(src_db)
+    # Trials status checking should fail for PKL file
+    with pytest.raises(AssertionError):
+        testing_helpers.assert_tested_trial_status(src_db)
+    # ... And pass for a specific count
+    testing_helpers.assert_tested_trial_status(src_db, counts={"new": 24})
 
     execute(f"db load {pkl_experiments_and_benchmarks} -r overwrite -c {cfg_path}")
     # We expect same data structure after overwriting
     testing_helpers.assert_tested_db_structure(loaded_db)
+    # Trial status checking must fail by default
+    with pytest.raises(AssertionError):
+        testing_helpers.assert_tested_trial_status(loaded_db)
+    # ... And pass for specific changes
+    testing_helpers.assert_tested_trial_status(loaded_db, counts={"new": 24})
 
     # Check output to verify progress callback messages
     captured = capsys.readouterr()

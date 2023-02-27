@@ -4,6 +4,7 @@ import copy
 import os
 import pickle
 import zlib
+from collections import Counter
 from tempfile import NamedTemporaryFile
 
 import pytest
@@ -723,6 +724,25 @@ class _Helpers:
         assert len(expected_structure) == nb_duplicated * 3
         dumped_graph = get_experiment_parent_links(dumped_db.read("experiments"))
         assert sorted(dumped_graph.get_sorted_links()) == sorted(expected_structure)
+
+    @staticmethod
+    def assert_tested_trial_status(dumped_db, nb_duplicated=1, counts=None):
+        """Check that trials have valid status."""
+        if counts is None:
+            counts = {
+                "new": 9,
+                "reserved": 3,
+                "suspended": 3,
+                "completed": 3,
+                "interrupted": 3,
+                "broken": 3,
+            }
+        trial_status_count = Counter(
+            trial["status"] for trial in dumped_db.read("trials")
+        )
+        assert len(trial_status_count) == len(counts)
+        for status, count in counts.items():
+            assert trial_status_count[status] == count * nb_duplicated
 
     @staticmethod
     def check_unique_import(
