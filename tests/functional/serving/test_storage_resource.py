@@ -28,6 +28,52 @@ def ephemeral_loaded(ephemeral_storage, pkl_experiments):
     load_database(ephemeral_storage.storage, pkl_experiments, resolve="ignore")
 
 
+@pytest.fixture
+def ephemeral_loaded_with_benchmarks(ephemeral_storage, pkl_experiments_and_benchmarks):
+    """Load test data in ephemeral storage. To be used before testing /dump requests."""
+    load_database(
+        ephemeral_storage.storage, pkl_experiments_and_benchmarks, resolve="ignore"
+    )
+
+
+class DumpContext:
+    def __init__(self, client, parameters=None):
+        self.client = client
+        self.host = _gen_host_file()
+        self.db = None
+        self.url = "/dump" + ("" if parameters is None else f"?{parameters}")
+
+    def __enter__(self):
+        response = self.client.simulate_get(self.url)
+        with open(self.host, "wb") as file:
+            file.write(response.content)
+        self.db = PickledDB(self.host)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        _clean_dump(self.host)
+        print("CLEANED DUMP")
+
+
+class LoadContext:
+    def __init__(self):
+        # Create empty PKL file as destination database
+        self.host = _gen_host_file("test")
+        # Setup storage and client
+        pickled_storage = setup_storage(
+            {"type": "legacy", "database": {"type": "PickledDB", "host": self.host}}
+        )
+        self.pickled_client = testing.TestClient(WebApi(pickled_storage, {}))
+        self.db = pickled_storage._db
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        _clean_dump(self.host)
+        print("CLEANED LOAD")
+
+
 def _clean_dump(dump_path):
     """Delete dumped files."""
     for path in (dump_path, f"{dump_path}.lock"):
@@ -101,78 +147,28 @@ def _gen_multipart_form_for_load(file: str, resolve: str, name="", version=""):
     return buff.getvalue(), headers
 
 
-def test_dump_all(client, ephemeral_loaded):
+def test_dump_all(client, ephemeral_loaded_with_benchmarks, testing_helpers):
     """Test simple call to /dump"""
-    response = client.simulate_get("/dump")
-    host = _gen_host_file()
-    try:
-        with open(host, "wb") as file:
-            file.write(response.content)
-        dumped_db = PickledDB(host)
-        with dumped_db.locked_database(write=False) as internal_db:
-            collections = set(internal_db._db.keys())
-        assert collections == {"experiments", "algo", "trials", "benchmarks"}
-        assert len(dumped_db.read("experiments")) == 3
-        assert len(dumped_db.read("algo")) == 3
-        assert len(dumped_db.read("trials")) == 24
-        assert len(dumped_db.read("benchmarks")) == 0
-    finally:
-        _clean_dump(host)
+    with DumpContext(client) as ctx:
+        testing_helpers.assert_tested_db_structure(ctx.db)
 
 
-def test_dump_one_experiment(client, ephemeral_loaded):
+def test_dump_one_experiment(client, ephemeral_loaded_with_benchmarks, testing_helpers):
     """Test dump only experiment test_single_exp (no version specified)"""
-    response = client.simulate_get("/dump?name=test_single_exp")
-    host = _gen_host_file()
-    try:
-        with open(host, "wb") as file:
-            file.write(response.content)
-        dumped_db = PickledDB(host)
-        assert len(dumped_db.read("benchmarks")) == 0
-        experiments = dumped_db.read("experiments")
-        algos = dumped_db.read("algo")
-        trials = dumped_db.read("trials")
-        assert len(experiments) == 1
-        (exp_data,) = experiments
+    with DumpContext(client, "name=test_single_exp") as ctx:
         # We must have dumped version 2
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        # This experiment must have only 6 trials
-        assert len(trials) == 6
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
-    finally:
-        _clean_dump(host)
+        testing_helpers.check_unique_import_test_single_expV2(ctx.db)
 
 
-def test_dump_one_experiment_other_version(client, ephemeral_loaded):
+def test_dump_one_experiment_other_version(
+    client, ephemeral_loaded_with_benchmarks, testing_helpers
+):
     """Test dump version 1 of experiment test_single_exp"""
-    response = client.simulate_get("/dump?name=test_single_exp&version=1")
-    host = _gen_host_file()
-    try:
-        with open(host, "wb") as file:
-            file.write(response.content)
-        dumped_db = PickledDB(host)
-        assert len(dumped_db.read("benchmarks")) == 0
-        experiments = dumped_db.read("experiments")
-        algos = dumped_db.read("algo")
-        trials = dumped_db.read("trials")
-        assert len(experiments) == 1
-        (exp_data,) = experiments
-        # We must have dumped version 1
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 1
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        # This experiment must have 12 trials (children included)
-        assert len(trials) == 12
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
-    finally:
-        _clean_dump(host)
+    with DumpContext(client, "name=test_single_exp&version=1") as ctx:
+        testing_helpers.check_unique_import_test_single_expV1(ctx.db)
 
 
-def test_dump_unknown_experiment(client, ephemeral_loaded):
+def test_dump_unknown_experiment(client, ephemeral_loaded_with_benchmarks):
     """Test dump unknown experiment"""
     response = client.simulate_get("/dump?name=unknown")
     assert response.status == "404 Not Found"
@@ -182,251 +178,113 @@ def test_dump_unknown_experiment(client, ephemeral_loaded):
     }
 
 
-def test_load_all(pkl_experiments):
+def _check_load_and_import_status(
+    pickled_client, headers, body, finished=True, latest_message=None
+):
     """Test both /load and /import-status"""
+    task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
+        "task"
+    ]
+    # Test /import-status by retrieving all task messages
+    messages = []
+    while True:
+        progress = pickled_client.simulate_get(f"/import-status/{task}").json
+        messages.extend(progress["messages"])
+        if progress["status"] != "active":
+            break
+        time.sleep(0.010)
+    # Check we have messages
+    assert messages
+    assert all(
+        message.startswith("INFO:orion.core.worker.storage_backup")
+        for message in (messages if latest_message is None else messages[:-1])
+    )
+    # Check final task status
+    if finished:
+        assert progress["status"] == "finished"
+        assert progress["progress_value"] == 1.0
+    else:
+        assert progress["status"] == "error"
+        assert progress["progress_value"] < 1.0
+    if latest_message is not None:
+        assert messages[-1] == latest_message
 
-    # Create empty PKL file as destination database
-    host = _gen_host_file("test")
-    try:
-        # Setup storage and client
-        pickled_storage = setup_storage(
-            {"type": "legacy", "database": {"type": "PickledDB", "host": host}}
-        )
-        pickled_client = testing.TestClient(WebApi(pickled_storage, {}))
-        # Retrieve database
-        dst_db = pickled_storage._db
 
+def test_load_all(pkl_experiments_and_benchmarks, testing_helpers):
+    """Test both /load and /import-status"""
+    with LoadContext() as ctx:
         # Make sure database is empty
-        assert len(dst_db.read("benchmarks")) == 0
-        assert len(dst_db.read("experiments")) == 0
-        assert len(dst_db.read("trials")) == 0
-        assert len(dst_db.read("algo")) == 0
+        testing_helpers.check_empty_db(ctx.db)
 
         # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(pkl_experiments, "ignore")
+        body, headers = _gen_multipart_form_for_load(
+            pkl_experiments_and_benchmarks, "ignore"
+        )
 
         # Test /load and /import-status 5 times with resolve=ignore
         # to check if data are effectively ignored on conflict
         for _ in range(5):
-            task = pickled_client.simulate_post(
-                "/load", headers=headers, body=body
-            ).json["task"]
-            # Test /import-status by retrieving all task messages
-            messages = []
-            while True:
-                progress = pickled_client.simulate_get(f"/import-status/{task}").json
-                messages.extend(progress["messages"])
-                if progress["status"] != "active":
-                    break
-                time.sleep(0.010)
-            # Check we have messages
-            assert messages
-            assert all(
-                message.startswith("INFO:orion.core.worker.storage_backup")
-                for message in messages
-            )
-            # Check final task status
-            assert progress["status"] == "finished"
-            assert progress["progress_value"] == 1.0
-
-            # Check expected data count in database
+            _check_load_and_import_status(ctx.pickled_client, headers, body)
+            # Check expected data in database
             # Count should not change as data are ignored on conflict every time
-            assert len(dst_db.read("benchmarks")) == 0
-            assert len(dst_db.read("experiments")) == 3
-            assert len(dst_db.read("trials")) == 24
-            assert len(dst_db.read("algo")) == 3
-
-    finally:
-        _clean_dump(host)
+            testing_helpers.assert_tested_db_structure(ctx.db)
 
 
-def test_load_one_experiment(pkl_experiments):
+def test_load_one_experiment(pkl_experiments, testing_helpers):
     """Test both /load and /import-status for one experiment"""
-
-    # Create empty PKL file as destination database
-    host = _gen_host_file("test")
-    try:
-        # Setup storage and client
-        pickled_storage = setup_storage(
-            {"type": "legacy", "database": {"type": "PickledDB", "host": host}}
-        )
-        pickled_client = testing.TestClient(WebApi(pickled_storage, {}))
-        # Retrieve database
-        dst_db = pickled_storage._db
-
+    with LoadContext() as ctx:
         # Make sure database is empty
-        assert len(dst_db.read("benchmarks")) == 0
-        assert len(dst_db.read("experiments")) == 0
-        assert len(dst_db.read("trials")) == 0
-        assert len(dst_db.read("algo")) == 0
+        testing_helpers.check_empty_db(ctx.db)
 
         # Generate body and header for request /load
         body, headers = _gen_multipart_form_for_load(
             pkl_experiments, "ignore", "test_single_exp"
         )
 
-        task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
-            "task"
-        ]
-        # Test /import-status by retrieving all task messages
-        messages = []
-        while True:
-            progress = pickled_client.simulate_get(f"/import-status/{task}").json
-            messages.extend(progress["messages"])
-            if progress["status"] != "active":
-                break
-            time.sleep(0.010)
-        # Check we have messages
-        assert messages
-        assert all(
-            message.startswith("INFO:orion.core.worker.storage_backup")
-            for message in messages
-        )
-        # Check final task status
-        assert progress["status"] == "finished"
-        assert progress["progress_value"] == 1.0
+        _check_load_and_import_status(ctx.pickled_client, headers, body)
 
-        # Check expected data count in database
-        experiments = dst_db.read("experiments")
-        algos = dst_db.read("algo")
-        trials = dst_db.read("trials")
-
-        assert len(experiments) == 1
-        (exp_data,) = experiments
+        # Check expected data in database
         # We must have loaded version 2
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 2
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        # This experiment must have only 6 trials
-        assert len(trials) == 6
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
-
-    finally:
-        _clean_dump(host)
+        testing_helpers.check_unique_import_test_single_expV2(ctx.db)
 
 
-def test_load_one_experiment_other_version(pkl_experiments):
+def test_load_one_experiment_other_version(
+    pkl_experiments_and_benchmarks, testing_helpers
+):
     """Test both /load and /import-status for one experiment with specific version"""
-
-    # Create empty PKL file as destination database
-    host = _gen_host_file("test")
-    try:
-        # Setup storage and client
-        pickled_storage = setup_storage(
-            {"type": "legacy", "database": {"type": "PickledDB", "host": host}}
-        )
-        pickled_client = testing.TestClient(WebApi(pickled_storage, {}))
-        # Retrieve database
-        dst_db = pickled_storage._db
-
+    with LoadContext() as ctx:
         # Make sure database is empty
-        assert len(dst_db.read("benchmarks")) == 0
-        assert len(dst_db.read("experiments")) == 0
-        assert len(dst_db.read("trials")) == 0
-        assert len(dst_db.read("algo")) == 0
+        testing_helpers.check_empty_db(ctx.db)
 
         # Generate body and header for request /load
         body, headers = _gen_multipart_form_for_load(
-            pkl_experiments, "ignore", "test_single_exp", "1"
+            pkl_experiments_and_benchmarks, "ignore", "test_single_exp", "1"
         )
 
-        task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
-            "task"
-        ]
-        # Test /import-status by retrieving all task messages
-        messages = []
-        while True:
-            progress = pickled_client.simulate_get(f"/import-status/{task}").json
-            messages.extend(progress["messages"])
-            if progress["status"] != "active":
-                break
-            time.sleep(0.010)
-        # Check we have messages
-        assert messages
-        assert all(
-            message.startswith("INFO:orion.core.worker.storage_backup")
-            for message in messages
-        )
-        # Check final task status
-        assert progress["status"] == "finished"
-        assert progress["progress_value"] == 1.0
+        _check_load_and_import_status(ctx.pickled_client, headers, body)
 
-        # Check expected data count in database
-        experiments = dst_db.read("experiments")
-        algos = dst_db.read("algo")
-        trials = dst_db.read("trials")
-
-        assert len(experiments) == 1
-        (exp_data,) = experiments
-        # We must have loaded version 1
-        assert exp_data["name"] == "test_single_exp"
-        assert exp_data["version"] == 1
-        assert len(algos) == len(exp_data["algorithm"]) == 1
-        # This experiment must have 12 trials (children included)
-        assert len(trials) == 12
-        assert all(algo["experiment"] == exp_data["_id"] for algo in algos)
-        assert all(trial["experiment"] == exp_data["_id"] for trial in trials)
-
-    finally:
-        _clean_dump(host)
+        # Check expected data in database
+        testing_helpers.check_unique_import_test_single_expV1(ctx.db)
 
 
-def test_load_unknown_experiment(pkl_experiments):
+def test_load_unknown_experiment(pkl_experiments, testing_helpers):
     """Test both /load and /import-status for an unknown experiment"""
-
-    # Create empty PKL file as destination database
-    host = _gen_host_file("test")
-    try:
-        # Setup storage and client
-        pickled_storage = setup_storage(
-            {"type": "legacy", "database": {"type": "PickledDB", "host": host}}
-        )
-        pickled_client = testing.TestClient(WebApi(pickled_storage, {}))
-        # Retrieve database
-        dst_db = pickled_storage._db
-
+    with LoadContext() as ctx:
         # Make sure database is empty
-        assert len(dst_db.read("benchmarks")) == 0
-        assert len(dst_db.read("experiments")) == 0
-        assert len(dst_db.read("trials")) == 0
-        assert len(dst_db.read("algo")) == 0
+        testing_helpers.check_empty_db(ctx.db)
 
         # Generate body and header for request /load
         body, headers = _gen_multipart_form_for_load(
             pkl_experiments, "ignore", "unknown"
         )
 
-        task = pickled_client.simulate_post("/load", headers=headers, body=body).json[
-            "task"
-        ]
-        # Test /import-status by retrieving all task messages
-        messages = []
-        while True:
-            progress = pickled_client.simulate_get(f"/import-status/{task}").json
-            messages.extend(progress["messages"])
-            if progress["status"] != "active":
-                break
-            time.sleep(0.010)
-        # Check final task status (error expected, progress not finished)
-        assert progress["status"] == "error"
-        assert progress["progress_value"] < 1.0
-        # Check we have messages
-        # Last message must be an error message
-        assert messages
-        assert all(
-            message.startswith("INFO:orion.core.worker.storage_backup")
-            for message in messages[:-1]
-        )
-        assert (
-            messages[-1]
-            == "Error: No experiment found with query {'name': 'unknown'}. Nothing to import."
+        _check_load_and_import_status(
+            ctx.pickled_client,
+            headers,
+            body,
+            finished=False,
+            latest_message="Error: No experiment found with query {'name': 'unknown'}. Nothing to import.",
         )
 
-        # Check expected data count in database (must be still empty)
-        assert len(dst_db.read("experiments")) == 0
-        assert len(dst_db.read("algo")) == 0
-        assert len(dst_db.read("trials")) == 0
-
-    finally:
-        _clean_dump(host)
+        # Check database (must be still empty)
+        testing_helpers.check_empty_db(ctx.db)

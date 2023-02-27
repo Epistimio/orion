@@ -616,3 +616,156 @@ storage:
         cfg_path = tf.name
     storage = setup_storage({"database": {"type": "pickleddb", "host": pkl_path}})
     return storage, cfg_path
+
+
+class _Helpers:
+    """Helper functions for testing.
+
+    Primarily provided for tests that use fixture (and derived)
+    `three_experiments_branch_same_name_trials_benchmarks`
+    """
+
+    @staticmethod
+    def check_db(db, nb_exps, nb_algos, nb_trials, nb_benchmarks, nb_child_exps=0):
+        """Check number of expected data in given database."""
+        experiments = db.read("experiments")
+        assert len(experiments) == nb_exps
+        assert len(db.read("algo")) == nb_algos
+        assert len(db.read("trials")) == nb_trials
+        assert len(db.read("benchmarks")) == nb_benchmarks
+
+        # Check we have expected number of child experiments.
+        exp_map = {exp["_id"]: exp for exp in experiments}
+        assert len(exp_map) == nb_exps
+        child_exps = []
+        for exp in experiments:
+            parent = exp["refers"]["parent_id"]
+            if parent is not None:
+                assert parent in exp_map
+                child_exps.append(exp)
+        assert len(child_exps) == nb_child_exps
+
+    @staticmethod
+    def check_exp(db, name, version, nb_trials, nb_child_trials=0, algo_state=None):
+        """Check experiment.
+        - Check if we found experiment.
+        - Check if we found exactly 1 algorithm for this experiment.
+        - Check algo state if algo_state is provided
+        - Check if we found expected number of trials for this experiment.
+        - Check if we found expecter number of child trials into experiment trials.
+        """
+        experiments = db.read("experiments", {"name": name, "version": version})
+        assert len(experiments) == 1
+        (experiment,) = experiments
+        algos = db.read("algo", {"experiment": experiment["_id"]})
+        trials = db.read("trials", {"experiment": experiment["_id"]})
+        assert len(algos) == 1
+        assert len(trials) == nb_trials
+
+        if algo_state is not None:
+            (algo,) = algos
+            assert algo_state == pickle.loads(algo["state"])
+
+        trial_map = {trial["id"]: trial for trial in trials}
+        assert len(trial_map) == nb_trials
+        child_trials = []
+        for trial in trials:
+            parent = trial["parent"]
+            if parent is not None:
+                assert parent in trial_map
+                child_trials.append(trial)
+        assert len(child_trials) == nb_child_trials
+
+    @staticmethod
+    def check_empty_db(loaded_db):
+        """Check that given database is empty"""
+        _Helpers.check_db(
+            loaded_db, nb_exps=0, nb_algos=0, nb_trials=0, nb_benchmarks=0
+        )
+
+    @staticmethod
+    def assert_tested_db_structure(dumped_db, nb_orig_benchmarks=3, nb_duplicated=1):
+        """Check counts and experiments for database from specific fixture
+        `three_experiments_branch_same_name_trials[_benchmarks]`.
+        """
+        # NB: about nb_algos:
+        # TODO: We should expect 6 algorithms, but only 3 are returned
+        # It seems config `three_experiments_family_same_name` contains 3 supplementary algorithms
+        # that are not related to experiments registered in the database. So, when dumping from this config
+        # then loading from dumped data, only algorithms related to available experiments are loaded,
+        # and there are only 3 such algorithms (1 per experiment)
+        from orion.core.worker.storage_backup import get_experiment_parent_links
+
+        _Helpers.check_db(
+            dumped_db,
+            nb_exps=3 * nb_duplicated,
+            nb_algos=3 * nb_duplicated,
+            nb_trials=24 * nb_duplicated,
+            nb_benchmarks=nb_orig_benchmarks * nb_duplicated,
+            nb_child_exps=2 * nb_duplicated,
+        )
+        expected_structure = []
+        for i in range(nb_duplicated):
+            _Helpers.check_exp(
+                dumped_db, "test_single_exp", 1 + 2 * i, nb_trials=12, nb_child_trials=6
+            )
+            _Helpers.check_exp(dumped_db, "test_single_exp", 2 + 2 * i, nb_trials=6)
+            _Helpers.check_exp(dumped_db, "test_single_exp_child", 1 + i, nb_trials=6)
+            expected_structure.extend(
+                [
+                    (("test_single_exp", 1 + 2 * i), ("test_single_exp", 2 + 2 * i)),
+                    (("test_single_exp", 2 + 2 * i), ("test_single_exp_child", 1 + i)),
+                    (("test_single_exp_child", 1 + i), None),
+                ]
+            )
+        # Test experiments links.
+        # There are 3 original experiments multiplied by number od duplications.
+        assert len(expected_structure) == nb_duplicated * 3
+        dumped_graph = get_experiment_parent_links(dumped_db.read("experiments"))
+        assert sorted(dumped_graph.get_sorted_links()) == sorted(expected_structure)
+
+    @staticmethod
+    def check_unique_import_test_single_expV1(loaded_db, nb_versions=1):
+        """Check all versions of original experiment test_single_exp.1 in given database"""
+        _Helpers.check_db(
+            loaded_db,
+            nb_exps=1 * nb_versions,
+            nb_algos=1 * nb_versions,
+            nb_trials=12 * nb_versions,
+            nb_benchmarks=0,
+        )
+        for i in range(nb_versions):
+            _Helpers.check_exp(
+                loaded_db,
+                "test_single_exp",
+                1 + i,
+                nb_trials=12,
+                nb_child_trials=6,
+                algo_state={
+                    "my_algo_state": "some_data",
+                    "my_other_state_data": "some_other_data",
+                },
+            )
+
+    @staticmethod
+    def check_unique_import_test_single_expV2(loaded_db, nb_versions=1):
+        """Check all versions of original experiment test_single_exp.2 in given database"""
+        _Helpers.check_db(
+            loaded_db,
+            nb_exps=1 * nb_versions,
+            nb_algos=1 * nb_versions,
+            nb_trials=6 * nb_versions,
+            nb_benchmarks=0,
+        )
+        for i in range(nb_versions):
+            _Helpers.check_exp(
+                loaded_db,
+                "test_single_exp",
+                2 + i,
+                nb_trials=6,
+            )
+
+
+@pytest.fixture
+def testing_helpers():
+    return _Helpers

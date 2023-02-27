@@ -16,8 +16,10 @@ from functional.commands.conftest import (
     one_experiment,
     pkl_experiments,
     pkl_experiments_and_benchmarks,
+    testing_helpers,
     three_experiments_branch_same_name,
     three_experiments_branch_same_name_trials,
+    three_experiments_branch_same_name_trials_benchmarks,
     two_experiments_same_name,
 )
 from pymongo import MongoClient
@@ -37,8 +39,10 @@ assert one_experiment
 assert two_experiments_same_name
 assert three_experiments_branch_same_name
 assert three_experiments_branch_same_name_trials
+assert three_experiments_branch_same_name_trials_benchmarks
 assert pkl_experiments
 assert pkl_experiments_and_benchmarks
+assert testing_helpers
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
