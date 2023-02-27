@@ -6,6 +6,7 @@ import pickle
 
 import orion.core.cli
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.worker.storage_backup import get_experiment_parent_links
 from orion.storage.base import setup_storage
 
 
@@ -92,6 +93,13 @@ def _assert_tested_db_structure(dumped_db):
     _check_exp(dumped_db, "test_single_exp", 1, nb_trials=12, nb_child_trials=6)
     _check_exp(dumped_db, "test_single_exp", 2, nb_trials=6)
     _check_exp(dumped_db, "test_single_exp_child", 1, nb_trials=6)
+    # Test experiments links.
+    dumped_graph = get_experiment_parent_links(dumped_db.read("experiments"))
+    assert list(dumped_graph.get_sorted_links()) == [
+        (("test_single_exp", 1), ("test_single_exp", 2)),
+        (("test_single_exp", 2), ("test_single_exp_child", 1)),
+        (("test_single_exp_child", 1), None),
+    ]
 
 
 def test_dump_default(three_experiments_branch_same_name_trials_benchmarks, capsys):
@@ -130,6 +138,21 @@ def test_dump_overwrite(three_experiments_branch_same_name_trials_benchmarks, ca
         clean_dump("dump.pkl")
 
 
+def test_dump_to_specified_output(
+    three_experiments_branch_same_name_trials_benchmarks, capsys
+):
+    """Test dump to a specified output file"""
+    dump_path = "test.pkl"
+    assert not os.path.exists(dump_path)
+    try:
+        execute(f"db dump -o {dump_path}")
+        assert os.path.isfile(dump_path)
+        dumped_db = PickledDB(dump_path)
+        _assert_tested_db_structure(dumped_db)
+    finally:
+        clean_dump(dump_path)
+
+
 def test_dump_unknown_experiment(
     three_experiments_branch_same_name_trials_benchmarks, capsys
 ):
@@ -145,21 +168,6 @@ def test_dump_unknown_experiment(
         # Output file is created as soon as dst storage object is created in dump_database()
         # So, we still need to delete it here
         clean_dump("dump.pkl")
-
-
-def test_dump_to_specified_output(
-    three_experiments_branch_same_name_trials_benchmarks, capsys
-):
-    """Test dump to a specified output file"""
-    dump_path = "test.pkl"
-    assert not os.path.exists(dump_path)
-    try:
-        execute(f"db dump -o {dump_path}")
-        assert os.path.isfile(dump_path)
-        dumped_db = PickledDB(dump_path)
-        _assert_tested_db_structure(dumped_db)
-    finally:
-        clean_dump(dump_path)
 
 
 def test_dump_one_experiment(
