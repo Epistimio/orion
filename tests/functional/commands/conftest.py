@@ -725,45 +725,55 @@ class _Helpers:
         assert sorted(dumped_graph.get_sorted_links()) == sorted(expected_structure)
 
     @staticmethod
-    def check_unique_import_test_single_expV1(loaded_db, nb_versions=1):
-        """Check all versions of original experiment test_single_exp.1 in given database"""
+    def check_unique_import(
+        loaded_db,
+        name,
+        version,
+        nb_trials,
+        nb_child_trials=0,
+        nb_versions=1,
+        algo_state=None,
+    ):
+        """Check all versions of an experiment in given database"""
         _Helpers.check_db(
             loaded_db,
             nb_exps=1 * nb_versions,
             nb_algos=1 * nb_versions,
-            nb_trials=12 * nb_versions,
+            nb_trials=nb_trials * nb_versions,
             nb_benchmarks=0,
         )
         for i in range(nb_versions):
             _Helpers.check_exp(
                 loaded_db,
-                "test_single_exp",
-                1 + i,
-                nb_trials=12,
-                nb_child_trials=6,
-                algo_state={
-                    "my_algo_state": "some_data",
-                    "my_other_state_data": "some_other_data",
-                },
+                name,
+                version + i,
+                nb_trials=nb_trials,
+                nb_child_trials=nb_child_trials,
+                algo_state=algo_state,
             )
+
+    @staticmethod
+    def check_unique_import_test_single_expV1(loaded_db, nb_versions=1):
+        """Check all versions of original experiment test_single_exp.1 in given database"""
+        _Helpers.check_unique_import(
+            loaded_db,
+            "test_single_exp",
+            1,
+            nb_trials=12,
+            nb_child_trials=6,
+            nb_versions=nb_versions,
+            algo_state={
+                "my_algo_state": "some_data",
+                "my_other_state_data": "some_other_data",
+            },
+        )
 
     @staticmethod
     def check_unique_import_test_single_expV2(loaded_db, nb_versions=1):
         """Check all versions of original experiment test_single_exp.2 in given database"""
-        _Helpers.check_db(
-            loaded_db,
-            nb_exps=1 * nb_versions,
-            nb_algos=1 * nb_versions,
-            nb_trials=6 * nb_versions,
-            nb_benchmarks=0,
+        _Helpers.check_unique_import(
+            loaded_db, "test_single_exp", 2, nb_trials=6, nb_versions=nb_versions
         )
-        for i in range(nb_versions):
-            _Helpers.check_exp(
-                loaded_db,
-                "test_single_exp",
-                2 + i,
-                nb_trials=6,
-            )
 
 
 @pytest.fixture
