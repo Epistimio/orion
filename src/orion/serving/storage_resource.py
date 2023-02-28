@@ -55,6 +55,7 @@ class ImportTask:
     """Wrapper to represent an import task. Used to monitor task progress.
 
     There is two ways to monitor task:
+
     - either get messages collected in stream handler queue.
       Stream handler collects all messages logged in task.
     - either regularly check latest message in progress_message.
@@ -64,14 +65,17 @@ class ImportTask:
     ----------
     task_id: str
         Used to identify the task in web API
-    notifications: Notifications
+    _notifications: Notifications
         Stream handler with shared queue to capture task messages
-    progress_message:
+    _progress_message:
         Latest progress message
-    progress_value:
+    _progress_value:
         Latest progress (0 <= floating value <= 1)
-    completed:
+    _completed:
         Shared status: 0 for running, -1 for failure, 1 for success
+    _lock:
+        Lock to use to prevent concurrent executions
+        when updating task state.
     """
 
     # String representation of task status
@@ -79,22 +83,59 @@ class ImportTask:
 
     def __init__(self):
         self.task_id = str(uuid.uuid4())
-        self.notifications = Notifications()
-        self.progress_message = multiprocessing.Array("c", 512)
-        self.progress_value = multiprocessing.Value("d", 0.0)
-        self.completed = multiprocessing.Value("i", 0)
+        self._notifications = Notifications()
+        self._progress_message = multiprocessing.Array("c", 512)
+        self._progress_value = multiprocessing.Value("d", 0.0)
+        self._completed = multiprocessing.Value("i", 0)
+        self._lock = multiprocessing.Lock()
 
     def set_progress(self, message: str, progress: float):
-        self.progress_message.value = message.encode()
-        self.progress_value.value = progress
+        with self._lock:
+            self._progress_message.value = message.encode()
+            self._progress_value.value = progress
 
     def is_completed(self):
         """Return True if task is completed"""
-        return self.completed.value
+        return self._completed.value
 
-    def set_completed(self, success=True):
-        """Set task terminated status"""
-        self.completed.value = 1 if success else -1
+    def set_completed(self, success=True, notification=None):
+        """Set task terminated status
+
+        Parameters
+        ----------
+        success: bool
+            True if task is successful, False otherwise
+        notification: str
+            Optional message to add in notifications
+        """
+        with self._lock:
+            self._completed.value = 1 if success else -1
+            if notification:
+                self._notifications.write(notification)
+
+    def listen_logging(self):
+        """Set notifications as logging stream to collect logging messages."""
+        logging.basicConfig(stream=self._notifications, force=True, level=logging.INFO)
+
+    def flush_state(self):
+        """Return a dictionary with current task state.
+
+        NB: Collect all messages currently in stream handler queue,
+        so stream handler queue is emptied after this method is called.
+        """
+        latest_messages = []
+        with self._lock:
+            while True:
+                try:
+                    latest_messages.append(self._notifications.queue.get_nowait())
+                except Empty:
+                    break
+            return {
+                "messages": latest_messages,
+                "progress_message": self._progress_message.value.decode(),
+                "progress_value": self._progress_value.value,
+                "status": ImportTask.IMPORT_STATUS[self._completed.value],
+            }
 
 
 def _import_data(task: ImportTask, storage, load_host, resolve, name, version):
@@ -104,7 +145,7 @@ def _import_data(task: ImportTask, storage, load_host, resolve, name, version):
     """
     try:
         print("Import starting.", task.task_id)
-        logging.basicConfig(stream=task.notifications, force=True, level=logging.INFO)
+        task.listen_logging()
         load_database(
             storage,
             load_host,
@@ -118,8 +159,7 @@ def _import_data(task: ImportTask, storage, load_host, resolve, name, version):
         traceback.print_tb(exc.__traceback__)
         print("Import error.", exc)
         # Add error message to shared messages
-        task.notifications.write(f"Error: {exc}")
-        task.set_completed(success=False)
+        task.set_completed(success=False, notification=f"Error: {exc}")
     finally:
         # Remove imported files
         os.unlink(load_host)
@@ -213,19 +253,4 @@ class StorageResource:
         """Handle the GET requests for import-status/"""
         if self.current_task is None or self.current_task.task_id != name:
             raise falcon.HTTPInvalidParam("Unknown import task", "name")
-        latest_messages = []
-        while True:
-            try:
-                latest_messages.append(
-                    self.current_task.notifications.queue.get_nowait()
-                )
-            except Empty:
-                break
-        resp.body = json.dumps(
-            {
-                "messages": latest_messages,
-                "progress_message": self.current_task.progress_message.value.decode(),
-                "progress_value": self.current_task.progress_value.value,
-                "status": ImportTask.IMPORT_STATUS[self.current_task.completed.value],
-            }
-        )
+        resp.body = json.dumps(self.current_task.flush_state())
