@@ -242,53 +242,14 @@ def _dump_experiment(src_storage, dst_storage, src_exp, src_to_dst_id: dict):
         Used to set dst parent ID when writing child experiment in dst storage.
         Updated with new dst ID corresponding to `src_exp`.
     """
-    # Remove src experiment database ID
-    src_id = src_exp.pop("_id")
-    assert src_id not in src_to_dst_id
-
-    # Update experiment parent ID
-    old_parent_id = _get_exp_parent_id(src_exp)
-    if old_parent_id is not None:
-        _set_exp_parent_id(src_exp, src_to_dst_id[old_parent_id])
-
-    # Update experiment root ID if different from experiment ID
-    old_root_id = _get_exp_root_id(src_exp)
-    if old_root_id is not None:
-        if old_root_id != src_id:
-            _set_exp_root_id(src_exp, src_to_dst_id[old_root_id])
-
-    algo_lock_info = src_storage.get_algorithm_lock_info(uid=src_id)
-    logger.info("\tGot algo lock")
-    # Dump experiment and algo
-    dst_storage.create_experiment(
+    _write_experiment(
         src_exp,
-        algo_locked=algo_lock_info.locked,
-        algo_state=algo_lock_info.state,
-        algo_heartbeat=algo_lock_info.heartbeat,
+        algo_lock_info=src_storage.get_algorithm_lock_info(uid=src_exp["_id"]),
+        trials=src_storage.fetch_trials(uid=src_exp["_id"]),
+        dst_storage=dst_storage,
+        src_to_dst_id=src_to_dst_id,
+        verbose=True,
     )
-    logger.info("\tCreated exp")
-    # Link experiment src ID to dst ID
-    (dst_exp,) = dst_storage.fetch_experiments(
-        {"name": src_exp["name"], "version": src_exp["version"]}
-    )
-    src_to_dst_id[src_id] = dst_exp["_id"]
-    # Update root ID if equals to experiment ID
-    if old_root_id is not None and old_root_id == src_id:
-        _set_exp_root_id(src_exp, src_to_dst_id[src_id])
-        dst_storage.update_experiment(
-            uid=src_to_dst_id[src_id], refers=src_exp["refers"]
-        )
-    # Dump trials
-    trial_old_to_new_id = {}
-    for trial in src_storage.fetch_trials(uid=src_id):
-        old_id = trial.id
-        trial.experiment = src_to_dst_id[trial.experiment]
-        trial.id_override = None
-        if trial.parent is not None:
-            trial.parent = trial_old_to_new_id[trial.parent]
-        dst_trial = dst_storage.register_trial(trial)
-        trial_old_to_new_id[old_id] = dst_trial.id
-    logger.info("\tDumped trials")
 
 
 def _prepare_import(
@@ -548,55 +509,17 @@ def _execute_import(
 
     src_to_dst_id = {}
     for src_exp in data_to_add.get(COL_EXPERIMENTS, ()):
-        # Remove src exp ID, so that new ID will be generated at insertion.
-        src_id = src_exp.pop("_id")
-        assert src_id not in src_to_dst_id
-        # Update experiment parent ID
-        old_parent_id = _get_exp_parent_id(src_exp)
-        if old_parent_id is not None:
-            _set_exp_parent_id(src_exp, src_to_dst_id[old_parent_id])
-        # Update experiment root ID if different from experiment ID
-        old_root_id = _get_exp_root_id(src_exp)
-        if old_root_id is not None:
-            if old_root_id != src_id:
-                _set_exp_root_id(src_exp, src_to_dst_id[old_root_id])
-
         exp_key = _get_exp_key(src_exp)
         new_algo = data_to_add[COL_ALGOS][exp_key]
         new_trials = data_to_add[COL_TRIALS][exp_key]
-        # Insert experiment and algo
-        dst_storage.create_experiment(
+        _write_experiment(
             src_exp,
-            algo_locked=new_algo.locked,
-            algo_state=new_algo.state,
-            algo_heartbeat=new_algo.heartbeat,
+            algo_lock_info=new_algo,
+            trials=new_trials,
+            dst_storage=dst_storage,
+            src_to_dst_id=src_to_dst_id,
+            verbose=False,
         )
-        # Link experiment src ID to dst ID
-        (dst_exp,) = dst_storage.fetch_experiments(
-            {"name": src_exp["name"], "version": src_exp["version"]}
-        )
-        src_to_dst_id[src_id] = dst_exp["_id"]
-        # Update root ID if equals to experiment ID
-        if old_root_id is not None and old_root_id == src_id:
-            _set_exp_root_id(src_exp, src_to_dst_id[src_id])
-            dst_storage.update_experiment(
-                uid=src_to_dst_id[src_id], refers=src_exp["refers"]
-            )
-        # Insert trials
-        trial_old_to_new_id = {}
-        for trial in new_trials:
-            old_id = trial.id
-            if trial.parent is not None:
-                trial.parent = trial_old_to_new_id[trial.parent]
-            # Set trial parent to new dst exp ID
-            trial.experiment = src_to_dst_id[trial.experiment]
-            # Remove src trial database ID, so that new ID will be generated at insertion.
-            # Trial parents are identified using trial identifier (trial.id)
-            # which is not related to trial database ID (trial.id_override).
-            # So, we can safely remove trial database ID.
-            trial.id_override = None
-            dst_trial = dst_storage.register_trial(trial)
-            trial_old_to_new_id[old_id] = dst_trial.id
         _describe_import_progress(
             STEP_INSERT_NEW_DATA, i_data, nb_data_to_add, progress_callback
         )
@@ -605,6 +528,63 @@ def _execute_import(
     _describe_import_progress(
         STEP_INSERT_NEW_DATA, nb_data_to_add, nb_data_to_add, progress_callback
     )
+
+
+def _write_experiment(
+    src_exp, algo_lock_info, trials, dst_storage, src_to_dst_id: dict, verbose=False
+):
+    # Remove src experiment database ID
+    src_id = src_exp.pop("_id")
+    assert src_id not in src_to_dst_id
+
+    # Update experiment parent ID
+    old_parent_id = _get_exp_parent_id(src_exp)
+    if old_parent_id is not None:
+        _set_exp_parent_id(src_exp, src_to_dst_id[old_parent_id])
+
+    # Update experiment root ID if different from experiment ID
+    old_root_id = _get_exp_root_id(src_exp)
+    if old_root_id is not None:
+        if old_root_id != src_id:
+            _set_exp_root_id(src_exp, src_to_dst_id[old_root_id])
+
+    # Dump experiment and algo
+    dst_storage.create_experiment(
+        src_exp,
+        algo_locked=algo_lock_info.locked,
+        algo_state=algo_lock_info.state,
+        algo_heartbeat=algo_lock_info.heartbeat,
+    )
+    if verbose:
+        logger.info("\tCreated exp")
+    # Link experiment src ID to dst ID
+    (dst_exp,) = dst_storage.fetch_experiments(
+        {"name": src_exp["name"], "version": src_exp["version"]}
+    )
+    src_to_dst_id[src_id] = dst_exp["_id"]
+    # Update root ID if equals to experiment ID
+    if old_root_id is not None and old_root_id == src_id:
+        _set_exp_root_id(src_exp, src_to_dst_id[src_id])
+        dst_storage.update_experiment(
+            uid=src_to_dst_id[src_id], refers=src_exp["refers"]
+        )
+    # Dump trials
+    trial_old_to_new_id = {}
+    for trial in trials:
+        old_id = trial.id
+        # Set trial parent to new dst exp ID
+        trial.experiment = src_to_dst_id[trial.experiment]
+        # Remove src trial database ID, so that new ID will be generated at insertion.
+        # Trial parents are identified using trial identifier (trial.id)
+        # which is not related to trial database ID (trial.id_override).
+        # So, we can safely remove trial database ID.
+        trial.id_override = None
+        if trial.parent is not None:
+            trial.parent = trial_old_to_new_id[trial.parent]
+        dst_trial = dst_storage.register_trial(trial)
+        trial_old_to_new_id[old_id] = dst_trial.id
+    if verbose:
+        logger.info("\tDumped trials")
 
 
 def _describe_import_progress(step, value, total, callback=None):
