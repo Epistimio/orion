@@ -7,9 +7,11 @@ Provide functions to export and import database content.
 """
 import logging
 import os
+from typing import Any, Dict, List
 
 from orion.core.io.database import DatabaseError
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils.tree import TreeNode
 from orion.storage.base import BaseStorageProtocol, setup_storage
 
 logger = logging.getLogger(__name__)
@@ -596,93 +598,49 @@ def _describe_import_progress(step, value, total, callback=None):
 
 
 class _Graph:
-    """Helper class to build experiments or trials graph.
+    """Helper class to build experiments or trials graph."""
 
-    A node is a unique key representing a data.
-    E.g. for experiment, a node is experiment key (name + version).
-
-    Attributes
-    ----------
-    node_to_data:
-        Dictionary mapping a node to node data.
-        E.g. for experiment, map experiment key to experiment object.
-    parent_to_children:
-        Dictionary mapping a node to list of children nodes.
-    child_to_parent:
-        Dictionary mapping a node to parent node.
-        We assume a node can have at most 1 parent.
-    """
-
-    def __init__(self, node_to_data: dict):
-        """Initialize.
+    def __init__(self, key_to_data: dict):
+        """Initialize
 
         Parameters
         ----------
-        node_to_data:
+        key_to_data:
             Dictionary mapping key (used as node) to related object.
         """
-        self.node_to_data = node_to_data
-        self.parent_to_children = {node: [] for node in self.node_to_data}
-        self.child_to_parent = {}
+        self.key_to_data: dict = key_to_data
+        self.key_to_node: Dict[Any, TreeNode] = {}
+        self.root = TreeNode(None)
 
     def add_link(self, parent, child):
         """Link parent node to child node."""
-        # We assume a node has only 1 parent
-        assert child not in self.child_to_parent
-        self.parent_to_children[parent].append(child)
-        self.child_to_parent[child] = parent
-
-    def copy(self):
-        """Create a copy of this graph.
-
-        Used to generate a work copy without modifying original graph.
-        """
-        graph = _Graph({})
-        graph.node_to_data = self.node_to_data.copy()
-        graph.parent_to_children = self.parent_to_children.copy()
-        graph.child_to_parent = self.child_to_parent.copy()
-        return graph
-
-    def pop(self):
-        """Remove a node which has no parent. Should be called on a graph copy."""
-        node_to_pop = None
-        for parent in self.parent_to_children:
-            if parent not in self.child_to_parent:
-                node_to_pop = parent
-                break
-        if node_to_pop is None:
-            # If there are no more node to remove,
-            # graph should be empty.
-            assert not self.parent_to_children
-            assert not self.child_to_parent
+        if parent not in self.key_to_node:
+            self.key_to_node[parent] = TreeNode(parent, self.root)
+        if child in self.key_to_node:
+            child_node = self.key_to_node[child]
+            # A node should have at most 1 parent.
+            assert child_node.parent is self.root
+            child_node.set_parent(self.key_to_node[parent])
         else:
-            for child in self.parent_to_children.pop(node_to_pop):
-                del self.child_to_parent[child]
-        return node_to_pop
+            self.key_to_node[child] = TreeNode(child, self.key_to_node[parent])
 
-    def get_sorted_nodes(self) -> list:
-        """Return list of sorted nodes from parents to children.
-
-        Assume there are no cycles.
-        """
-        graph = self.copy()
-        sorted_nodes = []
-        while True:
-            node = graph.pop()
-            if node is None:
-                break
-            sorted_nodes.append(node)
-        return sorted_nodes
+    def _get_sorted_nodes(self) -> List[TreeNode]:
+        """Return list of sorted nodes from parents to children."""
+        # Exclude root node.
+        return list(self.root)[1:]
 
     def get_sorted_data(self) -> list:
         """Return list of sorted data from parents to children."""
-        return [self.node_to_data[node] for node in self.get_sorted_nodes()]
+        return [self.key_to_data[node.item] for node in self._get_sorted_nodes()]
 
     def get_sorted_links(self):
         """Return sorted edges (node, child)"""
-        for node in self.get_sorted_nodes():
-            for child in sorted(self.parent_to_children[node]) or [None]:
-                yield node, child
+        for node in self._get_sorted_nodes():
+            if node.children:
+                for child_node in node.children:
+                    yield node.item, child_node.item
+            else:
+                yield node.item, None
 
 
 def get_experiment_parent_links(experiments: list) -> _Graph:
