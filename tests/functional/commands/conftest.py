@@ -14,8 +14,10 @@ import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.worker.storage_backup import (
+    _get_exp_key,
     dump_database,
     get_experiment_parent_links,
+    get_experiment_root_links,
     get_trial_parent_links,
 )
 from orion.core.worker.trial import Trial
@@ -724,25 +726,48 @@ class _Helpers:
             nb_benchmarks=nb_orig_benchmarks * nb_duplicated,
             nb_child_exps=2 * nb_duplicated,
         )
-        expected_structure = []
+        expected_parent_links = []
+        expected_root_links = []
         for i in range(nb_duplicated):
             _Helpers.check_exp(
                 dumped_db, "test_single_exp", 1 + 2 * i, nb_trials=12, nb_child_trials=6
             )
             _Helpers.check_exp(dumped_db, "test_single_exp", 2 + 2 * i, nb_trials=6)
             _Helpers.check_exp(dumped_db, "test_single_exp_child", 1 + i, nb_trials=6)
-            expected_structure.extend(
+            expected_parent_links.extend(
                 [
                     (("test_single_exp", 1 + 2 * i), ("test_single_exp", 2 + 2 * i)),
                     (("test_single_exp", 2 + 2 * i), ("test_single_exp_child", 1 + i)),
                     (("test_single_exp_child", 1 + i), None),
                 ]
             )
-        # Test experiments links.
-        # There are 3 original experiments multiplied by number od duplications.
-        assert len(expected_structure) == nb_duplicated * 3
-        dumped_graph = get_experiment_parent_links(dumped_db.read("experiments"))
-        assert sorted(dumped_graph.get_sorted_links()) == sorted(expected_structure)
+            expected_root_links.extend(
+                [
+                    (("__root__",), ("test_single_exp", 1 + 2 * i)),
+                    (("test_single_exp", 1 + 2 * i), ("test_single_exp", 2 + 2 * i)),
+                    (("test_single_exp", 1 + 2 * i), ("test_single_exp_child", 1 + i)),
+                    (("test_single_exp", 2 + 2 * i), None),
+                    (("test_single_exp_child", 1 + i), None),
+                ]
+            )
+        # Test experiments parent links.
+        experiments = dumped_db.read("experiments")
+        parent_graph = get_experiment_parent_links(experiments)
+        assert sorted(parent_graph.get_sorted_links()) == sorted(expected_parent_links)
+        # Test experiments root links.
+        root_graph = get_experiment_root_links(experiments)
+        root_links = sorted(root_graph.get_sorted_links())
+        assert root_links == sorted(expected_root_links)
+        # Check that experiment with root key (__root__,)
+        # do have same root ID as experiment ID
+        key_to_exp = {_get_exp_key(exp): exp for exp in experiments}
+        nb_verified_identical_roots = 0
+        for root_key, exp_key in root_links:
+            if root_key == ("__root__",):
+                exp = key_to_exp[exp_key]
+                assert exp["_id"] == exp["refers"]["root_id"]
+                nb_verified_identical_roots += 1
+        assert nb_verified_identical_roots == 1 * nb_duplicated
 
     @staticmethod
     def assert_tested_trial_status(dumped_db, nb_duplicated=1, counts=None):

@@ -251,6 +251,12 @@ def _dump_experiment(src_storage, dst_storage, src_exp, src_to_dst_id: dict):
     if old_parent_id is not None:
         _set_exp_parent_id(src_exp, src_to_dst_id[old_parent_id])
 
+    # Update experiment root ID if different from experiment ID
+    old_root_id = _get_exp_root_id(src_exp)
+    if old_root_id is not None:
+        if old_root_id != src_id:
+            _set_exp_root_id(src_exp, src_to_dst_id[old_root_id])
+
     algo_lock_info = src_storage.get_algorithm_lock_info(uid=src_id)
     logger.info("\tGot algo lock")
     # Dump experiment and algo
@@ -266,6 +272,12 @@ def _dump_experiment(src_storage, dst_storage, src_exp, src_to_dst_id: dict):
         {"name": src_exp["name"], "version": src_exp["version"]}
     )
     src_to_dst_id[src_id] = dst_exp["_id"]
+    # Update root ID if equals to experiment ID
+    if old_root_id is not None and old_root_id == src_id:
+        _set_exp_root_id(src_exp, src_to_dst_id[src_id])
+        dst_storage.update_experiment(
+            uid=src_to_dst_id[src_id], refers=src_exp["refers"]
+        )
     # Dump trials
     trial_old_to_new_id = {}
     for trial in src_storage.fetch_trials(uid=src_id):
@@ -543,6 +555,11 @@ def _execute_import(
         old_parent_id = _get_exp_parent_id(src_exp)
         if old_parent_id is not None:
             _set_exp_parent_id(src_exp, src_to_dst_id[old_parent_id])
+        # Update experiment root ID if different from experiment ID
+        old_root_id = _get_exp_root_id(src_exp)
+        if old_root_id is not None:
+            if old_root_id != src_id:
+                _set_exp_root_id(src_exp, src_to_dst_id[old_root_id])
 
         exp_key = _get_exp_key(src_exp)
         new_algo = data_to_add[COL_ALGOS][exp_key]
@@ -559,6 +576,12 @@ def _execute_import(
             {"name": src_exp["name"], "version": src_exp["version"]}
         )
         src_to_dst_id[src_id] = dst_exp["_id"]
+        # Update root ID if equals to experiment ID
+        if old_root_id is not None and old_root_id == src_id:
+            _set_exp_root_id(src_exp, src_to_dst_id[src_id])
+            dst_storage.update_experiment(
+                uid=src_to_dst_id[src_id], refers=src_exp["refers"]
+            )
         # Insert trials
         trial_old_to_new_id = {}
         for trial in new_trials:
@@ -698,6 +721,26 @@ def get_experiment_parent_links(experiments: list) -> _Graph:
     return graph
 
 
+def get_experiment_root_links(experiments: list) -> _Graph:
+    """Generate experiments graphs based on experiment roots."""
+    special_root_key = ("__root__",)
+    graph = _Graph(
+        {**{_get_exp_key(exp): exp for exp in experiments}, **{special_root_key: None}}
+    )
+    exp_id_to_key = {exp["_id"]: _get_exp_key(exp) for exp in experiments}
+    for exp in experiments:
+        root_id = _get_exp_root_id(exp)
+        if root_id is not None:
+            if root_id == exp["_id"]:
+                # If root is exp, use a special root key
+                root_key = special_root_key
+            else:
+                root_key = exp_id_to_key[root_id]
+            child_key = _get_exp_key(exp)
+            graph.add_link(root_key, child_key)
+    return graph
+
+
 def get_trial_parent_links(trials: list) -> _Graph:
     """Generate trials graph based on trial parents. Not yet used."""
     trial_map = {_get_trial_key(trial): trial for trial in trials}
@@ -733,3 +776,13 @@ def _get_exp_parent_id(exp: dict):
 def _set_exp_parent_id(exp: dict, parent_id):
     """Set experiment parent ID"""
     exp.setdefault("refers", {})["parent_id"] = parent_id
+
+
+def _get_exp_root_id(exp: dict):
+    """Get experiment root ID or None if unavailable"""
+    return exp.get("refers", {}).get("root_id", None)
+
+
+def _set_exp_root_id(exp: dict, parent_id):
+    """Set experiment root ID"""
+    exp.setdefault("refers", {})["root_id"] = parent_id
