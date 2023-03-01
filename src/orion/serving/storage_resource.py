@@ -115,7 +115,10 @@ class ImportTask:
 
     def listen_logging(self):
         """Set notifications as logging stream to collect logging messages."""
-        logging.basicConfig(stream=self._notifications, force=True, level=logging.INFO)
+        # Clear previous handlers
+        logging.getLogger().handlers.clear()
+        # Set stream
+        logging.basicConfig(stream=self._notifications, level=logging.INFO)
 
     def flush_state(self):
         """Return a dictionary with current task state.

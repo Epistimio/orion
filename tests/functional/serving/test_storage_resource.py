@@ -195,10 +195,8 @@ def _check_load_and_import_status(
         time.sleep(0.010)
     # Check we have messages
     assert messages
-    assert all(
-        message.startswith("INFO:orion.core.worker.storage_backup")
-        for message in (messages if latest_message is None else messages[:-1])
-    )
+    for message in messages if latest_message is None else messages[:-1]:
+        assert message.startswith("INFO:orion.core.worker.storage_backup")
     # Check final task status
     if finished:
         assert progress["status"] == "finished"
