@@ -73,7 +73,7 @@ extras_require = {
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
     "pb2": ["GPy", "matplotlib"],
-    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
+    "nevergrad": ["nevergrad>=0.4.3.post10,<0.6", "fcmaes", "pymoo"],
     "hebo": [
         # Issue #1061 Pending update of hebo
         "numpy>=1.17,<1.24",
