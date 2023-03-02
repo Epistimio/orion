@@ -5,11 +5,13 @@ Benchmark definition
 """
 import copy
 import itertools
+import time
 from collections import defaultdict
 
 from tabulate import tabulate
 
 import orion.core
+from orion.algo.base import algo_factory
 from orion.client import create_experiment
 from orion.executor.base import executor_factory
 from orion.storage.base import BaseStorageProtocol
@@ -32,19 +34,11 @@ class Benchmark:
 
         - A `str` of the algorithm name
         - A `dict`, with only one key and one value, where key is the algorithm name and value is a dict for the algorithm config.
-        - A `dict`, with two keys.
-
-            algorithm: str or dict
-                Algorithm name in string or a dict with algorithm configure.
-            deterministic: bool, optional
-                True if it is a deterministic algorithm, then for each assessment, only one experiment
-                will be run for this algorithm.
 
         Examples:
 
         >>> ["random", "tpe"]
         >>> ["random", {"tpe": {"seed": 1}}]
-        >>> [{"algorithm": "random"}, {"algorithm": {"gridsearch": {"n_values": 50}}, "deterministic": True}]
 
     targets: list, optional
         Targets for the benchmark, each target will be a dict with two keys.
@@ -103,12 +97,12 @@ class Benchmark:
 
             for assess, task in itertools.product(*[assessments, tasks]):
                 study = Study(self, self.algorithms, assess, task)
-                study.setup_experiments()
                 self.studies.append(study)
 
     def process(self, n_workers=1):
         """Run studies experiment"""
         if self._executor is None or self._executor_owner:
+            # TODO: Do the experiments really use the executor set here??
             with self.executor:
                 for study in self.studies:
                     study.execute(n_workers)
@@ -146,24 +140,79 @@ class Benchmark:
 
         return benchmark_status
 
-    def analysis(self):
-        """Return all the assessment figures with format as {assessment_name: {figure_name: figure_object}}"""
+    def analysis(self, assessment=None, task=None, algorithms=None):
+        """Return all assessment figures
+
+        Parameters
+        ----------
+        assessment: str or None, optional
+            Filter analysis and only return those for the given assessment name.
+        task: str or None, optional
+            Filter analysis and only return those for the given task name.
+        algorithms: list of str or None, optional
+            Compute analysis only on specified algorithms. Compute on all otherwise.
+        """
+        self.validate_assessment(assessment)
+        self.validate_task(task)
+        self.validate_algorithms(algorithms)
+
         figures = defaultdict(dict)
         for study in self.studies:
-            figure = study.analysis()
-            figures[study.assess_name].update(figure[study.assess_name])
-        return dict(figures)
+            if (
+                assessment is not None
+                and study.assess_name != assessment
+                or task is not None
+                and study.task_name != task
+            ):
+                continue
 
-    def experiments(self, silent=True):
+            # NOTE: From ParallelAssessment PR
+            # figures[study.assess_name].update(figure[study.assess_name])
+            figures[study.assess_name][study.task_name] = study.analysis(algorithms)
+        return figures
+
+    def validate_assessment(self, assessment):
+        if assessment is None:
+            return
+        assessment_names = {study.assess_name for study in self.studies}
+        if assessment not in assessment_names:
+            raise ValueError(
+                f"Invalid assessment name: {assessment}. "
+                f"It should be one of {sorted(assessment_names)}"
+            )
+
+    def validate_task(self, task):
+        if task is None:
+            return
+        task_names = {study.task_name for study in self.studies}
+        if task not in task_names:
+            raise ValueError(
+                f"Invalid task name: {task}. It should be one of {sorted(task_names)}"
+            )
+
+    def validate_algorithms(self, algorithms):
+        if algorithms is None:
+            return
+        algorithm_names = {
+            algo if isinstance(algo, str) else next(iter(algo.keys()))
+            for algo in self.algorithms
+        }
+
+        for algorithm in algorithms:
+            if algorithm not in algorithm_names:
+                raise ValueError(
+                    f"Invalid algorithm: {algorithm}. "
+                    f"It should be one of {sorted(algorithm_names)}"
+                )
+
+    def get_experiments(self, silent=True):
         """Return all the experiments submitted in benchmark"""
         experiment_table = []
         for study in self.studies:
-            for exp in study.experiments():
+            for _, exp in study.get_experiments():
                 exp_column = dict()
                 stats = exp.stats
-                exp_column["Algorithm"] = list(exp.configuration["algorithms"].keys())[
-                    0
-                ]
+                exp_column["Algorithm"] = list(exp.configuration["algorithm"].keys())[0]
                 exp_column["Experiment Name"] = exp.name
                 exp_column["Number Trial"] = len(exp.fetch_trials())
                 exp_column["Best Evaluation"] = stats.best_evaluation
@@ -278,25 +327,15 @@ class Study:
 
         def __init__(self, algorithm):
             parameters = None
-            deterministic = False
 
             if isinstance(algorithm, dict):
-                if len(algorithm) > 1 or algorithm.get("algorithm"):
-                    deterministic = algorithm.get("deterministic", False)
-                    experiment_algorithm = algorithm["algorithm"]
-
-                    if isinstance(experiment_algorithm, dict):
-                        name, parameters = list(experiment_algorithm.items())[0]
-                    else:
-                        name = experiment_algorithm
-                else:
-                    name, parameters = list(algorithm.items())[0]
+                name, parameters = list(algorithm.items())[0]
             else:
                 name = algorithm
 
             self.algo_name = name
             self.parameters = parameters
-            self.deterministic = deterministic
+            self.deterministic = algo_factory.get_class(name).deterministic
 
         @property
         def name(self):
@@ -334,15 +373,15 @@ class Study:
     def setup_experiments(self):
         """Setup experiments to run of the study"""
         max_trials = self.task.max_trials
-        task_num = self.assessment.task_num
+        repetitions = self.assessment.repetitions
         space = self.task.get_search_space()
 
-        for task_index in range(task_num):
+        for repetition_index in range(repetitions):
 
             for algo_index, algorithm in enumerate(self.algorithms):
 
                 # Run only 1 experiment for deterministic algorithm
-                if algorithm.is_deterministic and task_index > 0:
+                if algorithm.is_deterministic and repetition_index > 0:
                     continue
 
                 experiment_name = (
@@ -352,29 +391,30 @@ class Study:
                     + "_"
                     + self.task_name
                     + "_"
-                    + str(task_index)
+                    + str(repetition_index)
                     + "_"
                     + str(algo_index)
                 )
 
                 executor = (
-                    self.assessment.get_executor(task_index) or self.benchmark.executor
+                    self.assessment.get_executor(repetition_index)
+                    or self.benchmark.executor
                 )
                 experiment = create_experiment(
                     experiment_name,
                     space=space,
-                    algorithms=algorithm.experiment_algorithm,
+                    algorithm=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                     storage=self.benchmark.storage,
                     executor=executor,
                 )
-                self.experiments_info.append((task_index, experiment))
+                self.experiments_info.append((repetition_index, experiment))
 
     def execute(self, n_workers=1):
         """Execute all the experiments of the study"""
         max_trials = self.task.max_trials
 
-        for _, experiment in self.experiments_info:
+        for _, experiment in self.get_experiments():
             # TODO: it is a blocking call
             if self.has_assesment_executor:
                 experiment.workon(self.task, max_trials=max_trials)
@@ -385,10 +425,10 @@ class Study:
         """Return status of the study"""
         algorithm_tasks = {}
 
-        for _, experiment in self.experiments_info:
+        for _, experiment in self.get_experiments():
             trials = experiment.fetch_trials()
 
-            algorithm_name = list(experiment.configuration["algorithms"].keys())[0]
+            algorithm_name = list(experiment.configuration["algorithm"].keys())[0]
 
             if algorithm_tasks.get(algorithm_name, None) is None:
                 task_state = {
@@ -411,15 +451,38 @@ class Study:
 
         return list(algorithm_tasks.values())
 
-    def analysis(self):
-        """Return assessment figures"""
-        return self.assessment.analysis(self.task_name, self.experiments_info)
+    def analysis(self, algorithms=None):
+        """Return assessment figure
 
-    def experiments(self):
-        """Return all the experiments of the study"""
+        Parameters
+        ----------
+        algorithms: list of str or None, optional
+            Compute analysis only on specified algorithms. Compute on all otherwise.
+        """
+        return self.assessment.analysis(
+            self.task_name, self.get_experiments(algorithms)
+        )
+
+    def get_experiments(self, algorithms=None):
+        """Return all the experiments of the study
+
+        Parameters
+        ----------
+        algorithms: list of str or None, optional
+            Return only experiments for specified algorithms. Return all otherwise.
+        """
+        if not self.experiments_info:
+            start = time.perf_counter()
+            self.setup_experiments()
+        if algorithms is not None:
+            algorithms = [algo_name.lower() for algo_name in algorithms]
         exps = []
-        for _, experiment in self.experiments_info:
-            exps.append(experiment)
+        for repetition_index, experiment in self.experiments_info:
+            if (
+                algorithms is None
+                or list(experiment.algorithm.configuration.keys())[0] in algorithms
+            ):
+                exps.append((repetition_index, experiment))
         return exps
 
     def __repr__(self):

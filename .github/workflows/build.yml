@@ -16,8 +16,8 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
       - run: pip install pre-commit
       - run: pre-commit --version
       - run: pre-commit install
@@ -29,9 +29,9 @@ jobs:
         toxenv: [pylint, doc8, docs]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -45,7 +45,7 @@ jobs:
     needs: pretest
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
@@ -59,7 +59,7 @@ jobs:
           mv build ..
           cd ../../
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -70,13 +70,16 @@ jobs:
       run: |
           wget https://github.com/mozilla/geckodriver/releases/download/v0.31.0/geckodriver-v0.31.0-linux64.tar.gz
           tar -xvf geckodriver-v0.31.0-linux64.tar.gz
-          export PATH=$PATH:$(pwd)
+    - name: Create gunicorn_tmp_dir to match orion_config.yaml
+      run: mkdir -p gunicorn_tmp_dir
     - name: Launch backend
       run: orion serve -c .github/workflows/orion/orion_config.yaml &
     - name: Launch frontend
       run: orion frontend &
+    - name: Install Firefox
+      uses: browser-actions/setup-firefox@latest
     - name: Test frontend
-      run: pytest tests/functional/serving/test_frontend.py
+      run: PATH=$PATH:$(pwd) pytest tests/functional/serving/test_frontend.py
 
   test:
     needs: [pre-commit, pretest]
@@ -85,13 +88,13 @@ jobs:
       max-parallel: 4
       matrix:
         platform: [ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, '3.10']
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -99,9 +102,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox (and all extra dependencies)
-      run: tox -e py-all
+      run: tox -e py-all -- --color=no
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
@@ -120,10 +123,10 @@ jobs:
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -132,10 +135,10 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test long algorithms with tox
-      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }}
+      run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }} --color=no
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
@@ -147,9 +150,9 @@ jobs:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -157,9 +160,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -e py
+      run: tox -e py -- --color=no
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
@@ -170,25 +173,35 @@ jobs:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: 3.9
       - name: Setup MongoDB
-        uses: supercharge/mongodb-github-action@1.3.0
+        uses: supercharge/mongodb-github-action@1.8.0
         with:
-          mongodb-version: 4.2
+          mongodb-version: 6.0
+
+      - name: Install MongoShell
+        run: |
+          wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-org
+
       - name: Configure MongoDB
-        run: mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+        run: |
+          mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
       - name: Test with tox
-        run: tox -e mongodb
+        run: tox -e mongodb -- --color=no
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           flags: backward
@@ -205,25 +218,35 @@ jobs:
     env:
       ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Setup MongoDB
-      uses: supercharge/mongodb-github-action@1.3.0
+      uses: supercharge/mongodb-github-action@1.8.0
       with:
-        mongodb-version: 4.2
+        mongodb-version: 6.0
+
+    - name: Install MongoShell
+      run: |
+        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-org
+
     - name: Configure MongoDB
-      run: mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+      run: |
+        mongosh orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+
     - name: Install dependencies
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -e backward-compatibility
+      run: tox -e backward-compatibility -- --color=no
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: backward
@@ -234,9 +257,9 @@ jobs:
     needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras, test-dashboard-build]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -264,6 +287,18 @@ jobs:
           if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
           echo Check if frontend script can find dashboard build
           python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+
+          echo Check if frontend script can find dashboard build on sys.prefix/local
+          mkdir -p ${ORION_PREFIX}/local/
+          mv ${ORION_PREFIX}/orion-dashboard ${ORION_PREFIX}/local/orion-dashboard
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then false; else true; fi
+          if ( [ -d "${ORION_PREFIX}/local/orion-dashboard" ] ); then true; else false; fi
+          python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+          echo Move build back to initial installation
+          mv ${ORION_PREFIX}/local/orion-dashboard ${ORION_PREFIX}/orion-dashboard
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -d "${ORION_PREFIX}/local/orion-dashboard" ] ); then false; else true; fi
+
           echo Clean-up
           pip uninstall -y orion
           echo Check if dashboard build is correctly removed
@@ -318,9 +353,9 @@ jobs:
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Build conda

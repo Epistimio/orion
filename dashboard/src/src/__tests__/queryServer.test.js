@@ -1,3 +1,4 @@
+import { test, expect } from '@playwright/test';
 import { Backend, DEFAULT_BACKEND } from '../utils/queryServer';
 
 test('test backend call', () => {
@@ -7,7 +8,7 @@ test('test backend call', () => {
   return backend.query('').then(response => {
     expect(response.hasOwnProperty('orion')).toBeTruthy();
     expect(response.server).toBe('gunicorn');
-    expect(response.database).toBe('PickledDB');
+    expect(response.database).toBe('MongoDB');
   });
 });
 
@@ -15,7 +16,7 @@ test('test backend query experiments', () => {
   expect.assertions(8);
   const backend = new Backend(DEFAULT_BACKEND);
   return backend.query('experiments').then(response => {
-    expect(response.length).toBe(111);
+    expect(response.length).toBe(116);
     const experiments = new Set(response.map(experiment => experiment.name));
     expect(experiments.has('2-dim-shape-exp')).toBeTruthy();
     expect(experiments.has('4-dim-cat-shape-exp')).toBeTruthy();

@@ -269,32 +269,27 @@ Although we recommend using the experiment client,
 we document the storage backend here for users who may need
 more flexibility.
 
-There is two ways for creating the storage client. If you
-already created an experiment client, the storage
-was already created during the process of creating the
-experiment client and you can get it with
-:py:func:`orion.storage.base.get_storage`.
-Otherwise, you can create the storage client with
-:py:func:`orion.storage.base.setup_storage` before
-fetching it with
-:py:func:`get_storage() <orion.storage.base.get_storage>`.
+You should try to use a single storage instance for each physical storage
+to minimize the amount of locking and/or connections.
+If the storage is otherwise unreachable you can create a new storage client with
+:py:func:`orion.storage.base.setup_storage`.
+
 To recap, you can create it indirectly with
 :py:func:`create_experiment() <orion.client.create_experiment>`
 or directly with
 :py:func:`setup_storage() <orion.storage.base.setup_storage>`.
-In both case, you can access it with
-:py:func:`get_storage() <orion.storage.base.get_storage>`.
+
 
 .. code-block:: python
 
    from orion.client import create_experiment
-   from orion.storage.base import get_storage, setup_storage
+   from orion.storage.base import setup_storage
 
    # Create the ExperimentClient and storage implicitly
    experiment = create_experiment('exp-name', space=dict(x='uniform(0, 1)'))
 
    # Or create storage explicitly using setup_storage
-   setup_storage(dict(
+   storage = setup_storage(dict(
        type='legacy',
        database=dict(
            type='pickleddb',
@@ -302,9 +297,6 @@ In both case, you can access it with
            )
        )
    )
-
-   # Get the storage client
-   storage = get_storage()
 
    # fetch trials
    trials = storage.fetch_trials(uid=experiment.id)

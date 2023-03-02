@@ -1,10 +1,11 @@
+import { test, expect } from '@playwright/test';
 import { flattenObject } from '../utils/flattenObject';
 
 test('test flatten object', () => {
   const input = {
     a: 1,
     b: {
-      be: 'world',
+      ba: 'world',
       bb: 1.5,
       bc: {
         bd: {
@@ -26,7 +27,6 @@ test('test flatten object', () => {
     d: 'hello',
   };
   const output = flattenObject(input);
-  console.log(output);
   const keys = Object.keys(output);
   expect(keys.length).toBe(12);
   expect(output.hasOwnProperty('a')).toBeTruthy();

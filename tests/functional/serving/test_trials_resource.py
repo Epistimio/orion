@@ -28,7 +28,7 @@ base_experiment = dict(
     pool_size=1,
     max_trials=10,
     working_dir="",
-    algorithms={"random": {"seed": 1}},
+    algorithm={"random": {"seed": 1}},
 )
 
 base_trial = {
@@ -341,4 +341,5 @@ class TestTrialItem:
             "parameters": {"x": 1},
             "objective": 0.05,
             "statistics": {"a": 10, "b": 5},
+            "status": "completed",
         }

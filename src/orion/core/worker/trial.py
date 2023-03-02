@@ -6,11 +6,14 @@ Container class for `Trial` entity
 Describe a particular training run, parameters and results.
 
 """
+from __future__ import annotations
+
 import copy
 import hashlib
 import logging
 import os
 import warnings
+from datetime import timedelta
 
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
@@ -202,10 +205,11 @@ class Trial:
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
+        self._params: list[Trial.Param] = []
+        self._results: list[Trial.Result] = []
+
         for attrname in self.__slots__:
-            if attrname in ("_results", "_params"):
-                setattr(self, attrname, list())
-            else:
+            if attrname not in ("_results", "_params"):
                 setattr(self, attrname, None)
 
         self.status = "new"
@@ -474,6 +478,26 @@ class Trial:
             )
         return self.format_values(self._params, sep="-").replace("/", ".")
 
+    @property
+    def duration(self):
+        """Return trial duration as a timedelta() object"""
+        execution_interval = self.execution_interval
+        if execution_interval:
+            from_time, to_time = execution_interval
+            return to_time - from_time
+        else:
+            return timedelta()
+
+    @property
+    def execution_interval(self):
+        """Return execution interval, or None if unavailable"""
+        if self.start_time:
+            if self.end_time:
+                return self.start_time, self.end_time
+            elif self.heartbeat:
+                return self.start_time, self.heartbeat
+        return None
+
     def _repr_values(self, values, sep=","):
         """Represent with a string the given values."""
         return Trial.format_values(values, sep)
@@ -498,7 +522,7 @@ class Trial:
 
     @staticmethod
     def compute_trial_hash(
-        trial,
+        trial: Trial,
         ignore_fidelity=False,
         ignore_experiment=None,
         ignore_lie=False,

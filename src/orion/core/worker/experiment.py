@@ -10,10 +10,15 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import dataclasses
 import datetime
 import inspect
 import logging
+import math
+import typing
+from collections import Counter
 from dataclasses import dataclass, field
+from typing import Generator, Generic, TypeVar
 
 import pandas
 from typing_extensions import Literal
@@ -25,9 +30,15 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
+from orion.core.worker.experiment_config import ExperimentConfig
 from orion.storage.base import BaseStorageProtocol, FailedUpdate
 
+if typing.TYPE_CHECKING:
+    from orion.core.worker.trial import Trial
+    from orion.core.worker.warm_start.knowledge_base import KnowledgeBase
+
 log = logging.getLogger(__name__)
+AlgoT = TypeVar("AlgoT", bound=BaseAlgorithm)
 Mode = Literal["r", "w", "x"]
 
 
@@ -47,20 +58,52 @@ class ExperimentStats:
        When Experiment was first dispatched and started running.
     finish_time: `datetime.datetime`
        When Experiment reached terminating condition and stopped running.
-    duration: `datetime.timedelta`
+    elapsed_time: `datetime.timedelta`
        Elapsed time.
+    max_trials: int
+        Experiment max_trials
+    nb_trials: int
+        Number of trials in experiment
+    progress: float
+        Experiment progression (between 0 and 1).
+    trial_status_count: Dict[str, int]
+        Dictionary mapping trial status to number of trials that have this status
+    sum_of_trials_time: `datetime.timedelta`
+        Sum of trial duration
+    eta: `datetime.timedelta`
+        Estimated remaining time
+    eta_milliseconds: float
+        ETA in milliseconds (used to get ETA in other programming languages, e.g. Javascript)
     """
 
     trials_completed: int
     best_trials_id: int
     best_evaluation: float
-    start_time: datetime.datetime = field(default_factory=datetime.datetime)
-    finish_time: datetime.datetime = field(default_factory=datetime.datetime)
-    duration: datetime.timedelta = field(default_factory=datetime.timedelta)
+    start_time: datetime.datetime
+    finish_time: datetime.datetime
+    max_trials: int = 0
+    nb_trials: int = 0
+    progress: float = 0
+    trial_status_count: dict = field(default_factory=dict)
+    elapsed_time: datetime.timedelta = field(default_factory=datetime.timedelta)
+    sum_of_trials_time: datetime.timedelta = field(default_factory=datetime.timedelta)
+    eta: datetime.timedelta = field(default_factory=datetime.timedelta)
+    eta_milliseconds: float = 0
+
+    def to_json(self):
+        """Return a JSON-compatible dictionary of stats."""
+        return {
+            key: (
+                str(value)
+                if isinstance(value, (datetime.datetime, datetime.timedelta))
+                else value
+            )
+            for key, value in dataclasses.asdict(self).items()
+        }
 
 
 # pylint: disable=too-many-public-methods
-class Experiment:
+class Experiment(Generic[AlgoT]):
     """Represents an entry in database/experiments collection.
 
     Attributes
@@ -91,7 +134,7 @@ class Experiment:
        it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
-    algorithms: `BaseAlgorithm` object or a wrapper.
+    algorithm: `BaseAlgorithm` object or a wrapper.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
@@ -129,8 +172,9 @@ class Experiment:
         "max_broken",
         "version",
         "space",
-        "algorithms",
+        "algorithm",
         "working_dir",
+        "knowledge_base",
         "_id",
         "_storage",
         "_node",
@@ -148,10 +192,11 @@ class Experiment:
         _id: str | int | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
-        algorithms: BaseAlgorithm | None = None,
+        algorithm: AlgoT | None = None,
         working_dir: str | None = None,
         metadata: dict | None = None,
         refers: dict | None = None,
+        knowledge_base: KnowledgeBase | None = None,
         storage: BaseStorageProtocol | None = None,
     ):
         self._id = _id
@@ -163,9 +208,9 @@ class Experiment:
         self.metadata = metadata or {}
         self.max_trials = max_trials
         self.max_broken = max_broken
-        self.algorithms = algorithms
+        self.knowledge_base = knowledge_base
         self.working_dir = working_dir
-
+        self.algorithm = algorithm
         self._storage = storage
 
         self._node = ExperimentNode(
@@ -247,7 +292,7 @@ class Experiment:
 
         return pandas.DataFrame(data, columns=columns)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree=False) -> list[Trial]:
         """Fetch all trials of the experiment"""
         return self._select_evc_call(with_evc_tree, "fetch_trials")
 
@@ -264,7 +309,7 @@ class Experiment:
         self._check_if_writable()
         return self._storage.set_trial_status(*args, **kwargs)
 
-    def reserve_trial(self, score_handle=None):
+    def reserve_trial(self, score_handle=None) -> Trial | None:
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
@@ -406,7 +451,7 @@ class Experiment:
     @contextlib.contextmanager
     def acquire_algorithm_lock(
         self, timeout: int | float = 60, retry_interval: int | float = 1
-    ):
+    ) -> Generator[AlgoT, None, None]:
         """Acquire lock on algorithm
 
         This method should be called using a ``with``-clause.
@@ -442,14 +487,14 @@ class Experiment:
         with self._storage.acquire_algorithm_lock(
             experiment=self, timeout=timeout, retry_interval=retry_interval
         ) as locked_algorithm_state:
-
-            if locked_algorithm_state.configuration != self.algorithms.configuration:
+            assert self.algorithm is not None
+            if locked_algorithm_state.configuration != self.algorithm.configuration:
                 log.warning(
                     "Saved configuration: %s", locked_algorithm_state.configuration
                 )
                 log.warning(
                     "Current configuration: %s %s",
-                    self.algorithms.configuration,
+                    self.algorithm.configuration,
                     self._storage._db,
                 )
                 raise RuntimeError(
@@ -458,11 +503,11 @@ class Experiment:
                 )
 
             if locked_algorithm_state.state:
-                self.algorithms.set_state(locked_algorithm_state.state)
+                self.algorithm.set_state(locked_algorithm_state.state)
 
-            yield self.algorithms
+            yield self.algorithm
 
-            locked_algorithm_state.set_state(self.algorithms.state_dict)
+            locked_algorithm_state.set_state(self.algorithm.state_dict)
 
     def _select_evc_call(self, with_evc_tree, function, *args, **kwargs):
         if self._node is not None and with_evc_tree:
@@ -542,7 +587,7 @@ class Experiment:
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with ``max_trials``.
-        2. Ask ``algorithms`` if they consider there is a chance for further improvement, and
+        2. Ask ``algorithm`` if they consider there is a chance for further improvement, and
            verify is there is any pending trial.
 
         .. note::
@@ -560,7 +605,7 @@ class Experiment:
                 num_pending_trials += 1
 
         return (num_completed_trials >= self.max_trials) or (
-            self.algorithms.is_done and num_pending_trials == 0
+            self.algorithm.is_done and num_pending_trials == 0
         )
 
     @property
@@ -576,62 +621,144 @@ class Experiment:
         return num_broken_trials >= self.max_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> ExperimentConfig:
         """Return a copy of an `Experiment` configuration as a dictionary."""
+        # TODO: Actually enforce this typeddict.
         config = {}
-        for attrname in self.__slots__:
-            if attrname.startswith("_"):
+        for attribute in self.__slots__:
+            if attribute.startswith("_"):
                 continue
-            attribute = copy.deepcopy(getattr(self, attrname))
-            config[attrname] = attribute
-            if attrname == "space":
-                config[attrname] = attribute.configuration
-            elif attrname == "algorithms" and not isinstance(attribute, dict):
-                config[attrname] = attribute.configuration
-            elif attrname == "refers" and isinstance(
-                attribute.get("adapter"), BaseAdapter
+            value = getattr(self, attribute)
+            if hasattr(value, "configuration"):
+                config[attribute] = value.configuration
+            elif attribute == "refers" and isinstance(
+                value.get("adapter"), BaseAdapter
             ):
-                config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-
+                value = value.copy()
+                value["adapter"] = value["adapter"].configuration
+                config[attribute] = value
+            else:
+                config[attribute] = value
         if self.id is not None:
             config["_id"] = self.id
 
         return copy.deepcopy(config)
 
     @property
+    def progress(self) -> float:
+        """Return a floating number between 0 and 1 representing experiment progress,
+        or None if progress cannot be completed."""
+
+        trials = self.fetch_trials(with_evc_tree=False)
+        completed_trials = self.fetch_trials_by_status("completed")
+        broken_trials = self.fetch_trials_by_status("broken")
+
+        if self.max_trials is None or math.isinf(self.max_trials):
+            progress = None
+        elif len(completed_trials) > self.max_trials:
+            progress = 1.0
+        else:
+            nb_trials_to_complete = max(self.max_trials, len(trials)) - len(
+                broken_trials
+            )
+            if nb_trials_to_complete == 0:
+                progress = None
+            else:
+                progress = len(completed_trials) / nb_trials_to_complete
+        return progress
+
+    # pylint:disable=too-many-branches
+    @property
     def stats(self):
         """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
         experiment.
         """
+        trials = self.fetch_trials(with_evc_tree=False)
         completed_trials = self.fetch_trials_by_status("completed")
 
-        if not completed_trials:
-            return {}
-        trials_completed = len(completed_trials)
+        # Retrieve the best evaluation, best trial ID, start time and finish time
+        # TODO: should we compute finish time as min(completed_trials.start_time)
+        # instead of metadata["datetime"]?
+        # For elapsed time below, we do not use metadata["datetime"]
+        best_evaluation = None
         best_trials_id = None
-        trial = completed_trials[0]
-        best_evaluation = trial.objective.value
-        best_trials_id = trial.id
-        start_time = self.metadata["datetime"]
+        start_time = self.metadata.get("datetime", None)
         finish_time = start_time
-        for trial in completed_trials:
-            # All trials are going to finish certainly after the start date
-            # of the experiment they belong to
-            if trial.end_time > finish_time:  # pylint:disable=no-member
-                finish_time = trial.end_time
-            objective = trial.objective.value
-            if objective < best_evaluation:
-                best_evaluation = objective
-                best_trials_id = trial.id
-        duration = finish_time - start_time
+        if start_time and completed_trials:
+            trial = completed_trials[0]
+            best_evaluation = trial.objective.value
+            best_trials_id = trial.id
+            for trial in completed_trials:
+                # All trials are going to finish certainly after the start date
+                # of the experiment they belong to
+                if trial.end_time > finish_time:  # pylint:disable=no-member
+                    finish_time = trial.end_time
+                objective = trial.objective.value
+                if objective < best_evaluation:
+                    best_evaluation = objective
+                    best_trials_id = trial.id
+
+        # Compute elapsed time using all finished/stopped/running experiments
+        # i.e. all trials that have an execution interval
+        # (from a start time to an end time or heartbeat)
+        intervals = []
+        for trial in trials:
+            interval = trial.execution_interval
+            if interval:
+                intervals.append(interval)
+        if intervals:
+            min_start_time = min(interval[0] for interval in intervals)
+            max_end_time = max(interval[1] for interval in intervals)
+            elapsed_time = max_end_time - min_start_time
+        else:
+            elapsed_time = datetime.timedelta()
+
+        # Compute ETA
+        if not self.max_trials or math.isinf(self.max_trials):
+            # If max_trials is None, 0 or infinite, we cannot compute ETA
+            eta = None
+        elif len(completed_trials) > self.max_trials:
+            # If there are more completed trials than max trials, then ETA should be 0
+            eta = datetime.timedelta()
+        elif not completed_trials:
+            # If there are no completed trials, then we set ETA to infinite
+            # NB: float("inf") may lead to wrong JSON syntax, so we just write "infinite"
+            eta = "infinite"
+        else:
+            # Compute ETA using duration of completed trials
+            completed_intervals = [
+                trial.execution_interval for trial in completed_trials
+            ]
+            min_start_time = min(interval[0] for interval in completed_intervals)
+            max_end_time = max(interval[1] for interval in completed_intervals)
+            completed_duration = max_end_time - min_start_time
+            eta = (completed_duration / len(completed_trials)) * (
+                self.max_trials - len(completed_trials)
+            )
 
         return ExperimentStats(
-            trials_completed=trials_completed,
+            trials_completed=len(completed_trials),
             best_trials_id=best_trials_id,
             best_evaluation=best_evaluation,
             start_time=start_time,
             finish_time=finish_time,
-            duration=duration,
+            elapsed_time=elapsed_time,
+            sum_of_trials_time=sum(
+                (trial.duration for trial in trials),
+                datetime.timedelta(),
+            ),
+            nb_trials=len(trials),
+            eta=eta,
+            eta_milliseconds=eta.total_seconds() * 1000
+            if isinstance(eta, datetime.timedelta)
+            else None,
+            trial_status_count={**Counter(trial.status for trial in trials)},
+            progress=self.progress,
+            max_trials=(
+                "infinite"
+                if self.max_trials is not None and math.isinf(self.max_trials)
+                else self.max_trials
+            ),
         )
 
     def __repr__(self):

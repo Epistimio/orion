@@ -36,3 +36,49 @@ a.bx--header__menu-item.bx--header__menu-title[aria-label='benchmarks (selected)
 .bx--structured-list-row.selected-experiment-row .bx--structured-list-td {
   font-weight: bold;
 }
+.bx--data-table th.placeholder {
+  background-color: #f4f4f4;
+}
+.bx--grid.database-page .bx--col {
+  display: flex;
+  align-items: flex-end;
+}
+.bx--grid.database-page .experiment-word {
+  display: inline-block;
+}
+.bx--grid.database-page .header-dnd {
+  cursor: grab;
+}
+.bx--grid.database-page th.no-placeholder.header-unsortable {
+  cursor: default;
+}
+.bx--grid.database-page th.no-placeholder.header-unsortable button {
+  cursor: default;
+}
+.bx--grid.database-page th.no-placeholder.header-unsortable:hover button.bx--table-sort {
+  background-color: inherit;
+}
+.bx--grid.database-page th.is-over button.bx--table-sort {
+  font-style: italic;
+  font-weight: normal;
+}
+.bx--table-sort.bx--table-sort--active .header-dnd .bx--table-sort__icon-unsorted {
+  display: block;
+}
+.trial-row {
+  cursor: pointer;
+}
+.modal-trial-key {
+  text-align: right;
+}
+.progress-bar.bg-running {
+  background-color: lightgray;
+  color: darkslategrey;
+}
+.progress-bar.bg-suspended {
+  background-color: pink;
+}
+.database-container {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}

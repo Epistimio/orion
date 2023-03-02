@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import inspect
 import logging
+import numbers
+import typing
 from contextlib import contextmanager
 from typing import Callable
 
 import orion.core
+from orion.algo.space import Space
 from orion.client.runner import Runner, prepare_trial_working_dir
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
@@ -24,17 +27,27 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.working_dir import SetupWorkingDir
+from orion.core.worker.experiment import AlgoT
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.executor.base import executor_factory
+from orion.executor.base import BaseExecutor, executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
+
+if typing.TYPE_CHECKING:
+    from orion.core.worker.experiment import Experiment
+    from orion.core.worker.experiment_config import ExperimentConfig
 
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer, pool_size, timeout=None):
+def reserve_trial(
+    experiment: Experiment,
+    producer: Producer,
+    pool_size: int,
+    timeout: int | None = None,
+) -> Trial:
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
 
@@ -43,7 +56,6 @@ def reserve_trial(experiment, producer, pool_size, timeout=None):
             "Reservation_timeout is deprecated and will be removed in v0.4.0."
             "Use idle_timeout instead."
         )
-
     trial = None
     produced = 0
 
@@ -84,7 +96,12 @@ class ExperimentClient:
         Experiment object serving for interaction with storage
     """
 
-    def __init__(self, experiment, executor=None, heartbeat=None):
+    def __init__(
+        self,
+        experiment: Experiment[AlgoT],
+        executor: BaseExecutor | None = None,
+        heartbeat: int | None = None,
+    ):
         self._experiment = experiment
         self._producer = Producer(experiment)
         self._pacemakers = {}
@@ -145,14 +162,16 @@ class ExperimentClient:
         return self._experiment.metadata
 
     @property
-    def space(self):
+    def space(self) -> Space:
         """Return problem's parameter `orion.algo.space.Space`."""
-        return self._experiment.space
+        space = self._experiment.space
+        assert space is not None
+        return space
 
     @property
-    def algorithms(self):
-        """Algorithms of the experiment."""
-        return self._experiment.algorithms
+    def algorithm(self):
+        """Algorithm of the experiment."""
+        return self._experiment.algorithm
 
     @property
     def refers(self):
@@ -160,7 +179,7 @@ class ExperimentClient:
         return self._experiment.refers
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with `max_trials`.
@@ -178,7 +197,7 @@ class ExperimentClient:
         return self._experiment.is_broken
 
     @property
-    def configuration(self):
+    def configuration(self) -> ExperimentConfig:
         """Return a copy of an `Experiment` configuration as a dictionary."""
         return self._experiment.configuration
 
@@ -251,7 +270,7 @@ class ExperimentClient:
         """
         return self._experiment.to_pandas(with_evc_tree=with_evc_tree)
 
-    def fetch_trials(self, with_evc_tree=False):
+    def fetch_trials(self, with_evc_tree=False) -> list[Trial]:
         """Fetch all trials of the experiment
 
         Parameters
@@ -559,9 +578,7 @@ class ExperimentClient:
             raise CompletedExperiment("Experiment is done, cannot sample more trials.")
 
         try:
-            trial = reserve_trial(
-                self._experiment, self._producer, pool_size, timeout=None
-            )
+            trial = reserve_trial(self._experiment, self._producer, pool_size)
 
         except (ReservationRaceCondition, WaitingForTrials) as e:
             if self.is_broken:
@@ -578,7 +595,12 @@ class ExperimentClient:
         self._maintain_reservation(trial)
         return TrialCM(self, trial)
 
-    def observe(self, trial, results):
+    def observe(
+        self,
+        trial: Trial,
+        results: list[dict] | float,
+        name: str = "objective",
+    ) -> None:
         """Observe trial results
 
         Experiment must be in executable ('x') mode.
@@ -587,10 +609,13 @@ class ExperimentClient:
         ----------
         trial: `orion.core.worker.trial.Trial`
             Reserved trial to observe.
-        results: list
+        results: list or float
             Results to be set for the new trial. Results must have the format
             {name: <str>: type: <'objective', 'constraint' or 'gradient'>, value=<float>} otherwise
             a ValueError will be raised. If the results are invalid, the trial will not be released.
+            If `results` is a float, the result type will be 'objective'.
+        name: str
+            Name of the result if `results` is a float. Default: 'objective'.
 
         Returns
         -------
@@ -611,6 +636,9 @@ class ExperimentClient:
             If the format of trial result is invalid.
         """
         self._check_if_executable()
+
+        if isinstance(results, numbers.Number):
+            results = [dict(value=results, name=name, type="objective")]
 
         trial.results += [Trial.Result(**result) for result in results]
         raise_if_unreserved = True
@@ -655,7 +683,6 @@ class ExperimentClient:
         fct: Callable,
         n_workers: int | None = None,
         pool_size: int = 0,
-        reservation_timeout: int | None = None,
         max_trials: int | None = None,
         max_trials_per_worker: int | None = None,
         max_broken: int | None = None,
@@ -684,12 +711,6 @@ class ExperimentClient:
             config if defined.  Increase it to improve the sampling speed if workers spend too much
             time waiting for algorithms to sample points. An algorithm will try sampling
             `pool_size` trials but may return less.
-        reservation_timeout: int, optional
-            Maximum time allowed to try reserving a trial. ReservationTimeout will be raised if
-            timeout is reached.  Such timeout are generally caused by slow database, large number
-            of concurrent workers leading to many race conditions or small search spaces with
-            integer/categorical dimensions that may be fully explored.
-            Defaults to ``orion.core.config.worker.reservation_timeout``.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -767,9 +788,6 @@ class ExperimentClient:
         if not pool_size:
             pool_size = n_workers
 
-        if not reservation_timeout:
-            reservation_timeout = orion.core.config.worker.reservation_timeout
-
         if not idle_timeout:
             idle_timeout = orion.core.config.worker.idle_timeout
 
@@ -784,9 +802,13 @@ class ExperimentClient:
 
         # Use worker's max_trials inside `exp.is_done` to reduce chance of
         # race condition for trials creation
+        assert self.max_trials is not None
+        assert max_trials is not None
+
         if self.max_trials > max_trials:
             self._experiment.max_trials = max_trials
-            self._experiment.algorithms.algorithm.max_trials = max_trials
+            assert self._experiment.algorithm is not None
+            self._experiment.algorithm.max_trials = max_trials
 
         with SetupWorkingDir(self):
             runner = Runner(
@@ -803,11 +825,7 @@ class ExperimentClient:
                 **kwargs,
             )
 
-            if self._executor is None or self._executor_owner:
-                with self.executor:
-                    rval = runner.run()
-            else:
-                rval = runner.run()
+            rval = runner.run()
 
         return rval
 

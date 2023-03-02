@@ -76,9 +76,9 @@ def get_or_create_benchmark(
     )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
-        logger.warn(
-            "Benchmark with same name is found but has different configuration, "
-            "which will be used for this creation.\n{}".format(benchmark.configuration)
+        logger.warning(
+            f"Benchmark with same name is found but has different configuration, "
+            f"which will be used for this creation.\n{benchmark.configuration}"
         )
 
     if benchmark_id is None:

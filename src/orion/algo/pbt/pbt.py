@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 Population Based Training
 =========================
@@ -33,6 +34,7 @@ https://orion.readthedocs.io/en/develop/user/algorithms.html#pbt
 
 
 def get_objective(trial: Trial) -> float:
+    """Retrieve the objective value from a trial or returns inf"""
     if trial.objective and trial.objective.value is not None:
         return trial.objective.value
 
@@ -45,6 +47,7 @@ def compute_fidelities(
     high: numpy.ndarray | float,
     base: float,
 ) -> list[float]:
+    """Compute fidelities"""
     if base == 1:
         fidelities = numpy.linspace(low, high, num=n_branching + 1, endpoint=True)
     else:
@@ -162,6 +165,7 @@ class PBT(BaseAlgorithm):
         explore: dict | None = None,
         fork_timeout: int = 60,
     ):
+        super().__init__(space)
         if exploit is None:
             exploit = {
                 "of_type": "PipelineExploit",
@@ -217,7 +221,6 @@ class PBT(BaseAlgorithm):
 
         self.lineages = Lineages()
 
-        super().__init__(space)
         self.seed = seed
         self.population_size = population_size
         self.generations = generations
@@ -318,14 +321,15 @@ class PBT(BaseAlgorithm):
             A list of trials representing values suggested by the algorithm.
 
         """
-
-        # Sample points until num is met, or population_size
-        num_random_samples = min(max(self.population_size - self._num_root, 0), num)
+        assert num > 0
         logger.debug(
             "PBT has %s pending or completed trials at root, %s broken trials.",
             self._num_root,
             len(self.lineages) - self._num_root,
         )
+
+        # Sample points until num is met, or population_size
+        num_random_samples = min(max(self.population_size - self._num_root, 0), num)
         logger.debug("Sampling %s new trials", num_random_samples)
         trials = self._sample(num_random_samples)
         logger.debug("Sampled %s new trials", len(trials))
@@ -363,8 +367,9 @@ class PBT(BaseAlgorithm):
             branched_trial = trial.branch(
                 params={self.fidelity_dim.name: self.fidelity_dim.low}
             )
-            # NOTE: We are using branching as a simple way to update the fidelity, we should not keep the
-            #       parent id since it is not a mutation from a parent trial.
+            # NOTE: We are using branching as a simple way to update the fidelity,
+            #       we should not keep the parent id since it is not a mutation
+            #       from a parent trial.
             branched_trial.parent = None
             self.register(branched_trial)
             trials.append(branched_trial)
@@ -447,7 +452,9 @@ class PBT(BaseAlgorithm):
                 logger.debug("Promoting trial %s, parameters stay the same.", trial)
             else:
                 new_params = flatten(
-                    self.explore_func(self.rng, self.space, trial_to_explore.params)
+                    self.explore_func(
+                        self.rng, self.space, flatten(trial_to_explore.params)
+                    )
                 )
                 trial_to_branch = trial_to_explore
                 logger.debug(
@@ -458,7 +465,7 @@ class PBT(BaseAlgorithm):
             assert trial_to_branch is not None  # note: implicitly assumed below.
             # Set next level of fidelity
             new_params[self.fidelity_index] = self.fidelity_upgrades[
-                trial_to_branch.params[self.fidelity_index]
+                flatten(trial_to_branch.params)[self.fidelity_index]
             ]
 
             new_trial = trial_to_branch.branch(params=new_params)
@@ -524,7 +531,7 @@ class PBT(BaseAlgorithm):
                     )
 
             elif trial.status == "completed":
-                if trial.params[self.fidelity_index] == self.fidelities[-1]:
+                if flatten(trial.params)[self.fidelity_index] == self.fidelities[-1]:
                     logger.debug(
                         "Trial %s is completed at full fidelity (%s). Not forking.",
                         trial,
@@ -830,6 +837,7 @@ class LineageNode(TreeNode[Trial]):
         """
         return LineageNode(new_trial, parent=self)
 
+    # pylint: disable=protected-access
     def set_jump(self, node: LineageNode) -> None:
         """Set the jump to given node
 

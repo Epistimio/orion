@@ -1,5 +1,9 @@
 ---
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0  # Use the ref you want to point at
+    hooks:
+      - id: check-merge-conflict
   - repo: https://github.com/python/black
     rev: 22.6.0
     hooks:
@@ -8,8 +12,8 @@ repos:
     rev: v2.2.1
     hooks:
       - id: codespell
-        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/src/yarn.lock,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont"]
-  - repo: https://gitlab.com/pycqa/flake8
+        args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/src/yarn.lock,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont,ro"]
+  - repo: https://github.com/PyCQA/flake8
     rev: 5.0.4
     hooks:
       - id: flake8
@@ -20,7 +24,7 @@ repos:
           - --show-source
           - --statistics
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
         args: ["--profile", "black"]

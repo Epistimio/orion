@@ -17,6 +17,7 @@ from orion.algo.pbt.pb2_utils import import_optional, select_config
 from orion.algo.pbt.pbt import PBT
 from orion.core.utils.flatten import flatten
 from orion.core.utils.random_state import RandomState, control_randomness
+from orion.core.worker.transformer import ReshapedSpace, TransformedSpace
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -168,10 +169,11 @@ class PB2(PBT):
 
             # Set next level of fidelity
             new_params[self.fidelity_index] = self.fidelity_upgrades[
-                trial_to_branch.params[self.fidelity_index]
+                flatten(trial_to_branch.params)[self.fidelity_index]
             ]
 
             new_trial = trial_to_branch.branch(params=new_params)
+            assert isinstance(self.space, (TransformedSpace, ReshapedSpace))
             new_trial = self.space.transform(self.space.reverse(new_trial))
 
             logger.debug("Attempt %s - Creating new trial %s", attempts, new_trial)
@@ -197,6 +199,8 @@ class PB2(PBT):
         Derived from PB2 explore implementation in Ray (2022/02/18):
         https://github.com/ray-project/ray/blob/master/python/ray/tune/schedulers/pb2.py#L131
         """
+
+        base_params = flatten(base.params)
 
         data, current = self._get_data_and_current()
         bounds = {dim.name: dim.interval() for dim in space.values()}
@@ -243,15 +247,15 @@ class PB2(PBT):
                     num_f=len(t_r.columns),
                 )
 
-            new_config = base.params.copy()
+            new_config = base_params.copy()
             for i, col in enumerate(hparams.columns):
-                if isinstance(base.params[col], int):
+                if isinstance(base_params[col], int):
                     new_config[col] = int(new[i])
                 else:
                     new_config[col] = new[i]
 
         else:
-            new_config = base.params
+            new_config = base_params
 
         return new_config
 
@@ -270,12 +274,11 @@ class PB2(PBT):
                 current_trials.append(trial)
         data = self._trials_to_data(data_trials)
         if current_trials:
-            current = np.asarray(
-                [
-                    [trial.params[key] for key in self.space.keys()]
-                    for trial in current_trials
-                ]
-            )
+            current_array = []
+            for trial in current_trials:
+                trial_params = flatten(trial.params)
+                current_array.append([trial_params[key] for key in self.space.keys()])
+            current = np.asarray(current_array)
         else:
             current = None
         return data, current
@@ -285,9 +288,10 @@ class PB2(PBT):
         rows = []
         cols = ["Trial", "Budget"] + list(self.space.keys()) + ["Reward"]
         for trial in trials:
-            values = [trial.params[key] for key in self.space.keys()]
+            trial_params = flatten(trial.params)
+            values = [trial_params[key] for key in self.space.keys()]
             lst = (
-                [self.get_id(trial), trial.params[self.fidelity_index]]
+                [self.get_id(trial), trial_params[self.fidelity_index]]
                 + values
                 + [trial.objective.value]
             )

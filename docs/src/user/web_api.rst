@@ -161,6 +161,57 @@ retrieve individual experiments as well as a list of all your experiments.
    :statuscode 400: When an invalid query parameter is passed in the request.
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
+.. http:get:: /experiments/status/:name
+
+   Retrieve the stats of the existing experiment named ``name``.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+        "trials_completed": 40,
+        "best_trials_id": "955c77e7f567c2625f48546188a6cda1",
+        "best_evaluation": -0.788720013597263,
+        "start_time": "2019-11-25 16:02:02.872583",
+        "finish_time": "2019-11-27 21:13:27.043519",
+        "max_trials": 40,
+        "nb_trials": 40,
+        "progress": 1,
+        "trial_status_count": {
+          "completed": 40
+        },
+        "elapsed_time": "2 days, 5:11:24.006755",
+        "sum_of_trials_time": "8 days, 23:15:15.594405",
+        "eta": "0:00:00",
+        "eta_milliseconds": 0
+      }
+
+   :query version: Optional version of the experiment to retrieve. If unspecified, the latest
+      version of the experiment is retrieved.
+
+   :>json trials_completed: The number of trials completed.
+   :>json best_trial_id: The best trial ID.
+   :>json best_evaluation: Best evaluation.
+   :>json start_time: The timestamp when the experiment started.
+   :>json finish_time: The timestamp when the experiment finished.
+   :>json max_trials: The number of max trials for this experiment.
+   :>json nb_trials: The current number of trials in this experiment.
+   :>json progress: Floating value between 0 and 1 representing experiment progression.
+   :>json trial_status_count: A dictionary mapping trial status to number of trials with this status in the experiment.
+   :>json elapsed_time: The time elapsed since experiment started.
+   :>json sum_of_trials_time: The sum of trials execution times.
+   :>json eta: The estimation of remaining time for experiment to finish.
+   :>json eta_milliseconds: The ETA in milliseconds (convenient for usages in Javascript).
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
 Trials
 ------
 
@@ -305,6 +356,99 @@ visualize your experiments and their results.
 
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
+
+Benchmarks
+----------
+The benchmark resource permits the retrieval of in-progress and completed benchmarks. You can
+retrieve individual benchmarks as well as a list of all your benchmarks.
+
+.. http:get:: /benchmarks
+
+   Return an unordered list of your benchmarks.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      [
+        {
+          "name": "branin_baselines",
+          "algorithms": ["gridsearch", "random"],
+          "assessments": {"AverageResult": {"repetitions": 2}},
+          "tasks": {"Branin": {"max_trials": 10}},
+        },
+        {
+          "name": "another_benchmark",
+          "algorithms": ["gridsearch", {"random": {"seed": 1}}],
+          "assessments": {
+            "AverageRank": {"repetitions": 2},
+            "AverageResult": {"repetitions": 2},
+          },
+          "tasks": {
+            "Branin": {"max_trials": 10},
+            "CarromTable": {"max_trials": 20},
+            "EggHolder": {"dim": 4, "max_trials": 20},
+          },
+        },
+      ]
+
+   :>jsonarr name: Name of the benchmark.
+   :>jsonarr algorithms: Algorithms of the benchmark.
+   :>jsonarr assessments: Assessments used in the benchmark.
+   :>jsonarr tasks: Tasks covered by the benchmark.
+
+.. http:get:: /benchmarks/:name
+
+   Retrieve the details of the existing benchmark named ``name``.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+        "name": "all_algos_webapi",
+        "algorithms": ["gridsearch", {"random": {'seed': 1}}],
+        "tasks": [{"Branin": {"max_trials": 5}}, {"RosenBrock": {"dim": 3, "max_trials": 5}}],
+        "assessments": [{"AverageResult": {"repetitions": 3}}],
+        "analysis": {
+          "AverageResult": {
+            "Branin": <plotly json encoding>
+            "RosenBrock": <plotly json encoding>
+          }
+        }
+      }
+
+   :query asssessment: Optional, specific assessment to analyse. All assessments will appear as
+                       part of the benchmark configuration, but the analysis dictionary will
+                       only contain the specified assessment.
+   :query task: Optional, specific task to analyse. All tasks will appear as
+                part of the benchmark configuration, but the analysis dictionary will
+                only contain the specified task.
+   :query algorithms: Optional, specific algorithms to include in the analyse. Multiple
+                values may be passed.
+                All algorithms will appear as part of the benchmark configuration, but
+                the analysis will be executed on the specified algorithms only.
+
+   :>jsonarr name: Name of the benchmark.
+   :>jsonarr algorithms: Algorithms of the benchmark.
+   :>jsonarr assessments: Assessments used in the benchmark.
+   :>jsonarr tasks: Tasks covered by the benchmark.
+   :>jsonarr analysis: Dictionary of format {assessment_name: {task: <plotly json>}}
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified benchmark does not exist in the database,
+                    or assessment, task or algorithms are not part of the existing benchmark
+                    configuration.
 
 Errors
 ------

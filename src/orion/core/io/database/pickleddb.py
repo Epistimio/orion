@@ -200,6 +200,8 @@ class PickledDB(Database):
             if not data:
                 database = EphemeralDB()
             else:
+                # TODO: This call seems to block sometimes on Github CI
+                # when running dashboard tests
                 database = pickle.loads(data)
 
         return database

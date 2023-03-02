@@ -2,6 +2,6 @@ name: scikit-iris-tutorial
 
 max_trials: 1
 
-algorithms:
+algorithm:
   random:
     seed: 1

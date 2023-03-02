@@ -119,7 +119,6 @@ def rung_3(space1: Space):
         trial_hash = trial.compute_trial_hash(
             trial,
             ignore_fidelity=True,
-            ignore_experiment=True,
         )
         assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)
@@ -150,7 +149,6 @@ def rung_4(space1: Space):
         trial_hash = trial.compute_trial_hash(
             trial,
             ignore_fidelity=True,
-            ignore_experiment=True,
         )
         assert trial.objective is not None
         results[trial_hash] = (trial.objective.value, trial)

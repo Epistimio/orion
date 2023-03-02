@@ -415,7 +415,7 @@ working dir: working_dir
 def test_format_algorithm(algorithm_dict):
     """Test algorithm section formatting"""
     experiment = DummyExperiment()
-    experiment.configuration = {"algorithms": algorithm_dict}
+    experiment.configuration = {"algorithm": algorithm_dict}
     assert (
         format_algorithm(experiment)
         == """\
@@ -568,7 +568,7 @@ def test_format_stats(dummy_trial):
         best_evaluation=0.1,
         start_time="yesterday",
         finish_time="now",
-        duration="way too long",
+        elapsed_time="way too long",
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
@@ -587,7 +587,7 @@ def test_format_stats(dummy_trial):
             c: Some
         start time: yesterday
         finish time: now
-        duration: way too long
+        elapsed_time: way too long
         """
     )
 
@@ -606,7 +606,7 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.max_trials = 100
     experiment.max_broken = 5
     experiment.working_dir = "working_dir"
-    experiment.configuration = {"algorithms": algorithm_dict}
+    experiment.configuration = {"algorithm": algorithm_dict}
 
     space = SpaceBuilder().build(
         {"some": 'choices(["random", "or", "not"])', "command": "uniform(0, 1)"}
@@ -650,7 +650,7 @@ def test_format_info(algorithm_dict, dummy_trial):
         best_evaluation=0.1,
         start_time="yesterday",
         finish_time="now",
-        duration="way too long",
+        elapsed_time="way too long",
     )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     experiment.is_done = False
@@ -727,7 +727,7 @@ def test_format_info(algorithm_dict, dummy_trial):
             c: Some
         start time: yesterday
         finish time: now
-        duration: way too long
+        elapsed_time: way too long
 
         """
     )

@@ -32,7 +32,7 @@ base_experiment = {
         "datetime": "2017-11-23T02:00:00",
         "orion_version": "XYZ",
     },
-    "algorithms": {"random": {"seed": 1}},
+    "algorithm": {"random": {"seed": 1}},
 }
 
 base_trial = {
@@ -132,7 +132,7 @@ def generate_benchmark_experiments_trials(
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
         exp["name"] = f"experiment-name-{i}"
-        exp["algorithms"] = benchmark_algorithms[i % algo_num]["algorithm"]
+        exp["algorithm"] = benchmark_algorithms[i % algo_num]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)
@@ -179,7 +179,7 @@ def create_study_experiments(
         experiments.append(client)
 
     for index, exp in enumerate(experiments):
-        experiments_info.append((int(index / task_number), exp))
+        experiments_info.append(exp)
 
     return experiments_info
 
@@ -204,7 +204,9 @@ def mock_space_iterate(monkeypatch):
 
 
 @contextmanager
-def create_experiment(exp_config=None, trial_config=None, statuses=None):
+def create_experiment(
+    exp_config=None, trial_config=None, statuses=None, knowledge_base=None
+):
     """Context manager for the creation of an ExperimentClient and storage init"""
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")
