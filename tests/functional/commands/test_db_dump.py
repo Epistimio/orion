@@ -28,10 +28,8 @@ def test_default_storage(three_experiments_branch_same_name):
     storage = setup_storage()
     experiments = storage._db.read("experiments")
     algos = storage._db.read("algo")
-    # We have 3 experiments in storage
     assert len(experiments) == 3
-    # But we have 6 algos. We should expect 3 (one per experiment)
-    assert len(algos) == 6
+    assert len(algos) == 3
 
 
 def test_dump_default(

@@ -52,7 +52,11 @@ def only_experiments_db(storage, exp_config):
 def ensure_deterministic_id(name, storage, version=1, update=None):
     """Change the id of experiment to its name."""
     experiment = storage.fetch_experiments({"name": name, "version": version})[0]
+    algo_lock_info = storage.get_algorithm_lock_info(uid=experiment["_id"])
+
     storage.delete_experiment(uid=experiment["_id"])
+    storage.delete_algorithm_lock(uid=experiment["_id"])
+
     _id = zlib.adler32(str((name, version)).encode())
     experiment["_id"] = _id
 
@@ -62,7 +66,12 @@ def ensure_deterministic_id(name, storage, version=1, update=None):
     if update is not None:
         experiment.update(update)
 
-    storage.create_experiment(experiment)
+    storage.create_experiment(
+        experiment,
+        algo_locked=algo_lock_info.locked,
+        algo_state=algo_lock_info.state,
+        algo_heartbeat=algo_lock_info.heartbeat,
+    )
 
 
 # Experiments combinations fixtures
