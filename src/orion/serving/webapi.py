@@ -20,7 +20,6 @@ from orion.serving.storage_resource import StorageResource
 from orion.serving.trials_resource import TrialsResource
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class MyCORSMiddleware(CORSMiddleware):

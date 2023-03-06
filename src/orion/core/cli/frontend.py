@@ -17,7 +17,6 @@ import falcon
 from gunicorn.app.base import BaseApplication
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 DESCRIPTION = "Starts Oríon Dashboard"
 
