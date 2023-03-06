@@ -15,7 +15,6 @@ from orion.core.utils.tree import TreeNode
 from orion.storage.base import BaseStorageProtocol, setup_storage
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 COL_EXPERIMENTS = "experiments"
 COL_ALGOS = "algo"

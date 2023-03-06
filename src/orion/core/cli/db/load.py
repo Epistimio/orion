@@ -15,7 +15,6 @@ from orion.core.worker.storage_backup import load_database
 from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 DESCRIPTION = "Import storage"
 
