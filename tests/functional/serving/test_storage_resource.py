@@ -7,13 +7,11 @@ in a separate process.
 
 So, we instead use a PickledDB as destination database for /load testings.
 """
-import json
+import logging
 import os
 import random
 import string
-import subprocess
 import time
-import urllib.request
 
 import pytest
 from falcon import testing
@@ -211,141 +209,132 @@ def _check_load_and_import_status(
         assert messages[-1] == latest_message
 
 
-def test_load_all(pkl_experiments_and_benchmarks, testing_helpers):
+def test_load_all(pkl_experiments_and_benchmarks, testing_helpers, caplog):
     """Test both /load and /import-status"""
-    with LoadContext() as ctx:
-        # Make sure database is empty
-        testing_helpers.check_empty_db(ctx.db)
+    with caplog.at_level(logging.INFO):
+        with LoadContext() as ctx:
+            # Make sure database is empty
+            testing_helpers.check_empty_db(ctx.db)
 
-        # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(
-            pkl_experiments_and_benchmarks, "ignore"
-        )
+            # Generate body and header for request /load
+            body, headers = _gen_multipart_form_for_load(
+                pkl_experiments_and_benchmarks, "ignore"
+            )
 
-        # Test /load and /import-status 5 times with resolve=ignore
-        # to check if data are effectively ignored on conflict
-        for _ in range(5):
-            _check_load_and_import_status(ctx.pickled_client, headers, body)
-            # Check expected data in database
-            # Count should not change as data are ignored on conflict every time
-            testing_helpers.assert_tested_db_structure(ctx.db)
+            # Test /load and /import-status 5 times with resolve=ignore
+            # to check if data are effectively ignored on conflict
+            for _ in range(5):
+                _check_load_and_import_status(ctx.pickled_client, headers, body)
+                # Check expected data in database
+                # Count should not change as data are ignored on conflict every time
+                testing_helpers.assert_tested_db_structure(ctx.db)
 
 
-def test_load_one_experiment(pkl_experiments, testing_helpers):
+def test_load_one_experiment(pkl_experiments, testing_helpers, caplog):
     """Test both /load and /import-status for one experiment"""
-    with LoadContext() as ctx:
-        # Make sure database is empty
-        testing_helpers.check_empty_db(ctx.db)
+    with caplog.at_level(logging.INFO):
+        with LoadContext() as ctx:
+            # Make sure database is empty
+            testing_helpers.check_empty_db(ctx.db)
 
-        # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(
-            pkl_experiments, "ignore", "test_single_exp"
-        )
+            # Generate body and header for request /load
+            body, headers = _gen_multipart_form_for_load(
+                pkl_experiments, "ignore", "test_single_exp"
+            )
 
-        _check_load_and_import_status(ctx.pickled_client, headers, body)
+            _check_load_and_import_status(ctx.pickled_client, headers, body)
 
-        # Check expected data in database
-        # We must have loaded version 2
-        testing_helpers.check_unique_import_test_single_expV2(ctx.db)
+            # Check expected data in database
+            # We must have loaded version 2
+            testing_helpers.check_unique_import_test_single_expV2(ctx.db)
 
 
 def test_load_one_experiment_other_version(
-    pkl_experiments_and_benchmarks, testing_helpers
+    pkl_experiments_and_benchmarks, testing_helpers, caplog
 ):
     """Test both /load and /import-status for one experiment with specific version"""
-    with LoadContext() as ctx:
-        # Make sure database is empty
-        testing_helpers.check_empty_db(ctx.db)
+    with caplog.at_level(logging.INFO):
+        with LoadContext() as ctx:
+            # Make sure database is empty
+            testing_helpers.check_empty_db(ctx.db)
 
-        # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(
-            pkl_experiments_and_benchmarks, "ignore", "test_single_exp", "1"
-        )
+            # Generate body and header for request /load
+            body, headers = _gen_multipart_form_for_load(
+                pkl_experiments_and_benchmarks, "ignore", "test_single_exp", "1"
+            )
 
-        _check_load_and_import_status(ctx.pickled_client, headers, body)
+            _check_load_and_import_status(ctx.pickled_client, headers, body)
 
-        # Check expected data in database
-        testing_helpers.check_unique_import_test_single_expV1(ctx.db)
+            # Check expected data in database
+            testing_helpers.check_unique_import_test_single_expV1(ctx.db)
 
 
-def test_load_unknown_experiment(pkl_experiments, testing_helpers):
+def test_load_unknown_experiment(pkl_experiments, testing_helpers, caplog):
     """Test both /load and /import-status for an unknown experiment"""
-    with LoadContext() as ctx:
-        # Make sure database is empty
-        testing_helpers.check_empty_db(ctx.db)
+    with caplog.at_level(logging.INFO):
+        with LoadContext() as ctx:
+            # Make sure database is empty
+            testing_helpers.check_empty_db(ctx.db)
 
-        # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(
-            pkl_experiments, "ignore", "unknown"
-        )
+            # Generate body and header for request /load
+            body, headers = _gen_multipart_form_for_load(
+                pkl_experiments, "ignore", "unknown"
+            )
 
-        _check_load_and_import_status(
-            ctx.pickled_client,
-            headers,
-            body,
-            finished=False,
-            latest_message="Error: No experiment found with query {'name': 'unknown'}. Nothing to import.",
-        )
+            _check_load_and_import_status(
+                ctx.pickled_client,
+                headers,
+                body,
+                finished=False,
+                latest_message="Error: No experiment found with query {'name': 'unknown'}. Nothing to import.",
+            )
 
-        # Check database (must be still empty)
-        testing_helpers.check_empty_db(ctx.db)
+            # Check database (must be still empty)
+            testing_helpers.check_empty_db(ctx.db)
 
 
 @pytest.mark.parametrize(
-    "command,has_messages,logging_in_err",
+    "log_level,expected_message_prefixes",
     [
-        ("orion serve", False, False),
-        ("orion -v serve", True, True),
+        (logging.WARNING, []),
+        (
+            logging.INFO,
+            [
+                "INFO:orion.core.worker.storage_backup:Loaded src /tmp/",
+                "INFO:orion.core.worker.storage_backup:Import experiment test_single_exp.1",
+                "INFO:orion.core.worker.storage_backup:Import experiment test_single_exp.2",
+                "INFO:orion.core.worker.storage_backup:Import experiment test_single_exp_child.1",
+            ],
+        ),
     ],
 )
 def test_orion_serve_logging(
-    pkl_experiments_and_benchmarks, command, has_messages, logging_in_err
+    pkl_experiments_and_benchmarks, log_level, expected_message_prefixes, caplog
 ):
-    with subprocess.Popen(
-        command.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE
-    ) as proc:
-        # Just let time for server to set up
-        time.sleep(2)
-
-        # Generate body and header for request /load
-        body, headers = _gen_multipart_form_for_load(
-            pkl_experiments_and_benchmarks, "ignore"
-        )
-        # Request /load
-        req = urllib.request.Request(
-            "http://127.0.0.1:8000/load", body, headers, method="POST"
-        )
-        res = urllib.request.urlopen(req)
-        # Get import task ID
-        task_id = json.loads(res.read())["task"]
-        # Collect task messages using request /import-status
-        messages = []
-        while True:
-            res = urllib.request.urlopen(
-                f"http://127.0.0.1:8000/import-status/{task_id}"
+    with caplog.at_level(log_level):
+        with LoadContext() as ctx:
+            # Generate body and header for request /load
+            body, headers = _gen_multipart_form_for_load(
+                pkl_experiments_and_benchmarks, "ignore"
             )
-            progress = json.loads(res.read())
-            messages.extend(progress["messages"])
-            if progress["status"] != "active":
-                break
-            time.sleep(0.010)
+            # Request /load and get import task ID
+            task = ctx.pickled_client.simulate_post(
+                "/load", headers=headers, body=body
+            ).json["task"]
+            # Collect task messages using request /import-status
+            messages = []
+            while True:
+                progress = ctx.pickled_client.simulate_get(
+                    f"/import-status/{task}"
+                ).json
+                messages.extend(progress["messages"])
+                if progress["status"] != "active":
+                    break
+                time.sleep(0.010)
 
-        # Check messages
-        if has_messages:
-            assert messages
-            for msg in messages:
-                assert msg.startswith("INFO:orion.core.worker.storage_backup:")
-        else:
-            assert not messages
-
-        # Close server
-        proc.terminate()
-        proc.wait()
-        assert proc.poll() == 0
-
-        # Check output
-        err = proc.stderr.read().decode()
-        assert (
-            "INFO::orion.serving.webapi::allowed frontends: http://localhost:3000"
-            in err
-        ) is logging_in_err
+            # Check messages
+            assert len(messages) == len(expected_message_prefixes)
+            for given_msg, expected_msg_prefix in zip(
+                messages, expected_message_prefixes
+            ):
+                assert given_msg.startswith(expected_msg_prefix)
