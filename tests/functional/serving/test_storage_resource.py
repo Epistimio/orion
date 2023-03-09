@@ -7,10 +7,13 @@ in a separate process.
 
 So, we instead use a PickledDB as destination database for /load testings.
 """
+import json
 import os
 import random
 import string
+import subprocess
 import time
+import urllib.request
 
 import pytest
 from falcon import testing
@@ -286,3 +289,63 @@ def test_load_unknown_experiment(pkl_experiments, testing_helpers):
 
         # Check database (must be still empty)
         testing_helpers.check_empty_db(ctx.db)
+
+
+@pytest.mark.parametrize(
+    "command,has_messages,logging_in_err",
+    [
+        ("orion serve", False, False),
+        ("orion -v serve", True, True),
+    ],
+)
+def test_orion_serve_logging(
+    pkl_experiments_and_benchmarks, command, has_messages, logging_in_err
+):
+    with subprocess.Popen(
+        command.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE
+    ) as proc:
+        # Just let time for server to set up
+        time.sleep(2)
+
+        # Generate body and header for request /load
+        body, headers = _gen_multipart_form_for_load(
+            pkl_experiments_and_benchmarks, "ignore"
+        )
+        # Request /load
+        req = urllib.request.Request(
+            "http://127.0.0.1:8000/load", body, headers, method="POST"
+        )
+        res = urllib.request.urlopen(req)
+        # Get import task ID
+        task_id = json.loads(res.read())["task"]
+        # Collect task messages using request /import-status
+        messages = []
+        while True:
+            res = urllib.request.urlopen(
+                f"http://127.0.0.1:8000/import-status/{task_id}"
+            )
+            progress = json.loads(res.read())
+            messages.extend(progress["messages"])
+            if progress["status"] != "active":
+                break
+            time.sleep(0.010)
+
+        # Check messages
+        if has_messages:
+            assert messages
+            for msg in messages:
+                assert msg.startswith("INFO:orion.core.worker.storage_backup:")
+        else:
+            assert not messages
+
+        # Close server
+        proc.terminate()
+        proc.wait()
+        assert proc.poll() == 0
+
+        # Check output
+        err = proc.stderr.read().decode()
+        assert (
+            "INFO::orion.serving.webapi::allowed frontends: http://localhost:3000"
+            in err
+        ) is logging_in_err
