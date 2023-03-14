@@ -109,10 +109,10 @@ def test_orion_configspace_kwargs():
 
 def test_configspace_to_orion_unsupported():
     from ConfigSpace import ConfigurationSpace
-    from ConfigSpace.hyperparameters import OrdinalHyperparameter
+    from ConfigSpace.hyperparameters import Constant
 
     cspace = ConfigurationSpace()
-    cspace.add_hyperparameters([OrdinalHyperparameter("a", (1, 2, 0, 3))])
+    cspace.add_hyperparameters([Constant("a", 100)])
 
     with pytest.raises(NotImplementedError):
         _ = to_orionspace(cspace)
