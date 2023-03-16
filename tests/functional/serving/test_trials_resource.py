@@ -392,3 +392,37 @@ class TestTrialItem:
             "title": "Invalid parameter",
             "description": 'The "status" parameter is invalid. Invalid status',
         }
+
+    def test_set_trial_status_unknown_trial(self, client, ephemeral_storage):
+        """Tests that we cannot set status on unknown trial"""
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
+
+        response = client.simulate_get("/trials/a/unknown_trial/set-status/interrupted")
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "description": 'Trial "unknown_trial" does not exist',
+            "title": "Trial not found",
+        }
+
+    def test_set_trial_status_unknown_trial_and_experiment(
+        self, client, ephemeral_storage
+    ):
+        """Tests that we cannot set status on unknown trial and unknown experiment"""
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
+
+        response = client.simulate_get(
+            "/trials/unknown_experiment/unknown_trial/set-status/interrupted"
+        )
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "description": 'Experiment "unknown_experiment" does not exist',
+            "title": "Experiment not found",
+        }
