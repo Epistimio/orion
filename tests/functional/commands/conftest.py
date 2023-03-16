@@ -13,14 +13,14 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.worker.storage_backup import (
+from orion.core.worker.trial import Trial
+from orion.storage.backup import (
     _get_exp_key,
     dump_database,
     get_experiment_parent_links,
     get_experiment_root_links,
     get_trial_parent_links,
 )
-from orion.core.worker.trial import Trial
 
 
 @pytest.fixture()

@@ -19,7 +19,7 @@ import falcon
 from falcon import Request, Response
 
 from orion.core.io.database import DatabaseError
-from orion.core.worker.storage_backup import dump_database, load_database
+from orion.storage.backup import dump_database, load_database
 
 
 def _gen_host_file(basename="dump"):

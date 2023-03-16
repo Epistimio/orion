@@ -10,7 +10,7 @@ import logging
 
 from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
-from orion.core.worker.storage_backup import load_database
+from orion.storage.backup import load_database
 from orion.storage.base import setup_storage
 
 logger = logging.getLogger(__name__)

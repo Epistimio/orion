@@ -17,9 +17,9 @@ import pytest
 from falcon import testing
 
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.worker.storage_backup import load_database
 from orion.serving.storage_resource import _gen_host_file
 from orion.serving.webapi import WebApi
+from orion.storage.backup import load_database
 from orion.storage.base import setup_storage
 
 
@@ -197,7 +197,7 @@ def _check_load_and_import_status(
     # Check we have messages
     assert messages
     for message in messages if latest_message is None else messages[:-1]:
-        assert message.startswith("INFO:orion.core.worker.storage_backup")
+        assert message.startswith("INFO:orion.storage.backup")
     # Check final task status
     if finished:
         assert progress["status"] == "finished"
@@ -300,10 +300,10 @@ def test_load_unknown_experiment(pkl_experiments, testing_helpers, caplog):
         (
             logging.INFO,
             [
-                "INFO:orion.core.worker.storage_backup:Loaded src /tmp/",
-                "INFO:orion.core.worker.storage_backup:Import experiment test_single_exp.1",
-                "INFO:orion.core.worker.storage_backup:Import experiment test_single_exp.2",
-                "INFO:orion.core.worker.storage_backup:Import experiment test_single_exp_child.1",
+                "INFO:orion.storage.backup:Loaded src /tmp/",
+                "INFO:orion.storage.backup:Import experiment test_single_exp.1",
+                "INFO:orion.storage.backup:Import experiment test_single_exp.2",
+                "INFO:orion.storage.backup:Import experiment test_single_exp_child.1",
             ],
         ),
     ],
