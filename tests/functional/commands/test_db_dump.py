@@ -87,6 +87,113 @@ def test_dump_to_specified_output(
         clean_dump(dump_path)
 
 
+@pytest.mark.parametrize(
+    "already_exists,output,overwrite,should_exist_after,error_message",
+    [
+        (
+            True,
+            None,
+            None,
+            True,
+            "Error: Export output already exists (specify `--force` to overwrite)",
+        ),
+        (
+            True,
+            None,
+            True,
+            False,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+        (
+            True,
+            "test.pkl",
+            None,
+            True,
+            "Error: Export output already exists (specify `--force` to overwrite)",
+        ),
+        (
+            True,
+            "test.pkl",
+            True,
+            False,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+        (
+            False,
+            None,
+            None,
+            False,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+        (
+            False,
+            None,
+            True,
+            False,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+        (
+            False,
+            "test.pkl",
+            None,
+            False,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+        (
+            False,
+            "test.pkl",
+            None,
+            False,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+    ],
+)
+def test_dump_post_clean_on_error(
+    already_exists, output, overwrite, should_exist_after, error_message, capsys
+):
+    """Test how dumped file is cleaned if dump fails."""
+
+    # Prepare a command that will fail (by looking for unknown experiment)
+    command = ["db", "dump", "-n", "unknown-experiment"]
+    if output:
+        command += ["--output", output]
+    if overwrite:
+        command += ["--force"]
+
+    expected_output = output or "dump.pkl"
+
+    # Create expected file if necessary
+    if already_exists:
+        assert not os.path.exists(expected_output), expected_output
+        with open(expected_output, "w"):
+            pass
+        assert os.path.isfile(expected_output)
+
+    # Execute command and expect it to fail
+    execute(" ".join(command), assert_code=1)
+    err = capsys.readouterr().err
+
+    # Check output error
+    assert err.startswith(error_message)
+
+    # Check dump post-clean
+    if should_exist_after:
+        assert os.path.isfile(expected_output)
+        # Clean files anyway
+        os.unlink(expected_output)
+        if os.path.isfile(f"{expected_output}.lock"):
+            os.unlink(f"{expected_output}.lock")
+    else:
+        assert not os.path.exists(expected_output)
+        assert not os.path.exists(f"{expected_output}.lock")
+
+
 def test_dump_unknown_experiment(
     three_experiments_branch_same_name_trials_benchmarks, capsys
 ):

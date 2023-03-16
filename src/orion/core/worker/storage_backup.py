@@ -87,9 +87,18 @@ def dump_database(storage, dump_host, name=None, version=None, overwrite=False):
                 f"Export output already exists (specify `--force` to overwrite) at {dump_host}"
             )
 
-    dst_storage = setup_storage({"database": {"host": dump_host, "type": "pickleddb"}})
-    logger.info(f"Dump to {dump_host}")
-    _dump(storage, dst_storage, name, version)
+    try:
+        dst_storage = setup_storage(
+            {"database": {"host": dump_host, "type": "pickleddb"}}
+        )
+        logger.info(f"Dump to {dump_host}")
+        _dump(storage, dst_storage, name, version)
+    except Exception as exc:
+        # If any exception occurs when dumping, delete dumped file
+        for path in (dump_host, f"{dump_host}.lock"):
+            if os.path.isfile(path):
+                os.unlink(path)
+        raise exc
 
 
 def load_database(
