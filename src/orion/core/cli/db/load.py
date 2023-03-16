@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# pylint: disable=,protected-access
 """
 Storage import tool
 ===================
