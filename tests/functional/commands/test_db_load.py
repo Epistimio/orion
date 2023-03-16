@@ -9,8 +9,6 @@ import orion.core.cli
 from orion.core.io.database.pickleddb import PickledDB
 from orion.storage.base import setup_storage
 
-# TODO: Test trial parents links and experiment root links in loaded data
-
 
 def execute(command, assert_code=0):
     """Execute orion command and return returncode"""
