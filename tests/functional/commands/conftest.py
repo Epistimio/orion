@@ -720,13 +720,6 @@ class _Helpers:
         """Check counts and experiments for database from specific fixture
         `three_experiments_branch_same_name_trials[_benchmarks]`.
         """
-        # NB: about nb_algos:
-        # TODO: We should expect 6 algorithms, but only 3 are returned
-        # It seems config `three_experiments_family_same_name` contains 3 supplementary algorithms
-        # that are not related to experiments registered in the database. So, when dumping from this config
-        # then loading from dumped data, only algorithms related to available experiments are loaded,
-        # and there are only 3 such algorithms (1 per experiment)
-
         _Helpers.check_db(
             dumped_db,
             nb_exps=3 * nb_duplicated,
