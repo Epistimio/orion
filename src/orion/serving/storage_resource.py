@@ -201,8 +201,12 @@ class StorageResource:
             with open(dump_host, "rb") as file:
                 resp.data = file.read()
         except DatabaseError as exc:
+            # Dumped files should have been cleaned
+            assert not os.path.exists(dump_host)
+            assert not os.path.exists(f"{dump_host}.lock")
             raise falcon.HTTPNotFound(title=type(exc).__name__, description=str(exc))
-        finally:
+        else:
+            # Clean dumped files
             os.unlink(dump_host)
             os.unlink(f"{dump_host}.lock")
 
