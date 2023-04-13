@@ -369,14 +369,14 @@ jobs:
           if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then false; fi
           echo End
           cd -
-    - name: Publish distribution � to Test PyPI
+    - name: Publish distribution 📦 to Test PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
         password: ${{ secrets.test_pypi_password }}
         repository_url: https://test.pypi.org/legacy/
-    - name: Publish distribution � to PyPI
+    - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
@@ -395,6 +395,6 @@ jobs:
         python-version: 3.9
     - name: Build conda
       run: ./conda/ci_build.sh
-    - name: Publish distribution � to Conda
+    - name: Publish distribution 📦 to Conda
       if: startsWith(github.ref, 'refs/tags')
       run: ./conda/upload.sh
