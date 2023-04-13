@@ -134,7 +134,7 @@ class Experiment(Generic[AlgoT]):
        it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
-    algorithms: `BaseAlgorithm` object or a wrapper.
+    algorithm: `BaseAlgorithm` object or a wrapper.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
@@ -172,7 +172,7 @@ class Experiment(Generic[AlgoT]):
         "max_broken",
         "version",
         "space",
-        "algorithms",
+        "algorithm",
         "working_dir",
         "knowledge_base",
         "_id",
@@ -192,7 +192,7 @@ class Experiment(Generic[AlgoT]):
         _id: str | int | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
-        algorithms: AlgoT | None = None,
+        algorithm: AlgoT | None = None,
         working_dir: str | None = None,
         metadata: dict | None = None,
         refers: dict | None = None,
@@ -209,9 +209,8 @@ class Experiment(Generic[AlgoT]):
         self.max_trials = max_trials
         self.max_broken = max_broken
         self.knowledge_base = knowledge_base
-        self.algorithms = algorithms
         self.working_dir = working_dir
-
+        self.algorithm = algorithm
         self._storage = storage
 
         self._node = ExperimentNode(
@@ -491,14 +490,14 @@ class Experiment(Generic[AlgoT]):
         with self._storage.acquire_algorithm_lock(
             experiment=self, timeout=timeout, retry_interval=retry_interval
         ) as locked_algorithm_state:
-            assert self.algorithms is not None
-            if locked_algorithm_state.configuration != self.algorithms.configuration:
+            assert self.algorithm is not None
+            if locked_algorithm_state.configuration != self.algorithm.configuration:
                 log.warning(
                     "Saved configuration: %s", locked_algorithm_state.configuration
                 )
                 log.warning(
                     "Current configuration: %s %s",
-                    self.algorithms.configuration,
+                    self.algorithm.configuration,
                     self._storage._db,
                 )
                 raise RuntimeError(
@@ -507,11 +506,11 @@ class Experiment(Generic[AlgoT]):
                 )
 
             if locked_algorithm_state.state:
-                self.algorithms.set_state(locked_algorithm_state.state)
+                self.algorithm.set_state(locked_algorithm_state.state)
 
-            yield self.algorithms
+            yield self.algorithm
 
-            locked_algorithm_state.set_state(self.algorithms.state_dict)
+            locked_algorithm_state.set_state(self.algorithm.state_dict)
 
     def _select_evc_call(self, with_evc_tree, function, *args, **kwargs):
         if self._node is not None and with_evc_tree:
@@ -591,7 +590,7 @@ class Experiment(Generic[AlgoT]):
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with ``max_trials``.
-        2. Ask ``algorithms`` if they consider there is a chance for further improvement, and
+        2. Ask ``algorithm`` if they consider there is a chance for further improvement, and
            verify is there is any pending trial.
 
         .. note::
@@ -610,7 +609,7 @@ class Experiment(Generic[AlgoT]):
                 num_pending_trials += 1
 
         return (num_completed_trials >= self.max_trials) or (
-            self.algorithms.is_done and num_pending_trials == 0
+            self.algorithm.is_done and num_pending_trials == 0
         )
 
     @property

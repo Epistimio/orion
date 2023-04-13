@@ -150,11 +150,11 @@ def clean_config(name: str, config: dict, branching: dict | None):
 def merge_algorithm_config(config: dict, new_config: dict) -> None:
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
-    if isinstance(config.get("algorithms"), dict) and len(config["algorithms"]) > 1:
+    if isinstance(config.get("algorithm"), dict) and len(config["algorithm"]) > 1:
         log.debug("Overriding algo config with new one.")
-        log.debug("    Old config:\n%s", pprint.pformat(config["algorithms"]))
-        log.debug("    New config:\n%s", pprint.pformat(new_config["algorithms"]))
-        config["algorithms"] = new_config["algorithms"]
+        log.debug("    Old config:\n%s", pprint.pformat(config["algorithm"]))
+        log.debug("    New config:\n%s", pprint.pformat(new_config["algorithm"]))
+        config["algorithm"] = new_config["algorithm"]
 
 
 # TODO: Remove for v0.4
@@ -251,13 +251,13 @@ def _instantiate_algo(
     ----------
     config:
         Configuration of the algorithm. If None or empty, system's defaults are used
-        (orion.core.config.experiment.algorithms).
+        (orion.core.config.experiment.algorithm).
     ignore_unavailable: bool, optional
         If True and algorithm is not available (plugin not installed), return the configuration.
         Otherwise, raise Factory error.
 
     """
-    config = config or orion.core.config.experiment.algorithms
+    config = config or orion.core.config.experiment.algorithm
     assert config is not None
     try:
         algo_type: type[BaseAlgorithm]
@@ -533,7 +533,7 @@ class ExperimentBuilder:
         space: dict, optional
             Optimization space of the algorithm.
             Should have the form ``dict(name='<prior>(args)')``.
-        algorithms: str or dict, optional
+        algorithm: str or dict, optional
             Algorithm used for optimization.
         strategy: str or dict, optional
             Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
@@ -868,13 +868,16 @@ class ExperimentBuilder:
 
         return self.create_experiment(mode="x", **config)
 
-    # pylint: disable=too-many-arguments
+    # too-many-locals disabled for the deprecation of algorithms.
+    # We will be able to able once algorithms is removed
+    # pylint: disable=too-many-arguments,too-many-locals
     def create_experiment(
         self,
         name: str,
         version: int,
         mode: Mode,
         space: Space | dict[str, str],
+        algorithm: str | dict | None = None,
         algorithms: str | dict | None = None,
         max_trials: int | None = None,
         max_broken: int | None = None,
@@ -905,7 +908,7 @@ class ExperimentBuilder:
         space: dict or Space object
             Optimization space of the algorithm. If dict, should have the form
             `dict(name='<prior>(args)')`.
-        algorithms: str or dict, optional
+        algorithm: str or dict, optional
             Algorithm used for optimization.
         strategy: str or dict, optional
             Parallel strategy to use to parallelize the algorithm.
@@ -930,13 +933,25 @@ class ExperimentBuilder:
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
         if isinstance(knowledge_base, dict):
             knowledge_base = _instantiate_knowledge_base(knowledge_base)
+
         instantiated_algorithm = _instantiate_algo(
             space=space,
             max_trials=max_trials,
-            config=algorithms,
+            config=algorithm,
             ignore_unavailable=mode != "x",
             knowledge_base=knowledge_base,
         )
+        if algorithms is not None and algorithm is None:
+            log.warning(
+                "algorithms is deprecated and will be removed in v0.4.0. Use algorithm instead."
+            )
+            instantiated_algorithm = _instantiate_algo(
+                space=space,
+                max_trials=max_trials,
+                config=algorithms,
+                ignore_unavailable=mode != "x",
+                knowledge_base=knowledge_base,
+            )
 
         max_broken = _default(max_broken, orion.core.config.experiment.max_broken)
         working_dir = _default(working_dir, orion.core.config.experiment.working_dir)
@@ -954,14 +969,13 @@ class ExperimentBuilder:
             space=space,
             _id=_id,
             max_trials=max_trials,
-            algorithms=instantiated_algorithm,
+            algorithm=instantiated_algorithm,
             max_broken=max_broken,
             working_dir=working_dir,
             metadata=metadata,
             refers=refers,
             knowledge_base=knowledge_base,
         )
-
         if kwargs:
             # TODO: https://github.com/Epistimio/orion/issues/972
             log.debug(

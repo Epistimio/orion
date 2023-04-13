@@ -209,10 +209,22 @@ def define_experiment_config(config):
     )
 
     experiment_config.add_option(
-        "algorithms",
+        "algorithm",
         option_type=dict,
         default={"random": {"seed": None}},
         help="Algorithm configuration for the experiment.",
+    )
+
+    experiment_config.add_option(
+        "algorithms",
+        option_type=dict,
+        default={"random": {"seed": None}},
+        deprecate=dict(
+            version="v0.4",
+            alternative="worker.algorithm",
+            name="experiment.algorithm",
+        ),
+        help="This argument will be removed in v0.4. Use algorithm instead",
     )
 
     experiment_config.add_option(

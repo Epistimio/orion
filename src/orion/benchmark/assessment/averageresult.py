@@ -32,7 +32,7 @@ class AverageResult(BenchmarkAssessment):
         algorithm_groups = defaultdict(list)
 
         for _, exp in experiments:
-            algorithm_name = list(exp.configuration["algorithms"].keys())[0]
+            algorithm_name = list(exp.configuration["algorithm"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
         return {regrets.__name__: regrets(algorithm_groups)}

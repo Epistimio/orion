@@ -5,7 +5,7 @@ experiment:
     max_trials: 20
     max_broken: 5
 
-    algorithms:
+    algorithm:
       gradient_descent:
         learning_rate: 0.1
         # dx_tolerance: 1e-7

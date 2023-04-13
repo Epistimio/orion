@@ -56,7 +56,7 @@ def hpo(n_workers=16):
             "tol": "loguniform(1e-4, 1e-1, precision=None)",
             "class_weight": "choices([None, 'balanced'])",
         },
-        algorithms={"random": {"seed": 1}},
+        algorithm={"random": {"seed": 1}},
     )
 
     with experiment.tmp_executor("dask", n_workers=n_workers):

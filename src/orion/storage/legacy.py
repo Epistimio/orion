@@ -122,7 +122,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`orion.storage.base.BaseStorageProtocol.create_experiment`"""
         exp_rval = self._db.write("experiments", data=config, query=None)
         self.initialize_algorithm_lock(
-            experiment_id=config["_id"], algorithm_config=config.get("algorithms", {})
+            experiment_id=config["_id"], algorithm_config=config.get("algorithm", {})
         )
         return exp_rval
 

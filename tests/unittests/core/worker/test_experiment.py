@@ -56,7 +56,7 @@ def new_config(random_dt, algorithm):
         max_trials=1000,
         max_broken=5,
         working_dir=None,
-        algorithms=algorithm.configuration,
+        algorithm=algorithm.configuration,
         # attrs starting with '_' also
         # _id='fasdfasfa',
         # and in general anything which is not in Experiment's slots
@@ -75,7 +75,7 @@ def parent_version_config():
         _id="parent_config",
         name="old_experiment",
         version=1,
-        algorithms="random",
+        algorithm="random",
         metadata={
             "user": "corneauf",
             "datetime": datetime.datetime.utcnow(),
@@ -323,7 +323,7 @@ class TestAcquireAlgorithmLock:
         with OrionState(experiments=[new_config]) as cfg:
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage, space=space)
             exp._id = 0
-            exp.algorithms = algorithm
+            exp.algorithm = algorithm
 
             state_dict = algorithm.state_dict
             # No state_dict in DB
@@ -351,7 +351,7 @@ class TestAcquireAlgorithmLock:
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage, space=space)
             exp._id = 0
             algorithm_original_config = algorithm.configuration
-            exp.algorithms = algorithm
+            exp.algorithm = algorithm
             # Setting attribute to algorithm inside the wrapper
             algorithm.unwrapped.seed = 10
 
@@ -369,7 +369,7 @@ class TestAcquireAlgorithmLock:
         with OrionState(experiments=[new_config]) as cfg:
             exp = Experiment("supernaekei", mode="x", storage=cfg.storage, space=space)
             exp._id = 0
-            exp.algorithms = algorithm
+            exp.algorithm = algorithm
 
             storage_acquisition_mock = mocker.spy(cfg.storage, "acquire_algorithm_lock")
 
@@ -531,7 +531,7 @@ def test_is_done_property_with_pending(algorithm, space: Space):
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage, space=space)
         exp._id = cfg.trials[0]["experiment"]
 
-        exp.algorithms = algorithm
+        exp.algorithm = algorithm
         exp.max_trials = 10
 
         assert exp.is_done
@@ -541,7 +541,7 @@ def test_is_done_property_with_pending(algorithm, space: Space):
         # There is only 10 completed trials
         assert not exp.is_done
 
-        exp.algorithms.algorithm.done = True
+        exp.algorithm.algorithm.done = True
 
         # Algorithm is done but 5 trials are pending
         assert not exp.is_done
@@ -555,14 +555,14 @@ def test_is_done_property_no_pending(algorithm, space: Space):
         exp = Experiment("supernaekei", mode="x", storage=cfg.storage, space=space)
         exp._id = cfg.trials[0]["experiment"]
 
-        exp.algorithms = algorithm
+        exp.algorithm = algorithm
 
         exp.max_trials = 15
 
         # There is only 10 completed trials and algo not done.
         assert not exp.is_done
 
-        exp.algorithms.unwrapped.done = True
+        exp.algorithm.unwrapped.done = True
 
         # Algorithm is done and no pending trials
         assert exp.is_done
@@ -853,7 +853,7 @@ def test_experiment_pickleable(space: Space):
 
 
 read_only_methods = [
-    "algorithms",
+    "algorithm",
     "configuration",
     "fetch_lost_trials",
     "fetch_pending_trials",
@@ -959,7 +959,7 @@ def create_experiment(mode: Mode, space: Space, algorithm, storage):
         "supernaekei",
         mode=mode,
         space=space,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_broken=5,
         max_trials=5,
         storage=storage,
@@ -972,8 +972,8 @@ def disable_algo_lock(monkeypatch, storage):
     @contextlib.contextmanager
     def no_lock(experiment, timeout, retry_interval):
         yield LockedAlgorithmState(
-            state=experiment.algorithms.state_dict,
-            configuration=experiment.algorithms.configuration,
+            state=experiment.algorithm.state_dict,
+            configuration=experiment.algorithm.configuration,
         )
 
     monkeypatch.setattr(storage, "acquire_algorithm_lock", no_lock)

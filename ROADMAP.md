@@ -1,7 +1,9 @@
 # Roadmap
-Last update August 18th, 2022
+Last update March 2nd, 2023
 
 ## Next releases - Short-Term
+
+### v0.2.8
 
 ### v0.2.7
 

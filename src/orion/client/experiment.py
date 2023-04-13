@@ -171,9 +171,9 @@ class ExperimentClient:
         return space
 
     @property
-    def algorithms(self):
-        """Algorithms of the experiment."""
-        return self._experiment.algorithms
+    def algorithm(self):
+        """Algorithm of the experiment."""
+        return self._experiment.algorithm
 
     @property
     def refers(self):
@@ -814,8 +814,8 @@ class ExperimentClient:
 
         if self.max_trials > max_trials:
             self._experiment.max_trials = max_trials
-            assert self._experiment.algorithms is not None
-            self._experiment.algorithms.max_trials = max_trials
+            assert self._experiment.algorithm is not None
+            self._experiment.algorithm.max_trials = max_trials
 
         with SetupWorkingDir(self):
 

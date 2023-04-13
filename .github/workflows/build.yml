@@ -16,8 +16,8 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
       - run: pip install pre-commit
       - run: pre-commit --version
       - run: pre-commit install
@@ -29,9 +29,9 @@ jobs:
         toxenv: [pylint, doc8, docs]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -45,7 +45,7 @@ jobs:
     needs: pretest
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
@@ -59,7 +59,7 @@ jobs:
           mv build ..
           cd ../../
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -92,9 +92,9 @@ jobs:
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -104,7 +104,7 @@ jobs:
     - name: Test with tox (and all extra dependencies)
       run: tox -e py-all -- --color=no
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
@@ -123,10 +123,10 @@ jobs:
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -138,7 +138,7 @@ jobs:
       run: tox -e algo -- tests/unittests/algo/long/${{ matrix.algo }} --color=no
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
@@ -150,9 +150,9 @@ jobs:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -162,7 +162,7 @@ jobs:
     - name: Test with tox
       run: tox -e py -- --color=no
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
@@ -208,9 +208,9 @@ jobs:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: 3.9
       - name: Setup MongoDB
@@ -236,7 +236,7 @@ jobs:
       - name: Test with tox
         run: tox -e mongodb -- --color=no
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           flags: backward
@@ -253,9 +253,9 @@ jobs:
     env:
       ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Setup MongoDB
@@ -281,7 +281,7 @@ jobs:
     - name: Test with tox
       run: tox -e backward-compatibility -- --color=no
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: backward
@@ -292,9 +292,9 @@ jobs:
     needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras, test-dashboard-build]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Install dependencies
@@ -322,6 +322,18 @@ jobs:
           if ( ls ${ORION_PREFIX}/orion-dashboard/build/static/js/main.*.js ); then true; else false; fi
           echo Check if frontend script can find dashboard build
           python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+
+          echo Check if frontend script can find dashboard build on sys.prefix/local
+          mkdir -p ${ORION_PREFIX}/local/
+          mv ${ORION_PREFIX}/orion-dashboard ${ORION_PREFIX}/local/orion-dashboard
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then false; else true; fi
+          if ( [ -d "${ORION_PREFIX}/local/orion-dashboard" ] ); then true; else false; fi
+          python -c "from orion.core.cli.frontend import get_dashboard_build_path; get_dashboard_build_path();"
+          echo Move build back to initial installation
+          mv ${ORION_PREFIX}/local/orion-dashboard ${ORION_PREFIX}/orion-dashboard
+          if ( [ -d "${ORION_PREFIX}/orion-dashboard" ] ); then true; else false; fi
+          if ( [ -d "${ORION_PREFIX}/local/orion-dashboard" ] ); then false; else true; fi
+
           echo Clean-up
           pip uninstall -y orion
           echo Check if dashboard build is correctly removed
@@ -376,9 +388,9 @@ jobs:
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: 3.9
     - name: Build conda
