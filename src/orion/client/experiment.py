@@ -29,7 +29,7 @@ from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.experiment import AlgoT
 from orion.core.worker.producer import Producer
-from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
+from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM, STOPPED_STATUS
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import BaseExecutor, executor_factory
 from orion.plotting.base import PlotAccessor
@@ -40,8 +40,6 @@ if typing.TYPE_CHECKING:
     from orion.core.worker.experiment_config import ExperimentConfig
 
 log = logging.getLogger(__name__)
-
-STOPPED_STATUS = {"completed", "interrupted", "suspended"}
 
 
 def reserve_trial(

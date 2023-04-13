@@ -328,8 +328,7 @@ class Experiment(Generic[AlgoT]):
         self._check_if_executable()
         log.debug("reserving trial with (score: %s)", score_handle)
 
-        # TODO: break orion as a service
-        self.fix_lost_trials(True)
+        self.fix_lost_trials()
 
         self.duplicate_pending_trials()
 
@@ -380,8 +379,6 @@ class Experiment(Generic[AlgoT]):
         the current experiment will only see the new copy of the trial.
         """
         self._check_if_writable()
-        # TODO: break orion as a service
-        evc_pending_trials = []
         evc_pending_trials = self._select_evc_call(
             with_evc_tree=True, function="fetch_pending_trials"
         )
@@ -598,8 +595,7 @@ class Experiment(Generic[AlgoT]):
             To be used as a terminating condition in a ``Worker``.
 
         """
-        # TODO: breaks Orion as a Service
-        trials = self.fetch_trials(with_evc_tree=True)
+        trials = self.fetch_trials()
         num_completed_trials = 0
         num_pending_trials = 0
         for trial in trials:
