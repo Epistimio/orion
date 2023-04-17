@@ -27,6 +27,8 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
+    - name: set ulimit
+      run: sudo ulimit -u 126832
 
     # Launch Orion backend
 
@@ -71,4 +73,12 @@ jobs:
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
     - name: Run Playwright tests
-      run: yarn playwright test --project=chromium --reporter=line --workers=1
+      run: yarn playwright test --project=chromium --reporter=line
+
+    # Upload orion backend log.
+    - name: Get Orion backend log
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: orion-backend-log-artifact-${{ matrix.node-version }}
+        path: orion-backend-${{ matrix.node-version }}.log
