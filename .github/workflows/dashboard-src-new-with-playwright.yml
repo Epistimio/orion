@@ -28,6 +28,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Check ulimit
+      run: ulimit -a
+
     # Launch Orion backend
 
     - name: Launch Orion server
