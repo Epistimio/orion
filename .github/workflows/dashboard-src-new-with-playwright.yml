@@ -27,8 +27,6 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-    - name: set ulimit
-      run: ulimit -u 126832
 
     # Launch Orion backend
 
@@ -42,7 +40,7 @@ jobs:
     - name: Setup MongoDB
       uses: supercharge/mongodb-github-action@1.8.0
       with:
-        mongodb-version: 4.2
+        mongodb-version: 6.0
         mongodb-db: orion_dashboard_test
     - name: Populate MongoDB
       run: |
@@ -81,4 +79,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: orion-backend-log-artifact-${{ matrix.node-version }}
-        path: orion-backend-${{ matrix.node-version }}.log
+        path: ../../orion-backend-${{ matrix.node-version }}.log
