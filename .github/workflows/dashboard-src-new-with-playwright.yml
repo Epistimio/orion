@@ -30,7 +30,7 @@ jobs:
 
     - name: Check ulimit
       run: ulimit -a
-    - run: ulimit -i 126832
+    - run: sudo ulimit -i 126832
     - run: ulimit -l 65536
     - run: ulimit -u 126832
     - run: ulimit -a
