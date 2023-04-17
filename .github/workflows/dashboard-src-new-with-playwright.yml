@@ -28,9 +28,12 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Setup kernel for react native, increase watchers
+      run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+
     - name: Check ulimit
       run: ulimit -a
-    - run: sudo ulimit -i 126832
+    - run: ulimit -i 126832
     - run: ulimit -l 65536
     - run: ulimit -u 126832
     - run: ulimit -a
