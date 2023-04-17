@@ -28,16 +28,6 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Setup kernel for react native, increase watchers
-      run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
-
-    - name: Check ulimit
-      run: ulimit -a
-    - run: ulimit -i 126832
-    - run: ulimit -l 65536
-    - run: ulimit -u 126832
-    - run: ulimit -a
-
     # Launch Orion backend
 
     - name: Launch Orion server
@@ -81,4 +71,4 @@ jobs:
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
     - name: Run Playwright tests
-      run: yarn playwright test --project=chromium --reporter=line
+      run: yarn playwright test --project=chromium --reporter=line --workers=1
