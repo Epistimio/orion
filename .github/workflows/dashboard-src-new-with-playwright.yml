@@ -41,17 +41,7 @@ jobs:
       uses: supercharge/mongodb-github-action@1.8.0
       with:
         mongodb-version: 6.0
-
-    - name: Install MongoShell
-      run: |
-        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-        sudo apt-get update
-        sudo apt-get install -y mongodb-org
-    - name: Configure MongoDB
-      run: |
-        mongosh orion_dashboard_test
-
+        mongodb-db: orion_dashboard_test
     - name: Populate MongoDB
       run: |
         cd ../../
