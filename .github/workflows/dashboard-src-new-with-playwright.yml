@@ -89,4 +89,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: orion-backend-log-artifact-${{ matrix.node-version }}
-        path: orion-backend-${{ matrix.node-version }}.log
+        path: dashboard/src/orion-backend-${{ matrix.node-version }}.log
