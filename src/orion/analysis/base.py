@@ -104,16 +104,6 @@ def ranking(trials, group_by="order", key="best"):
         row["rank"] = ranks
         return row
 
-    # PS: Added group_keys=False
-    # to keep previous behavior from pandas < 2 into pandas >= 2.
-    # Fix based on warning message from pandas 1.5.3:
-    #   Not prepending group keys to the result index of transform-like apply.
-    #   In the future, the group keys will be included in the index,
-    #   regardless of whether the applied function returns a like-indexed object.
-    #   To preserve the previous behavior, use
-    #   >>> .groupby(..., group_keys=False)
-    #   To adopt the future behavior and silence this warning, use
-    #   >>> .groupby(..., group_keys=True)
     return trials.groupby(group_by, group_keys=False).apply(rank)
 
 
