@@ -29,12 +29,25 @@ def get_dashboard_build_path():
     https://docs.python.org/3/distutils/setupscript.html#installing-additional-files
     Otherwise, dashboard build should be in dashboard folder near src
     in orion repository.
+
+    NB (2023/02/20): It seems that, depending on installation, additional files may
+    be installed in `<sys.prefix>/local` instead of just `<sys.prefix>`.
+    More info:
+    https://stackoverflow.com/questions/14211575/any-python-function-to-get-data-files-root-directory#comment99087548_14211600
     """
     current_file_path = __file__
     if current_file_path.startswith(sys.prefix):
         dashboard_build_path = os.path.join(sys.prefix, "orion-dashboard", "build")
+        if not os.path.isdir(dashboard_build_path):
+            dashboard_build_path = os.path.join(
+                sys.prefix, "local", "orion-dashboard", "build"
+            )
     elif current_file_path.startswith(site.USER_BASE):
         dashboard_build_path = os.path.join(site.USER_BASE, "orion-dashboard", "build")
+        if not os.path.isdir(dashboard_build_path):
+            dashboard_build_path = os.path.join(
+                site.USER_BASE, "local", "orion-dashboard", "build"
+            )
     else:
         dashboard_build_path = os.path.abspath(
             os.path.join(
