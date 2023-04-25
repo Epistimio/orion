@@ -452,7 +452,9 @@ class PBT(BaseAlgorithm):
                 logger.debug("Promoting trial %s, parameters stay the same.", trial)
             else:
                 new_params = flatten(
-                    self.explore_func(self.rng, self.space, trial_to_explore.params)
+                    self.explore_func(
+                        self.rng, self.space, flatten(trial_to_explore.params)
+                    )
                 )
                 trial_to_branch = trial_to_explore
                 logger.debug(
@@ -463,7 +465,7 @@ class PBT(BaseAlgorithm):
             assert trial_to_branch is not None  # note: implicitly assumed below.
             # Set next level of fidelity
             new_params[self.fidelity_index] = self.fidelity_upgrades[
-                trial_to_branch.params[self.fidelity_index]
+                flatten(trial_to_branch.params)[self.fidelity_index]
             ]
 
             new_trial = trial_to_branch.branch(params=new_params)
@@ -529,7 +531,7 @@ class PBT(BaseAlgorithm):
                     )
 
             elif trial.status == "completed":
-                if trial.params[self.fidelity_index] == self.fidelities[-1]:
+                if flatten(trial.params)[self.fidelity_index] == self.fidelities[-1]:
                     logger.debug(
                         "Trial %s is completed at full fidelity (%s). Not forking.",
                         trial,

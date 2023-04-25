@@ -18,6 +18,7 @@ from orion.algo.hyperband import (
     display_budgets,
 )
 from orion.algo.space import Space
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 logger = logging.getLogger(__name__)
@@ -303,7 +304,7 @@ class ASHABracket(HyperbandBracket[ASHA]):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
                     f"Promoting {candidate} from rung {rung_id} with fidelity "
-                    f"{candidate.params[self.owner.fidelity_index]} to "
+                    f"{flatten(candidate.params)[self.owner.fidelity_index]} to "
                     f"rung {rung_id + 1} with fidelity {self.rungs[rung_id + 1]['resources']}"
                 )
 

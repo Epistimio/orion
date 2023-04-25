@@ -210,10 +210,15 @@ class MetaModelConfig(ABC):
             X, Y, and C arrays.
         """
         # file = Path(input_path) / NAMES[benchmark]
-        file = Path(input_path) / self.json_file_name
+
+        profet_data_dir = Path(input_path)
+        file = profet_data_dir / "data" / self.json_file_name
         if not file.exists():
             logger.info(f"File {file} doesn't exist, attempting to download data.")
-            download_data(input_path)
+            # NOTE: This downloads the "profet_data" folder, with the "data" folder inside it, so
+            # we download it to the parent directory of the profet_data dir.
+            download_data(str(profet_data_dir.parent))
+
             logger.info("Download finished.")
             if not file.exists():
                 raise RuntimeError(

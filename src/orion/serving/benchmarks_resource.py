@@ -24,7 +24,7 @@ class BenchmarksResource:
         benchmarks = self.storage.fetch_benchmark({})
 
         response = build_benchmarks_response(benchmarks)
-        resp.body = json.dumps(response)
+        resp.text = json.dumps(response)
 
     def on_get_benchmark(self, req: Request, resp: Response, name: str):
         """
@@ -44,4 +44,4 @@ class BenchmarksResource:
         )
 
         response = build_benchmark_response(benchmark, assessment, task, algorithms)
-        resp.body = json.dumps(response)
+        resp.text = json.dumps(response)

@@ -57,7 +57,7 @@ def get_experiment(storage, space_type, size):
         space={"x": f"uniform(0, {high}, discrete={discrete})"},
         max_trials=size,
         max_idle_time=60 * 5,
-        algorithms={"random": {"seed": None if space_type == "real" else 1}},
+        algorithm={"random": {"seed": None if space_type == "real" else 1}},
         storage={"type": "legacy", "database": storage_config},
     )
 

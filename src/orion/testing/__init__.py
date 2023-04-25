@@ -32,7 +32,7 @@ base_experiment = {
         "datetime": "2017-11-23T02:00:00",
         "orion_version": "XYZ",
     },
-    "algorithms": {"random": {"seed": 1}},
+    "algorithm": {"random": {"seed": 1}},
 }
 
 base_trial = {
@@ -132,7 +132,7 @@ def generate_benchmark_experiments_trials(
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
         exp["name"] = f"experiment-name-{i}"
-        exp["algorithms"] = benchmark_algorithms[i % algo_num]
+        exp["algorithm"] = benchmark_algorithms[i % algo_num]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)

@@ -41,7 +41,7 @@ config = dict(
     max_trials=10,
     max_broken=5,
     working_dir="",
-    algorithms={"random": {"seed": 1}},
+    algorithm={"random": {"seed": 1}},
     producer={"strategy": "NoParallelStrategy"},
     refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
 )
@@ -641,7 +641,7 @@ class TestSuggest:
                 """Suggest a new value and then always suggest the same"""
                 return [format_trials.tuple_to_trial([0], experiment.space)]
 
-            monkeypatch.setattr(experiment.algorithms, "suggest", amnesia)
+            monkeypatch.setattr(experiment.algorithm, "suggest", amnesia)
 
             assert len(experiment.fetch_trials()) == 1
 
@@ -665,7 +665,7 @@ class TestSuggest:
             client,
         ):
 
-            monkeypatch.setattr(experiment.algorithms, "suggest", opt_out)
+            monkeypatch.setattr(experiment.algorithm, "suggest", opt_out)
 
             assert len(experiment.fetch_trials()) == 1
 
@@ -906,6 +906,40 @@ class TestObserve:
 
             assert trial.status == "completed"  # Still completed after __exit__
 
+    def test_observe_with_float(self):
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
+            trial = Trial(**cfg.trials[1])
+            client.reserve(trial)
+
+            client.observe(trial, 10.0)
+            assert trial.status == "completed"
+            assert trial.objective.name == "objective"
+            assert trial.objective.type == "objective"
+            assert not client._pacemakers
+
+    def test_observe_with_float_and_name(self):
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
+            trial = Trial(**cfg.trials[1])
+            client.reserve(trial)
+
+            client.observe(trial, 10.0, name="custom_objective")
+            assert trial.status == "completed"
+            assert trial.objective.name == "custom_objective"
+            assert trial.objective.type == "objective"
+            assert not client._pacemakers
+
+    def test_observe_with_invalid_type(self):
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
+            trial = Trial(**cfg.trials[1])
+            client.reserve(trial)
+
+            with pytest.raises(TypeError):
+                client.observe(trial, "invalid")
+            assert trial.status == "reserved"
+            assert trial.objective is None
+            assert client._pacemakers[trial.id].is_alive()
+            client._pacemakers.pop(trial.id).stop()
+
 
 def test_executor_receives_correct_worker_count():
     """Check that the client forwards the current number count to the executor"""
@@ -972,6 +1006,6 @@ def test_run_experiment_twice():
         client.workon(main, max_trials=10)
 
         client._experiment.max_trials = 20
-        client._experiment.algorithms.algorithm.max_trials = 20
+        client._experiment.algorithm.algorithm.max_trials = 20
 
         client.workon(main, max_trials=20)

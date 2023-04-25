@@ -3,7 +3,7 @@ name: voila_voici
 pool_size: 2
 max_trials: 1000
 
-algorithms:
+algorithm:
     dumbalgo:
         done: False
         judgement: null

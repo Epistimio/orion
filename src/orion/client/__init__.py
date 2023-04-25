@@ -55,6 +55,7 @@ def build_experiment(
     name: str,
     version: int | None = None,
     space: dict[str, Any] | None = None,
+    algorithm: type[BaseAlgorithm] | dict | None = None,
     algorithms: type[BaseAlgorithm] | dict | None = None,
     strategy: str | dict | None = None,
     max_trials: int | None = None,
@@ -81,7 +82,7 @@ def build_experiment(
     ``name`` and ``space`` arguments are required, otherwise ``NoConfigurationError`` will be
     raised.
 
-    All other arguments (``algorithms``, ``strategy``, ``max_trials``, ``storage``, ``branching``
+    All other arguments (``algorithm``, ``strategy``, ``max_trials``, ``storage``, ``branching``
     and ``working_dir``) will be replaced by system's defaults if omitted. The system's defaults can
     also be overridden in global configuration file as described for the database in
     :ref:`Database Configuration`. We do not recommend overriding the algorithm configuration using
@@ -133,7 +134,7 @@ def build_experiment(
         or 1 for new experiment.
     space: dict, optional
         Optimization space of the algorithm. Should have the form ``dict(name='<prior>(args)')``.
-    algorithms: str or dict, optional
+    algorithm: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
         Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
@@ -220,6 +221,7 @@ def build_experiment(
             name,
             version=version,
             space=space,
+            algorithm=algorithm,
             algorithms=algorithms,
             max_trials=max_trials,
             max_broken=max_broken,
@@ -235,6 +237,7 @@ def build_experiment(
                 name,
                 version=version,
                 space=space,
+                algorithm=algorithm,
                 algorithms=algorithms,
                 strategy=strategy,
                 max_trials=max_trials,
@@ -293,6 +296,7 @@ def workon(
     function: Callable,
     space: dict,
     name: str = "loop",
+    algorithm: type[BaseAlgorithm] | str | dict | None = None,
     algorithms: type[BaseAlgorithm] | str | dict | None = None,
     max_trials: int | None = None,
     max_broken: int | None = None,
@@ -302,7 +306,7 @@ def workon(
 
     This will create a new experiment with an in-memory storage and optimize the given function
     until `max_trials` is reached or the `algorithm` is done
-    (some algorithms like random search are never done).
+    (some algorithm like random search are never done).
 
     For information on how to fetch results, see
     :py:class:`orion.client.experiment.ExperimentClient`.
@@ -320,7 +324,7 @@ def workon(
         or 1 for new experiment.
     space: dict, optional
         Optimization space of the algorithm. Should have the form `dict(name='<prior>(args)')`.
-    algorithms: str or dict, optional
+    algorithm: str or dict, optional
         Algorithm used for optimization.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
@@ -337,6 +341,7 @@ def workon(
         name,
         version=1,
         space=space,
+        algorithm=algorithm,
         algorithms=algorithms,
         max_trials=max_trials,
         max_broken=max_broken,

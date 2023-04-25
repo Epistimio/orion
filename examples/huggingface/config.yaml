@@ -1,0 +1,49 @@
+defaults:
+- override hydra/sweeper: orion
+
+hydra:
+    sweeper:
+       params:
+          lr: "loguniform(1e-8, 1.0)"
+          wd: "loguniform(1e-10, 1)"
+       orion:
+          name: 'translationexp'
+          version: '1'
+
+       algorithm:
+          type: random
+          config:
+             seed: 1
+
+       worker:
+          n_workers: 1
+          max_broken: 3
+          max_trials: 1
+
+       storage:
+          type: legacy
+          database:
+             type: pickleddb
+             host: 'orion_db.pkl'
+
+    sweep:
+       dir: hydra_log/multirun/translation/${now:%Y-%m-%d}/${now:%H-%M-%S}
+       subdir: ${hydra.sweeper.orion.name}/${hydra.sweeper.orion.uuid}/${hydra.job.id}
+
+#Default value
+lr: 0.01
+wd: 0.00
+
+args:
+   size_train_dataset: 5000
+   size_eval_dataset: 
+   freeze_base_model:
+   per_device_train_batch_size:
+   optim:
+   weight_decay: ${wd}
+   adam_beta1:
+   adam_beta2:
+   adam_epsilon:
+   logfile:
+   learning_rate: ${lr}
+   num_train_epochs: 20

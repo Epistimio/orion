@@ -566,7 +566,7 @@ def test_should_sample():
     runner.client.close()
 
 
-def run_runner(reraise=False, executor=None):
+def run_runner(reraise=False, executor=None, close_executor=True):
     try:
         count = 10
         max_trials = 10
@@ -590,7 +590,10 @@ def run_runner(reraise=False, executor=None):
         thread = Thread(target=set_is_done)
         thread.start()
 
-        with executor:
+        if close_executor:
+            with executor:
+                runner.run()
+        else:
             runner.run()
 
         print("done")
@@ -674,11 +677,13 @@ def test_runner_inside_thread():
 def test_runner_inside_dask():
     """Runner can not execute inside a dask worker"""
 
-    executor = Dask()
+    with Dask() as executor:
 
-    future = executor.submit(run_runner, executor=executor, reraise=True)
+        future = executor.submit(
+            run_runner, executor=executor, reraise=True, close_executor=False
+        )
 
-    assert future.get() == 0
+        assert future.get() == 0
 
 
 def test_custom_prepare_trial():

@@ -87,19 +87,25 @@ class HasRandomState(Protocol):  # pylint: disable=too-few-public-methods
 
 
 @contextmanager
-def control_randomness(has_random_state: HasRandomState):
+def control_randomness(object_with_random_state: HasRandomState):
     """Seeds the randomness inside the indented block of code using `self.random_state`."""
-    if has_random_state.random_state is None:
+    if object_with_random_state.random_state is None:
         yield
         return
 
-    # Save the initial random state.
+    # Backup the initial random state to a variable.
     initial_rng_state = RandomState.current()
-    # Set the random state.
-    has_random_state.random_state.set()
+
+    # Set the random state from the object.
+    object_with_random_state.random_state.set()
+
+    # Yield (enter the 'with' indented block). Rng-related code will be executed here and modify
+    # the state of the random number generators in the various packages.
     yield
-    # Update the stored random state, so that the changes inside the block are
-    # reflected in the RandomState object.
-    has_random_state.random_state = RandomState.current()
-    # Reset the initial state.
+
+    # Capture the final state of the RNG's, and save it on the object so we can "resume" at that
+    # state later.
+    object_with_random_state.random_state = RandomState.current()
+
+    # Reset the initial state of the RNGs.
     initial_rng_state.set()

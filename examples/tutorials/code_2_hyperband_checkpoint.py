@@ -304,7 +304,7 @@ def run_hpo():
             "weight_decay": "loguniform(1e-10, 1e-2)",
             "gamma": "loguniform(0.97, 1)",
         },
-        algorithms={
+        algorithm={
             "hyperband": {
                 "seed": 1,
                 "repetitions": 5,
