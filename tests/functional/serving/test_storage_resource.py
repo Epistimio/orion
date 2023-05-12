@@ -17,7 +17,7 @@ import pytest
 from falcon import testing
 
 from orion.core.io.database.pickleddb import PickledDB
-from orion.serving.storage_resource import _gen_host_file
+from orion.core.utils import generate_temporary_file
 from orion.serving.webapi import WebApi
 from orion.storage.backup import load_database
 from orion.storage.base import setup_storage
@@ -40,7 +40,7 @@ def ephemeral_loaded_with_benchmarks(ephemeral_storage, pkl_experiments_and_benc
 class DumpContext:
     def __init__(self, client, parameters=None):
         self.client = client
-        self.host = _gen_host_file()
+        self.host = generate_temporary_file()
         self.db = None
         self.url = "/dump" + ("" if parameters is None else f"?{parameters}")
 
@@ -59,7 +59,7 @@ class DumpContext:
 class LoadContext:
     def __init__(self):
         # Create empty PKL file as destination database
-        self.host = _gen_host_file("test")
+        self.host = generate_temporary_file("test")
         # Setup storage and client
         pickled_storage = setup_storage(
             {"type": "legacy", "database": {"type": "PickledDB", "host": self.host}}

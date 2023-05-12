@@ -7,10 +7,12 @@ Provide functions to export and import database content.
 """
 import logging
 import os
+import shutil
 from typing import Any, Dict, List
 
 from orion.core.io.database import DatabaseError
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils import generate_temporary_file
 from orion.core.utils.tree import TreeNode
 from orion.storage.base import BaseStorageProtocol, setup_storage
 
@@ -69,18 +71,17 @@ def dump_database(storage, dump_host, name=None, version=None, overwrite=False):
         ):
             raise DatabaseError("Cannot dump pickleddb to itself.")
 
+    # Temporary output file to be used for dumping. Default is dump_host
+    tmp_dump_host = dump_host
+
     if os.path.exists(dump_host):
         if overwrite:
-            # NB: The existing file may have been created to lock file name,
-            # for e.g. if called from Web API, to avoid different API calls
-            # using same file name. In such case, deleting the file may allow
-            # another web API call to lock file name just before the file
-            # is recreated. To prevent this, it's better to just erase file
-            # content, instead of delete/recreate it.
-            with open(dump_host, "wb"):
-                pass
-            assert os.path.exists(dump_host)
-            assert os.stat(dump_host).st_size == 0
+            # Work on a temporary file, not directly into dump_host.
+            # dump_host will then be replaced with temporary file
+            # if no error occurred.
+            tmp_dump_host = generate_temporary_file()
+            assert os.path.exists(tmp_dump_host)
+            assert os.stat(tmp_dump_host).st_size == 0
             logger.info(f"Overwriting previous output at {dump_host}")
         else:
             raise DatabaseError(
@@ -89,16 +90,28 @@ def dump_database(storage, dump_host, name=None, version=None, overwrite=False):
 
     try:
         dst_storage = setup_storage(
-            {"database": {"host": dump_host, "type": "pickleddb"}}
+            {"database": {"host": tmp_dump_host, "type": "pickleddb"}}
         )
         logger.info(f"Dump to {dump_host}")
         _dump(storage, dst_storage, name, version)
     except Exception as exc:
-        # If any exception occurs when dumping, delete dumped file
-        for path in (dump_host, f"{dump_host}.lock"):
+        # An exception occurred when dumping.
+        # If existed, original dump_host has not been modified.
+        for path in (tmp_dump_host, f"{tmp_dump_host}.lock"):
             if os.path.isfile(path):
                 os.unlink(path)
         raise exc
+    else:
+        # No error occurred
+        # Move tmp_dump_host to dump_host if necessary
+        if tmp_dump_host != dump_host:
+            # NB: If an OS error occurs here, we can't do anything.
+            os.unlink(dump_host)
+            shutil.move(tmp_dump_host, dump_host)
+            # Cleanup
+            tmp_lock_host = f"{tmp_dump_host}.lock"
+            if os.path.isfile(tmp_lock_host):
+                os.unlink(tmp_lock_host)
 
 
 def load_database(

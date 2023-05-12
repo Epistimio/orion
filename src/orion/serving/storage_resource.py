@@ -13,23 +13,13 @@ import traceback
 import uuid
 from datetime import datetime
 from queue import Empty
-from tempfile import NamedTemporaryFile
 
 import falcon
 from falcon import Request, Response
 
 from orion.core.io.database import DatabaseError
+from orion.core.utils import generate_temporary_file
 from orion.storage.backup import dump_database, load_database
-
-
-def _gen_host_file(basename="dump"):
-    """Generate a temporary file where data could be saved.
-
-    Create an empty file without collision.
-    Return name of generated file.
-    """
-    with NamedTemporaryFile(prefix=f"{basename}_", suffix=".pkl", delete=False) as tf:
-        return tf.name
 
 
 class Notifications:
@@ -188,7 +178,7 @@ class StorageResource:
         """Handle the GET requests for dump/"""
         name = req.get_param("name")
         version = req.get_param_as_int("version")
-        dump_host = _gen_host_file(basename="dump")
+        dump_host = generate_temporary_file(basename="dump")
         download_suffix = "" if name is None else f" {name}"
         if download_suffix and version is not None:
             download_suffix = f"{download_suffix}.{version}"
@@ -201,14 +191,12 @@ class StorageResource:
             with open(dump_host, "rb") as file:
                 resp.data = file.read()
         except DatabaseError as exc:
-            # Dumped files should have been cleaned
-            assert not os.path.exists(dump_host)
-            assert not os.path.exists(f"{dump_host}.lock")
             raise falcon.HTTPNotFound(title=type(exc).__name__, description=str(exc))
-        else:
+        finally:
             # Clean dumped files
-            os.unlink(dump_host)
-            os.unlink(f"{dump_host}.lock")
+            for path in (dump_host, f"{dump_host}.lock"):
+                if os.path.exists(path):
+                    os.unlink(path)
 
     def on_post_load(self, req: Request, resp: Response):
         """Handle the POST requests for load/"""
@@ -221,7 +209,7 @@ class StorageResource:
         for part in req.get_media():
             if part.name == "file":
                 if part.filename:
-                    load_host = _gen_host_file(basename="load")
+                    load_host = generate_temporary_file(basename="load")
                     with open(load_host, "wb") as dst:
                         part.stream.pipe(dst)
             elif part.name == "resolve":

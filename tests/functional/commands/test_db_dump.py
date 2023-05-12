@@ -91,49 +91,50 @@ def test_dump_to_specified_output(
 
 
 @pytest.mark.parametrize(
-    "already_exists,output,overwrite,should_exist_after,error_message",
+    "output_already_exists,output_specified,overwrite,error_message",
     [
         (
             True,
-            None,
-            None,
-            True,
+            False,
+            False,
             "Error: Export output already exists (specify `--force` to overwrite)",
         ),
         (
             True,
-            None,
-            True,
             False,
+            True,
             "Error: No experiment found with query {'name': 'unknown-experiment'}. "
             "Nothing to dump.",
         ),
         (
             True,
             True,
-            None,
-            True,
+            False,
             "Error: Export output already exists (specify `--force` to overwrite)",
         ),
         (
             True,
             True,
             True,
+            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
+            "Nothing to dump.",
+        ),
+        (
+            False,
+            False,
             False,
             "Error: No experiment found with query {'name': 'unknown-experiment'}. "
             "Nothing to dump.",
         ),
         (
             False,
-            None,
-            None,
             False,
+            True,
             "Error: No experiment found with query {'name': 'unknown-experiment'}. "
             "Nothing to dump.",
         ),
         (
             False,
-            None,
             True,
             False,
             "Error: No experiment found with query {'name': 'unknown-experiment'}. "
@@ -142,43 +143,36 @@ def test_dump_to_specified_output(
         (
             False,
             True,
-            None,
-            False,
-            "Error: No experiment found with query {'name': 'unknown-experiment'}. "
-            "Nothing to dump.",
-        ),
-        (
-            False,
             True,
-            None,
-            False,
             "Error: No experiment found with query {'name': 'unknown-experiment'}. "
             "Nothing to dump.",
         ),
     ],
 )
 def test_dump_post_clean_on_error(
-    already_exists, output, overwrite, should_exist_after, error_message, capsys
+    output_already_exists, output_specified, overwrite, error_message, capsys
 ):
     """Test how dumped file is cleaned if dump fails."""
 
-    # Prepare a command that will fail (by looking for unknown experiment)
     with tempfile.TemporaryDirectory() as tmp_dir:
+        # Prepare a command that will fail (by looking for unknown experiment)
         command = ["db", "dump", "-n", "unknown-experiment"]
-        if output:
-            output = f"{tmp_dir}/test.pkl"
-            command += ["--output", output]
+        if output_specified:
+            output_specified = f"{tmp_dir}/test.pkl"
+            command += ["--output", output_specified]
         if overwrite:
             command += ["--force"]
 
-        expected_output = output or "dump.pkl"
+        expected_output = output_specified or "dump.pkl"
 
         # Create expected file if necessary
-        if already_exists:
+        output_modified_time = None
+        if output_already_exists:
             assert not os.path.exists(expected_output), expected_output
             with open(expected_output, "w"):
                 pass
             assert os.path.isfile(expected_output)
+            output_modified_time = os.stat(expected_output).st_mtime
 
         # Execute command and expect it to fail
         execute(" ".join(command), assert_code=1)
@@ -188,13 +182,17 @@ def test_dump_post_clean_on_error(
         assert err.startswith(error_message)
 
         # Check dump post-clean
-        if should_exist_after:
+        if output_already_exists:
+            # Output should exist after error.
             assert os.path.isfile(expected_output)
+            # Output should have not been modified.
+            assert output_modified_time == os.stat(expected_output).st_mtime
             # Clean files anyway
             os.unlink(expected_output)
             if os.path.isfile(f"{expected_output}.lock"):
                 os.unlink(f"{expected_output}.lock")
         else:
+            # Output should not exist after error.
             assert not os.path.exists(expected_output)
             assert not os.path.exists(f"{expected_output}.lock")
 
