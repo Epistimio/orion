@@ -1152,24 +1152,6 @@ class Space(dict):
         dims = list(self.values())
         return "Space([{}])".format(",\n       ".join(map(str, dims)))
 
-    def items(self):
-        """Return items sorted according to keys"""
-        # pylint: disable=consider-using-dict-items
-        return [(k, self[k]) for k in self.keys()]
-
-    def values(self):
-        """Return values sorted according to keys"""
-        # pylint: disable=consider-using-dict-items
-        return [self[k] for k in self.keys()]
-
-    def keys(self):
-        """Return sorted keys"""
-        return list(iter(self))
-
-    def __iter__(self):
-        """Return sorted keys"""
-        return iter(sorted(super().keys()))
-
     @property
     def configuration(self):
         """Return a dictionary of priors."""
