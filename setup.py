@@ -147,6 +147,7 @@ setup_args = dict(
         ],
     },
     install_requires=[
+        "appdirs",
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
