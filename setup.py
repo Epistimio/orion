@@ -157,7 +157,8 @@ setup_args = dict(
         "tabulate",
         "AppDirs",
         "plotly",
-        "kaleido",
+        # Pin the version to work around https://github.com/plotly/Kaleido/issues/156.
+        "kaleido==0.2.1",
         "requests",
         "pandas",
         "gunicorn",
