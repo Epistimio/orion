@@ -30,6 +30,7 @@ algos = [
 ]
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
+    "orion",
     "orion.algo.base",
     "orion.algo.space",
     "orion.analysis",
