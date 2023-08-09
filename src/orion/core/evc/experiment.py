@@ -235,10 +235,7 @@ def _adapt_parent_trials(node, parent_trials_node, ids):
             parent.item["trials"] = [
                 trial
                 for trial in parent.item["trials"]
-                if trial.compute_trial_hash(
-                    trial, ignore_lie=True, ignore_experiment=True
-                )
-                not in node_ids
+                if trial.compute_trial_hash(trial, ignore_lie=True) not in node_ids
             ]
 
     return node.item, parent_trials_node
@@ -266,10 +263,7 @@ def _adapt_children_trials(node, children_trials_nodes):
             subchild.item["trials"] = [
                 trial
                 for trial in subchild.item["trials"]
-                if trial.compute_trial_hash(
-                    trial, ignore_lie=True, ignore_experiment=True
-                )
-                not in ids
+                if trial.compute_trial_hash(trial, ignore_lie=True) not in ids
             ]
 
     return node.item, children_trials_nodes

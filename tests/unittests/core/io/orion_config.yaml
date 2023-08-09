@@ -4,7 +4,7 @@ experiment:
     max_trials: 100
     max_broken: 5
 
-    algorithms: 'random'
+    algorithm: 'random'
 
 database:
   type: 'pickleddb'

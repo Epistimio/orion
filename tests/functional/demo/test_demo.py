@@ -41,7 +41,7 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     assert exp["name"] == "default_algo"
     assert exp["max_trials"] == 5
     assert exp["max_broken"] == 3
-    assert exp["algorithms"] == {"random": {"seed": None}}
+    assert exp["algorithm"] == {"random": {"seed": None}}
     assert "user" in exp["metadata"]
     assert "datetime" in exp["metadata"]
     assert "orion_version" in exp["metadata"]
@@ -105,7 +105,7 @@ def test_demo(storage, monkeypatch):
     assert exp["name"] == "voila_voici"
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
-    assert exp["algorithms"] == {
+    assert exp["algorithm"] == {
         "gradient_descent": {"learning_rate": 0.1, "dx_tolerance": 1e-5}
     }
     assert "user" in exp["metadata"]
@@ -155,7 +155,7 @@ def test_demo_with_script_config(storage, monkeypatch):
     assert exp["name"] == "voila_voici"
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
-    assert exp["algorithms"] == {
+    assert exp["algorithm"] == {
         "gradient_descent": {"learning_rate": 0.1, "dx_tolerance": 1e-5}
     }
     assert "user" in exp["metadata"]
@@ -211,7 +211,7 @@ def test_demo_with_python_and_script(storage, monkeypatch):
     assert exp["name"] == "voila_voici"
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
-    assert exp["algorithms"] == {
+    assert exp["algorithm"] == {
         "gradient_descent": {"learning_rate": 0.1, "dx_tolerance": 1e-5}
     }
     assert "user" in exp["metadata"]
@@ -348,7 +348,7 @@ def test_demo_four_workers(tmp_path, storage, monkeypatch):
     assert exp["name"] == "four_workers_demo"
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
-    assert exp["algorithms"] == {"random": {"seed": 2}}
+    assert exp["algorithm"] == {"random": {"seed": 2}}
     assert "user" in exp["metadata"]
     assert "datetime" in exp["metadata"]
     assert "orion_version" in exp["metadata"]
@@ -371,7 +371,7 @@ def test_workon():
     """Test scenario having a configured experiment already setup."""
     name = "voici_voila"
     config = {"name": name}
-    config["algorithms"] = {"random": {"seed": 1}}
+    config["algorithm"] = {"random": {"seed": 1}}
     config["max_trials"] = 50
     config["exp_max_broken"] = 5
     config["user_args"] = [
@@ -411,7 +411,7 @@ def test_workon():
         assert exp["name"] == name
         assert exp["max_trials"] == 50
         assert exp["max_broken"] == 5
-        assert exp["algorithms"] == {"random": {"seed": 1}}
+        assert exp["algorithm"] == {"random": {"seed": 1}}
         assert "user" in exp["metadata"]
         assert "datetime" in exp["metadata"]
         assert "user_script" in exp["metadata"]
@@ -789,7 +789,7 @@ def test_demo_with_nondefault_config_keyword(storage, monkeypatch):
     exp_id = exp["_id"]
     assert exp["name"] == "voila_voici"
     assert exp["max_trials"] == 20
-    assert exp["algorithms"] == {
+    assert exp["algorithm"] == {
         "gradient_descent": {"learning_rate": 0.1, "dx_tolerance": 1e-5}
     }
     assert "user" in exp["metadata"]

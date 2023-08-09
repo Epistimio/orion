@@ -54,7 +54,7 @@ def parent_config(user_config):
     config = dict(
         _id="test",
         name="test",
-        algorithms="random",
+        algorithm="random",
         version=1,
         metadata={
             "VCS": {
@@ -132,7 +132,7 @@ def changed_config(child_config):
 @pytest.fixture
 def changed_algo_config(child_config):
     """Create a child config with a new algo"""
-    child_config["algorithms"] = "stupid-grid"
+    child_config["algorithm"] = "stupid-grid"
     return child_config
 
 
@@ -201,7 +201,7 @@ def cl_config():
     config = dict(
         name="test",
         branch="test2",
-        algorithms="random",
+        algorithm="random",
         metadata={
             "hash_commit": "old",
             "user_script": user_script,
@@ -312,8 +312,8 @@ class TestConflictDetection:
         conflict = conflicts.get()[0]
 
         assert conflict.is_resolved is False
-        assert conflict.old_config["algorithms"] == "random"
-        assert conflict.new_config["algorithms"] == "stupid-grid"
+        assert conflict.old_config["algorithm"] == "random"
+        assert conflict.new_config["algorithm"] == "stupid-grid"
         assert isinstance(conflict, AlgorithmConflict)
 
     def test_orion_version_conflict(self, parent_config, changed_orion_version_config):

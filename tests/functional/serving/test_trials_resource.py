@@ -28,7 +28,7 @@ base_experiment = dict(
     pool_size=1,
     max_trials=10,
     working_dir="",
-    algorithms={"random": {"seed": 1}},
+    algorithm={"random": {"seed": 1}},
 )
 
 base_trial = {
@@ -342,4 +342,87 @@ class TestTrialItem:
             "objective": 0.05,
             "statistics": {"a": 10, "b": 5},
             "status": "completed",
+        }
+
+    def test_set_trial_status(self, client, ephemeral_storage):
+        """Tests that we can set status for an existing trial"""
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
+
+        response = client.simulate_get("/trials/a/79a873a1146cbdcc385f53e7c14f41aa")
+        assert response.status == "200 OK"
+        assert response.json["status"] == "completed"
+
+        # Edit status and verify status was correctly updated
+        response = client.simulate_get(
+            "/trials/a/79a873a1146cbdcc385f53e7c14f41aa/set-status/interrupted"
+        )
+        assert response.status == "200 OK"
+        assert response.json["status"] == "interrupted"
+
+        # Verify new status when getting trial
+        readonly_response = client.simulate_get(
+            "/trials/a/79a873a1146cbdcc385f53e7c14f41aa"
+        )
+        assert readonly_response.status == "200 OK"
+        assert readonly_response.json["status"] == "interrupted"
+
+        trial = storage.get_trial(
+            uid="79a873a1146cbdcc385f53e7c14f41aa", experiment_uid=1
+        )
+        assert trial.status == "interrupted"
+
+    def test_set_invalid_trial_status(self, client, ephemeral_storage):
+        """Tests that we cannot set an invalid trial status"""
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
+
+        # Edit status with invalid value and verify we get expected error
+        response = client.simulate_get(
+            "/trials/a/79a873a1146cbdcc385f53e7c14f41aa/set-status/unknown"
+        )
+        assert response.status == "400 Bad Request"
+        assert response.json == {
+            "title": "Invalid parameter",
+            "description": 'The "status" parameter is invalid. Invalid status',
+        }
+
+    def test_set_trial_status_unknown_trial(self, client, ephemeral_storage):
+        """Tests that we cannot set status on unknown trial"""
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
+
+        response = client.simulate_get("/trials/a/unknown_trial/set-status/interrupted")
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "description": 'Trial "unknown_trial" does not exist',
+            "title": "Trial not found",
+        }
+
+    def test_set_trial_status_unknown_trial_and_experiment(
+        self, client, ephemeral_storage
+    ):
+        """Tests that we cannot set status on unknown trial and unknown experiment"""
+        storage = ephemeral_storage.storage
+
+        add_experiment(storage, name="a", version=1, _id=1)
+        add_trial(storage, experiment=1, id_override="00", status="completed", value=0)
+        add_trial(storage, experiment=1, id_override="01", status="completed", value=1)
+
+        response = client.simulate_get(
+            "/trials/unknown_experiment/unknown_trial/set-status/interrupted"
+        )
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "description": 'Experiment "unknown_experiment" does not exist',
+            "title": "Experiment not found",
         }

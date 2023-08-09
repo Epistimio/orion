@@ -281,7 +281,7 @@ def format_algorithm(experiment):
     """Render a string for algorithm section"""
     algorithm_string = ALGORITHM_TEMPLATE.format(
         title=format_title("Algorithm"),
-        configuration=format_dict(experiment.configuration["algorithms"]),
+        configuration=format_dict(experiment.configuration["algorithm"]),
     )
 
     return algorithm_string

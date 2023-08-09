@@ -76,7 +76,7 @@ class MyCORS(CORS):
         return MyCORSMiddleware(self)
 
 
-class WebApi(falcon.API):
+class WebApi(falcon.App):
     """
     Main entry point into a Falcon-based app. An instance provides a callable WSGI interface and a
     routing engine.
@@ -132,6 +132,11 @@ class WebApi(falcon.API):
             "/trials/{experiment_name}/{trial_id}",
             trials_resource,
             suffix="trial_in_experiment",
+        )
+        self.add_route(
+            "/trials/{experiment_name}/{trial_id}/set-status/{status}",
+            trials_resource,
+            suffix="trial_set_status_in_experiment",
         )
         self.add_route("/plots/lpi/{experiment_name}", plots_resource, suffix="lpi")
         self.add_route(

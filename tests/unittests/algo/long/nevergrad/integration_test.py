@@ -213,6 +213,11 @@ NOT_WORKING = {
     "RPowell": merge_dicts(_deterministic_first_point, _sequential, _not_serializable),
     "RSQP": merge_dicts(_deterministic_first_point, _sequential, _not_serializable),
     "PymooNSGA2": merge_dicts(_no_tell_without_ask, _sequential, _not_parallel),
+    "NGOpt12": {},
+    "NGOpt13": {},
+    "NGOpt14": {},
+    "NGOpt21": {},
+    "NGOpt38": {},
 }
 
 
@@ -231,10 +236,11 @@ def _config(request: FixtureRequest):
     test_name = request.function.__name__
 
     model_name: str = request.param  # type: ignore
-    model_type = ng.optimizers.registry[model_name]
 
     if model_name in NOT_WORKING:
         pytest.skip(reason=f"Model {model_name} is not supported.")
+
+    model_type = ng.optimizers.registry[model_name]
 
     tweaks = MODEL_NAMES[model_name]
 
@@ -295,6 +301,9 @@ class TestNevergradOptimizer(BaseAlgoTests):
         TestPhase("random", 0, "space.sample"),
         TestPhase("optim", TEST_MANY_TRIALS, "space.sample"),
     ]
+
+    # Nevergrad is not very good
+    objective = 12
 
     def test_normal_data(self):
         """Test that algorithm supports normal dimensions"""

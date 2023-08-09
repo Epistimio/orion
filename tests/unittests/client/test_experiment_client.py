@@ -41,7 +41,7 @@ config = dict(
     max_trials=10,
     max_broken=5,
     working_dir="",
-    algorithms={"random": {"seed": 1}},
+    algorithm={"random": {"seed": 1}},
     producer={"strategy": "NoParallelStrategy"},
     refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
 )
@@ -641,7 +641,7 @@ class TestSuggest:
                 """Suggest a new value and then always suggest the same"""
                 return [format_trials.tuple_to_trial([0], experiment.space)]
 
-            monkeypatch.setattr(experiment.algorithms, "suggest", amnesia)
+            monkeypatch.setattr(experiment.algorithm, "suggest", amnesia)
 
             assert len(experiment.fetch_trials()) == 1
 
@@ -665,7 +665,7 @@ class TestSuggest:
             client,
         ):
 
-            monkeypatch.setattr(experiment.algorithms, "suggest", opt_out)
+            monkeypatch.setattr(experiment.algorithm, "suggest", opt_out)
 
             assert len(experiment.fetch_trials()) == 1
 
@@ -1006,6 +1006,6 @@ def test_run_experiment_twice():
         client.workon(main, max_trials=10)
 
         client._experiment.max_trials = 20
-        client._experiment.algorithms.algorithm.max_trials = 20
+        client._experiment.algorithm.algorithm.max_trials = 20
 
         client.workon(main, max_trials=20)

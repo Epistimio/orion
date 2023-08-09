@@ -1,3 +1,3 @@
-algorithms:
+algorithm:
   gradient_descent:
     learning_rate: 0.0001

@@ -177,7 +177,7 @@ dendi_exp_config = dict(
     pool_size=1,
     max_trials=1000,
     working_dir="",
-    algorithms={"dumbalgo": {}},
+    algorithm={"dumbalgo": {}},
     producer={"strategy": "NoParallelStrategy"},
 )
 
@@ -321,7 +321,7 @@ def new_config():
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
-        algorithms="fancy",
+        algorithm="fancy",
         version=1,
         metadata={
             "VCS": "to be changed",
@@ -376,7 +376,7 @@ def old_config(storage):
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
-        algorithms="random",
+        algorithm="random",
         version=1,
         metadata={
             "VCS": {
@@ -540,7 +540,7 @@ def bad_exp_parent_config():
             "orion_version": "XYZ",
         },
         version=1,
-        algorithms="random",
+        algorithm="random",
     )
 
     backward.populate_space(config)
