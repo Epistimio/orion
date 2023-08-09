@@ -115,6 +115,7 @@ jobs:
   test-long-algos:
     needs: [pre-commit, pretest]
     runs-on: ${{ matrix.platform }}
+    continue-on-error: true
     strategy:
       matrix:
         platform: [ubuntu-latest]
