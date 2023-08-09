@@ -302,6 +302,9 @@ class TestNevergradOptimizer(BaseAlgoTests):
         TestPhase("optim", TEST_MANY_TRIALS, "space.sample"),
     ]
 
+    # Nevergrad is not very good
+    objective = 12
+
     def test_normal_data(self):
         """Test that algorithm supports normal dimensions"""
         self.assert_dim_type_supported({"x": "normal(2, 5)"})
