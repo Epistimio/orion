@@ -31,7 +31,7 @@ jobs:
     # Launch Orion backend
 
     - name: Launch Orion server
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.8
     - name: Install Orion from local copy
@@ -40,7 +40,7 @@ jobs:
     - name: Setup MongoDB
       uses: supercharge/mongodb-github-action@1.8.0
       with:
-        mongodb-version: 4.2
+        mongodb-version: 6.0
         mongodb-db: orion_dashboard_test
     - name: Populate MongoDB
       run: |
@@ -48,12 +48,15 @@ jobs:
         python .github/workflows/orion/pickle_to_mongodb.py
         cd dashboard/src/
 
+    - name: check ulimit
+      run: ulimit -a
+
     - name: Start Orion backend
       run: |
         # Start Orion backend in repository root folder.
         cd ../../
         mkdir -p gunicorn_tmp_dir
-        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml 2> orion-backend-${{ matrix.node-version }}.log &
+        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml > dashboard/src/orion-backend-${{ matrix.node-version }}.log 2>&1 &
         cd dashboard/src/
 
     - name: Install dependencies
@@ -72,3 +75,11 @@ jobs:
 
     - name: Run Playwright tests
       run: yarn playwright test --project=chromium --reporter=line
+
+    # Upload orion backend log.
+    - name: Get Orion backend log
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: orion-backend-log-artifact-${{ matrix.node-version }}
+        path: dashboard/src/orion-backend-${{ matrix.node-version }}.log
