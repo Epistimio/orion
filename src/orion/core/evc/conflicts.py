@@ -267,7 +267,7 @@ class Conflicts:
 
         Parameters
         ----------
-        conflict: `orion.ore.evc.conflicts.Conflict`
+        conflict: `orion.core.evc.conflicts.Conflict`
             Conflict object to call `try_resolve`.
         silence_errors: bool
             If True, errors raised on execution of conflict.try_resolve will be caught and
@@ -1083,7 +1083,7 @@ class AlgorithmConflict(Conflict):
         """Detect if algorithm definition in `new_config` differs from `old_config`
         :param branching_config:
         """
-        if old_config["algorithms"] != new_config["algorithms"]:
+        if old_config["algorithm"] != new_config["algorithm"]:
             yield cls(old_config, new_config)
 
     def try_resolve(self, *args, **kwargs):
@@ -1097,14 +1097,14 @@ class AlgorithmConflict(Conflict):
     def diff(self):
         """Produce human-readable differences"""
         return colored_diff(
-            pprint.pformat(self.old_config["algorithms"]),
-            pprint.pformat(self.new_config["algorithms"]),
+            pprint.pformat(self.old_config["algorithm"]),
+            pprint.pformat(self.new_config["algorithm"]),
         )
 
     def __repr__(self):
         # TODO: select different subset rather than printing the old dict
-        formatted_old_config = pprint.pformat(self.old_config["algorithms"])
-        formatted_new_config = pprint.pformat(self.new_config["algorithms"])
+        formatted_old_config = pprint.pformat(self.old_config["algorithm"])
+        formatted_new_config = pprint.pformat(self.new_config["algorithm"])
         return f"{formatted_old_config}\n   !=\n{formatted_new_config}"
 
     class AlgorithmResolution(Resolution):

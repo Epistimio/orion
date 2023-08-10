@@ -161,11 +161,63 @@ retrieve individual experiments as well as a list of all your experiments.
    :statuscode 400: When an invalid query parameter is passed in the request.
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
+.. http:get:: /experiments/status/:name
+
+   Retrieve the stats of the existing experiment named ``name``.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+        "trials_completed": 40,
+        "best_trials_id": "955c77e7f567c2625f48546188a6cda1",
+        "best_evaluation": -0.788720013597263,
+        "start_time": "2019-11-25 16:02:02.872583",
+        "finish_time": "2019-11-27 21:13:27.043519",
+        "max_trials": 40,
+        "nb_trials": 40,
+        "progress": 1,
+        "trial_status_count": {
+          "completed": 40
+        },
+        "elapsed_time": "2 days, 5:11:24.006755",
+        "sum_of_trials_time": "8 days, 23:15:15.594405",
+        "eta": "0:00:00",
+        "eta_milliseconds": 0
+      }
+
+   :query version: Optional version of the experiment to retrieve. If unspecified, the latest
+      version of the experiment is retrieved.
+
+   :>json trials_completed: The number of trials completed.
+   :>json best_trial_id: The best trial ID.
+   :>json best_evaluation: Best evaluation.
+   :>json start_time: The timestamp when the experiment started.
+   :>json finish_time: The timestamp when the experiment finished.
+   :>json max_trials: The number of max trials for this experiment.
+   :>json nb_trials: The current number of trials in this experiment.
+   :>json progress: Floating value between 0 and 1 representing experiment progression.
+   :>json trial_status_count: A dictionary mapping trial status to number of trials with this status in the experiment.
+   :>json elapsed_time: The time elapsed since experiment started.
+   :>json sum_of_trials_time: The sum of trials execution times.
+   :>json eta: The estimation of remaining time for experiment to finish.
+   :>json eta_milliseconds: The ETA in milliseconds (convenient for usages in Javascript).
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
 Trials
 ------
 
 The trials resource permits the retrieval of your trials regardless of their status. You can
-retrieve individual trials as well as a list of all your trials per experiment.
+retrieve individual trials as well as a list of all your trials per experiment. You can
+also edit status for an individual trial.
 
 .. http:get:: /trials/:experiment
 
@@ -223,7 +275,8 @@ retrieve individual trials as well as a list of all your trials per experiment.
          "statistics": {
             "low": 1,
             "high": 42
-         }
+         },
+         "status": "completed"
       }
 
    :>json id: The ID of the trial.
@@ -235,10 +288,45 @@ retrieve individual trials as well as a list of all your trials per experiment.
    :>json objective: The objective found for this trial with the given hyper-parameters.
    :>json statistics: The dictionary of statistics recorded during the trial
       as ``"statistic-name":"statistic-value"``.
+   :>json status: The status of the trial.
 
    :statuscode 400: When an invalid query parameter is passed in the request.
    :statuscode 404: When the specified experiment doesn't exist in the database.
    :statuscode 404: When the specified trial doesn't exist for the specified experiment.
+
+.. http:get:: /trials/:experiment/:id/set-status/:status
+
+   Set status to value ``status`` for an existing trial with id ``id`` from the experiment ``experiment``.
+
+   Return the details of trial with updated status.
+   See the specification of :http:get:`/trials/:experiment/:id`
+   for a description of returned fields.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+         "id": "f70277",
+         "submitTime": "2020-01-22 14:19:42.02448"
+         "startTime": "2020-01-22 14:20:42.02448",
+         "endTime": "2020-01-22 14:20:42.0248",
+         "parameters": {
+            "epsilon": 1,
+            "lr": 0.1
+         },
+         "objective": -0.7865584361152724,
+         "statistics": {
+            "low": 1,
+            "high": 42
+         },
+         "status": "completed"
+      }
 
 Plots
 -----

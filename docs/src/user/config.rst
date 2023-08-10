@@ -87,12 +87,13 @@ Full Example of Global Configuration
 
 .. code-block:: yaml
 
-    database:
+    storage:
+      database:
         host: orion_db.pkl
         type: pickleddb
 
     experiment:
-        algorithms:
+        algorithm:
             random:
                 seed: None
         max_broken: 3
@@ -204,7 +205,7 @@ Experiment
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             random:
                 seed: None
         max_broken: 3
@@ -319,7 +320,7 @@ working_dir
 
 .. _config_experiment_algorithms:
 
-algorithms
+algorithm
 ~~~~~~~~~~
 
 :Type: dict
@@ -345,7 +346,7 @@ strategy
 :Env var:
 :Description:
     (DEPRECATED) This argument will be removed in v0.4. Parallel strategies are now handled by
-    algorithms directly and should be set in algorithm configuration when they support it.
+    algorithm directly and should be set in algorithm configuration when they support it.
 
 ----
 

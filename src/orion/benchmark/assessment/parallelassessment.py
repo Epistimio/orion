@@ -62,7 +62,7 @@ class ParallelAssessment(BenchmarkAssessment):
         algorithm_groups = defaultdict(list)
         algorithm_worker_groups = defaultdict(list)
         for repetition_index, exp in experiments:
-            algorithm_name = list(exp.configuration["algorithms"].keys())[0]
+            algorithm_name = list(exp.configuration["algorithm"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
             n_worker = self.workers[repetition_index]

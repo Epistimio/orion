@@ -205,7 +205,15 @@ rosenbrock_with_fidelity = CustomRosenbrock(max_trials=30, with_fidelity=True)
 space = rosenbrock.get_search_space()
 space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
 
+nested_space = {
+    "x": {"value": space_with_fidelity["x"], "noise": space_with_fidelity["noise"]}
+}
+
 multidim_rosenbrock = MultiDimRosenbrock(max_trials=30, with_fidelity=False)
+
+
+def nested_rosenbrock(x: dict[str, float]) -> list[dict]:
+    return rosenbrock_with_fidelity(x["value"], x["noise"])
 
 
 def branching_rosenbrock(
@@ -214,7 +222,7 @@ def branching_rosenbrock(
     with open(os.path.join(trial.working_dir, "hist.txt"), "a") as f:
         f.write(trial.params_repr() + "\n")
 
-    return rosenbrock(x, noise)
+    return rosenbrock_with_fidelity(x, noise)
 
 
 @pytest.mark.parametrize(
@@ -226,7 +234,7 @@ def test_missing_fidelity(algorithm: dict):
     """Test a simple usage scenario."""
     task = CustomRosenbrock(max_trials=30, with_fidelity=False)
     with pytest.raises(RuntimeError) as exc:
-        workon(task, task.get_search_space(), algorithms=algorithm, max_trials=100)
+        workon(task, task.get_search_space(), algorithm=algorithm, max_trials=100)
 
     assert "https://orion.readthedocs.io/en/develop/user/algorithms.html" in str(
         exc.value
@@ -248,10 +256,10 @@ def test_missing_fidelity(algorithm: dict):
 def test_simple(algorithm: dict):
     """Test a simple usage scenario."""
     max_trials = 30
-    exp = workon(rosenbrock, space, algorithms=algorithm, max_trials=max_trials)
+    exp = workon(rosenbrock, space, algorithm=algorithm, max_trials=max_trials)
 
     assert exp.max_trials == max_trials
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials()
     assert len(trials) == max_trials
@@ -276,7 +284,7 @@ def test_cardinality_stop_uniform(algorithm: dict):
     """Test when algo needs to stop because all space is explored (discrete space)."""
     discrete_space = copy.deepcopy(space)
     discrete_space["x"] = "uniform(-10, 5, discrete=True)"
-    exp = workon(rosenbrock, discrete_space, algorithms=algorithm, max_trials=30)
+    exp = workon(rosenbrock, discrete_space, algorithm=algorithm, max_trials=30)
 
     trials = exp.fetch_trials()
     assert len(trials) == 16
@@ -294,9 +302,9 @@ def test_cardinality_stop_loguniform(algorithm: dict):
 
     max_trials = 30
     exp = workon(
-        rosenbrock, space=discrete_space, algorithms=algorithm, max_trials=max_trials
+        rosenbrock, space=discrete_space, algorithm=algorithm, max_trials=max_trials
     )
-    algo_wrapper: SpaceTransform = exp.algorithms
+    algo_wrapper: SpaceTransform = exp.algorithm
     assert algo_wrapper.space == discrete_space
     assert algo_wrapper.algorithm.is_done
     assert algo_wrapper.is_done
@@ -318,19 +326,45 @@ def test_cardinality_stop_loguniform(algorithm: dict):
     algorithm_configs.values(),
     ids=list(algorithm_configs.keys()),
 )
+def test_with_nested_spaces(algorithm: dict):
+    """Test a scenario with nested space."""
+    exp = workon(
+        nested_rosenbrock,
+        nested_space,
+        algorithm=algorithm,
+        max_trials=30,
+    )
+
+    assert exp.configuration["algorithm"] == algorithm
+
+    trials = exp.fetch_trials()
+    assert len(trials) >= 30 or exp.algorithm.is_done
+    assert trials[-1].status == "completed"
+    assert set(trials[-1].params.keys()) == {"x"}
+    assert set(trials[-1].params["x"].keys()) == {"value", "noise"}
+
+    trials = [trial for trial in trials if trial.status == "completed"]
+    assert all(trial.objective is not None for trial in trials)
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    algorithm_configs.values(),
+    ids=list(algorithm_configs.keys()),
+)
 def test_with_fidelity(algorithm: dict):
     """Test a scenario with fidelity."""
     exp = workon(
         rosenbrock_with_fidelity,
         space_with_fidelity,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_trials=30,
     )
 
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 30 or exp.algorithms.is_done
+    assert len(trials) >= 30 or exp.algorithm.is_done
     assert trials[-1].status == "completed"
 
     trials = [trial for trial in trials if trial.status == "completed"]
@@ -358,14 +392,12 @@ def test_with_multidim(algorithm):
     space["x"] = "uniform(-50, 50, shape=(2, 1))"
     MAX_TRIALS = 30
 
-    exp = workon(
-        multidim_rosenbrock, space, algorithms=algorithm, max_trials=MAX_TRIALS
-    )
+    exp = workon(multidim_rosenbrock, space, algorithm=algorithm, max_trials=MAX_TRIALS)
 
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= 25 or exp.algorithms.is_done
+    assert len(trials) >= 25 or exp.algorithm.is_done
     completed_trials = exp.fetch_trials_by_status("completed")
     assert len(completed_trials) >= MAX_TRIALS or len(completed_trials) == len(trials)
 
@@ -396,7 +428,7 @@ def test_with_evc(algorithm, storage):
     base_exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
-        algorithms=algorithm_configs["random"],
+        algorithm=algorithm_configs["random"],
         max_trials=10,
         storage=storage,
     )
@@ -405,7 +437,7 @@ def test_with_evc(algorithm, storage):
     exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
-        algorithms=algorithm,
+        algorithm=algorithm,
         max_trials=30,
         storage=storage,
         branching={"branch_from": "exp", "enable": True},
@@ -415,7 +447,7 @@ def test_with_evc(algorithm, storage):
 
     exp.workon(rosenbrock, max_trials=30)
 
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials(with_evc_tree=False)
 
@@ -423,7 +455,7 @@ def test_with_evc(algorithm, storage):
     assert len(trials) >= 20
 
     trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-    assert len(trials_with_evc) >= 30 or exp.algorithms.is_done
+    assert len(trials_with_evc) >= 30 or exp.algorithm.is_done
     assert len(trials_with_evc) - len(trials) == 10
 
     completed_trials = [
@@ -458,15 +490,15 @@ def test_parallel_workers(algorithm, storage):
     name = f"{list(algorithm.keys())[0]}_exp"
 
     exp = create_experiment(
-        name=name, space=space_with_fidelity, algorithms=algorithm, storage=storage
+        name=name, space=space_with_fidelity, algorithm=algorithm, storage=storage
     )
 
     exp.workon(rosenbrock, max_trials=MAX_TRIALS, n_workers=2)
 
-    assert exp.configuration["algorithms"] == algorithm
+    assert exp.configuration["algorithm"] == algorithm
 
     trials = exp.fetch_trials()
-    assert len(trials) >= MAX_TRIALS or exp.algorithms.is_done
+    assert len(trials) >= MAX_TRIALS or exp.algorithm.is_done
 
     completed_trials = [trial for trial in trials if trial.status == "completed"]
     assert MAX_TRIALS <= len(completed_trials) <= MAX_TRIALS + 2
@@ -499,7 +531,7 @@ def test_branching_algos(
     exp = build_experiment(
         name="exp",
         space=space_with_fidelity,
-        algorithms=algorithm,
+        algorithm=algorithm,
         working_dir=tmp_path,
         storage=storage,
     )
@@ -509,15 +541,15 @@ def test_branching_algos(
     def build_params_hist(trial: Trial) -> list[str]:
         params = [trial.params_repr()]
         while trial.parent:
-            assert isinstance(exp.algorithms, AlgoWrapper)
-            trial = exp.algorithms.registry[trial.parent]
+            assert isinstance(exp.algorithm, AlgoWrapper)
+            trial = exp.algorithm.registry[trial.parent]
             params.append(trial.params_repr())
         return params[::-1]
 
     for trial in exp.fetch_trials():
         params_history = build_params_hist(trial)
-        assert isinstance(exp.algorithms, AlgoWrapper)
-        algo = exp.algorithms.unwrapped
+        assert isinstance(exp.algorithm, AlgoWrapper)
+        algo = exp.algorithm.unwrapped
         # TODO: This assumes algo.fidelities which may be specific to PBT...
         assert hasattr(algo, "fidelities")
         fidelities: list = algo.fidelities  # type: ignore

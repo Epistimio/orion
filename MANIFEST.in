@@ -22,7 +22,7 @@ prune conda/
 prune .github/
 
 # Include src, tests, docs
-recursive-include docs *.rst *.py *.gitkeep *.png *.html *.txt *.gif
+recursive-include docs *.rst *.py *.gitkeep *.png *.html *.txt *.gif *.ai
 recursive-include examples *.rst
 prune docs/build
 prune docs/src/reference
@@ -32,6 +32,7 @@ recursive-include dashboard/build *
 include tests/requirements.txt
 include .pre-commit-config.yaml
 include CITATION.bib
+include docs/src/_static/logos/orion_logo.ai
 
 # Include examples
 recursive-include examples *.md *.py *.pkl *.yaml *.ipynb */requirements.txt

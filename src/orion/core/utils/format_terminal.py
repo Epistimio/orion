@@ -281,7 +281,7 @@ def format_algorithm(experiment):
     """Render a string for algorithm section"""
     algorithm_string = ALGORITHM_TEMPLATE.format(
         title=format_title("Algorithm"),
-        configuration=format_dict(experiment.configuration["algorithms"]),
+        configuration=format_dict(experiment.configuration["algorithm"]),
     )
 
     return algorithm_string
@@ -369,7 +369,7 @@ best trial:
 {best_params}
 start time: {stats.start_time}
 finish time: {stats.finish_time}
-duration: {stats.duration}
+elapsed_time: {stats.elapsed_time}
 """
 
 
@@ -391,7 +391,7 @@ def format_stats(experiment):
 
     """
     stats = experiment.stats
-    if not stats:
+    if not stats.trials_completed:
         return NO_STATS_TEMPLATE.format(title=format_title("Stats"))
 
     best_params = get_trial_params(stats.best_trials_id, experiment)

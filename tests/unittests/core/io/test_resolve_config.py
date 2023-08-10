@@ -71,7 +71,7 @@ def test_fetch_metadata_python_users_script(script_path):
 
 
 def test_fetch_metadata_not_existed_path():
-    """Verfiy the raise of error when user_script path does not exist"""
+    """Verify the raise of error when user_script path does not exist"""
     path = "dummy/path"
     with pytest.raises(OSError) as exc_info:
         resolve_config.fetch_metadata(user_args=[path])
@@ -220,7 +220,7 @@ def test_fetch_config(raw_config):
         "max_trials": 100,
         "max_broken": 5,
         "name": "voila_voici",
-        "algorithms": "random",
+        "algorithm": "random",
     }
 
     assert config == {}
@@ -254,6 +254,8 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert exp_config.pop("max_trials") == orion.core.config.experiment.max_trials
     assert exp_config.pop("max_broken") == orion.core.config.experiment.max_broken
     assert exp_config.pop("working_dir") == orion.core.config.experiment.working_dir
+    assert exp_config.pop("algorithm") == orion.core.config.experiment.algorithm
+    # TODO: Remove for v0.4
     assert exp_config.pop("algorithms") == orion.core.config.experiment.algorithms
     # TODO: Remove for v0.4
     assert exp_config.pop("strategy") == orion.core.config.experiment.strategy
@@ -325,14 +327,14 @@ def test_fetch_config_dash(monkeypatch, config_file):
     """Verify fetch_config supports dash."""
 
     def mocked_config(file_object):
-        return {"experiment": {"max-broken": 10, "algorithms": {"dont-change": "me"}}}
+        return {"experiment": {"max-broken": 10, "algorithm": {"dont-change": "me"}}}
 
     monkeypatch.setattr("yaml.safe_load", mocked_config)
 
     config = resolve_config.fetch_config({"config": config_file})
 
     assert config == {
-        "experiment": {"max_broken": 10, "algorithms": {"dont-change": "me"}}
+        "experiment": {"max_broken": 10, "algorithm": {"dont-change": "me"}}
     }
 
 
@@ -340,14 +342,14 @@ def test_fetch_config_underscore(monkeypatch, config_file):
     """Verify fetch_config supports underscore as well."""
 
     def mocked_config(file_object):
-        return {"experiment": {"max_broken": 10, "algorithms": {"dont-change": "me"}}}
+        return {"experiment": {"max_broken": 10, "algorithm": {"dont-change": "me"}}}
 
     monkeypatch.setattr("yaml.safe_load", mocked_config)
 
     config = resolve_config.fetch_config({"config": config_file})
 
     assert config == {
-        "experiment": {"max_broken": 10, "algorithms": {"dont-change": "me"}}
+        "experiment": {"max_broken": 10, "algorithm": {"dont-change": "me"}}
     }
 
 

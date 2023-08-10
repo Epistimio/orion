@@ -30,4 +30,4 @@ class RuntimeResource:
             "database": database,
         }
 
-        resp.body = json.dumps(response, indent=4)
+        resp.text = json.dumps(response, indent=4)

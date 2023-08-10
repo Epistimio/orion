@@ -26,7 +26,7 @@ class PlotsResource:
         experiment = ExperimentClient(
             retrieve_experiment(self.storage, experiment_name), None
         )
-        resp.body = experiment.plot.lpi().to_json()
+        resp.text = experiment.plot.lpi().to_json()
 
     def on_get_parallel_coordinates(
         self, req: Request, resp: Response, experiment_name: str
@@ -39,7 +39,7 @@ class PlotsResource:
         experiment = ExperimentClient(
             retrieve_experiment(self.storage, experiment_name), None
         )
-        resp.body = experiment.plot.parallel_coordinates().to_json()
+        resp.text = experiment.plot.parallel_coordinates().to_json()
 
     def on_get_partial_dependencies(
         self, req: Request, resp: Response, experiment_name: str
@@ -52,7 +52,7 @@ class PlotsResource:
         experiment = ExperimentClient(
             retrieve_experiment(self.storage, experiment_name), None
         )
-        resp.body = experiment.plot.partial_dependencies().to_json()
+        resp.text = experiment.plot.partial_dependencies().to_json()
 
     def on_get_regret(self, req: Request, resp: Response, experiment_name: str):
         """
@@ -62,4 +62,4 @@ class PlotsResource:
         experiment = ExperimentClient(
             retrieve_experiment(self.storage, experiment_name), None
         )
-        resp.body = experiment.plot.regret().to_json()
+        resp.text = experiment.plot.regret().to_json()

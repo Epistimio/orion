@@ -1,4 +1,4 @@
-.. _Setup Algorithms:
+.. _Setup algorithm:
 
 **********
 Algorithms
@@ -19,7 +19,7 @@ In a Oríon configuration YAML, define:
 .. code-block:: yaml
 
    experiment:
-       algorithms:
+       algorithm:
            gradient_descent:
                learning_rate: 0.1
 
@@ -51,7 +51,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             random:
                 seed: null
 
@@ -91,7 +91,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             gridsearch:
                 n_values: 100
 
@@ -140,7 +140,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             hyperband:
                 seed: null
                 repetitions: 1
@@ -196,7 +196,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             asha:
                 seed: null
                 num_rungs: null
@@ -235,7 +235,7 @@ Configuration
 .. code-block:: yaml
 
   experiment:
-    algorithms:
+    algorithm:
       bohb:
         min_points_in_model: 20
         top_n_percent: 15
@@ -285,7 +285,7 @@ Configuration
 .. code-block:: yaml
 
   experiment:
-    algorithms:
+    algorithm:
       dehb:
         seed: null
         mutation_factor: 0.5
@@ -330,7 +330,7 @@ Configuration
 
   experiment:
 
-    algorithms:
+    algorithm:
       pbt:
         population_size: 50
         generations: 10
@@ -400,7 +400,7 @@ Configuration
 
   experiment:
 
-    algorithms:
+    algorithm:
       pb2:
         population_size: 50
         generations: 10
@@ -459,7 +459,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             tpe:
                 seed: null
                 n_initial_points: 20
@@ -503,7 +503,7 @@ Configuration
 .. code-block:: yaml
 
   experiment:
-    algorithms:
+    algorithm:
       ax:
         seed: 1234
         n_initial_trials: 5,
@@ -573,7 +573,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             EvolutionES:
                 seed: null
                 repetitions: 1
@@ -626,7 +626,7 @@ Configuration
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             MOFA:
                seed: null
                index: 1
@@ -654,7 +654,7 @@ a library of algorithms for hyperparameter search.
 .. code-block:: yaml
 
     experiment:
-        algorithms:
+        algorithm:
             nevergrad:
                 seed: null
                 budget: 1000
@@ -674,6 +674,10 @@ a library of algorithms for hyperparameter search.
 HEBO
 ----
 
+.. warning::
+
+   HEBO package does not work with numpy>=1.24.0.
+
 
 Evolutionary algorithms from the `HEBO`_ repository are made available in Orion. There are a wide
 range of configutaion options for these algorithms, including the choice of model, evolutionary
@@ -688,7 +692,7 @@ Configuration
 .. code-block:: yaml
 
    experiment:
-      algorithms:
+      algorithm:
          hebo:
             seed: 1234
             parameters:

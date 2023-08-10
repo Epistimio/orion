@@ -13,6 +13,7 @@ import hashlib
 import logging
 import os
 import warnings
+from datetime import timedelta
 
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
@@ -476,6 +477,26 @@ class Trial:
                 "have not been set."
             )
         return self.format_values(self._params, sep="-").replace("/", ".")
+
+    @property
+    def duration(self):
+        """Return trial duration as a timedelta() object"""
+        execution_interval = self.execution_interval
+        if execution_interval:
+            from_time, to_time = execution_interval
+            return to_time - from_time
+        else:
+            return timedelta()
+
+    @property
+    def execution_interval(self):
+        """Return execution interval, or None if unavailable"""
+        if self.start_time:
+            if self.end_time:
+                return self.start_time, self.end_time
+            elif self.heartbeat:
+                return self.start_time, self.heartbeat
+        return None
 
     def _repr_values(self, values, sep=","):
         """Represent with a string the given values."""

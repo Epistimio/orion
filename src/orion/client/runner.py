@@ -14,6 +14,7 @@ import shutil
 import signal
 import time
 import typing
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Callable
@@ -61,7 +62,7 @@ class Protected:
             self.signal_installed = True
 
         except ValueError:  # ValueError: signal only works in main thread
-            log.warning(
+            warnings.warn(
                 "SIGINT/SIGTERM protection hooks could not be installed because "
                 "Runner is executing inside a thread/subprocess, results could get lost "
                 "on interruptions"
@@ -287,19 +288,18 @@ class Runner:
 
         while self.is_running:
             try:
+                # Get new trials for our free workers
+                with self.stat.time("sample"):
+                    new_trials = self.sample()
+
+                # Scatter the new trials to our free workers
+                with self.stat.time("scatter"):
+                    scattered = self.scatter(new_trials)
 
                 # Protected will prevent Keyboard interrupts from
                 # happening in the middle of the scatter-gather process
                 # that we can be sure that completed trials are observed
                 with Protected():
-
-                    # Get new trials for our free workers
-                    with self.stat.time("sample"):
-                        new_trials = self.sample()
-
-                    # Scatter the new trials to our free workers
-                    with self.stat.time("scatter"):
-                        scattered = self.scatter(new_trials)
 
                     # Gather the results of the workers that have finished
                     with self.stat.time("gather"):
