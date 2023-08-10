@@ -169,6 +169,8 @@ setup_args = dict(
         "joblib",
         "pytest>=3.0.0",
         "scikit-optimize",
+        "pyyaml",
+        "typing_extensions",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "pytest-runner"],
