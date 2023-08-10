@@ -4,8 +4,10 @@ Module responsible for the trials/ REST endpoint
 """
 import json
 
+import falcon.errors
 from falcon import Request, Response
 
+from orion.core.worker.trial import Trial
 from orion.serving.parameters import (
     retrieve_experiment,
     retrieve_trial,
@@ -44,7 +46,7 @@ class TrialsResource:
             trials = experiment.fetch_trials(with_ancestors)
 
         response = build_trials_response(trials)
-        resp.body = json.dumps(response)
+        resp.text = json.dumps(response)
 
     def on_get_trial_in_experiment(
         self, req: Request, resp: Response, experiment_name: str, trial_id: str
@@ -57,4 +59,30 @@ class TrialsResource:
         trial = retrieve_trial(experiment, trial_id)
 
         response = build_trial_response(trial)
-        resp.body = json.dumps(response)
+        resp.text = json.dumps(response)
+
+    def on_get_trial_set_status_in_experiment(
+        self,
+        req: Request,
+        resp: Response,
+        experiment_name: str,
+        trial_id: str,
+        status: str,
+    ):
+        """
+        Handle GET requests for trials/:experiment/:trial_id/set-status/:status
+        where ``experiment`` is the user-defined name of the experiment,
+        ``trial_id`` is the id of the trial, and ``status`` is the status
+        to set for trial.
+        """
+        experiment = retrieve_experiment(self.storage, experiment_name)
+        trial = retrieve_trial(experiment, trial_id)
+
+        if status != trial.status:
+            if status not in Trial.allowed_stati:
+                raise falcon.errors.HTTPInvalidParam("Invalid status", "status")
+            self.storage.update_trial(trial, status=status)
+            trial.status = status
+
+        response = build_trial_response(trial)
+        resp.text = json.dumps(response)

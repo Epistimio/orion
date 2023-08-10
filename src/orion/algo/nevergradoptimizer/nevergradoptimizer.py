@@ -144,6 +144,11 @@ NOT_WORKING = {
     "RPowell",
     "RSQP",
     "PymooNSGA2",
+    "NGOpt12",
+    "NGOpt13",
+    "NGOpt14",
+    "NGOpt21",
+    "NGOpt38",
 }
 
 

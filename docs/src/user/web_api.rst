@@ -216,7 +216,8 @@ Trials
 ------
 
 The trials resource permits the retrieval of your trials regardless of their status. You can
-retrieve individual trials as well as a list of all your trials per experiment.
+retrieve individual trials as well as a list of all your trials per experiment. You can
+also edit status for an individual trial.
 
 .. http:get:: /trials/:experiment
 
@@ -274,7 +275,8 @@ retrieve individual trials as well as a list of all your trials per experiment.
          "statistics": {
             "low": 1,
             "high": 42
-         }
+         },
+         "status": "completed"
       }
 
    :>json id: The ID of the trial.
@@ -286,10 +288,45 @@ retrieve individual trials as well as a list of all your trials per experiment.
    :>json objective: The objective found for this trial with the given hyper-parameters.
    :>json statistics: The dictionary of statistics recorded during the trial
       as ``"statistic-name":"statistic-value"``.
+   :>json status: The status of the trial.
 
    :statuscode 400: When an invalid query parameter is passed in the request.
    :statuscode 404: When the specified experiment doesn't exist in the database.
    :statuscode 404: When the specified trial doesn't exist for the specified experiment.
+
+.. http:get:: /trials/:experiment/:id/set-status/:status
+
+   Set status to value ``status`` for an existing trial with id ``id`` from the experiment ``experiment``.
+
+   Return the details of trial with updated status.
+   See the specification of :http:get:`/trials/:experiment/:id`
+   for a description of returned fields.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+         "id": "f70277",
+         "submitTime": "2020-01-22 14:19:42.02448"
+         "startTime": "2020-01-22 14:20:42.02448",
+         "endTime": "2020-01-22 14:20:42.0248",
+         "parameters": {
+            "epsilon": 1,
+            "lr": 0.1
+         },
+         "objective": -0.7865584361152724,
+         "statistics": {
+            "low": 1,
+            "high": 42
+         },
+         "status": "completed"
+      }
 
 Plots
 -----
