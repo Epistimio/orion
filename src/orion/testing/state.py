@@ -17,6 +17,7 @@ import orion
 from orion.core.io import experiment_builder as experiment_builder
 from orion.core.worker.trial import Trial
 from orion.storage.base import setup_storage, storage_factory
+from orion.storage.legacy import Legacy
 
 
 # pylint: disable=no-self-use,protected-access
@@ -72,6 +73,7 @@ class BaseOrionState:
         resources=None,
         from_yaml=None,
         storage=None,
+        storage_instance=None,
     ):
         if from_yaml is not None:
             with open(from_yaml) as f:
@@ -84,7 +86,7 @@ class BaseOrionState:
 
         self.previous_config = copy.deepcopy(orion.core.config.storage.to_dict())
         self.storage_config = _select(storage, _get_default_test_storage())
-        self.storage = None
+        self.storage = storage_instance
 
         self._benchmarks = _select(benchmarks, [])
         self._experiments = _select(experiments, [])
@@ -172,6 +174,9 @@ class BaseOrionState:
         """Iterate over the database configuration and replace ${file}
         by the name of a temporary file
         """
+        if self.storage is not None:
+            return dict()
+
         self.tempfile, self.tempfile_path = tempfile.mkstemp("_orion_test")
         _remove(self.tempfile_path)
 
@@ -203,6 +208,9 @@ class BaseOrionState:
 
     def setup_storage(self, config=None):
         """Return test storage"""
+        if self.storage is not None:
+            return
+
         self.previous_config = orion.core.config.storage.to_dict()
         orion.core.config.storage.from_dict(config)
 
@@ -225,8 +233,8 @@ class BaseOrionState:
 class LegacyOrionState(BaseOrionState):
     """See :func:`~orion.testing.state.BaseOrionState`"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, storage_instance=None, **kwargs):
+        super().__init__(*args, storage_instance=storage_instance, **kwargs)
         self.initialized = False
 
     @property
@@ -294,6 +302,9 @@ class LegacyOrionState(BaseOrionState):
 def OrionState(*args, **kwargs):
     """Build an orion state in function of the storage type"""
     storage = kwargs.get("storage")
+
+    if storage and isinstance(storage, Legacy):
+        return LegacyOrionState(*args, storage_instance=storage, **kwargs)
 
     if not storage or storage["type"] == "legacy":
         return LegacyOrionState(*args, **kwargs)

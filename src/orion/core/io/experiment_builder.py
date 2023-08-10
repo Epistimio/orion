@@ -593,10 +593,11 @@ class ExperimentBuilder:
             try:
                 self._register_experiment(experiment)
                 log.debug("Experiment successfully registered in DB.")
-            except DuplicateKeyError:
+            except DuplicateKeyError as err:
                 log.debug(
                     "Experiment registration failed. This is likely due to a race condition. "
-                    "Now rolling back and re-attempting building it."
+                    "Now rolling back and re-attempting building it. Exception: %s",
+                    err,
                 )
                 experiment = self.build(branching=branching, **config)
 
@@ -694,6 +695,9 @@ class ExperimentBuilder:
             return {}
 
         config = _fetch_config_version(configs, version)
+
+        # ignore the owner_id field it was set by the database
+        config.pop("owner_id", None)
 
         if len(configs) > 1 and version is None:
             log.info(

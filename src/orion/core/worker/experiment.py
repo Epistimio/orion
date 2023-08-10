@@ -595,7 +595,7 @@ class Experiment(Generic[AlgoT]):
             To be used as a terminating condition in a ``Worker``.
 
         """
-        trials = self.fetch_trials(with_evc_tree=True)
+        trials = self.fetch_trials()
         num_completed_trials = 0
         num_pending_trials = 0
         for trial in trials:

@@ -21,6 +21,10 @@ from orion.core.utils.flatten import unflatten
 log = logging.getLogger(__name__)
 
 
+STOPPED_STATUS = {"completed", "interrupted", "suspended"}
+
+
+
 class AlreadyReleased(Exception):
     """Raised when a trial gets released twice"""
 
@@ -205,6 +209,7 @@ class Trial:
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
+        kwargs.pop("owner_id", None)
         self._params: list[Trial.Param] = []
         self._results: list[Trial.Result] = []
 

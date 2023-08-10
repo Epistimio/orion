@@ -251,6 +251,7 @@ class TestBackwardCompatibility:
         assert {key for key, is_unique in index_info.items() if is_unique} == {
             "_id_",
             "name_1_version_1",
+            "name_1_version_1_onwer_id_1",
         }
 
         experiments = storage.fetch_experiments({})

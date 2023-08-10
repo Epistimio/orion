@@ -29,7 +29,7 @@ from orion.core.utils.format_trials import dict_to_trial
 from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.experiment import AlgoT
 from orion.core.worker.producer import Producer
-from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
+from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM, STOPPED_STATUS
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import BaseExecutor, executor_factory
 from orion.plotting.base import PlotAccessor
@@ -111,7 +111,7 @@ class ExperimentClient:
 
         self._executor = executor
         self._executor_owner = False
-
+        self.remote_mode = False
         self.plot = PlotAccessor(self)
 
     ###
@@ -416,7 +416,7 @@ class ExperimentClient:
             return trial
 
         if not reserve:
-            self.release(trial)
+            self.release(trial, status="new")
 
         return trial
 
@@ -654,7 +654,12 @@ class ExperimentClient:
                 f"Reservation for trial {trial.id} has been lost."
             ) from e
         finally:
-            self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
+            self._release_reservation(
+                trial,
+                raise_if_unreserved=raise_if_unreserved
+                if not self.remote_mode
+                else False,
+            )
 
     @contextmanager
     def tmp_executor(self, executor, **config):
@@ -811,6 +816,7 @@ class ExperimentClient:
             self._experiment.algorithm.max_trials = max_trials
 
         with SetupWorkingDir(self):
+
             runner = Runner(
                 self,
                 fct,
@@ -877,11 +883,28 @@ class ExperimentClient:
             raise RuntimeError(f"Reservation for trial {trial.id} has been lost.")
 
     def _maintain_reservation(self, trial):
-        self._pacemakers[trial.id] = TrialPacemaker(trial, self.storage)
+        self._pacemakers[trial.id] = TrialPacemaker(trial, self)
         self._pacemakers[trial.id].start()
 
+    def _update_heardbeat(self, trial):
+        """Try to update the heartbeat, returns true if the Pacemaker should be stopped"""
+        # trial = self.storage.get_trial(self.trial)
+
+        if trial.status in STOPPED_STATUS:
+            return True
+        else:
+            if not self.client.update_heartbeat(trial):
+                return True
+
+        return False
+
     def _release_reservation(self, trial, raise_if_unreserved=True):
+        # remote client are not spawning pacemakers
+        if self.remote_mode:
+            return
+
         if trial.id not in self._pacemakers:
+
             if raise_if_unreserved:
                 raise RuntimeError(
                     f"Trial {trial.id} had no pacemakers. Was it reserved properly?"
@@ -895,3 +918,45 @@ class ExperimentClient:
     def storage(self):
         """Return the storage currently in use by this client"""
         return self._experiment.storage
+
+    @staticmethod
+    def create_experiment(
+        name,
+        version=None,
+        space=None,
+        algorithms=None,
+        strategy=None,
+        max_trials=None,
+        max_broken=None,
+        storage=None,
+        branching=None,
+        max_idle_time=None,
+        heartbeat=None,
+        working_dir=None,
+        debug=False,
+        knowledge_base=None,
+        executor=None,
+    ):
+        """Build an experiment to be executable.
+
+        This is overridden to support multiple types of storage.
+
+        """
+        # pylint: disable=protected-access
+        return orion.client._build_experiment(
+            name,
+            version=version,
+            space=space,
+            algorithms=algorithms,
+            strategy=strategy,
+            max_trials=max_trials,
+            max_broken=max_broken,
+            storage=storage,
+            branching=branching,
+            max_idle_time=max_idle_time,
+            heartbeat=heartbeat,
+            working_dir=working_dir,
+            debug=debug,
+            knowledge_base=knowledge_base,
+            executor=executor,
+        )

@@ -17,8 +17,9 @@ from falcon import testing
 
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
+from orion.client.experiment import ExperimentClient
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.worker.producer import Producer
+from orion.service.client.experiment import ExperimentClientREST
 from orion.serving.webapi import WebApi
 from orion.testing.state import OrionState
 
@@ -205,7 +206,7 @@ def mock_space_iterate(monkeypatch):
 
 @contextmanager
 def create_experiment(
-    exp_config=None, trial_config=None, statuses=None, knowledge_base=None
+    exp_config=None, trial_config=None, statuses=None, builder=None, knowledge_base=None
 ):
     """Context manager for the creation of an ExperimentClient and storage init"""
     if exp_config is None:
@@ -214,8 +215,6 @@ def create_experiment(
         raise ValueError("Parameter 'trial_config' is missing")
     if statuses is None:
         statuses = ["new", "interrupted", "suspended", "reserved", "completed"]
-
-    from orion.client.experiment import ExperimentClient
 
     with OrionState(
         experiments=[exp_config],
@@ -228,6 +227,49 @@ def create_experiment(
             experiment._id = cfg.trials[0]["experiment"]
         client = ExperimentClient(experiment)
         yield cfg, experiment, client
+
+    client.close()
+
+
+@contextmanager
+def create_rest_experiment(exp_config, trial_config, statuses=None, builder=None):
+    from orion.service.testing import get_mongo_admin, server
+
+    if statuses is None:
+        statuses = ["new", "interrupted", "suspended", "reserved", "completed"]
+
+    with server() as (endpoint, port):
+        storage = get_mongo_admin(port, owner="User1")
+
+        with OrionState(
+            experiments=[exp_config],
+            trials=generate_trials(trial_config, statuses, exp_config),
+            storage=storage,
+        ) as cfg:
+
+            client = ExperimentClientREST.create_experiment(
+                exp_config["name"],
+                storage=dict(
+                    type="reststorage",
+                    endpoint=endpoint,
+                    token="Tok1",
+                ),
+            )
+
+            # This is the REST experiment which does not have access to the storage
+            # but tests are leveraging methods of the real experiment
+            # experiment = client._experiment
+
+            # We are building the experiment as if we had direct access to the mongodb
+            # database, in testing we check that experiment.method == client.method
+            # so we know the API match
+            builder = experiment_builder.ExperimentBuilder(storage=storage)
+            experiment = builder.build(exp_config["name"], version=None, branching=None)
+
+            if cfg.trials:
+                experiment._id = cfg.trials[0]["experiment"]
+
+            yield cfg, experiment, client
 
     client.close()
 

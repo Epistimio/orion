@@ -209,6 +209,44 @@ def build_experiment(
         If the algorithm or storage specified is not properly installed.
 
     """
+    return ExperimentClient.create_experiment(
+        name,
+        version=version,
+        space=space,
+        algorithms=algorithms,
+        strategy=strategy,
+        max_trials=max_trials,
+        max_broken=max_broken,
+        storage=storage,
+        branching=branching,
+        max_idle_time=max_idle_time,
+        heartbeat=heartbeat,
+        working_dir=working_dir,
+        debug=debug,
+        knowledge_base=knowledge_base,
+        executor=executor,
+    )
+
+
+# pylint: disable=too-many-arguments
+def _build_experiment(
+    name,
+    version=None,
+    space=None,
+    algorithms=None,
+    strategy=None,
+    max_trials=None,
+    max_broken=None,
+    storage=None,
+    branching=None,
+    max_idle_time=None,
+    heartbeat=None,
+    working_dir=None,
+    debug=False,
+    knowledge_base: KnowledgeBase | dict | None = None,
+    executor=None,
+):
+
     if max_idle_time:
         log.warning(
             "max_idle_time is deprecated. Use experiment.workon(idle_timeout) instead."
@@ -230,6 +268,7 @@ def build_experiment(
             knowledge_base=knowledge_base,
         )
     except RaceCondition:
+        log.debug("Try creating a new experiment again")
         # Try again, but if it fails again, raise. Race conditions due to version increment should
         # only occur once in a short window of time unless code version is changing at a crazy pace.
         try:

@@ -170,6 +170,41 @@ jobs:
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
+
+  service:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+          python -m pip install --upgrade pip
+          pip install tox tox-gh-actions
+        
+    - name: Install MongoDB
+      run: |
+        wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-org
+        mongod --version
+        mongosh --version
+
+    - name: Test with tox
+      run: tox -e service
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: PLATFORM,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
   mongodb:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest

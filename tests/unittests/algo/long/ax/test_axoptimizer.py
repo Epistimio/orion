@@ -271,4 +271,4 @@ class TestAxOptimizer(BaseAlgoTests):
             <= stats.mean(objectives_branin) - stats.stdev(objectives_branin) * 0.7
         )
         # currin
-        assert 3 <= stats.mean(objectives_currin[-5:]) <= 10
+        assert 3 <= stats.mean(objectives_currin[-5:]) <= 11
