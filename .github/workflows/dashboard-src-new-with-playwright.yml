@@ -31,7 +31,7 @@ jobs:
     # Launch Orion backend
 
     - name: Launch Orion server
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.8
     - name: Install Orion from local copy
@@ -48,12 +48,15 @@ jobs:
         python .github/workflows/orion/pickle_to_mongodb.py
         cd dashboard/src/
 
+    - name: check ulimit
+      run: ulimit -a
+
     - name: Start Orion backend
       run: |
         # Start Orion backend in repository root folder.
         cd ../../
         mkdir -p gunicorn_tmp_dir
-        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml 2> dashboard/src/orion-backend-${{ matrix.node-version }}.log &
+        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml > dashboard/src/orion-backend-${{ matrix.node-version }}.log 2>&1 &
         cd dashboard/src/
 
     - name: Install dependencies
