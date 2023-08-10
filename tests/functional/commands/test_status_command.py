@@ -3,8 +3,11 @@
 import os
 
 import pytest
+import yaml
 
 import orion.core.cli
+from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.testing.state import OrionState
 
 
 def test_no_experiments(orionstate, monkeypatch, capsys):
@@ -1238,3 +1241,39 @@ def test_experiment_cant_use_version(three_experiments_same_name):
         orion.core.cli.main(["status", "--version", "2", "--expand-versions"])
 
     assert "expand-versions" in str(ex.value)
+
+
+def test_using_config_file(three_experiments_family_same_name, capsys, tmp_path):
+    """Test status using `--config`."""
+    orion.core.cli.main(["status"])
+
+    captured = capsys.readouterr().out
+
+    assert "test_single_exp_child-v1" in captured
+
+    config_path = str(tmp_path / "config.yaml")
+
+    with OrionState() as cfg:
+        with open(config_path, "w") as f:
+            yaml.dump(
+                {
+                    "storage": {
+                        "database": {"type": "pickleddb", "host": cfg.storage._db.host}
+                    }
+                },
+                f,
+            )
+
+        orion.core.cli.main(["status", "--config", config_path])
+
+        captured = capsys.readouterr().out
+
+        assert "test_single_exp_child-v1" not in captured
+
+        ExperimentBuilder(cfg.storage).build(name="test", space={"x": "uniform(0, 1)"})
+
+        orion.core.cli.main(["status", "--config", config_path])
+
+        captured = capsys.readouterr().out
+
+        assert captured == "test-v1\n=======\nempty\n\n\n"

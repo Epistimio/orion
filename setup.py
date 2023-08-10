@@ -158,7 +158,8 @@ setup_args = dict(
         "tabulate",
         "AppDirs",
         "plotly",
-        "kaleido",
+        # Pin the version to work around https://github.com/plotly/Kaleido/issues/156.
+        "kaleido==0.2.1",
         "requests",
         "pandas",
         "gunicorn",
@@ -169,9 +170,11 @@ setup_args = dict(
         "joblib",
         "pytest>=3.0.0",
         "scikit-optimize",
+        "pyyaml",
+        "typing_extensions",
     ],
     tests_require=tests_require,
-    setup_requires=["setuptools", "appdirs", "pytest-runner"],
+    setup_requires=["setuptools", "pytest-runner"],
     extras_require=extras_require,
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
