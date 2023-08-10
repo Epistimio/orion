@@ -170,7 +170,7 @@ setup_args = dict(
         "scikit-optimize",
     ],
     tests_require=tests_require,
-    setup_requires=["setuptools", "appdirs", "pytest-runner"],
+    setup_requires=["setuptools", "pytest-runner"],
     extras_require=extras_require,
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
