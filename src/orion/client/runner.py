@@ -14,6 +14,7 @@ import shutil
 import signal
 import time
 import typing
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Callable
@@ -61,7 +62,7 @@ class Protected:
             self.signal_installed = True
 
         except ValueError:  # ValueError: signal only works in main thread
-            log.warning(
+            warnings.warn(
                 "SIGINT/SIGTERM protection hooks could not be installed because "
                 "Runner is executing inside a thread/subprocess, results could get lost "
                 "on interruptions"
