@@ -133,6 +133,11 @@ class WebApi(falcon.App):
             trials_resource,
             suffix="trial_in_experiment",
         )
+        self.add_route(
+            "/trials/{experiment_name}/{trial_id}/set-status/{status}",
+            trials_resource,
+            suffix="trial_set_status_in_experiment",
+        )
         self.add_route("/plots/lpi/{experiment_name}", plots_resource, suffix="lpi")
         self.add_route(
             "/plots/partial_dependencies/{experiment_name}",
