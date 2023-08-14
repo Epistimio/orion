@@ -383,7 +383,9 @@ class Track(BaseStorageProtocol):  # noqa: F811
 
         assert self.project, "Project should have been found"
 
-    def create_experiment(self, config):
+    def create_experiment(
+        self, config, algo_locked=0, algo_state=None, algo_heartbeat=None
+    ):
         """Insert a new experiment inside the database"""
         self._get_project(config["name"])
 
@@ -744,7 +746,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
             trial.storage, heartbeat=to_epoch(datetime.datetime.utcnow())
         )
 
-    def _initialize_algorithm_lock(self, experiment_id):
+    def _write_algorithm_lock(self, experiment_id):
         raise NotImplementedError
         return self._db.write(
             "algo",
