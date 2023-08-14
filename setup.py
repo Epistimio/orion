@@ -30,6 +30,7 @@ algos = [
 ]
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
+    "orion",
     "orion.algo.base",
     "orion.algo.space",
     "orion.analysis",
@@ -169,6 +170,8 @@ setup_args = dict(
         "joblib",
         "pytest>=3.0.0",
         "scikit-optimize",
+        "pyyaml",
+        "typing_extensions",
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "pytest-runner"],
