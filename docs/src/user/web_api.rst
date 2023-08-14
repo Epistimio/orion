@@ -393,7 +393,6 @@ visualize your experiments and their results.
 
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
-
 Benchmarks
 ----------
 The benchmark resource permits the retrieval of in-progress and completed benchmarks. You can
@@ -486,6 +485,101 @@ retrieve individual benchmarks as well as a list of all your benchmarks.
    :statuscode 404: When the specified benchmark does not exist in the database,
                     or assessment, task or algorithms are not part of the existing benchmark
                     configuration.
+
+Database dumping
+----------------
+
+The database dumping resource allows to dump database content
+into a PickledDB and download it as PKL file.
+
+.. http:get:: /dump
+
+   Return a PKL file containing database content.
+
+   :query name: Optional name of experiment to export. It unspecified, whole database is dumped.
+   :query version: Optional version of the experiment to retrieve.
+      If unspecified and name is specified, the **latest** version of the experiment is exported.
+      If both name and version are unspecified, whole database is dumped.
+
+   :statuscode 404: When an error occurred during dumping.
+
+Database loading
+----------------
+
+The database loading resource allow to import data from a PKL file
+
+.. http:post:: /load
+
+   Import data into database from a PKL file.
+   This is a POST request, as a file must be uploaded.
+   Launch an import task in a separate process in backend and return task ID
+   which may be used to get task progress.
+
+   :query file: PKL file to import
+   :query resolve: policy to resolve conflicts during import. Either:
+
+    - ``ignore``: ignore imported data on conflict
+    - ``overwrite``: overwrite ancient data on conflict
+    - ``bump``: bump version of imported data before insertion on conflict
+
+   :query name: Optional name of experiment to import. If unspecified, whole data from PKL file is imported.
+   :query version: Optional version of experiment to import.
+      If unspecified and name is specified, the **latest** version of the experiment is imported.
+      If both name and version are unspceified, whole data from PKL file is imported.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+         "task": "e453679d-e36b-427a-a14d-58fe5e42ca19"
+      }
+
+   :>json task: The ID of the running task that are importing data.
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 403: When an import task is already running.
+
+Import progression
+------------------
+
+The import progression resource allows to monitor an import task launched by ``/load`` entry.
+
+.. http:get:: /import-status/:name
+
+   Returns status of a running import task identified by given ``name``.
+   ``name`` is the task ID returned by ``/load`` entry.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+         "messages": ["latest", "logging", "lines", "from", "import", "process"],
+         "progress_message": "description of current import step",
+         "progress_value": 0.889,
+         "status": "active"
+      }
+
+   :>json messages: Latest logging lines printed in import process since last call to ``/import-status`` entry.
+   :>json progress_message: Description of current import process step.
+   :>json progress_value: Floating value (between 0 and 1 included) representing current import progression.
+   :>json status: Import process status. Either:
+       "active": still running
+       "error": terminated with an error (see latest messages for error info)
+       "finished": successfully terminated
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
 
 Errors
 ------

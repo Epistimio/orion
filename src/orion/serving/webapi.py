@@ -16,10 +16,10 @@ from orion.serving.benchmarks_resource import BenchmarksResource
 from orion.serving.experiments_resource import ExperimentsResource
 from orion.serving.plots_resources import PlotsResource
 from orion.serving.runtime import RuntimeResource
+from orion.serving.storage_resource import StorageResource
 from orion.serving.trials_resource import TrialsResource
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class MyCORSMiddleware(CORSMiddleware):
@@ -113,6 +113,7 @@ class WebApi(falcon.App):
         benchmarks_resource = BenchmarksResource(self.storage)
         trials_resource = TrialsResource(self.storage)
         plots_resource = PlotsResource(self.storage)
+        storage_resource = StorageResource(self.storage)
 
         # Build routes
         self.add_route("/", root_resource)
@@ -151,6 +152,11 @@ class WebApi(falcon.App):
         )
         self.add_route(
             "/plots/regret/{experiment_name}", plots_resource, suffix="regret"
+        )
+        self.add_route("/dump", storage_resource, suffix="dump")
+        self.add_route("/load", storage_resource, suffix="load")
+        self.add_route(
+            "/import-status/{name}", storage_resource, suffix="import_status"
         )
 
     def start(self):
