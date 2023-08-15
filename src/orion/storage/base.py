@@ -150,13 +150,18 @@ class LockedAlgorithmState:
         Configuration of the locked algorithm.
     locked: bool
         Whether the algorithm is locked or not. Default: True
+    heartbeat: datetime
+        Current heartbeat of algorithm
     """
 
-    def __init__(self, state: dict, configuration: dict, locked: bool = True):
+    def __init__(
+        self, state: dict, configuration: dict, locked: bool = True, heartbeat=None
+    ):
         self._original_state = state
         self.configuration = configuration
         self._state = state
         self.locked = locked
+        self.heartbeat = heartbeat
 
     @property
     def state(self) -> dict:
@@ -186,8 +191,30 @@ class BaseStorageProtocol:
         """Fetch all benchmarks that match the query"""
         raise NotImplementedError()
 
-    def create_experiment(self, config: ExperimentConfig):
-        """Insert a new experiment inside the database"""
+    def delete_benchmark(self, query: dict):
+        """Delete benchmarks that match given query"""
+        raise NotImplementedError()
+
+    def create_experiment(
+        self,
+        config: ExperimentConfig,
+        algo_locked: int = 0,
+        algo_state: dict | None = None,
+        algo_heartbeat: datetime | None = None,
+    ):
+        """Insert a new experiment inside the database
+
+        Parameters
+        ----------
+        config:
+            experiment config
+        algo_locked: int
+            Whether algo is initially locked (1) o not (0, default)
+        algo_state: dict, optional
+            Initial algo state
+        algo_heartbeat: datetime, optional
+            Initial algo heartbeat. Default to datetime.utcnow().
+        """
         raise NotImplementedError()
 
     def delete_experiment(
@@ -524,10 +551,15 @@ class BaseStorageProtocol:
         """Update trial's heartbeat"""
         raise NotImplementedError()
 
-    def initialize_algorithm_lock(
-        self, experiment_id: int | str, algorithm_config: dict
+    def write_algorithm_lock(
+        self,
+        experiment_id: int | str,
+        algorithm_config: dict,
+        locked: int = 0,
+        state: dict | None = None,
+        heartbeat: datetime | None = None,
     ):
-        """Initialize algorithm lock for given experiment
+        """Write algorithm lock for given experiment
 
         Parameters
         ----------
@@ -535,6 +567,12 @@ class BaseStorageProtocol:
             ID of the experiment in storage.
         algorithm_config: dict
             Configuration of the algorithm.
+        locked: int
+            Whether algorithm is locked (1) or not (0, default).
+        state: dict, optional
+            Optional algorithm state.
+        heartbeat: datetime, optional
+            Algorithm heartbeat. Default to datetime.utcnow().
         """
         raise NotImplementedError()
 
