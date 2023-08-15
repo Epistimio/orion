@@ -33,7 +33,7 @@ Oríon
     :target: https://github.com/Epistimio/orion/actions?query=workflow:build+branch:master+event:schedule
     :alt: Github actions tests
 
-.. image:: docs/src/_static/logos/orion_logo_grid_150ppi.png
+.. image:: https://github.com/Epistimio/orion/blob/develop/docs/src/_static/logos/orion_logo_grid_150ppi.png
   :width: 400
   :alt: Oríon
 
