@@ -14,6 +14,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from glob import glob
 from importlib import import_module
+from tempfile import NamedTemporaryFile
 
 import pkg_resources
 
@@ -229,3 +230,13 @@ def sigterm_as_interrupt():
     yield None
 
     signal.signal(signal.SIGTERM, previous)
+
+
+def generate_temporary_file(basename="dump", suffix=".pkl"):
+    """Generate a temporary file where data could be saved.
+
+    Create an empty file without collision.
+    Return name of generated file.
+    """
+    with NamedTemporaryFile(prefix=f"{basename}_", suffix=suffix, delete=False) as tf:
+        return tf.name
