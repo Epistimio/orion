@@ -11,11 +11,11 @@ import typing
 import warnings
 from dataclasses import dataclass
 from logging import getLogger as get_logger
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 import pandas as pd
-from typing_extensions import Literal, TypedDict  # type: ignore
+from typing_extensions import TypedDict  # type: ignore
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Dimension, Fidelity, Space

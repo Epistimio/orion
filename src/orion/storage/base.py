@@ -20,8 +20,7 @@ import copy
 import logging
 import typing
 from datetime import datetime
-
-from typing_extensions import Literal
+from typing import Literal
 
 import orion.core
 from orion.core.io import resolve_config

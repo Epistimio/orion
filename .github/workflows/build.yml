@@ -88,7 +88,7 @@ jobs:
       max-parallel: 4
       matrix:
         platform: [ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9, '3.10']
+        python-version: [3.8, 3.9, '3.10']
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
@@ -119,7 +119,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.8, 3.9]
         algo: [nevergrad, hebo, ax]
     env:
       PLATFORM: ${{ matrix.platform }}
