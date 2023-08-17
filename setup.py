@@ -56,6 +56,7 @@ extras_require = {
         "sphinx_gallery",
     ],
     "dask": ["dask[complete]"],
+    "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "profet": ["emukit", "GPy", "torch", "pybnn"],
     "configspace": ["ConfigSpace"],
@@ -145,6 +146,7 @@ setup_args = dict(
             "joblib = orion.executor.joblib_backend:Joblib",
             "poolexecutor = orion.executor.multiprocess_backend:PoolExecutor",
             "dask = orion.executor.dask_backend:Dask",
+            "ray = orion.executor.ray_backend:Ray",
         ],
     },
     install_requires=[

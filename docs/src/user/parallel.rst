@@ -74,3 +74,10 @@ For more control over Dask, you should prefer using Dask executor backend direct
 The executor configuration is used to create the Dask Client. See Dask's documentation
 `here <https://distributed.dask.org/en/latest/api.html#distributed.Client>`__ for
 more information on possible arguments.
+
+Ray
+----
+
+We can also use the ray executor backend. For more control with ray, you can see ray's
+documentation `here <https://docs.ray.io/en/latest/ray-core/package-ref.html#python-api>`__ for
+more information on ray and it's python api.
