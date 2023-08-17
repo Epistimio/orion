@@ -34,9 +34,11 @@ def main():
     with open(json_path) as file:
         urls = json.load(file)
     start = time.perf_counter_ns()
+    print(f"(0/{len(urls)}) starting ...")
     for i, url in enumerate(urls):
         try:
-            resp = requests.get(url)
+            # Call request with a timeout of 10 minutes.
+            resp = requests.get(url, timeout=600)
             assert resp.status_code == 200, (url, resp.status_code)
             print(f"({i + 1}/{len(urls)}) {url} {type(resp.json())}")
         except requests.exceptions.ConnectionError as exc:
