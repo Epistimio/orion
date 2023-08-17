@@ -76,7 +76,22 @@ jobs:
     - name: Serve build
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
+    - name: Run requests call to Orion server
+      run: python ../../.github/workflows/orion/call_orion_server.py
+
+    - name: Run requests call to Orion server (2)
+      run: python ../../.github/workflows/orion/call_orion_server.py
+
+    - name: Run requests call to Orion server (3)
+      run: python ../../.github/workflows/orion/call_orion_server.py
+
     - name: Run Playwright tests
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (2)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (3)
       run: yarn playwright test --project=chromium --reporter=line
 
     # Upload orion backend log.
