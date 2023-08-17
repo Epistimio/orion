@@ -17,9 +17,9 @@ conda update -q conda
 conda info -a
 conda install conda-build anaconda-client
 
-conda-build conda --python 3.7
 conda-build conda --python 3.8
 conda-build conda --python 3.9
 
 # Conda 3.10 does not work because of a bug inside conda itself
 # conda build conda --python 3.10
+# conda build conda --python 3.11
