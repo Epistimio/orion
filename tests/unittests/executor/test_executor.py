@@ -328,7 +328,7 @@ def pytorch_workon(pid):
 
 def has_pytorch():
     try:
-        import torch
+        pass
 
         return True
     except:
