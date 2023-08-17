@@ -1,4 +1,5 @@
 import multiprocessing
+import multiprocessing.process as proc
 import time
 
 import pytest
@@ -7,6 +8,14 @@ from orion.executor.base import AsyncException, ExecutorClosed, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
+
+try:
+    import torch
+    from torchvision import datasets, transforms
+
+    HAS_PYTORCH = True
+except:
+    HAS_PYTORCH = False
 
 
 def multiprocess(n):
@@ -303,12 +312,7 @@ def test_executors_del_does_not_raise(backend):
 
 
 def pytorch_workon(pid):
-    import multiprocessing.process as proc
-
     assert not proc._current_process._config.get("daemon")
-
-    import torch
-    from torchvision import datasets, transforms
 
     transform = transforms.Compose(
         [
@@ -326,21 +330,12 @@ def pytorch_workon(pid):
     return i
 
 
-def has_pytorch():
-    try:
-        pass
-
-        return True
-    except:
-        return False
-
-
 @pytest.mark.parametrize("backend", backends)
 def test_pytorch_dataloader(backend):
     if backend is Dask:
         pytest.xfail("Dask does not support nesting")
 
-    if not has_pytorch():
+    if not HAS_PYTORCH:
         pytest.skip("Pytorch is not installed skipping")
         return
 
