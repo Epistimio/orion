@@ -33,6 +33,7 @@ include tests/requirements.txt
 include .pre-commit-config.yaml
 include CITATION.bib
 include docs/src/_static/logos/orion_logo.ai
+include src/orion/py.typed
 
 # Include examples
 recursive-include examples *.md *.py *.pkl *.yaml *.ipynb */requirements.txt

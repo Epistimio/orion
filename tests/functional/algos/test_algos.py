@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import os
-import random
 from pathlib import Path
 
 import numpy
@@ -153,16 +152,26 @@ from orion.benchmark.task.base import BenchmarkTask
 
 
 class CustomRosenbrock(BenchmarkTask):
-    def __init__(self, max_trials: int = 30, with_fidelity: bool = False):
+    def __init__(
+        self, max_trials: int = 30, with_fidelity: bool = False, seed: int | None = None
+    ):
         super().__init__(max_trials)
+        self.seed = seed
         self.with_fidelity = with_fidelity
+
+        self.rng: numpy.random.RandomState
+        self.initialize()
+
+    def initialize(self):
+        self.rng = numpy.random.RandomState(self.seed)
 
     def call(self, x: float, noise: float | None = None) -> list[dict]:
         """Evaluate partial information of a quadratic."""
         z = x - 34.56789
         if noise is not None:
             noise = (1 - noise / 10) + 0.0001
-            z *= random.gauss(0, noise)
+            z *= self.rng.normal(0, noise)
+
         y = 4 * z**2 + 23.4
         dy_dx = 8 * z
         return [
@@ -199,8 +208,8 @@ class MultiDimRosenbrock(CustomRosenbrock):
         return super().call(x_0, noise=noise)
 
 
-rosenbrock = CustomRosenbrock(max_trials=30, with_fidelity=False)
-rosenbrock_with_fidelity = CustomRosenbrock(max_trials=30, with_fidelity=True)
+rosenbrock = CustomRosenbrock(max_trials=30, with_fidelity=False, seed=123)
+rosenbrock_with_fidelity = CustomRosenbrock(max_trials=30, with_fidelity=True, seed=123)
 
 space = rosenbrock.get_search_space()
 space_with_fidelity = rosenbrock_with_fidelity.get_search_space()
@@ -354,6 +363,7 @@ def test_with_nested_spaces(algorithm: dict):
 )
 def test_with_fidelity(algorithm: dict):
     """Test a scenario with fidelity."""
+    rosenbrock_with_fidelity.initialize()
     exp = workon(
         rosenbrock_with_fidelity,
         space_with_fidelity,
@@ -381,6 +391,41 @@ def test_with_fidelity(algorithm: dict):
     param = best_trial._params[1]
     assert param.name == "x"
     assert param.type == "real"
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    algorithm_configs.values(),
+    ids=list(algorithm_configs.keys()),
+)
+def test_seeding(algorithm: dict):
+    """Test seeding works properly."""
+
+    rosenbrock_with_fidelity.initialize()
+    exp = workon(
+        rosenbrock_with_fidelity,
+        space_with_fidelity,
+        algorithm=algorithm,
+        max_trials=30,
+    )
+
+    assert exp.configuration["algorithm"] == algorithm
+
+    trials = exp.fetch_trials()
+
+    rosenbrock_with_fidelity.initialize()
+    rep_exp = workon(
+        rosenbrock_with_fidelity,
+        space_with_fidelity,
+        algorithm=algorithm,
+        max_trials=30,
+    )
+
+    assert rep_exp.configuration["algorithm"] == algorithm
+
+    rep_trials = rep_exp.fetch_trials()
+
+    assert trials == rep_trials
 
 
 @pytest.mark.parametrize(
@@ -536,6 +581,7 @@ def test_branching_algos(
         storage=storage,
     )
 
+    rosenbrock_with_fidelity.initialize()
     exp.workon(branching_rosenbrock, n_workers=2, trial_arg="trial")
 
     def build_params_hist(trial: Trial) -> list[str]:
