@@ -51,18 +51,6 @@ jobs:
     - name: check ulimit
       run: ulimit -a
 
-    - name: set ulimit -i (increase from 27692)
-      run: ulimit -S -i 126889
-
-    - name: set ulimit -l (increase from 64)
-      run: ulimit -S -l 65536
-
-    - name: set ulimit -u (increase from 27692)
-      run: ulimit -S -u 126889
-
-    - name: re-check ulimit
-      run: ulimit -a
-
     - name: Start Orion backend
       run: |
         # Start Orion backend in repository root folder.
