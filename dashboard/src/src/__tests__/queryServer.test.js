@@ -8,7 +8,8 @@ test('test backend call', () => {
   return backend.query('').then(response => {
     expect(response.hasOwnProperty('orion')).toBeTruthy();
     expect(response.server).toBe('gunicorn');
-    expect(response.database).toBe('PickledDB');
+    // expect(response.database).toBe('PickledDB');
+    expect(response.database).toBe('MongoDB');
   });
 });
 

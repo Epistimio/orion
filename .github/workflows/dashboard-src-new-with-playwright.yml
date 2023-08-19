@@ -59,7 +59,7 @@ jobs:
         # **NB**: For MongoDB to work correctly (typically to prevent "too many open files" issue and timeout requests),
         # orion server using a Mongo database should run in a session with `ulimit -n` high enough
         # (e.g. `ulimit -n 64000`).
-        orion -vv serve -c .github/workflows/orion/orion_config_with_uncompleted_experiments.yaml > dashboard/src/orion-backend-${{ matrix.node-version }}.log 2>&1 &
+        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml > dashboard/src/orion-backend-${{ matrix.node-version }}.log 2>&1 &
         cd dashboard/src/
 
     - name: Install dependencies
