@@ -401,9 +401,9 @@ test.describe('Test trials table in database page', () => {
 
     // Define values for first row
     const valID = /0f886905874af10a6db412885341ae0b/;
-    const valSubmitTime = '2019-11-19 15:41:16.985000';
-    const valStartTime = '2019-11-19 15:41:16.996000';
-    const valEndTime = '2019-11-19 21:58:02.820000';
+    const valSubmitTime = '2019-11-19 15:41:16.985075';
+    const valStartTime = '2019-11-19 15:41:16.996319';
+    const valEndTime = '2019-11-19 21:58:02.820319';
     const valStatus = 'completed';
     const valObjective = '-0.7881121864177159';
 

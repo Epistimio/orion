@@ -1,0 +1,14 @@
+storage:
+  database:
+      host: '.github/workflows/orion/db_dashboard_full_with_uncompleted_experiments.pkl'
+      type: 'pickleddb'
+
+gunicorn:
+   bind: '127.0.0.1:8000'
+   workers: 1
+   threads: 1
+   timeout: 600
+   loglevel: 'debug'
+   worker_tmp_dir: gunicorn_tmp_dir
+
+frontends_uri: ["http://localhost:3000", "http://127.0.0.1:3000"]
