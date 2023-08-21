@@ -51,12 +51,12 @@ jobs:
     - name: check ulimit
       run: ulimit -a
 
-    - name: Start Orion backend
+    - name: Start fake Orion backend
       run: |
         # Start Orion backend in repository root folder.
         cd ../../
         mkdir -p gunicorn_tmp_dir
-        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml > dashboard/src/orion-backend-${{ matrix.node-version }}.log 2>&1 &
+        python .github/workflows/fake_orion_server.py > dashboard/src/fake-orion-backend-${{ matrix.node-version }}.log 2>&1 &
         cd dashboard/src/
 
     - name: Install dependencies
@@ -73,7 +73,16 @@ jobs:
     - name: Serve build
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
-    - name: Run Playwright tests
+    - name: Run Playwright tests (1)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (2)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (3)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (4)
       run: yarn playwright test --project=chromium --reporter=line
 
     # Upload orion backend log.
@@ -81,5 +90,5 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: orion-backend-log-artifact-${{ matrix.node-version }}
-        path: dashboard/src/orion-backend-${{ matrix.node-version }}.log
+        name: fake-orion-backend-log-artifact-${{ matrix.node-version }}
+        path: dashboard/src/fake-orion-backend-${{ matrix.node-version }}.log
