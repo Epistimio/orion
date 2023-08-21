@@ -53,11 +53,10 @@ jobs:
 
     - name: Start fake Orion backend
       run: |
-        # Move in repository root folder.
+        # Start Orion backend in repository root folder.
         cd ../../
-        # Launch fake server in background
+        mkdir -p gunicorn_tmp_dir
         python .github/workflows/fake_orion_server.py > dashboard/src/fake-orion-backend-${{ matrix.node-version }}.log 2>&1 &
-        # Move back to dashboard src folder
         cd dashboard/src/
 
     - name: Install dependencies
