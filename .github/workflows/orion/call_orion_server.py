@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import timedelta
 
@@ -968,18 +969,34 @@ URLS = [
 
 
 def main():
+    results = {}
     start = time.perf_counter_ns()
     print(f"(0/{len(URLS)}) starting ...")
     for i, url in enumerate(URLS):
         try:
             # Call request with a timeout of 10 minutes.
+            local_start = time.perf_counter_ns()
             resp = requests.get(url, timeout=600)
+            local_diff_seconds = (time.perf_counter_ns() - local_start) / 1e9
             assert resp.status_code == 200, (url, resp.status_code)
-            print(f"({i + 1}/{len(URLS)}) {url} {type(resp.json())}")
+            data = resp.json()
+            if url in results:
+                if results[url]["r"] != data:
+                    # import pprint
+                    # pprint.pprint(results[url]["r"])
+                    # pprint.pprint(data)
+                    # raise AssertionError(f"[{url}] two calls diff")
+                    print(f"[{url}] ERROR two calls diff")
+                results[url]["t"] = max(results[url]["t"], local_diff_seconds)
+            else:
+                results[url] = {"t": local_diff_seconds, "r": data}
+            print(f"({i + 1}/{len(URLS)}) {url} {type(data)}")
         except requests.exceptions.ConnectionError as exc:
             print(f"[{i + 1}/{len(URLS)}] REFUSED {url}", exc)
     diff = time.perf_counter_ns() - start
     print("Elapsed", timedelta(seconds=diff / 1e9))
+    with open("cache.json", "w") as file:
+        json.dump(results, file, indent=1)
 
 
 if __name__ == "__main__":
