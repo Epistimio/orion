@@ -20,8 +20,6 @@ module.exports = defineConfig({
      * For example in `await expect(locator).toHaveText();`
      */
     timeout: 5000,
-    // Need more timeout with PickledDB
-    // timeout: 20000,
   },
   /* Run tests in files in parallel */
   fullyParallel: true,
