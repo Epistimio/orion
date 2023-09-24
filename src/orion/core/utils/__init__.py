@@ -9,6 +9,7 @@ import hashlib
 import logging
 import os
 import signal
+import sys
 from abc import ABCMeta
 from collections import defaultdict
 from contextlib import contextmanager
@@ -16,7 +17,11 @@ from glob import glob
 from importlib import import_module
 from tempfile import NamedTemporaryFile
 
-import pkg_resources
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+else:
+    from pkg_resources import iter_entry_points
+
 
 log = logging.getLogger(__name__)
 
@@ -72,14 +77,23 @@ def _import_modules(cls):
     # base = import_module(cls.__base__.__module__)
 
     # Get types advertised through entry points!
-    for entry_point in pkg_resources.iter_entry_points(cls.__name__):
+    entry_point_iterable = (
+        entry_points(group=cls.__name__)  # pylint: disable=unexpected-keyword-arg
+        if sys.version_info >= (3, 10)
+        else iter_entry_points(cls.__name__)
+    )
+    for entry_point in entry_point_iterable:
         entry_point.load()
         assert entry_point.dist is not None
         log.debug(
             "Found a %s %s from distribution: %s=%s",
             entry_point.name,
             cls.__name__,
-            entry_point.dist.project_name,
+            (
+                entry_point.dist.name
+                if sys.version_info >= (3, 10)
+                else entry_point.dist.project_name
+            ),
             entry_point.dist.version,
         )
 
