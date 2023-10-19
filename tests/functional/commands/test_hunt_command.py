@@ -34,3 +34,26 @@ def test_no_name(capsys):
     captured = capsys.readouterr().err
 
     assert captured == "Error: No name provided for the experiment.\n"
+
+
+def test_user_script_crash(capfd):
+    """Checks that the Traceback of a crashing user script is output to stderr"""
+
+    orion.core.cli.main(
+        [
+            "--debug",
+            "hunt",
+            "-n",
+            "test",
+            "--exp-max-broken",
+            "1",
+            "./black_box_fail.py",
+            "-c",
+            "-x~uniform(-5,5)",
+        ]
+    )
+
+    out, err = capfd.readouterr()
+
+    assert "Traceback" in err
+    assert "# black_box_fail.py : this line should crash" in err
