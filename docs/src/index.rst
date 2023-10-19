@@ -68,6 +68,7 @@
    developer/overview
    developer/installing
    developer/standards
+   developer/plan
    developer/testing
    developer/documenting
    developer/ci
