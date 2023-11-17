@@ -90,7 +90,6 @@ WORKING: dict[_AlgoName, dict[_TestName, MarkDecorator]] = {
     "DiscreteOnePlusOne": _deterministic_first_point,
     "EDA": _no_tell_without_ask,
     "ES": {},
-    "FCMA": {},
     "GeneticDE": {},
     "HaltonSearch": _deterministic_points,
     "HaltonSearchPlusMiddlePoint": _deterministic_points,
@@ -218,6 +217,7 @@ NOT_WORKING = {
     "NGOpt14": {},
     "NGOpt21": {},
     "NGOpt38": {},
+    "FCMA": _not_serializable,
 }
 
 
