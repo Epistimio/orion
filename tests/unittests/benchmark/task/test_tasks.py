@@ -20,7 +20,7 @@ class TestBranin:
         assert callable(task)
 
         objectives = task([1, 2])
-        assert type(objectives[0]) == dict
+        assert isinstance(objectives[0], dict)
 
     def test_search_space(self):
         """Test to get task search space"""
@@ -45,7 +45,7 @@ class TestCarromTable:
         assert callable(task)
 
         objectives = task([1, 2])
-        assert type(objectives[0]) == dict
+        assert isinstance(objectives[0], dict)
 
     def test_search_space(self):
         """Test to get task search space"""
@@ -70,7 +70,7 @@ class TestEggHolder:
         assert callable(task)
 
         objectives = task([1, 2])
-        assert type(objectives[0]) == dict
+        assert isinstance(objectives[0], dict)
 
     def test_search_space(self):
         """Test to get task search space"""
@@ -95,7 +95,7 @@ class TestRosenBrock:
         assert callable(task)
 
         objectives = task([1, 2])
-        assert type(objectives[0]) == dict
+        assert isinstance(objectives[0], dict)
 
     def test_search_space(self):
         """Test to get task search space"""

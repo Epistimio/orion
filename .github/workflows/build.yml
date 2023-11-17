@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
+        with:
+          python-version: 3.11
       - run: pip install pre-commit
       - run: pre-commit --version
       - run: pre-commit install
@@ -255,7 +257,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   pypi:
-    needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras, test-dashboard-build]
+    needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras] # , test-dashboard-build]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -349,7 +351,7 @@ jobs:
         user: __token__
         password: ${{ secrets.pypi_password }}
   conda:
-    needs: [test, backward-compatibility, test-long-algos, test-dashboard-build]
+    needs: [test, backward-compatibility, test-long-algos] #, test-dashboard-build]
     runs-on: ubuntu-latest
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
