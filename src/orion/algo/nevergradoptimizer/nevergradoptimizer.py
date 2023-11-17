@@ -141,6 +141,7 @@ NOT_WORKING = {
     "OptimisticNoisyOnePlusOne",
     "Powell",
     "CmaFmin2",
+    "FCMA",
     "RPowell",
     "RSQP",
     "PymooNSGA2",

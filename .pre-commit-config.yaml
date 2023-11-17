@@ -13,16 +13,14 @@ repos:
     hooks:
       - id: codespell
         args: ["--skip", "*.html,*.ipynb,dashboard/src/.yarn/**,dashboard/src/yarn.lock,dashboard/build/**,dashboard/src/src/__tests__/**", "--ignore-words-list=hist,wont,ro"]
-  - repo: https://github.com/PyCQA/flake8
-    rev: 5.0.4
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.3
     hooks:
-      - id: flake8
+      - id: ruff
         args:
-          - --ignore=E203,E402,E712,E722,E731,E741,F401,F403,F405,F524,F841,W503,E302,E704
-          - --max-complexity=30
-          - --max-line-length=456
+          - --ignore=E203,E402,E712,E722,E731,E741,F401,F403,F405,F524,F841
+          - --line-length=300
           - --show-source
-          - --statistics
   - repo: https://github.com/PyCQA/isort
     rev: 5.12.0
     hooks:
