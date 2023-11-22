@@ -38,6 +38,7 @@
    tutorials/cluster
    tutorials/pytorch_a2c_ppo
    tutorials/speechbrain_tutorial
+   auto_tutorials/plot_5_warm_starting
 
 .. toctree::
    :caption: Plugins

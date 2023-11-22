@@ -9,3 +9,6 @@ plotly
 matplotlib
 kaleido
 dask[complete]
+torch
+torchvision
+tqdm
