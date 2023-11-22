@@ -1,3 +1,5 @@
+import multiprocessing
+import multiprocessing.process as proc
 import os
 import time
 
@@ -8,6 +10,14 @@ from orion.executor.dask_backend import HAS_DASK, Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.ray_backend import HAS_RAY, Ray
 from orion.executor.single_backend import SingleExecutor
+
+try:
+    import torch
+    from torchvision import datasets, transforms
+
+    HAS_PYTORCH = True
+except:
+    HAS_PYTORCH = False
 
 
 def multiprocess(n):
@@ -265,7 +275,7 @@ def nested(executor):
     return sum(f.get() for f in futures)
 
 
-@pytest.mark.parametrize("backend", [xfail_dask_if_not_installed(Dask), SingleExecutor])
+@pytest.mark.parametrize("backend", backends)
 def test_nested_submit(backend):
     with backend(5) as executor:
         futures = [executor.submit(nested, executor) for i in range(5)]
@@ -276,17 +286,36 @@ def test_nested_submit(backend):
             assert r.value == 35
 
 
-@pytest.mark.parametrize("backend", [multiprocess, thread])
-def test_nested_submit_failure(backend):
+def inc(a):
+    return a + 1
+
+
+def nested_pool():
+    import multiprocessing.process as proc
+
+    assert not proc._current_process._config.get("daemon")
+
+    data = [1, 2, 3, 4, 5, 6]
+    with multiprocessing.Pool(5) as p:
+        result = p.map_async(inc, data)
+        result.wait()
+        data = result.get()
+
+    return sum(data)
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_nested_submit_pool(backend):
+    if backend is Dask:
+        pytest.xfail("Dask does not support nesting")
+
     with backend(5) as executor:
+        futures = [executor.submit(nested_pool) for i in range(5)]
 
-        if backend == multiprocess:
-            exception = NotImplementedError
-        elif backend == thread:
-            exception = TypeError
+        results = executor.async_get(futures, timeout=2)
 
-        with pytest.raises(exception):
-            [executor.submit(nested, executor) for i in range(5)]
+        for r in results:
+            assert r.value == 27
 
 
 @pytest.mark.parametrize("executor", executors)
@@ -310,3 +339,40 @@ def test_executors_del_does_not_raise(backend):
         del executor.client
 
     del executor
+
+
+def pytorch_workon(pid):
+    assert not proc._current_process._config.get("daemon")
+
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+        ]
+    )
+
+    dataset = datasets.FakeData(128, transform=transform)
+
+    loader = torch.utils.data.DataLoader(dataset, num_workers=2, batch_size=64)
+
+    for i, _ in enumerate(loader):
+        pass
+
+    return i
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_pytorch_dataloader(backend):
+    if backend is Dask:
+        pytest.xfail("Dask does not support nesting")
+
+    if not HAS_PYTORCH:
+        pytest.skip("Pytorch is not installed skipping")
+        return
+
+    with backend(2) as executor:
+        futures = [executor.submit(pytorch_workon, i) for i in range(2)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            assert r.value == 1

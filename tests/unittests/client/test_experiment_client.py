@@ -1000,7 +1000,7 @@ def main(*args, **kwargs):
 
 
 def test_run_experiment_twice():
-    """"""
+    """Makes sure the executor is not freed after workon"""
 
     with create_experiment(config, base_trial) as (cfg, experiment, client):
         client.workon(main, max_trials=10)
