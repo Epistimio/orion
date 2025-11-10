@@ -41,7 +41,7 @@
   "devDependencies": {
     "@commitlint/cli": "17.0.1",
     "@commitlint/config-conventional": "7.6.0",
-    "@playwright/test": "^1.32.3",
+    "@playwright/test": "^1.56.1",
     "@testing-library/dom": "^8.17.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -97,5 +97,5 @@
       "/node_modules/(?!react-dnd|core-dnd|@react-dnd|dnd-core|react-dnd-html5-backend)"
     ]
   },
-  "packageManager": "yarn@3.1.1"
+  "packageManager": "yarn@4.11.0"
 }
