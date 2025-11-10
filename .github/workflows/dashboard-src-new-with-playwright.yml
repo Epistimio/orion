@@ -88,7 +88,7 @@ jobs:
     # Upload orion backend log.
     - name: Get Orion backend log
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: fake-orion-backend-log-artifact-${{ matrix.node-version }}
         path: dashboard/src/fake-orion-backend-${{ matrix.node-version }}.log
