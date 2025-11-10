@@ -6,4 +6,4 @@ pytest-lazy-fixture
 pytest-custom_exit_code
 scikit-learn
 ptera >= 1.1.0
-selenium
+selenium>=4.16.0
