@@ -20,7 +20,7 @@ jobs:
     # Playwright requires Node.js 14 or higher.
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: [18.x]
     steps:
     - uses: actions/checkout@v5
     - name: Use Node.js ${{ matrix.node-version }}

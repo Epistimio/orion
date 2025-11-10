@@ -18,7 +18,7 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
         with:
-          node-version: 16
+          node-version: 18
       - name: Compile Dashboard
         run: |
             # NB: We are in directory dashboard/src
