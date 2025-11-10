@@ -16,7 +16,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v3
         with:
           python-version: 3.11
@@ -31,7 +31,7 @@ jobs:
         toxenv: [pylint, doc8, docs]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Set up Python 3.9
       uses: actions/setup-python@v3
       with:
@@ -47,7 +47,7 @@ jobs:
     needs: pretest
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
@@ -94,7 +94,7 @@ jobs:
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
@@ -126,7 +126,7 @@ jobs:
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
@@ -153,7 +153,7 @@ jobs:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Set up Python 3.9
       uses: actions/setup-python@v3
       with:
@@ -176,7 +176,7 @@ jobs:
     needs: [pre-commit, pretest]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Set up Python 3.9
         uses: actions/setup-python@v3
         with:
@@ -221,7 +221,7 @@ jobs:
     env:
       ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Set up Python 3.9
       uses: actions/setup-python@v3
       with:
@@ -260,7 +260,7 @@ jobs:
     needs: [test, backward-compatibility, test-long-algos, mongodb, test_no_extras] # , test-dashboard-build]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Set up Python 3.9
       uses: actions/setup-python@v3
       with:
@@ -356,7 +356,7 @@ jobs:
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Set up Python 3.9
       uses: actions/setup-python@v3
       with:
