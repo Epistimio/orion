@@ -1,7 +1,7 @@
 """Perform integration tests for `orion.algo.dehb`."""
 
 import itertools
-from typing import ClassVar
+from typing import ClassVar, List
 
 import numpy
 import pytest
@@ -38,7 +38,7 @@ class TestDEHB(BaseAlgoTests):
         "max_clip": None,
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
-    phases: ClassVar[list[TestPhase]] = [
+    phases: ClassVar[List[TestPhase]] = [
         TestPhase("random", 0, "space.sample"),
         *[
             TestPhase(f"rung{i}", budget - 1, "space.sample")
