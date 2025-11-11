@@ -49,9 +49,9 @@
     "jest-canvas-mock": "^2.5.2",
     "lint-staged": "12.4.2",
     "prettier": "1.19.1",
-    "sass": "1.52.1",
-    "serve": "^14.2.0",
-    "wait-for-expect": "3.0.2"
+    "sass": "^1.94.0",
+    "serve": "^14.2.5",
+    "wait-for-expect": "^4.0.0"
   },
   "resolutions": {
     "nth-check": "^2.0.1",
