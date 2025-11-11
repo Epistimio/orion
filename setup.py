@@ -77,10 +77,8 @@ extras_require = {
     "pb2": ["GPy", "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
     "hebo": [
-        # Issue #1061 Pending update of hebo
-        "numpy>=1.17,<1.24",
-        "pymoo==0.5.0",
-        "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
+        "pymoo==0.6.0",
+        "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#egg=hebo&subdirectory=HEBO",
     ],
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
@@ -165,7 +163,7 @@ setup_args = dict(
         "requests",
         "pandas",
         "gunicorn",
-        "falcon",
+        "falcon==4.2.0",
         "falcon-cors",
         "scikit-learn",
         "psutil",
