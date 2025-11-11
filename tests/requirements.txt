@@ -2,7 +2,6 @@ pytest>=3.6.0
 pytest-xdist
 pytest-timeout
 pytest-mock
-pytest-lazy-fixture
 pytest-custom_exit_code
 scikit-learn
 ptera >= 1.1.0

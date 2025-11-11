@@ -133,29 +133,32 @@ class TestChangedDimensionConflict:
 @pytest.mark.parametrize(
     "dimension_conflict",
     [
-        pytest.lazy_fixture("missing_dimension_conflict"),
-        pytest.lazy_fixture("missing_dimension_from_config_conflict"),
+        "missing_dimension_conflict",
+        "missing_dimension_from_config_conflict",
     ],
 )
 class TestMissingDimensionConflict:
     """Tests methods related to missing dimension conflicts"""
 
-    def test_get_marked_arguments(self, conflicts, dimension_conflict):
+    def test_get_marked_arguments(self, conflicts, dimension_conflict, request):
         import pprint
 
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         pprint.pprint(dimension_conflict.new_config["metadata"])
         assert dimension_conflict.get_marked_arguments(conflicts) == {}
 
-    def test_try_resolve_no_default(self, dimension_conflict):
+    def test_try_resolve_no_default(self, dimension_conflict, request):
         """Verify that resolution is achievable without default value provided"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         assert not dimension_conflict.is_resolved
         resolution = dimension_conflict.try_resolve()
         assert dimension_conflict.is_resolved
         assert isinstance(resolution, dimension_conflict.RemoveDimensionResolution)
         assert resolution.default_value is Dimension.NO_DEFAULT_VALUE
 
-    def test_try_resolve_default_from_dim(self, dimension_conflict):
+    def test_try_resolve_default_from_dim(self, dimension_conflict, request):
         """Verify that resolution uses default value from dim when no provided by user"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         missing_dimension_with_default_conflict = add_default_config_for_missing(
             dimension_conflict, 0.0
         )
@@ -171,8 +174,9 @@ class TestMissingDimensionConflict:
             == missing_dimension_with_default_conflict.dimension.default_value
         )
 
-    def test_try_resolve_default(self, dimension_conflict):
+    def test_try_resolve_default(self, dimension_conflict, request):
         """Verify that resolution uses default value provided by user"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         default_value = 1.2
         assert not dimension_conflict.is_resolved
         resolution = dimension_conflict.try_resolve(default_value=default_value)
@@ -180,8 +184,9 @@ class TestMissingDimensionConflict:
         assert isinstance(resolution, dimension_conflict.RemoveDimensionResolution)
         assert resolution.default_value == default_value
 
-    def test_try_resolve_default_over_dim(self, dimension_conflict):
+    def test_try_resolve_default_over_dim(self, dimension_conflict, request):
         """Verify that resolution overwrite dimension's default value when user provide one"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         missing_dimension_with_default_conflict = add_default_config_for_missing(
             dimension_conflict, 0.0
         )
@@ -197,23 +202,28 @@ class TestMissingDimensionConflict:
         )
         assert resolution.default_value == default_value
 
-    def test_try_resolve_bad_default(self, dimension_conflict):
+    def test_try_resolve_bad_default(self, dimension_conflict, request):
         """Verify that resolution fails if default value is invalid"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         assert not dimension_conflict.is_resolved
         with pytest.raises(ValueError) as exc:
             dimension_conflict.try_resolve(default_value="-100")
         assert "Default value `-100.0` is outside" in str(exc.value)
 
-    def test_try_resolve_renaming(self, dimension_conflict, new_dimension_conflict):
+    def test_try_resolve_renaming(
+        self, dimension_conflict, new_dimension_conflict, request
+    ):
         """Verify that resolution is a renaming when new_dimension_conflict is provided"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         assert not dimension_conflict.is_resolved
         resolution = dimension_conflict.try_resolve(new_dimension_conflict)
         assert isinstance(resolution, dimension_conflict.RenameDimensionResolution)
         assert resolution.conflict is dimension_conflict
         assert resolution.new_dimension_conflict is new_dimension_conflict
 
-    def test_try_resolve_twice(self, dimension_conflict):
+    def test_try_resolve_twice(self, dimension_conflict, request):
         """Verify that conflict cannot be resolved twice"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         assert not dimension_conflict.is_resolved
         assert isinstance(
             dimension_conflict.try_resolve(),
@@ -222,8 +232,9 @@ class TestMissingDimensionConflict:
         assert dimension_conflict.is_resolved
         assert dimension_conflict.try_resolve() is None
 
-    def test_repr(self, dimension_conflict):
+    def test_repr(self, dimension_conflict, request):
         """Verify the representation of conflict for user interface"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         assert (
             repr(dimension_conflict) == f"Missing {dimension_conflict.dimension.name}"
         )
