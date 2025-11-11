@@ -163,7 +163,7 @@ setup_args = dict(
         "requests",
         "pandas",
         "gunicorn",
-        "falcon==4.2.0",
+        "falcon>=4,<5",
         "falcon-cors",
         "scikit-learn",
         "psutil",
