@@ -247,10 +247,10 @@ class StorageResource:
             args=(self.current_task, self.storage, load_host, resolve, name, version),
         )
         p.start()
-        resp.body = json.dumps({"task": self.current_task.task_id})
+        resp.text = json.dumps({"task": self.current_task.task_id})
 
     def on_get_import_status(self, req: Request, resp: Response, name: str):
         """Handle the GET requests for import-status/"""
         if self.current_task is None or self.current_task.task_id != name:
             raise falcon.HTTPInvalidParam("Unknown import task", "name")
-        resp.body = json.dumps(self.current_task.flush_state())
+        resp.text = json.dumps(self.current_task.flush_state())
