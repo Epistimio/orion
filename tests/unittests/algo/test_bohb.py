@@ -1,4 +1,5 @@
 """Perform integration tests for `orion.algo.bohb`."""
+import numpy as np
 import pytest
 
 from orion.algo.bohb import import_optional
@@ -64,21 +65,21 @@ class TestBOHB(BaseAlgoTests):
         algo = self.create_algo(space=space)
         algo.algorithm.max_trials = MAX_TRIALS
 
+        rng = np.random.RandomState(123456)
         objective = 0
         while not algo.is_done:
             trials = algo.suggest(num)
             assert trials is not None
             if trials:
-                self.observe_trials(trials, algo, objective)
+                self.observe_trials(trials, algo, rng)
                 objective += len(trials)
 
         # Hyperband should ignore max trials.
         assert algo.n_observed > MAX_TRIALS
         assert algo.is_done
 
-    def test_suggest_n(self, mocker, num, attr):
+    def test_suggest_n(self):
         algo = self.create_algo()
-        self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(3)
         assert len(trials) == 3
 

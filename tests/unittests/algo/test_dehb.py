@@ -109,6 +109,7 @@ class TestDEHB(BaseAlgoTests):
         algo = self.create_algo()
         algo.algorithm.max_trials = MAX_TRIALS
 
+        rng = numpy.random.RandomState(123456)
         objective = 0
         while not algo.is_done:
             trials = algo.suggest(1)
@@ -116,7 +117,7 @@ class TestDEHB(BaseAlgoTests):
             assert trials is not None
 
             if trials:
-                self.observe_trials(trials, algo, objective)
+                self.observe_trials(trials, algo, rng)
                 objective += len(trials)
 
         # Hyperband should ignore max trials.
