@@ -22,11 +22,46 @@ if typing.TYPE_CHECKING:
 if import_optional.failed:
     pytest.skip("skipping HEBO tests", allow_module_level=True)
 
+import importlib
+import inspect
+import pkgutil
+
+import pymoo.algorithms
 from hebo.models.model_factory import model_dict
-from pymoo.factory import get_algorithm_options
+from pymoo.core.algorithm import Algorithm
+
+
+def get_available_algorithms():
+    """
+    Scan package pymoo.algorithms to find all classes
+    derived from pymoo.core.algorithm.Algorithm.
+
+    This function was written thanks to Gemini AI.
+    """
+    algorithms = set()
+    package = pymoo.algorithms
+    for importer, modname, ispkg in pkgutil.walk_packages(
+        path=package.__path__, prefix=package.__name__ + ".", onerror=lambda x: None
+    ):
+        try:
+            module = importlib.import_module(modname)
+            for name, obj in inspect.getmembers(module):
+                if (
+                    inspect.isclass(obj)
+                    and issubclass(obj, Algorithm)
+                    and obj is not Algorithm
+                    and "pymoo.algorithms" in obj.__module__
+                ):
+                    algorithms.add(obj.__name__)
+        except:
+            pass
+    return sorted(algorithms)
+
+
+algo_names = get_available_algorithms()
 
 _model_names = sorted(model_dict.keys())
-_es_names = sorted(dict(get_algorithm_options()).keys())
+_es_names = sorted(es.lower() for es in algo_names)
 
 
 RUN_QUICK = True
