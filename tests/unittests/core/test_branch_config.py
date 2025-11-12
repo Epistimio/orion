@@ -48,7 +48,7 @@ def user_config():
 
 
 @pytest.fixture
-def parent_config(user_config):
+def parent_config(user_config, tmp_path):
     """Create a configuration that will not hit the database."""
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
@@ -79,7 +79,7 @@ def parent_config(user_config):
         refers={},
     )
 
-    config_file_path = "./parent_config.yaml"
+    config_file_path = tmp_path / "parent_config.yaml"
 
     with open(config_file_path, "w") as f:
         yaml.dump(user_config, f)
@@ -89,7 +89,6 @@ def parent_config(user_config):
     backward.populate_space(config)
 
     yield config
-    os.remove(config_file_path)
 
 
 @pytest.fixture
