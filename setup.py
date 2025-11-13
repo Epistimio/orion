@@ -58,7 +58,10 @@ extras_require = {
     "dask": ["dask[complete]"],
     "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
-    "profet": ["emukit", "GPy", "torch", "pybnn"],
+    # NB: GPy requires scipy <= 1.12, which is not compatible with Python >= 3.13
+    # (pip will try to compile scipy 1.12, with many compilation errors)
+    # https://github.com/SheffieldML/GPy/blob/devel/setup.py#L150
+    "profet": ["emukit", 'GPy; python_version < "3.13"', "torch", "pybnn"],
     "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
@@ -74,7 +77,10 @@ extras_require = {
         "ConfigSpace",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
-    "pb2": ["GPy", "matplotlib"],
+    # NB: GPy requires scipy <= 1.12, which is not compatible with Python >= 3.13
+    # (pip will try to compile scipy 1.12, with many compilation errors)
+    # https://github.com/SheffieldML/GPy/blob/devel/setup.py#L150
+    "pb2": ['GPy; python_version < "3.13"', "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
 
