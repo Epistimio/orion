@@ -58,7 +58,12 @@ extras_require = {
     "dask": ["dask[complete]"],
     "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
-    "profet": ["emukit", 'GPy; python_version < "3.13"', "torch", "pybnn"],
+    "profet": [
+        'emukit; python_version < "3.13"',
+        'GPy; python_version < "3.13"',
+        "torch",
+        "pybnn",
+    ],
     "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
