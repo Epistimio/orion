@@ -54,7 +54,6 @@ extras_require = {
         "sphinx_gallery",
     ],
     "dask": ["dask[complete]"],
-    "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
     "ax": [
         "ax-platform",
@@ -101,6 +100,14 @@ if sys.version_info < (3, 13):
                 "torch",
                 "pybnn",
             ],
+        }
+    )
+
+if sys.version_info < (3, 14):
+    # Right now, ray cannot be installed on Python 3.14
+    extras_require.update(
+        {
+            "ray": ["ray"],
         }
     )
 
