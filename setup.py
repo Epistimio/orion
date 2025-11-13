@@ -58,7 +58,7 @@ extras_require = {
     "dask": ["dask[complete]"],
     "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
-    "profet": ["emukit", "GPy", "torch", "pybnn"],
+    "profet": ["emukit", 'GPy; python_version < "3.13"', "torch", "pybnn"],
     "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
@@ -74,7 +74,7 @@ extras_require = {
         "ConfigSpace",
         "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
     ],
-    "pb2": ["GPy", "matplotlib"],
+    "pb2": ['GPy; python_version < "3.13"', "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
 
