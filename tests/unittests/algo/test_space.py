@@ -4,6 +4,7 @@
 import sys
 from collections import OrderedDict, defaultdict
 
+import numpy
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal as assert_eq
@@ -550,7 +551,7 @@ class TestCategorical:
         assert (
             str(dim) == "Categorical(name=yolo, "
             "prior={0: 0.10, 1: 0.10, ..., 8: 0.10, 9: 0.10}, "
-            "shape=(2,), default value=None)"
+            "shape=(%(n2)s,), default value=None)" % {"n2": repr(numpy.int64(2))}
         )
 
     def test_bad_probabilities(self):
@@ -967,10 +968,10 @@ class TestSpace:
 
         assert (
             str(space) == "Space(["
-            "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,), "
+            "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(%(n2)s,), "
             "default value=None),\n"
             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), "
-            "default value=None)])"
+            "default value=None)])" % {"n2": repr(numpy.int64(2))}
         )
 
     def test_configuration(self):

@@ -56,7 +56,6 @@ extras_require = {
     "dask": ["dask[complete]"],
     "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
-    "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
         "numpy",
@@ -73,6 +72,7 @@ if sys.version_info < (3, 12):
     ]
     extras_require.update(
         {
+            "configspace": ["ConfigSpace"],
             "dehb": [
                 # sample-space use parameter q, removed in ConfigSpace >= 1
                 "ConfigSpace>=0.7,<1",
