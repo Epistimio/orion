@@ -58,12 +58,6 @@ extras_require = {
     "dask": ["dask[complete]"],
     "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
-    "profet": [
-        'emukit; python_version < "3.13"',
-        'GPy; python_version < "3.13"',
-        "torch",
-        "pybnn",
-    ],
     "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
@@ -93,6 +87,17 @@ if sys.version_info < (3, 12):
                 "pymoo==0.6.0",
                 "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#egg=hebo&subdirectory=HEBO",
             ]
+        }
+    )
+if sys.version_info < (3, 13):
+    extras_require.update(
+        {
+            "profet": [
+                'emukit; python_version < "3.13"',
+                'GPy; python_version < "3.13"',
+                "torch",
+                "pybnn",
+            ],
         }
     )
 
