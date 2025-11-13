@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Collection of tests resolutions in :mod:`orion.core.evc.conflicts`."""
+import numpy
 import pytest
 
 from orion.algo.space import Dimension
@@ -110,7 +111,9 @@ class TestAddDimensionResolution:
             new_dimension_conflict.AddDimensionResolution(
                 new_dimension_conflict, default_value=default_value
             )
-        assert "could not convert string to float: 'bad'" in str(exc.value)
+        assert f"could not convert string to float: {numpy.str_('bad')!r}" in str(
+            exc.value
+        )
 
     def test_new_prior_no_default(self, new_dimension_conflict):
         """Verify prior string without default value"""

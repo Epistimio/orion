@@ -2,6 +2,7 @@
 """Collection of tests for :mod:`orion.core.evc.conflicts`."""
 import pprint
 
+import numpy
 import pytest
 
 import orion.core.utils.backward as backward
@@ -82,7 +83,10 @@ class TestNewDimensionConflict:
         assert not new_dimension_conflict.is_resolved
         with pytest.raises(ValueError) as exc:
             new_dimension_conflict.try_resolve("bad-default")
-        assert "could not convert string to float: 'bad-default'" in str(exc.value)
+        assert (
+            f"could not convert string to float: {numpy.str_('bad-default')!r}"
+            in str(exc.value)
+        )
 
     def test_try_resolve_twice(self, new_dimension_conflict):
         """Verify that conflict cannot be resolved twice"""
