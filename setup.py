@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Installation script for Oríon."""
 import os
+import sys
 
 from setuptools import setup
 
@@ -20,7 +21,6 @@ algos = [
     "orion.algo.dehb",
     "orion.algo.evolution_es",
     "orion.algo.gridsearch",
-    "orion.algo.hebo",
     "orion.algo.hyperband",
     "orion.algo.mofa",
     "orion.algo.nevergradoptimizer",
@@ -76,12 +76,21 @@ extras_require = {
     ],
     "pb2": ["GPy", "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
-    "hebo": [
-        "pymoo==0.6.0",
-        "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#egg=hebo&subdirectory=HEBO",
-    ],
 }
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
+
+if sys.version_info < (3, 12):
+    algos += [
+        "orion.algo.hebo",
+    ]
+    extras_require.update(
+        {
+            "hebo": [
+                "pymoo==0.6.0",
+                "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#egg=hebo&subdirectory=HEBO",
+            ]
+        }
+    )
 
 dashboard_files = []
 for root, sub_directories, files in os.walk("dashboard/build"):
