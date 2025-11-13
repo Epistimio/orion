@@ -77,7 +77,6 @@ extras_require = {
     "pb2": ["GPy", "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
-extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 if sys.version_info < (3, 12):
     algos += [
@@ -91,6 +90,8 @@ if sys.version_info < (3, 12):
             ]
         }
     )
+
+extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 dashboard_files = []
 for root, sub_directories, files in os.walk("dashboard/build"):
