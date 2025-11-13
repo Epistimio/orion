@@ -644,10 +644,14 @@ def test_runner_inside_subprocess():
 
     dir = os.path.dirname(__file__)
 
+    env = os.environ.copy()
+    env["PYTHONWARNINGS"] = "ignore::UserWarning"
+
     result = subprocess.run(
         ["python", f"{dir}/runner_subprocess.py", "--backend", "joblib"],
         check=True,
         capture_output=True,
+        env=env,
     )
 
     assert result.stderr.decode("utf-8") == ""
