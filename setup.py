@@ -17,8 +17,6 @@ with open("tests/requirements.txt") as f:
 algos = [
     "orion.algo.asha",
     "orion.algo.axoptimizer",
-    "orion.algo.bohb",
-    "orion.algo.dehb",
     "orion.algo.evolution_es",
     "orion.algo.gridsearch",
     "orion.algo.hyperband",
@@ -63,32 +61,37 @@ extras_require = {
         "ax-platform",
         "numpy",
     ],
-    "dehb": [
-        "ConfigSpace>=0.7,<1",
-        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
-    ],
-    "bohb": [
-        "hpbandster",
-        "ConfigSpace",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
-    ],
     "pb2": ['GPy; python_version < "3.13"', "matplotlib"],
     "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
 }
 
 if sys.version_info < (3, 12):
     algos += [
+        "orion.algo.bohb",
+        "orion.algo.dehb",
         "orion.algo.hebo",
     ]
     extras_require.update(
         {
+            "dehb": [
+                # sample-space use parameter q, removed in ConfigSpace >= 1
+                "ConfigSpace>=0.7,<1",
+                "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
+                "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
+            ],
+            "bohb": [
+                "hpbandster",
+                # sample-space use parameter q, removed in ConfigSpace >= 1
+                "ConfigSpace>=0.7,<1",
+                "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
+            ],
             "hebo": [
                 "pymoo==0.6.0",
                 "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#egg=hebo&subdirectory=HEBO",
-            ]
+            ],
         }
     )
+
 if sys.version_info < (3, 13):
     extras_require.update(
         {
