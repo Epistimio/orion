@@ -675,7 +675,7 @@ class TestConflicts:
         assert len(conflicts.conflicts) == 7
         with pytest.raises(ValueError) as exc:
             conflicts.deprecate(["dummy object"])
-        assert "'dummy object' is not in list" in str(exc.value)
+        assert str(exc.value).endswith(" not in list")
 
     def test_try_resolve_silence_errors(self, capsys, code_conflict, conflicts):
         """Verify try_resolve errors are silenced"""

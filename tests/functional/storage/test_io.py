@@ -17,6 +17,7 @@ from collections import defaultdict, namedtuple
 
 import bson
 import numpy
+import pytest
 from ptera import probing
 
 from orion.client import build_experiment
@@ -434,6 +435,10 @@ def compute_stats(
     return data
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="ptera uses ast.Str, which does not exist anymore in Python 3.14+",
+)
 def test_io():
     """Verify that I/O levels during optimization are close enough to nominal levels"""
 

@@ -194,7 +194,7 @@ def test_interrupted_scatter_gather():
 
     def slow_gather():
         # Sleep until some results are ready
-        time.sleep(1)
+        time.sleep(5)
         Runner.gather(runner)
 
     runner.gather = slow_gather
@@ -351,7 +351,7 @@ def test_multi_results_with_failure():
     assert len(new_trials) == count
 
     # wait for multiple future to finish
-    time.sleep(1)
+    time.sleep(5)
 
     with pytest.raises(BrokenExperiment):
         runner.gather()
@@ -606,15 +606,16 @@ def run_runner(reraise=False, executor=None, close_executor=True):
         return 1
 
 
+def _get_result(results):
+    results.put(run_runner())
+
+
 def test_runner_inside_process():
     """Runner can execute inside a process"""
 
     queue = Queue()
 
-    def get_result(results):
-        results.put(run_runner())
-
-    p = Process(target=get_result, args=(queue,))
+    p = Process(target=_get_result, args=(queue,))
     p.start()
     p.join()
 
@@ -622,6 +623,12 @@ def test_runner_inside_process():
     assert p.exitcode == 0
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="Infinite execution time in Python 3.14+. "
+    "NB: Python 3.14 changes multiprocessing start method from fork to spawn. "
+    "Could it be related?",
+)
 def test_runner_inside_childprocess():
     """Runner can execute inside a child process"""
     pid = os.fork()

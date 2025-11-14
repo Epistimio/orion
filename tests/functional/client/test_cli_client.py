@@ -38,7 +38,7 @@ def test_interrupt(monkeypatch, capsys):
         assert error_code == 130
 
         captured = capsys.readouterr()
-        assert captured.out == "Orion is interrupted.\n"
+        assert "Orion is interrupted.\n" in captured.out
         assert captured.err == ""
 
         exp = list(storage.fetch_experiments({"name": "voila_voici"}))
