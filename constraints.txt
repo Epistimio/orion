@@ -1,2 +1,0 @@
-# Force scipy >= 1.13 for Python 3.13+
-scipy>=1.16.0; python_version >= "3.13"

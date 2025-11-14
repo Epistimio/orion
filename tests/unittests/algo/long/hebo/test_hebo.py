@@ -36,6 +36,10 @@ def get_available_algorithms():
     Scan package pymoo.algorithms to find all classes
     derived from pymoo.core.algorithm.Algorithm.
 
+    Intended to replace:
+    `from pymoo.factory import get_algorithm_options`
+    which is not available anymore in pymoo >= 0.6
+
     This function was written thanks to Gemini AI.
     """
     algorithms = set()
