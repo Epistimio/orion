@@ -60,7 +60,12 @@ extras_require = {
         "numpy",
     ],
     "pb2": ['GPy; python_version < "3.13"', "matplotlib"],
-    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
+    "nevergrad": [
+        "nevergrad>=0.4.3.post10",
+        # fcmaes require numba, which can not be currently installed on Python 3.14
+        'fcmaes; python_version < "3.14"',
+        "pymoo",
+    ],
 }
 
 if sys.version_info < (3, 12):
