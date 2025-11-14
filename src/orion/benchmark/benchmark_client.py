@@ -165,7 +165,7 @@ def _fetch_benchmark(storage, name):
 
 
 def _register_benchmark(storage, benchmark):
-    benchmark.metadata["datetime"] = datetime.datetime.now(datetime.UTC)
+    benchmark.metadata["datetime"] = datetime.datetime.utcnow()
     config = benchmark.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.

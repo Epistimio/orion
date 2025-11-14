@@ -712,7 +712,7 @@ class ExperimentBuilder:
 
     def _register_experiment(self, experiment: Experiment):
         """Register a new experiment in the database"""
-        experiment.metadata["datetime"] = datetime.datetime.now(datetime.UTC)
+        experiment.metadata["datetime"] = datetime.datetime.utcnow()
         config = experiment.configuration
         # This will raise DuplicateKeyError if a concurrent experiment with
         # identical (name, metadata.user) is written first in the database.

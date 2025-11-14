@@ -451,7 +451,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
 
     def register_trial(self, trial):
         """Create a new trial to be executed"""
-        stamp = datetime.datetime.now(datetime.UTC)
+        stamp = datetime.datetime.utcnow()
         trial.submit_time = stamp
 
         metadata = dict()
@@ -705,8 +705,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
         """
         heartbeat = orion.core.config.worker.heartbeat
         threshold = to_epoch(
-            datetime.datetime.now(datetime.UTC)
-            - datetime.timedelta(seconds=heartbeat * 5)
+            datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat * 5)
         )
         lte_comparison = {"$lte": threshold}
         query = {
@@ -744,7 +743,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
         self.backend.log_trial_metadata(
-            trial.storage, heartbeat=to_epoch(datetime.datetime.now(datetime.UTC))
+            trial.storage, heartbeat=to_epoch(datetime.datetime.utcnow())
         )
 
     def _write_algorithm_lock(self, experiment_id):
@@ -756,7 +755,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
                 "locked": 0,
                 "v": 0,
                 "state": None,
-                "heartbeat": datetime.datetime.now(datetime.UTC),
+                "heartbeat": datetime.datetime.utcnow(),
             },
         )
 

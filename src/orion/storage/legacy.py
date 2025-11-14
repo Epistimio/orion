@@ -256,7 +256,7 @@ class Legacy(BaseStorageProtocol):
     def fetch_lost_trials(self, experiment):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_lost_trials`"""
         heartbeat = orion.core.config.worker.heartbeat
-        threshold = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(
             seconds=heartbeat * 5
         )
         lte_comparison = {"$lte": threshold}
@@ -286,7 +286,7 @@ class Legacy(BaseStorageProtocol):
 
     def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.set_trial_status`"""
-        heartbeat = heartbeat or datetime.datetime.now(datetime.UTC)
+        heartbeat = heartbeat or datetime.datetime.utcnow()
         was = was or trial.status
 
         validate_status(status)
@@ -322,7 +322,7 @@ class Legacy(BaseStorageProtocol):
             status={"$in": ["interrupted", "new", "suspended"]},
         )
         # read and write works on a single document
-        now = datetime.datetime.now(datetime.UTC)
+        now = datetime.datetime.utcnow()
         trial = self._db.read_and_write(
             "trials",
             query=query,
@@ -352,9 +352,7 @@ class Legacy(BaseStorageProtocol):
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
         return self.update_trial(
-            trial,
-            heartbeat=datetime.datetime.now(datetime.UTC),
-            where={"status": "reserved"},
+            trial, heartbeat=datetime.datetime.utcnow(), where={"status": "reserved"}
         )
 
     def fetch_trials_by_status(self, experiment, status):
@@ -373,7 +371,7 @@ class Legacy(BaseStorageProtocol):
                 "configuration": algorithm_config,
                 "locked": locked,
                 "state": None if state is None else pickle.dumps(state),
-                "heartbeat": datetime.datetime.now(datetime.UTC)
+                "heartbeat": datetime.datetime.utcnow()
                 if heartbeat is None
                 else heartbeat,
             },
@@ -386,7 +384,7 @@ class Legacy(BaseStorageProtocol):
         new_data = dict(
             experiment=uid,
             locked=0,
-            heartbeat=datetime.datetime.now(datetime.UTC),
+            heartbeat=datetime.datetime.utcnow(),
         )
         if new_state is not None:
             new_data["state"] = pickle.dumps(new_state)
@@ -435,7 +433,7 @@ class Legacy(BaseStorageProtocol):
                 query=dict(experiment=uid, locked=0),
                 data=dict(
                     locked=1,
-                    heartbeat=datetime.datetime.now(datetime.UTC),
+                    heartbeat=datetime.datetime.utcnow(),
                 ),
             )
             if algo_state_lock is None:

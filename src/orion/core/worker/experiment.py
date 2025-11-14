@@ -413,7 +413,7 @@ class Experiment(Generic[AlgoT]):
         """
         self._check_if_executable()
         trial.status = "completed"
-        trial.end_time = datetime.datetime.now(datetime.UTC)
+        trial.end_time = datetime.datetime.utcnow()
         self._storage.retrieve_result(trial)
         # push trial results updates the entire trial status included
         log.info("Completed trials with results: %s", trial.results)
@@ -439,7 +439,7 @@ class Experiment(Generic[AlgoT]):
 
         """
         self._check_if_writable()
-        stamp = datetime.datetime.now(datetime.UTC)
+        stamp = datetime.datetime.utcnow()
         trial.experiment = self._id
         trial.status = status
         trial.submit_time = stamp
