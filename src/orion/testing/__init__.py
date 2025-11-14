@@ -77,19 +77,19 @@ def generate_trials(trial_config=None, statuses=None, exp_config=None, max_attem
     new_trials = [_generate(trial_config, "status", value=s) for s in statuses]
 
     for i, trial in enumerate(new_trials):
-        trial["submit_time"] = datetime.datetime.utcnow() + datetime.timedelta(
+        trial["submit_time"] = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
             seconds=i
         )
         if trial["status"] != "new":
-            trial["start_time"] = datetime.datetime.utcnow() + datetime.timedelta(
-                seconds=i
-            )
+            trial["start_time"] = datetime.datetime.now(
+                datetime.UTC
+            ) + datetime.timedelta(seconds=i)
 
     for i, trial in enumerate(new_trials):
         if trial["status"] == "completed":
-            trial["end_time"] = datetime.datetime.utcnow() + datetime.timedelta(
-                seconds=i
-            )
+            trial["end_time"] = datetime.datetime.now(
+                datetime.UTC
+            ) + datetime.timedelta(seconds=i)
 
     if exp_config:
         space = SpaceBuilder().build(exp_config["space"])
@@ -134,7 +134,7 @@ def generate_benchmark_experiments_trials(
         exp["name"] = f"experiment-name-{i}"
         exp["algorithm"] = benchmark_algorithms[i % algo_num]
         exp["max_trials"] = max_trial
-        exp["metadata"]["datetime"] = datetime.datetime.utcnow()
+        exp["metadata"]["datetime"] = datetime.datetime.now(datetime.UTC)
         gen_exps.append(exp)
 
         exp_trial_config = copy.deepcopy(trial_config)
@@ -250,14 +250,14 @@ class MockDatetime(datetime.datetime):
     """Fake Datetime"""
 
     @classmethod
-    def utcnow(cls):
+    def now(cls, *args, **kwargs):
         """Return our random/fixed datetime"""
         return default_datetime()
 
 
 @contextlib.contextmanager
 def mocked_datetime(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    """Make ``datetime.datetime.now()`` return an arbitrary date."""
     with monkeypatch.context() as m:
         m.setattr(datetime, "datetime", MockDatetime)
 

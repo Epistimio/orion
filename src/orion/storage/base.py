@@ -212,7 +212,7 @@ class BaseStorageProtocol:
         algo_state: dict, optional
             Initial algo state
         algo_heartbeat: datetime, optional
-            Initial algo heartbeat. Default to datetime.utcnow().
+            Initial algo heartbeat. Default to datetime.datetime.now(datetime.UTC).
         """
         raise NotImplementedError()
 
@@ -571,7 +571,7 @@ class BaseStorageProtocol:
         state: dict, optional
             Optional algorithm state.
         heartbeat: datetime, optional
-            Algorithm heartbeat. Default to datetime.utcnow().
+            Algorithm heartbeat. Default to datetime.datetime.now(datetime.UTC).
         """
         raise NotImplementedError()
 
