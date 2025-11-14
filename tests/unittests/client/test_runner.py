@@ -27,6 +27,7 @@ from orion.core.utils.exceptions import (
 from orion.core.worker.trial import Trial
 from orion.executor.base import BaseExecutor, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
+from orion.executor.multiprocess_backend import PoolExecutor
 from orion.storage.base import LockAcquisitionTimeout
 
 
@@ -337,7 +338,7 @@ def test_multi_results_with_failure():
 
     count = 8
 
-    runner = new_runner(0.01, n_workers=8)
+    runner = new_runner(0.01, executor=PoolExecutor(n_workers=8, backend="thread"))
     runner.max_broken = 2
     runner.max_trials_per_worker = count
     runner.fct = function_raise_on_2
