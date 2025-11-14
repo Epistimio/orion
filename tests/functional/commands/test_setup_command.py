@@ -24,7 +24,7 @@ class _mock_input:
 
 def test_creation_when_not_existing(monkeypatch, tmp_path):
     """Test if a configuration file is created when it does not exist."""
-    config_path = tmp_path / "tmp_config.yaml"
+    config_path = str(tmp_path) + "/tmp_config.yaml"
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(builtins, "input", _mock_input(["mongodb", "host", "name"]))
 
