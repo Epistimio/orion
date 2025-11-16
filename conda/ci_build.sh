@@ -1,4 +1,6 @@
 #!/bin/bash
+PS4='[command at line $LINENO] '  # set prefix for printed commands
+set -x  # make sure commands are printed before execution
 
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
