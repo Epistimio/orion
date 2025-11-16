@@ -19,9 +19,12 @@ conda update -q conda
 conda info -a
 conda install conda-build anaconda-client
 
-conda-build conda --python 3.8
+# conda-build conda --python 3.8 falcon >=4,<5 cannot be installed on python 3.8
+
+# So, currently, conda can build package only for python 3.9
 conda-build conda --python 3.9
 
 # Conda 3.10 does not work because of a bug inside conda itself
+# Also, falcon-cors (in channel `mila-iqia`) cannot be installed on python >= 3.10
 # conda build conda --python 3.10
 # conda build conda --python 3.11
