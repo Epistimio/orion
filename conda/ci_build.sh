@@ -11,8 +11,8 @@ conda config --add channels conda-forge
 conda config --add channels mila-iqia
 conda config --set channel_priority strict
 
-pip uninstall -y setuptools
-conda install -c anaconda setuptools
+# pip uninstall -y setuptools  # do not uninstall-then-reinstall setuptools anymore
+# conda install -c anaconda setuptools
 conda install conda-build
 
 conda update -q conda
