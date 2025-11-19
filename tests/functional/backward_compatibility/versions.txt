@@ -1,8 +1,13 @@
-0.1.13
-0.1.14
-0.1.15
-0.1.16
-0.1.17
-0.2.1
+# Commented versions don't work with Python 3.10+, probably because of:
+#    File "/home/runner/work/orion/orion/version-0.1.13/lib/python3.10/site-packages/orion/plotting/backend_plotly.py", line 7, in <module>
+#      from collections import Iterable
+#  ImportError: cannot import name 'Iterable' from 'collections' (/opt/hostedtoolcache/Python/3.10.19/x64/lib/python3.10/collections/__init__.py)
+
+# 0.1.13
+# 0.1.14
+# 0.1.15
+# 0.1.16
+# 0.1.17
+# 0.2.1
 0.2.3
 0.2.4.post1
