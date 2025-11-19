@@ -45,7 +45,10 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.6 3.7 3.8".split()]
+] + [
+    ("Programming Language :: Python :: %s" % x)
+    for x in "3 3.10 3.11 3.12 3.13 3.14".split()
+]
 
 if __name__ == "__main__":
     setup(**setup_args)
