@@ -28,9 +28,6 @@ from orion.core.worker.trial import Trial
 logger = logging.getLogger(__name__)
 
 
-_NUMPY_IS_OLD = version.parse(np.__version__) < version.parse("1.17.0")
-
-
 class MOFA(BaseAlgorithm):
     """
     MOdular FActorial Design (MOFA).
@@ -150,19 +147,13 @@ class MOFA(BaseAlgorithm):
             Integer seed for the random number generator.
 
         """
-        if _NUMPY_IS_OLD:
-            self.rng = np.random.RandomState(seed)
-        else:
-            self.rng = np.random.default_rng(seed)
+        self.rng = np.random.default_rng(seed)
 
     @property
     def state_dict(self) -> dict:
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = super().state_dict
-        if _NUMPY_IS_OLD:
-            state_dict["rng_state"] = self.rng.get_state()
-        else:
-            state_dict["rng_state"] = self.rng.bit_generator.state
+        state_dict["rng_state"] = self.rng.bit_generator.state
         state_dict["completed_trials"] = copy.deepcopy(self.completed_trials)
         state_dict["duplicates"] = copy.deepcopy(self.duplicates)
         state_dict["converged"] = self.converged
@@ -184,10 +175,7 @@ class MOFA(BaseAlgorithm):
         """
         super().set_state(state_dict)
         self.seed_rng(0)
-        if _NUMPY_IS_OLD:
-            self.rng.set_state(state_dict["rng_state"])
-        else:
-            self.rng.bit_generator.state = state_dict["rng_state"]
+        self.rng.bit_generator.state = state_dict["rng_state"]
         self.completed_trials = copy.deepcopy(state_dict["completed_trials"])
         self.duplicates = copy.deepcopy(state_dict["duplicates"])
         self.converged = state_dict["converged"]
