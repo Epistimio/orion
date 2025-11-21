@@ -127,7 +127,7 @@ class Dask(BaseExecutor):
         except Exception as e:
             if str(e).startswith(
                 "Tried sending message after closing.  Status: closed"
-            ):
+            ) or str(e).startswith("Client is closed."):
                 raise ExecutorClosed() from e
 
             raise

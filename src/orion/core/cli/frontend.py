@@ -92,7 +92,7 @@ class StaticResource:
                     content = content.decode()
                     if self.backend is not None and self.PLACEHOLDER in content:
                         content = content.replace(self.PLACEHOLDER, repr(self.backend))
-                resp.body = content
+                resp.text = content
         else:
             resp.status = falcon.HTTP_404
 

@@ -12,33 +12,29 @@ from orion.core.io.config import Configuration, ConfigurationError
 
 
 @pytest.fixture
-def yaml_path():
+def yaml_path(tmp_path):
     """Create a temporary yaml file and return the path"""
-    file_path = "./my.yaml"
+    file_path = tmp_path / "my.yaml"
     with open(file_path, "w") as f:
         f.write(yaml.dump({"test": "from my yaml!"}))
 
     yield file_path
 
-    os.remove(file_path)
-
 
 @pytest.fixture
-def broken_yaml_path():
+def broken_yaml_path(tmp_path):
     """Create a temporary yaml file and return the path"""
-    file_path = "./my.yaml"
+    file_path = tmp_path / "my.yaml"
     with open(file_path, "w") as f:
         f.write(yaml.dump({"coucou": "from my yaml!"}))
 
     yield file_path
 
-    os.remove(file_path)
-
 
 @pytest.fixture
-def subdict_yaml_path():
+def subdict_yaml_path(tmp_path):
     """Create a temporary yaml file with subdicts and return the path"""
-    file_path = "./my.yaml"
+    file_path = tmp_path / "my.yaml"
     with open(file_path, "w") as f:
         f.write(
             yaml.dump(
@@ -50,8 +46,6 @@ def subdict_yaml_path():
         )
 
     yield file_path
-
-    os.remove(file_path)
 
 
 def test_fetch_non_existing_option():

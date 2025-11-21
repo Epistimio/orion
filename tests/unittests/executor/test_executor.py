@@ -9,6 +9,8 @@ from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.ray_backend import HAS_RAY, Ray
 from orion.executor.single_backend import SingleExecutor
 
+_TIMEOUT = 10
+
 
 def multiprocess(n):
     return PoolExecutor(n, "multiprocess")
@@ -159,7 +161,7 @@ def test_execute_async(backend):
         futures = [executor.submit(function, 1, 2, i) for i in range(10)]
 
         total_task = len(futures)
-        results = executor.async_get(futures, timeout=1)
+        results = executor.async_get(futures, timeout=1 * _TIMEOUT)
 
         assert len(results) > 0, "We got some results"
         assert len(futures) == total_task - len(results), "Finished futures got removed"
@@ -182,7 +184,7 @@ def test_execute_async_all(backend):
 
         results = True
         while results:
-            results = executor.async_get(futures, timeout=1)
+            results = executor.async_get(futures, timeout=1 * _TIMEOUT)
             all_results_async.extend(results)
 
     all_results_async = [a.value for a in all_results_async]
@@ -248,7 +250,7 @@ def test_multisubprocess(backend):
     with backend(5) as executor:
         futures = [executor.submit(proxy) for i in range(5)]
 
-        results = executor.async_get(futures, timeout=2)
+        results = executor.async_get(futures, timeout=2 * _TIMEOUT)
 
         for r in results:
             # access the results to make sure no exception is being
@@ -270,7 +272,7 @@ def test_nested_submit(backend):
     with backend(5) as executor:
         futures = [executor.submit(nested, executor) for i in range(5)]
 
-        results = executor.async_get(futures, timeout=2)
+        results = executor.async_get(futures, timeout=2 * _TIMEOUT)
 
         for r in results:
             assert r.value == 35

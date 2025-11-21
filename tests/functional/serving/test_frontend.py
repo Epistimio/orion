@@ -8,13 +8,12 @@ import time
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
 
 
 def _get_driver():
     # Add options to hide browser
-    options = Options()
-    options.headless = True
+    options = webdriver.FirefoxOptions()
+    options.add_argument("-headless")
     # Load driver with options
     driver = webdriver.Firefox(options=options)
     driver.get("http://127.0.0.1:3000")

@@ -1,8 +1,6 @@
-{% set version = os.popen("python -c 'import versioneer; print(versioneer.get_version())'").read() %}
-
 package:
   name: orion
-  version: {{ version }}
+  version: {{ load_setup_py_data().version }}
 
 source:
   path: ../
@@ -29,10 +27,10 @@ requirements:
     - tabulate
     - AppDirs
     - plotly
-    - python-kaleido
+    - python-kaleido ==0.2.1
     - requests
     - pandas
-    - falcon
+    - falcon >=4,<5
     - falcon-cors
     - gunicorn
     - scikit-learn

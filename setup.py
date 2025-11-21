@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Installation script for Oríon."""
 import os
+import sys
 
 from setuptools import setup
 
@@ -16,11 +17,8 @@ with open("tests/requirements.txt") as f:
 algos = [
     "orion.algo.asha",
     "orion.algo.axoptimizer",
-    "orion.algo.bohb",
-    "orion.algo.dehb",
     "orion.algo.evolution_es",
     "orion.algo.gridsearch",
-    "orion.algo.hebo",
     "orion.algo.hyperband",
     "orion.algo.mofa",
     "orion.algo.nevergradoptimizer",
@@ -56,33 +54,68 @@ extras_require = {
         "sphinx_gallery",
     ],
     "dask": ["dask[complete]"],
-    "ray": ["ray"],
     "track": ["track @ git+https://github.com/Delaunay/track@master#egg=track"],
-    "profet": ["emukit", "GPy", "torch", "pybnn"],
-    "configspace": ["ConfigSpace"],
     "ax": [
         "ax-platform",
         "numpy",
     ],
-    "dehb": [
-        "ConfigSpace",
-        "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
-    ],
-    "bohb": [
-        "hpbandster",
-        "ConfigSpace",
-        "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
-    ],
-    "pb2": ["GPy", "matplotlib"],
-    "nevergrad": ["nevergrad>=0.4.3.post10", "fcmaes", "pymoo"],
-    "hebo": [
-        # Issue #1061 Pending update of hebo
-        "numpy>=1.17,<1.24",
-        "pymoo==0.5.0",
-        "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.2#egg=hebo&subdirectory=HEBO",
+    "pb2": ['GPy; python_version < "3.13"', "matplotlib"],
+    "nevergrad": [
+        "nevergrad>=0.4.3.post10",
+        # fcmaes requires numba, which can not be currently installed on Python 3.14
+        'fcmaes; python_version < "3.14"',
+        "pymoo",
     ],
 }
+
+if sys.version_info < (3, 12):
+    algos += [
+        "orion.algo.bohb",
+        "orion.algo.dehb",
+        "orion.algo.hebo",
+    ]
+    extras_require.update(
+        {
+            "configspace": ["ConfigSpace"],
+            "dehb": [
+                # sample-space use parameter q, removed in ConfigSpace >= 1
+                "ConfigSpace>=0.7,<1",
+                "dehb @ git+https://github.com/bouthilx/DEHB.git@master#egg=dehb",
+                "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
+            ],
+            "bohb": [
+                "hpbandster",
+                # sample-space use parameter q, removed in ConfigSpace >= 1
+                "ConfigSpace>=0.7,<1",
+                "sspace @ git+https://github.com/Epistimio/sample-space.git@master#egg=sspace",
+            ],
+            "hebo": [
+                "pymoo==0.6.0",
+                "hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#egg=hebo&subdirectory=HEBO",
+            ],
+        }
+    )
+
+if sys.version_info < (3, 13):
+    extras_require.update(
+        {
+            "profet": [
+                'emukit; python_version < "3.13"',
+                'GPy; python_version < "3.13"',
+                "torch",
+                "pybnn",
+            ],
+        }
+    )
+
+if sys.version_info < (3, 14):
+    # Right now, ray cannot be installed on Python 3.14
+    extras_require.update(
+        {
+            "ray": ["ray"],
+        }
+    )
+
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 dashboard_files = []
@@ -112,7 +145,7 @@ setup_args = dict(
     package_dir={"": "src"},
     data_files=dashboard_files,
     include_package_data=True,
-    python_requires=">=3.8",
+    python_requires=">=3.10",
     entry_points={
         "console_scripts": [
             "orion = orion.core.cli:main",
@@ -153,7 +186,7 @@ setup_args = dict(
         "cloudpickle",
         "PyYAML",
         "pymongo>=3",
-        "numpy",
+        "numpy>=1.17",
         "scipy",
         "gitpython",
         "filelock",
@@ -165,14 +198,13 @@ setup_args = dict(
         "requests",
         "pandas",
         "gunicorn",
-        "falcon",
+        "falcon>=4,<5",
         "falcon-cors",
         "scikit-learn",
         "psutil",
         "joblib",
         "pytest>=3.0.0",
         "scikit-optimize",
-        "pyyaml",
         "typing_extensions",
     ],
     tests_require=tests_require,
@@ -203,7 +235,10 @@ setup_args["classifiers"] = [
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-] + [("Programming Language :: Python :: %s" % x) for x in "3 3.8 3.9 3.10".split()]
+] + [
+    ("Programming Language :: Python :: %s" % x)
+    for x in "3 3.10 3.11 3.12 3.13 3.14".split()
+]
 
 if __name__ == "__main__":
     setup(**setup_args)

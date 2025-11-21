@@ -136,11 +136,15 @@ class ImportTask:
             }
 
 
-def _import_data(task: ImportTask, storage, load_host, resolve, name, version):
+def _import_data(
+    task: ImportTask, storage, load_host, resolve, name, version, loglevel
+):
     """Function to run import task.
 
     Set stream handler, launch load_database and set task status.
     """
+    # Apply given level at root logging
+    logging.root.setLevel(loglevel)
     try:
         print("Import starting.", task.task_id)
         task.listen_logging()
@@ -242,15 +246,26 @@ class StorageResource:
         if resolve is None:
             raise falcon.HTTPInvalidParam("Missing resolve policy", "resolve")
         self.current_task = ImportTask()
+        # Launch _import_data
+        # Log level is not passed anymore to child process on Python 3.14,
+        # so we manually pass level from this process to launched process.
         p = multiprocessing.Process(
             target=_import_data,
-            args=(self.current_task, self.storage, load_host, resolve, name, version),
+            args=(
+                self.current_task,
+                self.storage,
+                load_host,
+                resolve,
+                name,
+                version,
+                logging.root.level,
+            ),
         )
         p.start()
-        resp.body = json.dumps({"task": self.current_task.task_id})
+        resp.text = json.dumps({"task": self.current_task.task_id})
 
     def on_get_import_status(self, req: Request, resp: Response, name: str):
         """Handle the GET requests for import-status/"""
         if self.current_task is None or self.current_task.task_id != name:
             raise falcon.HTTPInvalidParam("Unknown import task", "name")
-        resp.body = json.dumps(self.current_task.flush_state())
+        resp.text = json.dumps(self.current_task.flush_state())

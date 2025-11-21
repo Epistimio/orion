@@ -6,15 +6,6 @@ from orion.core.utils.exceptions import WaitingForTrials
 from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
 
-idle_timeout = 20
-count = 10
-n_workers = 2
-
-
-parser = ArgumentParser()
-parser.add_argument("--backend", type=str, default="joblib")
-args = parser.parse_args()
-
 
 def new_trial(value, sleep=0.01):
     """Generate a dummy new trial"""
@@ -29,7 +20,7 @@ def new_trial(value, sleep=0.01):
 class FakeClient:
     """Orion mock client for Runner."""
 
-    def __init__(self, n_workers):
+    def __init__(self, args, n_workers):
         self.is_done = False
         self.executor = executor_factory.create(args.backend, n_workers)
         self.suggest_error = WaitingForTrials
@@ -69,23 +60,36 @@ def function(lhs, sleep):
     return lhs + sleep
 
 
-client = FakeClient(n_workers)
+def main():
+    idle_timeout = 20
+    count = 10
+    n_workers = 2
 
-runner = Runner(
-    client=client,
-    fct=function,
-    pool_size=10,
-    idle_timeout=idle_timeout,
-    max_broken=2,
-    max_trials_per_worker=2,
-    trial_arg=[],
-    on_error=None,
-)
+    parser = ArgumentParser()
+    parser.add_argument("--backend", type=str, default="joblib")
+    args = parser.parse_args()
 
-client = runner.client
+    client = FakeClient(args, n_workers)
 
-client.trials.extend([new_trial(i) for i in range(count)])
+    runner = Runner(
+        client=client,
+        fct=function,
+        pool_size=10,
+        idle_timeout=idle_timeout,
+        max_broken=2,
+        max_trials_per_worker=2,
+        trial_arg=[],
+        on_error=None,
+    )
 
-runner.run()
-runner.client.close()
-print("done")
+    client = runner.client
+
+    client.trials.extend([new_trial(i) for i in range(count)])
+
+    runner.run()
+    runner.client.close()
+    print("done")
+
+
+if __name__ == "__main__":
+    main()
