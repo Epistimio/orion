@@ -3,6 +3,7 @@ Provides public plotting API
 =============================
 """
 import orion.plotting.backend_plotly as backend
+from orion.analysis.symbolic_explanation import SymbolicRegressorParams
 
 
 def lpi(
@@ -185,6 +186,94 @@ def partial_dependencies(
         colorscale=colorscale,
         model=model,
         model_kwargs=model_kwargs,
+    )
+
+
+def symbolic_explanation(
+    experiment,
+    with_evc_tree=True,
+    params=None,
+    smoothing=0.85,
+    verbose_hover=True,
+    n_grid_points=10,
+    n_samples=50,
+    colorscale="Blues",
+    model="RandomForestRegressor",
+    model_kwargs=None,
+    timeout=300,
+    n_decimals=3,
+    sampling_seed=None,
+    symbolic_regressor_params=SymbolicRegressorParams(),
+):
+    """
+    Make contour plots to visualize the search space of each combination of params.
+
+    Parameters
+    ----------
+    experiment: ExperimentClient or Experiment
+        The orion object containing the experiment data
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
+
+    params: list of str, optional
+        Indicates the parameters to include in the plots. All parameters are included by default.
+
+    smoothing: float, optional
+        Smoothing applied to the countor plot. 0 corresponds to no smoothing. Default is 0.85.
+
+    verbose_hover: bool
+        Indicates whether to display the hyperparameter in hover tooltips. True by default.
+
+    colorscale: str, optional
+        The colorscale used for the contour plots. Supported values depends on the backend.
+        Default is 'Blues'.
+
+    n_grid_points: int, optional
+        Number of points in the grid to compute partial dependency. Default is 10.
+
+    n_samples: int, optional
+        Number of samples to randomly generate the grid used to compute the partial dependency.
+        Default is 50.
+
+    model: str
+        Name of the regression model to use. Can be one of
+        - AdaBoostRegressor
+        - BaggingRegressor
+        - ExtraTreesRegressor
+        - GradientBoostingRegressor
+        - RandomForestRegressor (Default)
+
+    model_kwargs: dict, optional
+        Arguments for the regressor model.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
+
+    return backend.symbolic_explanation(
+        experiment,
+        with_evc_tree=with_evc_tree,
+        params=params,
+        smoothing=smoothing,
+        verbose_hover=verbose_hover,
+        n_grid_points=n_grid_points,
+        n_samples=n_samples,
+        colorscale=colorscale,
+        model=model,
+        model_kwargs=model_kwargs,
+        timeout=timeout,
+        n_decimals=n_decimals,
+        sampling_seed=sampling_seed,
+        symbolic_regressor_params=symbolic_regressor_params,
     )
 
 
@@ -434,6 +523,7 @@ PLOT_METHODS = {
     "lpi": lpi,
     "parallel_coordinates": parallel_coordinates,
     "partial_dependencies": partial_dependencies,
+    "symbolic_explanation": symbolic_explanation,
     "regret": regret,
     "regrets": regrets,
     "rankings": rankings,
@@ -446,6 +536,7 @@ SINGLE_EXPERIMENT_PLOTS = {
     "lpi": lpi,
     "parallel_coordinates": parallel_coordinates,
     "partial_dependencies": partial_dependencies,
+    "symbolic_explanation": symbolic_explanation,
     "regret": regret,
 }
 
@@ -506,6 +597,11 @@ class PlotAccessor:
         """Make contour plots to visualize the search space of each combination of params."""
         __doc__ = partial_dependencies.__doc__
         return self(kind="partial_dependencies", **kwargs)
+
+    def symbolic_explanation(self, **kwargs):
+        """Compute symbolic explanation and make partial dependency plots based on the formula found."""
+        __doc__ = partial_dependencies.__doc__
+        return self(kind="symbolic_explanation", **kwargs)
 
     def regret(self, **kwargs):
         """Make a plot to visualize the performance of the hyper-optimization process."""

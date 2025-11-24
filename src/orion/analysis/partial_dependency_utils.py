@@ -76,9 +76,10 @@ def partial_dependency(
     if trials.empty or trials.shape[0] == 0:
         return {}
 
-    data = to_numpy(trials, space)
-    data = flatten_numpy(data, flattened_space)
-    model = train_regressor(model, data, **kwargs)
+    if isinstance(model, str):
+        data = to_numpy(trials, space)
+        data = flatten_numpy(data, flattened_space)
+        model = train_regressor(model, data, **kwargs)
 
     data = [
         format_trials.trial_to_tuple(trial, flattened_space)

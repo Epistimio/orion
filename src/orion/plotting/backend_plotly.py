@@ -10,11 +10,16 @@ import numpy
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import sympy
 from plotly.subplots import make_subplots
 
 import orion.analysis
 import orion.analysis.base
 from orion.algo.space import Categorical, Fidelity
+from orion.analysis.symbolic_explanation import (
+    SymbolicRegressorParams,
+    simplify_formula,
+)
 from orion.core.worker.transformer import build_required_space
 
 
@@ -194,7 +199,6 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
         return competitions
 
     def build_groups(competitions):
-
         if not isinstance(competitions, dict):
             rankings = []
             for competition in competitions:
@@ -484,6 +488,263 @@ def partial_dependencies(
     fig.layout.coloraxis.colorbar.title = "Objective"
 
     fig.update_layout(coloraxis=dict(colorscale=colorscale), showlegend=False)
+
+    return fig
+
+
+def symbolic_explanation(
+    experiment,
+    with_evc_tree=True,
+    params=None,
+    smoothing=0.85,
+    n_grid_points=10,
+    n_samples=50,
+    colorscale="Blues",
+    model="RandomForestRegressor",
+    model_kwargs=None,
+    timeout=300,
+    n_decimals=3,
+    sampling_seed=None,
+    symbolic_regressor_params=SymbolicRegressorParams(),
+    verbose_hover=True,
+):
+    """Plotly implementation of `orion.plotting.symbolic_explanation`"""
+
+    def build_data():
+        """Builds the dataframe for the plot"""
+        df = experiment.to_pandas(with_evc_tree=with_evc_tree)
+
+        names = list(experiment.space.keys())
+        df["params"] = df[names].apply(_format_hyperparameters, args=(names,), axis=1)
+
+        df = df.loc[df["status"] == "completed"]
+        symbolic_regressor = orion.analysis.symbolic_explanation(
+            trials=df,
+            space=experiment.space,
+            params=params,
+            model=model,
+            n_samples=n_samples,
+            timeout=timeout,
+            n_decimals=n_decimals,
+            sampling_seed=sampling_seed,
+            symbolic_regressor_params=symbolic_regressor_params,
+            **model_kwargs,
+        )
+
+        data = orion.analysis.partial_dependency(
+            experiment.to_pandas(),
+            experiment.space,
+            model=symbolic_regressor,
+            n_grid_points=n_grid_points,
+        )
+
+        latex_formula = sympy.latex(
+            simplify_formula(
+                symbolic_regressor, experiment.space, n_decimals=n_decimals
+            )
+        )
+
+        df = _flatten_dims(df, experiment.space)
+        return (df, data, latex_formula)
+
+    def _set_scale(figure, dims, x, y):
+        for axis, dim in zip("xy", dims):
+            if "reciprocal" in dim.prior_name or dim.type == "fidelity":
+                getattr(figure, f"update_{axis}axes")(type="log", row=y, col=x)
+
+    def _plot_marginalized_avg(data, x_name):
+        return go.Scatter(
+            x=data[0][x_name],
+            y=data[1],
+            mode="lines",
+            name=None,
+            showlegend=False,
+            line=dict(
+                color=px.colors.qualitative.D3[0],
+            ),
+        )
+
+    def _plot_marginalized_std(data, x_name):
+        return go.Scatter(
+            x=list(data[0][x_name]) + list(data[0][x_name])[::-1],
+            y=list(data[1] - data[2]) + list(data[1] + data[2])[::-1],
+            mode="lines",
+            name=None,
+            fill="toself",
+            showlegend=False,
+            line=dict(
+                color=px.colors.qualitative.D3[0],
+                width=0,
+            ),
+        )
+
+    def _plot_contour(data, x_name, y_name):
+        return go.Contour(
+            x=data[0][x_name],
+            y=data[0][y_name],
+            z=data[1],
+            connectgaps=True,
+            # Share the same color range across contour plots
+            coloraxis="coloraxis",
+            line_smoothing=smoothing,
+            # To show labels
+            contours=dict(
+                coloring="heatmap",
+                showlabels=True,  # show labels on contours
+                labelfont=dict(  # label font properties
+                    size=12,
+                    color="white",
+                ),
+            ),
+        )
+
+    def _plot_scatter(x, y, df):
+        return go.Scatter(
+            x=x,
+            y=y,
+            marker={
+                "line": {"width": 0.5, "color": "Grey"},
+                "color": "black",
+                "size": 5,
+            },
+            mode="markers",
+            opacity=0.5,
+            showlegend=False,
+            customdata=list(zip(df["id"], df["suggested"], df["params"])),
+            hovertemplate=_template_trials(verbose_hover),
+        )
+
+    if model_kwargs is None:
+        model_kwargs = {}
+
+    df, data, latex_formula = build_data()
+
+    if not data:
+        return go.Figure()
+
+    params = [
+        param_names for param_names in data.keys() if isinstance(param_names, str)
+    ]
+
+    flattened_space = build_required_space(
+        experiment.space,
+        shape_requirement="flattened",
+    )
+
+    fig = make_subplots(
+        rows=len(params),
+        cols=len(params),
+        shared_xaxes=True,
+        shared_yaxes=False,
+    )
+
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    cmin = float("inf")
+    cmax = -float("inf")
+
+    for x_i in range(len(params)):
+        x_name = params[x_i]
+        fig.add_trace(
+            _plot_marginalized_avg(data[x_name], x_name),
+            row=x_i + 1,
+            col=x_i + 1,
+        )
+        fig.add_trace(
+            _plot_marginalized_std(data[x_name], x_name),
+            row=x_i + 1,
+            col=x_i + 1,
+        )
+        fig.add_trace(
+            _plot_scatter(df[x_name], df["objective"], df),
+            row=x_i + 1,
+            col=x_i + 1,
+        )
+
+        _set_scale(fig, [flattened_space[x_name]], x_i + 1, x_i + 1)
+
+        fig.update_xaxes(title_text=x_name, row=len(params), col=x_i + 1)
+        if x_i > 0:
+            fig.update_yaxes(title_text=x_name, row=x_i + 1, col=1)
+        else:
+            fig.update_yaxes(title_text="Objective", row=x_i + 1, col=x_i + 1)
+
+        for y_i in range(x_i + 1, len(params)):
+            y_name = params[y_i]
+            fig.add_trace(
+                _plot_contour(
+                    data[(x_name, y_name)],
+                    x_name,
+                    y_name,
+                ),
+                row=y_i + 1,
+                col=x_i + 1,
+            )
+            fig.add_trace(
+                _plot_scatter(df[x_name], df[y_name], df),
+                row=y_i + 1,
+                col=x_i + 1,
+            )
+
+            cmin = min(cmin, data[(x_name, y_name)][1].min())
+            cmax = max(cmax, data[(x_name, y_name)][1].max())
+
+            _set_scale(
+                fig,
+                [flattened_space[name] for name in [x_name, y_name]],
+                x_i + 1,
+                y_i + 1,
+            )
+
+    for x_i in range(len(params)):
+        plot_id = len(params) * x_i + x_i + 1
+        if plot_id > 1:
+            key = f"yaxis{plot_id}_range"
+        else:
+            key = "yaxis_range"
+        fig.update_layout(**{key: [cmin, cmax]})
+
+    fig.update_layout(
+        title=f"Partial dependencies on symbolic explanation\nfor experiment '{experiment.name}'",
+    )
+    fig.layout.coloraxis.colorbar.title = "Objective"
+
+    fig.update_layout(coloraxis=dict(colorscale=colorscale), showlegend=False)
+
+    fmin = min([data[params[0]][1].min(), df["objective"].min()])
+    fmax = max([data[params[0]][1].max(), df["objective"].max()])
+
+    fig.update_layout(
+        **{
+            f"yaxis{len(experiment.space)}_visible": False,
+            f"yaxis{len(experiment.space)}_range": [fmin, fmax],
+        }
+    )
+
+    last_param = list(experiment.space.values())[-1]
+    xlims = last_param = last_param.interval()
+    fig.add_annotation(
+        x=sum(xlims) / 2,
+        y=fmax,
+        font=dict(size=24),
+        height=30,
+        text="Best formula found",
+        showarrow=False,
+        align="right",
+        valign="bottom",
+        col=0,
+        row=1,
+    )
+    fig.add_annotation(
+        x=sum(xlims) / 2,
+        y=(fmax - fmin) / (len(params) * 0.75 + 0.5) + fmin,
+        font=dict(size=24),
+        text=r"${}$".format(latex_formula),
+        showarrow=False,
+        align="right",
+        valign="top",
+        col=0,
+        row=1,
+    )
 
     return fig
 
