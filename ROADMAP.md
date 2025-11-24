@@ -1,7 +1,14 @@
 # Roadmap
-Last update August 18th, 2022
+Last update November 24th, 2025
 
 ## Next releases - Short-Term
+
+### v0.2.9
+
+### v0.2.8
+
+- Drop support for Python <= 3.10
+- Support Python from 3.10 to 3.14
 
 ### v0.2.7
 
