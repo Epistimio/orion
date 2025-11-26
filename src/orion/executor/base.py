@@ -96,6 +96,16 @@ class BaseExecutor:
     def __setstate__(self, state):
         self.n_workers = state["n_workers"]
 
+    def cancel(self, future):
+        """Cancel a given future
+
+        Parameters
+        ----------
+        future: `concurrent.futures.Futures` or equivalent interface
+            The future to be cancelled
+
+        """
+
     def wait(self, futures):
         """Wait for all futures to complete execution.
 

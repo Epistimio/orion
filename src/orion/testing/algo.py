@@ -144,6 +144,9 @@ class BaseAlgoTests:
     # Fixtures available as class attributes:
     phase: ClassVar[pytest.fixture]  # type: ignore
 
+    objective: float = 10
+    """Target objective"""
+
     def __init_subclass__(cls) -> None:
 
         # Set the `algo_type` attribute, if necessary.
@@ -230,13 +233,13 @@ class BaseAlgoTests:
     @pytest.fixture()
     def first_phase(self, phase: TestPhase):
         if phase != type(self).phases[0]:
-            pytest.skip(reason="Test runs only on first phase.")
+            pytest.skip("Test runs only on first phase.")
         return phase
 
     @pytest.fixture()
     def last_phase(self, phase: TestPhase):
         if phase != type(self).phases[-1]:
-            pytest.skip(reason="Test runs only on last phase.")
+            pytest.skip("Test runs only on last phase.")
         return phase
 
     @classmethod
@@ -504,7 +507,7 @@ class BaseAlgoTests:
         suggested trials are reproducible.
         """
         if "seed" not in inspect.signature(self.algo_type).parameters:
-            pytest.skip(reason="algo does not have a seed as a constructor argument.")
+            pytest.skip("algo does not have a seed as a constructor argument.")
 
         config = self.config.copy()
         config["seed"] = 1
@@ -777,7 +780,7 @@ class BaseAlgoTests:
             )
 
         assert algo.is_done
-        assert min(all_objectives) <= 10
+        assert min(all_objectives) <= self.objective
 
 
 class BaseParallelStrategyTests:

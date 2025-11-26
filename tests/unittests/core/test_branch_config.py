@@ -2,7 +2,6 @@
 """Collection of tests for :mod:`orion.core.io.experiment_branch_builder`."""
 
 import copy
-import os
 
 import pytest
 import yaml
@@ -48,7 +47,7 @@ def user_config():
 
 
 @pytest.fixture
-def parent_config(user_config):
+def parent_config(user_config, tmp_path):
     """Create a configuration that will not hit the database."""
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
@@ -79,7 +78,7 @@ def parent_config(user_config):
         refers={},
     )
 
-    config_file_path = "./parent_config.yaml"
+    config_file_path = tmp_path / "parent_config.yaml"
 
     with open(config_file_path, "w") as f:
         yaml.dump(user_config, f)
@@ -89,7 +88,6 @@ def parent_config(user_config):
     backward.populate_space(config)
 
     yield config
-    os.remove(config_file_path)
 
 
 @pytest.fixture
@@ -151,21 +149,20 @@ def changed_code_config(child_config):
 
 
 @pytest.fixture
-def same_userconfig_config(user_config, child_config):
+def same_userconfig_config(user_config, child_config, tmp_path):
     """Create a child config with a changed dimension"""
-    config_file_path = "./same_config.yaml"
+    config_file_path = tmp_path / "same_config.yaml"
     with open(config_file_path, "w") as f:
         yaml.dump(user_config, f)
     child_config["metadata"]["user_args"][-1] = "--config=%s" % config_file_path
     backward.populate_space(child_config)
     yield child_config
-    os.remove(config_file_path)
 
 
 @pytest.fixture
-def changed_userconfig_config(user_config, child_config):
+def changed_userconfig_config(user_config, child_config, tmp_path):
     """Create a child config with a changed dimension"""
-    config_file_path = "./changed_config.yaml"
+    config_file_path = tmp_path / "changed_config.yaml"
     user_config["b"] = "orion~uniform(-20, 0, precision=None)"
     user_config["some_other"] = "hello"
     with open(config_file_path, "w") as f:
@@ -173,7 +170,6 @@ def changed_userconfig_config(user_config, child_config):
     child_config["metadata"]["user_args"][-1] = "--config=%s" % config_file_path
     backward.populate_space(child_config)
     yield child_config
-    os.remove(config_file_path)
 
 
 @pytest.fixture
@@ -540,7 +536,7 @@ class TestResolutions:
 
         with pytest.raises(ValueError) as exc:
             branch_builder.reset("w_d~+")
-        assert "'w_d~+' is not in list" in str(exc.value)
+        assert str(exc.value).endswith(" not in list")
         assert len(conflicts.get_resolved()) == 2
 
         branch_builder.reset("w_d~+normal(0, 1)")

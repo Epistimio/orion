@@ -13,7 +13,6 @@ import tabulate
 
 from orion.core.cli import base as cli
 from orion.core.io import experiment_builder
-from orion.storage.base import setup_storage
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Gives an overview of experiments' trials"
@@ -67,18 +66,18 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and status experiments"""
     config = experiment_builder.get_cmd_config(args)
-    storage = setup_storage(config.get("storage"))
+    builder = experiment_builder.ExperimentBuilder(config.get("storage"))
 
     args["all_trials"] = args.pop("all", False)
 
-    experiments = get_experiments(storage, args)
+    experiments = get_experiments(builder, args)
 
     if not experiments:
         print("No experiment found")
         return
 
     if args.get("name"):
-        print_evc([experiments[0]], **args)
+        print_evc([experiments[0]], builder, **args)
         return
 
     if args.get("version"):
@@ -88,12 +87,13 @@ def main(args):
                 "or --expand-versions."
             )
 
-    print_evc(experiments, **args)
+    print_evc(experiments, builder, **args)
 
 
 # pylint: disable=unused-argument
 def print_evc(
     experiments,
+    builder,
     version=None,
     all_trials=False,
     collapse=False,
@@ -109,7 +109,7 @@ def print_evc(
 
     """
     for exp in experiments:
-        experiment = experiment_builder.load(exp.name, version)
+        experiment = builder.load(exp.name, version)
         if version is None:
             expand_experiment = exp
         else:
@@ -121,7 +121,7 @@ def print_evc(
             print_status(experiment, all_trials=all_trials, collapse=True)
 
 
-def get_experiments(storage, args):
+def get_experiments(builder, args):
     """Return the different experiments.
 
     Parameters
@@ -133,7 +133,7 @@ def get_experiments(storage, args):
     projection = {"name": 1, "version": 1, "refers": 1}
 
     query = {"name": args["name"]} if args.get("name") else {}
-    experiments = storage.fetch_experiments(query, projection)
+    experiments = builder.storage.fetch_experiments(query, projection)
 
     if args["name"]:
         root_experiments = experiments
@@ -145,7 +145,7 @@ def get_experiments(storage, args):
         ]
 
     return [
-        experiment_builder.load(name=exp["name"], version=exp.get("version", 1))
+        builder.load(name=exp["name"], version=exp.get("version", 1))
         for exp in root_experiments
     ]
 

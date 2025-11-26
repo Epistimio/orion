@@ -3,6 +3,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+
+GPy = pytest.importorskip("GPy")
+torch = pytest.importorskip("torch")
+
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
@@ -29,9 +33,6 @@ def profet_input_dir(tmp_path_factory):
     if REAL_PROFET_DATA_DIR.exists():
         return REAL_PROFET_DATA_DIR
     return tmp_path_factory.mktemp("profet_data")
-
-
-logger = get_logger(__name__)
 
 
 @pytest.fixture(autouse=True, params=[True, False], ids=["real_data", "fake_data"])

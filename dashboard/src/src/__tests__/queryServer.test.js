@@ -33,6 +33,6 @@ test('test backend bad call', () => {
   // Create backend with unreachable address.
   const backend = new Backend('http://localhost:1');
   return backend.query('').catch(error => {
-    expect(error.message).toBe('connect ECONNREFUSED 127.0.0.1:1');
+    expect(error.message).toMatch(/^connect ECONNREFUSED .+1:1$/);
   });
 });

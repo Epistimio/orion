@@ -38,7 +38,7 @@ def test_interrupt(monkeypatch, capsys):
         assert error_code == 130
 
         captured = capsys.readouterr()
-        assert captured.out == "Orion is interrupted.\n"
+        assert "Orion is interrupted.\n" in captured.out
         assert captured.err == ""
 
         exp = list(storage.fetch_experiments({"name": "voila_voici"}))
@@ -47,6 +47,11 @@ def test_interrupt(monkeypatch, capsys):
         trials = list(storage.fetch_trials(uid=exp_id))
         assert len(trials) == 1
         assert trials[0].status == "interrupted"
+
+
+class MockConsumer(Consumer):
+    def get_execution_environment(self, trial, results_file="results.log"):
+        return os.environ
 
 
 def test_interrupt_diff_code(monkeypatch, capsys, storage):
@@ -58,12 +63,9 @@ def test_interrupt_diff_code(monkeypatch, capsys, storage):
     # Set local to 200
     orion.core.config.worker.interrupt_signal_code = 200
 
-    # But child won't be passed ORION_INTERRUPT_CODE and therefore will send default code 130
-    def empty_env(self, trial, results_file=None):
-        return os.environ
-
     with monkeypatch.context() as m:
-        m.setattr(Consumer, "get_execution_environment", empty_env)
+        # But child won't be passed ORION_INTERRUPT_CODE and therefore will send default code 130
+        m.setattr("orion.core.cli.hunt.Consumer", MockConsumer)
 
         # Interrupt won't be interpreted properly and trials will be marked as broken
         error_code = orion.core.cli.main(

@@ -21,7 +21,11 @@ CONFIG_FILE = os.path.join(DIRNAME, "random.yaml")
 
 # Ignore pre-0.1.6 because was on orion.core and pypi project was deleted.
 with open(os.path.join(DIRNAME, "versions.txt")) as f:
-    VERSIONS = [version.strip() for version in f.read().split("\n") if version.strip()]
+    VERSIONS = [
+        version.strip()
+        for version in f.read().split("\n")
+        if version.strip() and version.strip()[0] != "#"
+    ]
 
 
 def function(x):

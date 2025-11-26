@@ -837,9 +837,11 @@ class TestTransformedDimension:
 
     def test_repr(self, tdim):
         """Check method `__repr__`."""
-        assert (
-            str(tdim)
-            == "Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"
+        assert str(
+            tdim
+        ) == "Quantize(Real(name=yolo, prior={{norm: (0.9,), {{}}}}, shape=({n3}, {n2}), default value=None))".format(
+            n3=repr(numpy.int64(3)),
+            n2=repr(numpy.int64(2)),
         )  # noqa
 
     def test_name_property(self, tdim):
@@ -956,9 +958,11 @@ class TestReshapedDimension:
 
     def test_repr(self, rdim):
         """Check method `__repr__`."""
-        assert (
-            str(rdim)
-            == "View(shape=(3, 2), index=(0, 1), Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)))"
+        assert str(
+            rdim
+        ) == "View(shape=({n3}, {n2}), index=(0, 1), Quantize(Real(name=yolo, prior={{norm: (0.9,), {{}}}}, shape=({n3}, {n2}), default value=None)))".format(
+            n3=repr(numpy.int64(3)),
+            n2=repr(numpy.int64(2)),
         )  # noqa
 
     def test_name_property(self, rdim):
@@ -1185,12 +1189,17 @@ class TestRequiredSpaceBuilder:
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
        Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
-       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
-       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(%(n1)s,), default value=None),
+       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
+       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(%(n3)s, %(n2)s), default value=None)])\
 """
+            % {
+                "n1": repr(numpy.int64(1)),
+                "n3": repr(numpy.int64(3)),
+                "n2": repr(numpy.int64(2)),
+            }
         )  # noqa
 
     def test_integer_requirement(self, space_each_type):
@@ -1205,12 +1214,17 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
         assert (
             str(tspace)
             == """\
-Space([Quantize(Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))),
+Space([Quantize(Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(%(n3)s, %(n2)s), default value=None))),
        Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2)),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
-       Quantize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
-       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(%(n1)s,), default value=None),
+       Quantize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(%(n3)s, %(n2)s), default value=None))),
+       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(%(n3)s, %(n2)s), default value=None)])\
 """
+            % {
+                "n1": repr(numpy.int64(1)),
+                "n3": repr(numpy.int64(3)),
+                "n2": repr(numpy.int64(2)),
+            }
         )  # noqa
 
     def test_real_requirement(self, space_each_type):
@@ -1225,12 +1239,17 @@ Space([Quantize(Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3,
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
        OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2))),
-       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None)),
-       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
-       ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))])\
+       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(%(n1)s,), default value=None)),
+       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
+       ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(%(n3)s, %(n2)s), default value=None))])\
 """
+            % {
+                "n1": repr(numpy.int64(1)),
+                "n3": repr(numpy.int64(3)),
+                "n2": repr(numpy.int64(2)),
+            }
         )  # noqa
 
     def test_numerical_requirement(self, space_each_type):
@@ -1245,12 +1264,17 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
        Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2)),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
-       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
-       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(%(n1)s,), default value=None),
+       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
+       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(%(n3)s, %(n2)s), default value=None)])\
 """
+            % {
+                "n1": repr(numpy.int64(1)),
+                "n3": repr(numpy.int64(3)),
+                "n2": repr(numpy.int64(2)),
+            }
         )  # noqa
 
     def test_linear_requirement(self, space_each_type):
@@ -1265,12 +1289,17 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(%(n3)s, %(n2)s), default value=None)),
        Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
-       Linearize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
-       Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)))])\
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(%(n1)s,), default value=None),
+       Linearize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(%(n3)s, %(n2)s), default value=None))),
+       Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(%(n3)s, %(n2)s), default value=None)))])\
 """
+            % {
+                "n1": repr(numpy.int64(1)),
+                "n3": repr(numpy.int64(3)),
+                "n2": repr(numpy.int64(2)),
+            }
         )  # noqa
 
     def test_flatten_requirement(self, space_each_type):

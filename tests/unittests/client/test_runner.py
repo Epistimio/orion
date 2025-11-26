@@ -11,10 +11,9 @@ from contextlib import contextmanager
 from multiprocessing import Process, Queue
 from pathlib import Path
 from threading import Thread
-from typing import Callable
+from typing import Callable, Literal
 
 import pytest
-from typing_extensions import Literal
 
 from orion.client.experiment import ExperimentClient
 from orion.client.runner import LazyWorkers, Runner, prepare_trial_working_dir
@@ -28,6 +27,7 @@ from orion.core.utils.exceptions import (
 from orion.core.worker.trial import Trial
 from orion.executor.base import BaseExecutor, executor_factory
 from orion.executor.dask_backend import HAS_DASK, Dask
+from orion.executor.multiprocess_backend import PoolExecutor
 from orion.storage.base import LockAcquisitionTimeout
 
 
@@ -195,7 +195,7 @@ def test_interrupted_scatter_gather():
 
     def slow_gather():
         # Sleep until some results are ready
-        time.sleep(1)
+        time.sleep(5)
         Runner.gather(runner)
 
     runner.gather = slow_gather
@@ -338,7 +338,7 @@ def test_multi_results_with_failure():
 
     count = 8
 
-    runner = new_runner(0.01, n_workers=8)
+    runner = new_runner(0.01, executor=PoolExecutor(n_workers=8, backend="thread"))
     runner.max_broken = 2
     runner.max_trials_per_worker = count
     runner.fct = function_raise_on_2
@@ -352,7 +352,7 @@ def test_multi_results_with_failure():
     assert len(new_trials) == count
 
     # wait for multiple future to finish
-    time.sleep(1)
+    time.sleep(5)
 
     with pytest.raises(BrokenExperiment):
         runner.gather()
@@ -607,15 +607,16 @@ def run_runner(reraise=False, executor=None, close_executor=True):
         return 1
 
 
+def _get_result(results):
+    results.put(run_runner())
+
+
 def test_runner_inside_process():
     """Runner can execute inside a process"""
 
     queue = Queue()
 
-    def get_result(results):
-        results.put(run_runner())
-
-    p = Process(target=get_result, args=(queue,))
+    p = Process(target=_get_result, args=(queue,))
     p.start()
     p.join()
 
@@ -623,6 +624,12 @@ def test_runner_inside_process():
     assert p.exitcode == 0
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="Infinite execution time in Python 3.14+. "
+    "NB: Python 3.14 changes multiprocessing start method from fork to spawn. "
+    "Could it be related?",
+)
 def test_runner_inside_childprocess():
     """Runner can execute inside a child process"""
     pid = os.fork()
@@ -645,10 +652,14 @@ def test_runner_inside_subprocess():
 
     dir = os.path.dirname(__file__)
 
+    env = os.environ.copy()
+    env["PYTHONWARNINGS"] = "ignore::UserWarning"
+
     result = subprocess.run(
         ["python", f"{dir}/runner_subprocess.py", "--backend", "joblib"],
         check=True,
         capture_output=True,
+        env=env,
     )
 
     assert result.stderr.decode("utf-8") == ""

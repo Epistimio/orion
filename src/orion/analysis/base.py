@@ -104,7 +104,7 @@ def ranking(trials, group_by="order", key="best"):
         row["rank"] = ranks
         return row
 
-    return trials.groupby(group_by).apply(rank)
+    return trials.groupby(group_by, group_keys=False).apply(rank)
 
 
 def flatten_params(space, params=None):

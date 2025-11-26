@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Collection of tests resolutions in :mod:`orion.core.evc.conflicts`."""
+import numpy
 import pytest
 
 from orion.algo.space import Dimension
@@ -110,7 +111,9 @@ class TestAddDimensionResolution:
             new_dimension_conflict.AddDimensionResolution(
                 new_dimension_conflict, default_value=default_value
             )
-        assert "could not convert string to float: 'bad'" in str(exc.value)
+        assert f"could not convert string to float: {numpy.str_('bad')!r}" in str(
+            exc.value
+        )
 
     def test_new_prior_no_default(self, new_dimension_conflict):
         """Verify prior string without default value"""
@@ -240,25 +243,28 @@ class TestChangeDimensionResolution:
 @pytest.mark.parametrize(
     "dimension_conflict",
     [
-        pytest.lazy_fixture("missing_dimension_conflict"),
-        pytest.lazy_fixture("missing_dimension_from_config_conflict"),
+        "missing_dimension_conflict",
+        "missing_dimension_from_config_conflict",
     ],
 )
 class TestRemoveDimensionResolution:
     """Test methods for resolution of missing dimensions"""
 
-    def test_prefix(self, dimension_conflict):
+    def test_prefix(self, dimension_conflict, request):
         """Verify prefix of resolution with corresponding marker"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         resolution = dimension_conflict.RemoveDimensionResolution(dimension_conflict)
         assert resolution.prefix == f"{dimension_conflict.dimension.name}~-"
 
-    def test_repr_no_default(self, dimension_conflict):
+    def test_repr_no_default(self, dimension_conflict, request):
         """Verify resolution representation for user interface, without default value"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         resolution = dimension_conflict.RemoveDimensionResolution(dimension_conflict)
         assert repr(resolution) == f"{dimension_conflict.dimension.name}~-"
 
-    def test_repr_default_from_dim(self, dimension_conflict):
+    def test_repr_default_from_dim(self, dimension_conflict, request):
         """Verify resolution representation for user interface, with default value from dimension"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         missing_dimension_with_default_conflict = add_default_config_for_missing(
             dimension_conflict, 0.0
         )
@@ -268,8 +274,9 @@ class TestRemoveDimensionResolution:
         )
         assert repr(resolution) == f"{dimension_conflict.dimension.name}~-0.0"
 
-    def test_repr_default(self, dimension_conflict):
+    def test_repr_default(self, dimension_conflict, request):
         """Verify resolution representation for user interface, with default provided by user"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         missing_dimension_with_default_conflict = add_default_config_for_missing(
             dimension_conflict, 0.0
         )
@@ -288,8 +295,9 @@ class TestRemoveDimensionResolution:
             repr(resolution) == f"{dimension_conflict.dimension.name}~-{default_value}"
         )
 
-    def test_adapters_without_default(self, dimension_conflict):
+    def test_adapters_without_default(self, dimension_conflict, request):
         """Verify adapters without default value"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         param = {
             "name": dimension_conflict.dimension.name,
             "type": "real",
@@ -303,8 +311,9 @@ class TestRemoveDimensionResolution:
             == adapters.DimensionDeletion(param).configuration
         )
 
-    def test_adapters_with_default(self, dimension_conflict):
+    def test_adapters_with_default(self, dimension_conflict, request):
         """Verify adapters with default value"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         param = {
             "name": dimension_conflict.dimension.name,
             "type": "real",
@@ -320,8 +329,9 @@ class TestRemoveDimensionResolution:
             == adapters.DimensionDeletion(param).configuration
         )
 
-    def test_revert(self, dimension_conflict):
+    def test_revert(self, dimension_conflict, request):
         """Verify reverting resolution set conflict to unresolved"""
+        dimension_conflict = request.getfixturevalue(dimension_conflict)
         remove_dimension_resolution = dimension_conflict.RemoveDimensionResolution(
             dimension_conflict, default_value=0
         )

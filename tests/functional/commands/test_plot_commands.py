@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Perform a functional test of the plot command."""
 import random
+import re
 
 import pytest
 
@@ -53,7 +54,9 @@ def test_invalid_kind(capsys, single_with_trials):
 
     captured = capsys.readouterr().err
 
-    assert "argument kind: invalid choice: 'blorg' (choose from 'lpi'," in captured
+    assert re.search(
+        r"argument kind: invalid choice: 'blorg' \(choose from '?lpi'?,", captured
+    )
 
 
 def test_default_type(single_with_trials):
@@ -75,7 +78,9 @@ def test_invalid_type(capsys, single_with_trials):
 
     captured = capsys.readouterr().err
 
-    assert "-t/--type: invalid choice: 'boom' (choose from 'png'" in captured
+    assert re.search(
+        r"-t/--type: invalid choice: 'boom' \(choose from '?png'?", captured
+    )
 
 
 @pytest.mark.parametrize("out_type", VALID_TYPES)

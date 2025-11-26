@@ -75,11 +75,13 @@ class Dask(BaseExecutor):
         self.client = client
 
     def __getstate__(self):
-        return super().__getstate__()
+        state = super().__getstate__()
+        state["address"] = self.client.cluster.scheduler_address
+        return state
 
     def __setstate__(self, state):
         super().__setstate__(state)
-        self.client = get_client()
+        self.client = get_client(address=state["address"])
 
     @property
     def in_worker(self):
@@ -125,7 +127,7 @@ class Dask(BaseExecutor):
         except Exception as e:
             if str(e).startswith(
                 "Tried sending message after closing.  Status: closed"
-            ):
+            ) or str(e).startswith("Client is closed."):
                 raise ExecutorClosed() from e
 
             raise

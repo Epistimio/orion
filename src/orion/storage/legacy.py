@@ -110,11 +110,21 @@ class Legacy(BaseStorageProtocol):
         """Fetch all benchmarks that match the query"""
         return self._db.read("benchmarks", query, selection)
 
-    def create_experiment(self, config):
+    def delete_benchmark(self, query: dict):
+        """See :func:`orion.storage.base.BaseStorageProtocol.delete_benchmark`"""
+        return self._db.remove("benchmarks", query)
+
+    def create_experiment(
+        self, config, algo_locked=0, algo_state=None, algo_heartbeat=None
+    ):
         """See :func:`orion.storage.base.BaseStorageProtocol.create_experiment`"""
         exp_rval = self._db.write("experiments", data=config, query=None)
-        self.initialize_algorithm_lock(
-            experiment_id=config["_id"], algorithm_config=config.get("algorithm", {})
+        self.write_algorithm_lock(
+            experiment_id=config["_id"],
+            algorithm_config=config.get("algorithm", {}),
+            locked=algo_locked,
+            state=algo_state,
+            heartbeat=algo_heartbeat,
         )
         return exp_rval
 
@@ -350,16 +360,20 @@ class Legacy(BaseStorageProtocol):
         query = dict(experiment=experiment._id, status=status)
         return self._fetch_trials(query)
 
-    def initialize_algorithm_lock(self, experiment_id, algorithm_config):
-        """See :func:`orion.storage.base.BaseStorageProtocol.initialize_algorithm_lock`"""
+    def write_algorithm_lock(
+        self, experiment_id, algorithm_config, locked=0, state=None, heartbeat=None
+    ):
+        """See :func:`orion.storage.base.BaseStorageProtocol.write_algorithm_lock`"""
         return self._db.write(
             "algo",
             {
                 "experiment": experiment_id,
                 "configuration": algorithm_config,
-                "locked": 0,
-                "state": None,
-                "heartbeat": datetime.datetime.utcnow(),
+                "locked": locked,
+                "state": None if state is None else pickle.dumps(state),
+                "heartbeat": datetime.datetime.utcnow()
+                if heartbeat is None
+                else heartbeat,
             },
         )
 
@@ -396,6 +410,7 @@ class Legacy(BaseStorageProtocol):
             else None,
             configuration=algo_state_lock["configuration"],
             locked=algo_state_lock["locked"],
+            heartbeat=algo_state_lock["heartbeat"],
         )
 
     def delete_algorithm_lock(self, experiment=None, uid=None):

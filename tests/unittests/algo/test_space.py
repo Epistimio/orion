@@ -4,6 +4,7 @@
 import sys
 from collections import OrderedDict, defaultdict
 
+import numpy
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal as assert_eq
@@ -311,7 +312,7 @@ class TestReal:
         """Make sure the default value is set"""
         dim = Real("yolo", "uniform", -3, 10, default_value=2.0)
 
-        assert type(dim.default_value) is float
+        assert isinstance(dim.default_value, float)
 
     def test_set_outside_bounds_default_value(self):
         """Make sure default value is inside the bounds"""
@@ -440,7 +441,7 @@ class TestInteger:
         """Make sure the type of the default value is int"""
         dim = Integer("yolo", "uniform", -3, 10, default_value=2)
 
-        assert type(dim.default_value) is int
+        assert isinstance(dim.default_value, int)
 
     def test_set_outside_bounds_default_value(self):
         """Make sure the default value is inside the bounds of the dimensions"""
@@ -550,7 +551,7 @@ class TestCategorical:
         assert (
             str(dim) == "Categorical(name=yolo, "
             "prior={0: 0.10, 1: 0.10, ..., 8: 0.10, 9: 0.10}, "
-            "shape=(2,), default value=None)"
+            "shape=(%(n2)s,), default value=None)" % {"n2": repr(numpy.int64(2))}
         )
 
     def test_bad_probabilities(self):
@@ -588,14 +589,14 @@ class TestCategorical:
         categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, "lalala": 0.4}
         dim = Categorical("yolo", categories, default_value="asdfa")
 
-        assert type(dim.default_value) is str
+        assert isinstance(dim.default_value, str)
 
     def test_init_with_default_value_int(self):
         """Make sure the default value is of the correct type"""
         categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, "lalala": 0.4}
         dim = Categorical("yolo", categories, default_value=2)
 
-        assert type(dim.default_value) is int
+        assert isinstance(dim.default_value, int)
 
     def test_init_with_wrong_default_value(self):
         """Make sure the default value exists"""
@@ -967,10 +968,10 @@ class TestSpace:
 
         assert (
             str(space) == "Space(["
-            "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,), "
+            "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(%(n2)s,), "
             "default value=None),\n"
             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), "
-            "default value=None)])"
+            "default value=None)])" % {"n2": repr(numpy.int64(2))}
         )
 
     def test_configuration(self):

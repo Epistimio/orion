@@ -127,6 +127,7 @@ Special arguments
 ex: ``uniform(0, 10, discrete=True)``
 
 Argument to cast a continuous distribution into :ref:`integer-dim`. Defaults to ``False``.
+Note that the interval is inclusive. The example would include 10 as a valid value.
 
 .. _search-space-default:
 

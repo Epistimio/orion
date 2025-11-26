@@ -7,7 +7,7 @@ jobs:
   createPullRequest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
 
       - name: Update version
         run: |
@@ -20,7 +20,7 @@ jobs:
         with:
           commit-message: 'Update backward comp test versions'
           branch: ci/sync_master_back_to_dev
-          base: master 
+          base: master
           delete-branch: true
           title: 'Merge back master in develop after release'
           body: |

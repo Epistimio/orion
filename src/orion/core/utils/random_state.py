@@ -4,10 +4,9 @@ from __future__ import annotations
 import random
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
-from typing_extensions import Protocol
 
 try:
     import torch

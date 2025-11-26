@@ -74,6 +74,9 @@ class TestAxOptimizer(BaseAlgoTests):
         TestPhase("BO", N_INIT, "space.sample"),
     ]
 
+    # Ax is nto always that good
+    objective = 12
+
     @first_phase_only
     def test_configuration_fail(self):
         """Test that Ax configuration is valid"""

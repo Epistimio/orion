@@ -2,6 +2,7 @@
 """Collection of tests for :mod:`orion.core.io.interactive_commands.branching_prompt`."""
 import shlex
 
+import numpy
 import pytest
 
 from orion.core import evc
@@ -128,7 +129,7 @@ class TestCommands:
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_add("new --default-value='bad'")
         out, err = capsys.readouterr()
-        assert "could not convert string to float: 'bad'" in out
+        assert f"could not convert string to float: {numpy.str_('bad')!r}" in out
         assert len(conflicts.get_resolved()) == 0
 
     def test_add_dim_with_cat(self, conflicts, branch_solver_prompt):
@@ -232,7 +233,7 @@ class TestCommands:
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_remove("missing --default-value='bad'")
         out, err = capsys.readouterr()
-        assert "could not convert string to float: 'bad'" in out
+        assert f"could not convert string to float: {numpy.str_('bad')!r}" in out
         assert len(conflicts.get_resolved()) == 0
 
     def test_remove_dim_with_cat(self, conflicts, branch_solver_prompt):

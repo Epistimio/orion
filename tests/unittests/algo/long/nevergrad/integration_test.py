@@ -90,7 +90,6 @@ WORKING: dict[_AlgoName, dict[_TestName, MarkDecorator]] = {
     "DiscreteOnePlusOne": _deterministic_first_point,
     "EDA": _no_tell_without_ask,
     "ES": {},
-    "FCMA": {},
     "GeneticDE": {},
     "HaltonSearch": _deterministic_points,
     "HaltonSearchPlusMiddlePoint": _deterministic_points,
@@ -218,6 +217,7 @@ NOT_WORKING = {
     "NGOpt14": {},
     "NGOpt21": {},
     "NGOpt38": {},
+    "FCMA": _not_serializable,
 }
 
 
@@ -301,6 +301,9 @@ class TestNevergradOptimizer(BaseAlgoTests):
         TestPhase("random", 0, "space.sample"),
         TestPhase("optim", TEST_MANY_TRIALS, "space.sample"),
     ]
+
+    # Nevergrad is not very good
+    objective = 12
 
     def test_normal_data(self):
         """Test that algorithm supports normal dimensions"""

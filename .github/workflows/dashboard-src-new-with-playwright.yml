@@ -20,40 +20,29 @@ jobs:
     # Playwright requires Node.js 14 or higher.
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: [18.x]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v5
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.node-version }}
 
     # Launch Orion backend
 
-    - name: Launch Orion server
-      uses: actions/setup-python@v2
+    - name: Setup Python
+      uses: actions/setup-python@v6
       with:
-        python-version: 3.8
+        python-version: '3.10'
     - name: Install Orion from local copy
       run: python -m pip install ../../.[profet]
 
-    - name: Setup MongoDB
-      uses: supercharge/mongodb-github-action@1.8.0
-      with:
-        mongodb-version: 4.2
-        mongodb-db: orion_dashboard_test
-    - name: Populate MongoDB
-      run: |
-        cd ../../
-        python .github/workflows/orion/pickle_to_mongodb.py
-        cd dashboard/src/
-
-    - name: Start Orion backend
+    - name: Start fake Orion backend
       run: |
         # Start Orion backend in repository root folder.
         cd ../../
         mkdir -p gunicorn_tmp_dir
-        orion -vv serve -c .github/workflows/orion/orion_config_mongodb.yaml 2> orion-backend-${{ matrix.node-version }}.log &
+        python .github/workflows/fake_orion_server.py > dashboard/src/fake-orion-backend-${{ matrix.node-version }}.log 2>&1 &
         cd dashboard/src/
 
     - name: Install dependencies
@@ -70,5 +59,22 @@ jobs:
     - name: Serve build
       run: ./node_modules/.bin/serve -l 3000 build/ &
 
-    - name: Run Playwright tests
+    - name: Run Playwright tests (1)
       run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (2)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (3)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    - name: Run Playwright tests (4)
+      run: yarn playwright test --project=chromium --reporter=line
+
+    # Upload orion backend log.
+    - name: Get Orion backend log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fake-orion-backend-log-artifact-${{ matrix.node-version }}
+        path: dashboard/src/fake-orion-backend-${{ matrix.node-version }}.log

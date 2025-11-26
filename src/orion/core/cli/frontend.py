@@ -17,7 +17,6 @@ import falcon
 from gunicorn.app.base import BaseApplication
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 DESCRIPTION = "Starts Oríon Dashboard"
 
@@ -93,7 +92,7 @@ class StaticResource:
                     content = content.decode()
                     if self.backend is not None and self.PLACEHOLDER in content:
                         content = content.replace(self.PLACEHOLDER, repr(self.backend))
-                resp.body = content
+                resp.text = content
         else:
             resp.status = falcon.HTTP_404
 

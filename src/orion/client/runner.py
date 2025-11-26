@@ -14,6 +14,7 @@ import shutil
 import signal
 import time
 import typing
+import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Callable
@@ -61,7 +62,7 @@ class Protected:
             self.signal_installed = True
 
         except ValueError:  # ValueError: signal only works in main thread
-            log.warning(
+            warnings.warn(
                 "SIGINT/SIGTERM protection hooks could not be installed because "
                 "Runner is executing inside a thread/subprocess, results could get lost "
                 "on interruptions"
@@ -368,16 +369,14 @@ class Runner:
         for trial in new_trials:
             try:
                 self.prepare_trial(self.client, trial)
-                prepared = True
-            # pylint:disable=broad-except
-            except Exception as e:
-                future = self.client.executor.submit(delayed_exception, e)
-                prepared = False
 
-            if prepared:
                 future = self.client.executor.submit(
                     _optimize, trial, self.fct, self.trial_arg, **self.kwargs
                 )
+
+            # pylint:disable=broad-except
+            except Exception as e:
+                future = self.client.executor.submit(delayed_exception, e)
 
             self.pending_trials[future] = trial
             new_futures.append(future)
@@ -385,6 +384,7 @@ class Runner:
         self.futures.extend(new_futures)
         if new_futures:
             log.debug("Scheduled new trials")
+
         return len(new_futures)
 
     def gather(self):
@@ -400,7 +400,10 @@ class Runner:
         # NOTE: For Ptera instrumentation
         trials = 0  # pylint:disable=unused-variable
         for result in results:
-            trial = self.pending_trials.pop(result.future)
+            trial = self.pending_trials.pop(result.future, None)
+
+            if trial is None:
+                log.warning(f"Future does not have a matching trial, {result}")
 
             if isinstance(result, AsyncResult):
                 try:
@@ -461,13 +464,15 @@ class Runner:
 
         """
         # Sanity check
-        for _, trial in self.pending_trials.items():
+        for future, trial in self.pending_trials.items():
+            self.client.executor.cancel(future)
             try:
                 self.client.release(trial, status="interrupted")
             except AlreadyReleased:
                 pass
 
         self.pending_trials = {}
+        self.futures = []
 
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""

@@ -36,6 +36,9 @@ async function checkNormalBars(row, name, statusDescendingOrder) {
   const expectedNUllBars = [];
   for (let barStatus of PROGRESS_BAR_NAMES) {
     const subBar = await bar.locator(`.bg-${barStatus}`);
+    // Sub-war may have width 0, thus be considered as non-visible.
+    // So, we wait for element to be attached instead of visible.
+    await subBar.waitFor({ state: 'attached' });
     await expect(subBar).toHaveCount(1);
     // Collect bar width.
     barWidths[barStatus] = (await subBar.boundingBox()).width;
