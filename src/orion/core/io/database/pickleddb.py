@@ -101,6 +101,9 @@ class PickledDB(Database):
             host = DEFAULT_HOST
         super().__init__(host)
 
+        # NOTE: Save the original value of `host`, so this object can be pickled and unpickled on
+        # different machines more easily if it's a relative path.
+        self.original_host = host
         self.host = os.path.abspath(host)
 
         self.timeout = timeout
@@ -254,6 +257,17 @@ class PickledDB(Database):
 
         """
         return {"host": DEFAULT_HOST}
+
+    def __getstate__(self):
+        """Return state to be pickled."""
+        return self.__dict__.copy()
+
+    def __setstate__(self, state: dict) -> None:
+        """Restore state from pickled object."""
+        self.__dict__.update(state)
+        # NOTE: `original_host` might not be present when unpickling old databases.
+        self.original_host = state.setdefault("original_host", self.host)
+        self.host = os.path.abspath(self.original_host)
 
 
 local_file_systems = ["ext2", "ext3", "ext4", "ntfs"]

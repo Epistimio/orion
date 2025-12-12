@@ -84,6 +84,8 @@ import sys
 import typing
 from typing import Any, TypeVar
 
+from typing_extensions import Literal
+
 import orion.core
 from orion.algo.base import BaseAlgorithm, algo_factory
 from orion.algo.space import Space
@@ -103,12 +105,19 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment, Mode
-from orion.core.worker.experiment_config import ExperimentConfig
+from orion.core.worker.experiment_config import (
+    ExperimentConfig,
+    MetaData,
+    PartialExperimentConfig,
+    RefersConfig,
+)
 from orion.core.worker.primary_algo import create_algo
 from orion.core.worker.warm_start import KnowledgeBase
 from orion.storage.base import setup_storage
 
 if typing.TYPE_CHECKING:
+    from typing_extensions import Unpack
+
     from orion.core.evc.adapters import CompositeAdapter
     from orion.storage.base import BaseStorageProtocol
 log = logging.getLogger(__name__)
@@ -119,7 +128,7 @@ log = logging.getLogger(__name__)
 ##
 
 
-def clean_config(name: str, config: dict, branching: dict | None):
+def clean_config(name: str, config: PartialExperimentConfig, branching: dict | None):
     """Clean configuration from hidden fields (ex: ``_id``) and update branching if necessary"""
     log.debug("Cleaning config")
 
@@ -207,7 +216,34 @@ def _instantiate_space(config: Space | dict[str, Any]) -> Space:
     return SpaceBuilder().build(config)
 
 
-def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
+@typing.overload
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: Literal[True] = True,
+) -> KnowledgeBase | None:
+    ...
+
+
+@typing.overload
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: Literal[False] = False,
+) -> KnowledgeBase:
+    ...
+
+
+@typing.overload
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: bool,
+) -> KnowledgeBase | None:
+    ...
+
+
+def _instantiate_knowledge_base(
+    kb_config: dict[str, Any],
+    ignore_instantiation_errors: bool = True,
+) -> KnowledgeBase | None:
     """Instantiate the Knowledge base from its configuration."""
     if len(kb_config) != 1:
         raise ConfigurationError(
@@ -232,10 +268,17 @@ def _instantiate_knowledge_base(kb_config: dict[str, Any]) -> KnowledgeBase:
     kb_kwargs = kb_config[kb_type_name]
     # Instantiate the storage that is required for the KB.
     storage_config = kb_kwargs["storage"]
-    if isinstance(storage_config, dict):
-        storage = setup_storage(storage_config)
-        kb_kwargs["storage"] = storage
-    return kb_type(**kb_kwargs)
+    try:
+        if isinstance(storage_config, dict):
+            storage = setup_storage(storage_config)
+            kb_kwargs["storage"] = storage
+        return kb_type(**kb_kwargs)
+    except (FileNotFoundError, PermissionError) as err:
+        if not ignore_instantiation_errors:
+            log.error("Unable to instantiate the KnowledgeBase.")
+            raise err
+        log.warning("KnowledgeBase could not be instantiated.")
+        return None
 
 
 def _instantiate_algo(
@@ -354,7 +397,7 @@ def _fetch_config_version(
 ###
 
 
-def get_cmd_config(cmdargs) -> ExperimentConfig:
+def get_cmd_config(cmdargs) -> dict:
     """Fetch configuration defined by commandline and local configuration file.
 
     Arguments of commandline have priority over options in configuration file.
@@ -423,7 +466,7 @@ def build_from_args(cmdargs):
     return builder.build(**cmd_config)
 
 
-def get_from_args(cmdargs, mode="r"):
+def get_from_args(cmdargs: dict, mode: Literal["r", "w"] = "r"):
     """Build an experiment view based on commandline arguments
 
     .. seealso::
@@ -441,7 +484,7 @@ def get_from_args(cmdargs, mode="r"):
 
     name = cmd_config.get("name")
     version = cmd_config.get("version")
-
+    assert isinstance(name, str)
     return builder.load(name, version, mode=mode)
 
 
@@ -450,7 +493,7 @@ def build(
     version: int | None = None,
     branching: dict | None = None,
     storage: BaseStorageProtocol | dict | None = None,
-    **config,
+    **config: Unpack[PartialExperimentConfig],
 ):
     """Build an experiment.
 
@@ -462,10 +505,17 @@ def build(
     if storage is None:
         storage = setup_storage()
 
-    return ExperimentBuilder(storage).build(name, version, branching, **config)
+    config["name"] = name
+    config["version"] = version
+    return ExperimentBuilder(storage).build(branching=branching, **config)
 
 
-def load(name, version=None, mode="r", storage=None):
+def load(
+    name: str,
+    version=None,
+    mode: Literal["r", "w"] = "r",
+    storage: BaseStorageProtocol | dict | None = None,
+) -> Experiment:
     """Load an experiment.
 
     .. seealso::
@@ -513,7 +563,7 @@ class ExperimentBuilder:
         name: str,
         version: int | None = None,
         branching: dict | None = None,
-        **config,
+        **config: Unpack[PartialExperimentConfig],
     ) -> Experiment:
         """Build an experiment object
 
@@ -635,7 +685,9 @@ class ExperimentBuilder:
 
         return conflicts
 
-    def load(self, name: str, version: int | None = None, mode: Mode = "r"):
+    def load(
+        self, name: str, version: int | None = None, mode: Literal["r", "w"] = "r"
+    ):
         """Load experiment from database
 
         An experiment view provides all reading operations of standard experiment but prevents the
@@ -777,7 +829,9 @@ class ExperimentBuilder:
 
         return branched_experiment
 
-    def consolidate_config(self, name: str, version: int | None, config: dict):
+    def consolidate_config(
+        self, name: str, version: int | None, config: PartialExperimentConfig
+    ):
         """Merge together given configuration with db configuration matching
         for experiment (``name``, ``version``)
         """
@@ -800,6 +854,8 @@ class ExperimentBuilder:
         merge_algorithm_config(config, new_config)
         # TODO: Remove for v0.4
         merge_producer_config(config, new_config)
+        if "knowledge_base" in new_config:
+            config["knowledge_base"] = new_config["knowledge_base"]
 
         config.setdefault("name", name)
         config.setdefault("version", version)
@@ -878,8 +934,8 @@ class ExperimentBuilder:
         max_trials: int | None = None,
         max_broken: int | None = None,
         working_dir: str | None = None,
-        metadata: dict | None = None,
-        refers: dict | None = None,
+        metadata: MetaData | None = None,
+        refers: RefersConfig | None = None,
         producer: dict | None = None,
         knowledge_base: KnowledgeBase | dict | None = None,
         user: str | None = None,
@@ -928,8 +984,9 @@ class ExperimentBuilder:
         space = _instantiate_space(space)
         max_trials = _default(max_trials, orion.core.config.experiment.max_trials)
         if isinstance(knowledge_base, dict):
-            knowledge_base = _instantiate_knowledge_base(knowledge_base)
-
+            knowledge_base = _instantiate_knowledge_base(
+                knowledge_base, ignore_instantiation_errors=mode != "x"
+            )
         instantiated_algorithm = _instantiate_algo(
             space=space,
             max_trials=max_trials,
