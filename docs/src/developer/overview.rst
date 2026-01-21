@@ -9,6 +9,7 @@ The documentation for developers is organized in the following, easy to read, se
 
 * :doc:`Getting Started <installing>`. Installing the development environment
 * :doc:`Conventions <standards>`. Get familiar with the project's standards and guidelines
+* :doc:`Source code map <plan>`. Get familiar with the interactions in the code.
 * :doc:`Testing <testing>`. Implementing your changes and how to test your code
 * :doc:`Documenting <documenting>`. Documenting your changes and updating the documentation
 * :doc:`Continuous Integration <ci>`. Get familiar with our continuous integration setup
