@@ -22,12 +22,11 @@ fork our repository_ first).
 
       $ mkvirtualenv -a $PWD/orion orion
 
-Then, you need to deploy the project in `development mode`_ by invoking the ``setup.py`` script with
-``develop`` argument or by using ``pip install --editable``.
+Then, install the project in editable mode with the test extras:
 
 .. code-block:: sh
 
-   $ python setup.py develop --optimize=1
+   $ pip install -e ".[test]"
 
 Database
 ========
@@ -41,7 +40,7 @@ Packages include `tox <https://tox.readthedocs.io/en/latest/>`_ for defining
 and organizing macros of sh commands in virtual environments, and packages
 for linting as we will see in a next chapter.
 
-Check everything is ready by running python 3.6 the test suite using ``$ tox -e py36`` (this will
+Check everything is ready by running the test suite using ``$ tox -e py`` (this will
 take some time). If the tests can't be run to completion, contact us by opening a `new issue
 <https://github.com/Epistimio/orion/issues/new>`_. We'll do our best to help you!
 
@@ -55,4 +54,3 @@ verification, and release macros with it. All contexts are defined in
 .. _tox: https://tox.readthedocs.io/en/latest/
 .. _repository: https://github.com/epistimio/orion
 .. _virtual environment: https://virtualenvwrapper.readthedocs.io/en/latest/command_ref.html#mkvirtualenv
-.. _development mode: https://setuptools.readthedocs.io/en/latest/setuptools.html#development-mode
