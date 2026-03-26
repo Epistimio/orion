@@ -1,3 +1,5 @@
+CLAUDE.md
+
 ### General ###
 *~
 *.sw*
@@ -46,7 +48,7 @@ var/
 *.egg[s]
 MANIFEST
 .pytest_cache
-!dashboard/build
+!src/orion/dashboard/build
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -6,7 +6,7 @@
   "bugs": "https://github.com/carbon-design-system/carbon-tutorial/issues",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "react-scripts build",
+    "build": "BUILD_PATH=../../src/orion/dashboard/build react-scripts build",
     "ci-check": "yarn format:diff",
     "clean": "yarn cache clean && yarn install",
     "eject": "react-scripts eject",

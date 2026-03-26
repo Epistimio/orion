@@ -35,6 +35,7 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.benchmark",
     "orion.client",
     "orion.core",
+    "orion.dashboard",
     "orion.executor",
     "orion.plotting",
     "orion.serving",
@@ -118,12 +119,6 @@ if sys.version_info < (3, 14):
 
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
-dashboard_files = []
-for root, sub_directories, files in os.walk("dashboard/build"):
-    for file in files:
-        # Install dashboard build in a folder `orion-dashboard`
-        install_root = os.path.join("orion-dashboard", *root.split(os.sep)[1:])
-        dashboard_files.append((install_root, [os.path.join(root, file)]))
 
 setup_args = dict(
     name="orion",
@@ -143,7 +138,6 @@ setup_args = dict(
         "orion.algo",
     ],
     package_dir={"": "src"},
-    data_files=dashboard_files,
     include_package_data=True,
     python_requires=">=3.10",
     entry_points={
