@@ -1,4 +1,5 @@
 CLAUDE.md
+GEMINI.md
 src/orion/core/_version.py
 .venv/
 
@@ -14,6 +15,7 @@ src/orion/core/_version.py
 *.pkl
 *.lock
 !.github/workflows/orion/*.pkl
+!uv.lock
 
 # OS generated files
 .DS_Store
