@@ -48,6 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v6
       with:
@@ -93,6 +95,8 @@ jobs:
       PLATFORM: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
@@ -125,6 +129,8 @@ jobs:
       PLATFORM: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
@@ -152,6 +158,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
       with:
@@ -175,6 +183,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
         with:
@@ -221,6 +231,8 @@ jobs:
       ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
       with:
@@ -261,6 +273,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
       with:
@@ -314,6 +328,8 @@ jobs:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
     steps:
     - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
       with:

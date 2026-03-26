@@ -20,16 +20,14 @@ from appdirs import AppDirs
 
 from orion.core.io.config import Configuration
 
-from ._version import get_versions
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "0.0.0"
 
 logger = logging.getLogger(__name__)
 
-
-VERSIONS = get_versions()
-del get_versions
-
 __descr__ = "Asynchronous [black-box] Optimization"
-__version__ = VERSIONS["version"]
 __license__ = "BSD-3-Clause"
 __author__ = "Epistímio"
 __author_short__ = "Epistímio"
