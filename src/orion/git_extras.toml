@@ -1,5 +1,16 @@
 # Extra dependencies that require git URLs (not publishable on PyPI).
 # Installed via `orion install <extra>`. Same PEP 508 syntax as pyproject.toml.
+#
+# Why this file exists:
+# PyPI rejects uploads whose metadata contain direct references (PEP 440),
+# even in optional extras. Before hatchling, this went unnoticed because
+# setuptools had a bug that omitted Requires-Dist from sdist PKG-INFO
+# (fixed in setuptools v68.2.0, Aug 2023). No modern build backend can
+# work around this — the restriction is enforced by PyPI at upload time.
+#
+# Migration path: when a package listed here gets published on PyPI,
+# move its extra from this file into pyproject.toml [project.optional-dependencies].
+# The `orion install` command and ImportOptional.ensure() adapt automatically.
 
 [dehb]
 dependencies = [
