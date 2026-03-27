@@ -91,7 +91,7 @@ def main(args):
     """Install extra dependencies from git."""
     if args.get("list_extras"):
         list_extras()
-        return
+        return 0
 
     extra = args.get("extra")
     if not extra:
@@ -115,7 +115,7 @@ def main(args):
             f"Extra '{extra}' has no installable dependencies "
             f"for Python {sys.version.split()[0]}"
         )
-        return
+        return 0
 
     print(f"Installing extra '{extra}':")
     for dep in to_install:

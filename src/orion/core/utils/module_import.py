@@ -16,19 +16,6 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 _GIT_EXTRAS_PATH = Path(__file__).parents[2] / "git_extras.toml"
-_GIT_EXTRAS = None
-
-
-def _get_git_extras():
-    """Load and cache the set of extra names defined in git_extras.toml."""
-    global _GIT_EXTRAS
-    if _GIT_EXTRAS is None:
-        try:
-            with open(_GIT_EXTRAS_PATH, "rb") as f:
-                _GIT_EXTRAS = set(tomllib.load(f).keys())
-        except FileNotFoundError:
-            _GIT_EXTRAS = set()
-    return _GIT_EXTRAS
 
 
 def load_modules_in_path(path, filter_function=None):
@@ -81,6 +68,7 @@ class ImportOptional:
         self.extra_dependency = extra_dependency
 
         self.import_error: None | ImportError = None
+        self._git_extras = self._load_git_extras()
 
     def __enter__(self) -> ImportOptional:
         return self
@@ -97,10 +85,19 @@ class ImportOptional:
         """Whether the imports during the with-clause all worked out."""
         return bool(self.import_error)
 
+    @staticmethod
+    def _load_git_extras():
+        """Load the set of extra names defined in git_extras.toml."""
+        try:
+            with open(_GIT_EXTRAS_PATH, "rb") as f:
+                return set(tomllib.load(f).keys())
+        except FileNotFoundError:
+            return set()
+
     def ensure(self) -> None:
         """Raise the previously caught ImportError if the import failed."""
         if self.failed:
-            if self.extra_dependency in _get_git_extras():
+            if self.extra_dependency in self._git_extras:
                 install_cmd = f"orion install {self.extra_dependency}"
             else:
                 install_cmd = f"pip install orion[{self.extra_dependency}]"
