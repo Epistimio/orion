@@ -42,7 +42,7 @@ dependencies = [
     "tabulate",
     "AppDirs",
     "plotly",
-    "kaleido==0.2.1",
+    "kaleido==0.2.1",  # Pin to work around plotly/Kaleido#156
     "requests",
     "pandas",
     "gunicorn",
@@ -121,7 +121,8 @@ nevergrad = [
     'fcmaes; python_version < "3.14"',
     "pymoo",
 ]
-configspace = ['ConfigSpace; python_version < "3.12"']
+# ConfigSpace >= 1 removed the `q` parameter used by sample-space/orion
+configspace = ['ConfigSpace>=0.7,<1; python_version < "3.12"']
 profet = [
     'emukit; python_version < "3.13"',
     'GPy; python_version < "3.13"',
