@@ -47,7 +47,6 @@ dependencies = [
     "pandas",
     "gunicorn",
     "falcon>=4,<5",
-    "falcon-cors",
     "scikit-learn",
     "psutil",
     "joblib",

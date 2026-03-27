@@ -31,11 +31,15 @@ requirements:
     - requests
     - pandas
     - falcon >=4,<5
-    - falcon-cors
     - gunicorn
     - scikit-learn
     - psutil
+    - joblib
     - scikit-optimize
+    - pytest >=3.0.0
+    - packaging
+    - tomli  # [py<311]
+    - typing_extensions
 
 test:
   import:

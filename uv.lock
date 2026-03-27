@@ -1076,15 +1076,6 @@ wheels = [
 ]
 
 [[package]]
-name = "falcon-cors"
-version = "1.1.7"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "falcon" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/27/92/494602f8221b8875b8b88d89c1571d3361f99ce4facc1883b30bba3f765e/falcon-cors-1.1.7.tar.gz", hash = "sha256:1788ec5c31b5a39240f7979a7c7170a33ea4952dc97e151858a82dcde1a9fe8a", size = 6267, upload-time = "2017-07-17T22:28:35.043Z" }
-
-[[package]]
 name = "fcmaes"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2400,7 +2391,6 @@ dependencies = [
     { name = "appdirs" },
     { name = "cloudpickle" },
     { name = "falcon" },
-    { name = "falcon-cors" },
     { name = "filelock" },
     { name = "gitpython" },
     { name = "gunicorn" },
@@ -2530,7 +2520,6 @@ requires-dist = [
     { name = "emukit", marker = "python_full_version < '3.13' and extra == 'all'" },
     { name = "emukit", marker = "python_full_version < '3.13' and extra == 'profet'" },
     { name = "falcon", specifier = ">=4,<5" },
-    { name = "falcon-cors" },
     { name = "fcmaes", marker = "python_full_version < '3.14' and extra == 'all'" },
     { name = "fcmaes", marker = "python_full_version < '3.14' and extra == 'nevergrad'" },
     { name = "filelock" },
