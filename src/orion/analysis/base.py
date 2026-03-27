@@ -97,14 +97,15 @@ def ranking(trials, group_by="order", key="best"):
     if trials.empty:
         return trials
 
-    def rank(row):
-        indices = row[key].argsort().to_numpy()
+    def rank_group(values):
+        indices = values.argsort()
         ranks = numpy.empty_like(indices)
         ranks[indices] = numpy.arange(len(ranks))
-        row["rank"] = ranks
-        return row
+        return ranks
 
-    return trials.groupby(group_by, group_keys=False).apply(rank)
+    result = trials.copy()
+    result["rank"] = trials.groupby(group_by)[key].transform(rank_group)
+    return result
 
 
 def flatten_params(space, params=None):

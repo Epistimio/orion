@@ -405,10 +405,10 @@ def select_new_region_of_interest(
         dim_importance_analysis = factorial_importance_analysis[
             factorial_importance_analysis["param"] == key
         ]
-        if float(dim_importance_analysis["importance"]) < threshold:
+        if float(dim_importance_analysis["importance"].iloc[0]) < threshold:
             frozen_param_values[key] = sum(dim.interval()) / 2.0
         else:
-            level = int(dim_importance_analysis["best_level"])
+            level = int(dim_importance_analysis["best_level"].iloc[0])
             low, high = dim.interval()
             intervals = (high - low) / n_levels
             new_low = low + intervals * (level - 1)
