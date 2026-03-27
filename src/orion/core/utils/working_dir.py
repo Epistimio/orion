@@ -29,7 +29,7 @@ class SetupWorkingDir:
         self._tmpdir = None
 
     def __enter__(self):
-        """Create the a permanent directory or a temporary one."""
+        """Create a permanent directory or a temporary one."""
 
         self.tmp = bool(not self.experiment.working_dir)
 
@@ -38,7 +38,7 @@ class SetupWorkingDir:
             os.makedirs(base_path, exist_ok=True)
             self._tmpdir = tempfile.TemporaryDirectory(
                 prefix=f"{self.experiment.name}-v{self.experiment.version}",
-                dir=self.experiment.working_dir,
+                dir=base_path,
             )
             self.experiment.working_dir = self._tmpdir.name
         else:
