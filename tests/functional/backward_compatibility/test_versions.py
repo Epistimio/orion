@@ -107,7 +107,7 @@ def setup_virtualenv(version):
     execute(command)
     # Old Orion versions use pkg_resources, removed in setuptools>=82.
     # Force-install a compatible version after orion to ensure it's available.
-    execute(f"{virtualenv_dir}/bin/pip install 'setuptools<82'")
+    execute(f"{virtualenv_dir}/bin/pip install setuptools<82")
 
 
 def get_version(orion_script):
