@@ -53,6 +53,8 @@ dependencies = [
     "joblib",
     "scikit-optimize",
     "pytest>=3.0.0",
+    "packaging",
+    'tomli; python_version < "3.11"',
     "typing_extensions",
 ]
 
@@ -113,7 +115,6 @@ docs = [
     "sphinx_gallery",
 ]
 dask = ["dask[complete]"]
-track = ["track @ git+https://github.com/Delaunay/track@master"]
 ax = ["ax-platform", "numpy"]
 pb2 = ['GPy; python_version < "3.13"', "matplotlib"]
 nevergrad = [
@@ -122,20 +123,6 @@ nevergrad = [
     "pymoo",
 ]
 configspace = ['ConfigSpace; python_version < "3.12"']
-dehb = [
-    'ConfigSpace>=0.7,<1; python_version < "3.12"',
-    'dehb @ git+https://github.com/bouthilx/DEHB.git@master ; python_version < "3.12"',
-    'sspace @ git+https://github.com/Epistimio/sample-space.git@master ; python_version < "3.12"',
-]
-bohb = [
-    'hpbandster; python_version < "3.12"',
-    'ConfigSpace>=0.7,<1; python_version < "3.12"',
-    'sspace @ git+https://github.com/Epistimio/sample-space.git@master ; python_version < "3.12"',
-]
-hebo = [
-    'pymoo==0.6.0; python_version < "3.12"',
-    'hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#subdirectory=HEBO ; python_version < "3.12"',
-]
 profet = [
     'emukit; python_version < "3.13"',
     'GPy; python_version < "3.13"',
@@ -143,10 +130,9 @@ profet = [
     'pybnn; python_version < "3.13"',
 ]
 ray = ['ray; python_version < "3.14"']
-all = ["orion[test,docs,dask,ax,pb2,nevergrad,configspace,dehb,bohb,hebo,profet,ray,track]"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+all = ["orion[test,docs,dask,ax,pb2,nevergrad,configspace,profet,ray]"]
+# Extras with git dependencies (dehb, bohb, hebo, track) are not declarable
+# in pyproject.toml due to PyPI restrictions. Install them via: orion install <extra>
 
 [tool.hatch.version]
 source = "vcs"

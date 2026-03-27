@@ -1,0 +1,27 @@
+# Extra dependencies that require git URLs (not publishable on PyPI).
+# Installed via `orion install <extra>`. Same PEP 508 syntax as pyproject.toml.
+
+[dehb]
+dependencies = [
+    'ConfigSpace>=0.7,<1; python_version < "3.12"',
+    'dehb @ git+https://github.com/bouthilx/DEHB.git@master ; python_version < "3.12"',
+    'sspace @ git+https://github.com/Epistimio/sample-space.git@master ; python_version < "3.12"',
+]
+
+[bohb]
+dependencies = [
+    'hpbandster; python_version < "3.12"',
+    'ConfigSpace>=0.7,<1; python_version < "3.12"',
+    'sspace @ git+https://github.com/Epistimio/sample-space.git@master ; python_version < "3.12"',
+]
+
+[hebo]
+dependencies = [
+    'pymoo==0.6.0; python_version < "3.12"',
+    'hebo @ git+https://github.com/huawei-noah/HEBO.git@v0.3.6#subdirectory=HEBO ; python_version < "3.12"',
+]
+
+[track]
+dependencies = [
+    "track @ git+https://github.com/Delaunay/track@master",
+]
