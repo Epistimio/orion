@@ -290,7 +290,7 @@ jobs:
     - name: Test dashboard build deployment on install
       run: |
           # Get package path
-          export ORION_PACKAGE=$( realpath `find dist/ -type f` )
+          export ORION_PACKAGE=$( realpath dist/*.whl )
           echo Package path: ${ORION_PACKAGE}
           # Move to another folder (to prevent any confusion at installation with repo folder)
           cd ~
