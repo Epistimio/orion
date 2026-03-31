@@ -127,6 +127,7 @@ jobs:
         algo: [nevergrad, hebo, ax]
     env:
       PLATFORM: ${{ matrix.platform }}
+      ORION_ALGO: ${{ matrix.algo }}
     steps:
     - uses: actions/checkout@v5
       with:
