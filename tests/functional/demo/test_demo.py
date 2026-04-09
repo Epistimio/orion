@@ -515,10 +515,9 @@ def test_working_dir_argument_cmdline(storage, monkeypatch, tmp_path):
 
 
 def test_tmpdir_is_deleted(storage, monkeypatch, tmp_path):
-    """Check that temporary directory is deletid tmpdir"""
-    tmp_path = os.path.join(tempfile.gettempdir(), "orion")
-    if os.path.exists(tmp_path):
-        shutil.rmtree(tmp_path)
+    """Check that temporary directory is deleted when working_dir is not set."""
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    orion_tmp = tmp_path / "orion"
 
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
@@ -535,7 +534,7 @@ def test_tmpdir_is_deleted(storage, monkeypatch, tmp_path):
         ]
     )
 
-    assert not os.listdir(tmp_path)
+    assert not orion_tmp.exists() or not list(orion_tmp.iterdir())
 
 
 def test_working_dir_argument_config(storage, monkeypatch):
