@@ -49,6 +49,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
+        # Full history is needed for hatch-vcs to derive the version from git tags.
         fetch-depth: 0
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v6
