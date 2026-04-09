@@ -15,7 +15,7 @@ Install Python requirements to use the template:
 
 .. code-block:: console
 
-    $ python -m pip install cookiecutter>=1.5 versioneer>=0.18 jinja2
+    $ python -m pip install cookiecutter>=1.5 jinja2
 
 
 Create a new project directly from the template on `GitHub`_:
@@ -65,11 +65,8 @@ This will create the following package structure.
 
     orion.algo.{plugin_name}
     ├── README.rst
-    ├── setup.cfg
-    ├── setup.py
-    ├── MANIFEST.in
+    ├── pyproject.toml
     ├── LICENSE (BSD License)
-    ├── versioneer.py
     ├── tox.ini
     ├── dev-requirements.txt
     ├── doc
@@ -92,8 +89,7 @@ This will create the following package structure.
             └── algo
                 └── {plugin_name}
                     ├── {algoname}.py
-                    ├── __init__.py
-                    └── _version.py
+                    └── __init__.py
 
 The important files to modify are ``src/orion/algo/{plugin_name}/{module_name}.py`` to implement the
 algorithm and ``tests/benchmark/{algo_name}.yaml`` to fill the arguments required for the algorithm
@@ -103,11 +99,10 @@ you implement.
 
 Note that you are free to change the License, copyright is to your name.
 
-``versioneer.py``
-``src/orion/algo/{plugin_name}/_version.py``
+``pyproject.toml``
 
-This serves to version automatically your algo, just ignore these if you don't plan to make
-releases.
+The project metadata, dependencies, and entry points are declared here. The ``BaseAlgorithm``
+entry point is what registers your algorithm with Orion.
 
 ``tests``
 
@@ -208,7 +203,7 @@ or using ``tox``
 
 .. code-block:: console
 
-    $ tox -e py36
+    $ tox -e py
 
 Note that the algorithm pre-built is random search so that you can start from a fully working
 environment and test your way through the modifications.

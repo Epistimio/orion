@@ -1,3 +1,8 @@
+CLAUDE.md
+GEMINI.md
+src/orion/core/_version.py
+.venv/
+
 ### General ###
 *~
 *.sw*
@@ -10,6 +15,7 @@
 *.pkl
 *.lock
 !.github/workflows/orion/*.pkl
+!uv.lock
 
 # OS generated files
 .DS_Store
@@ -46,7 +52,7 @@ var/
 *.egg[s]
 MANIFEST
 .pytest_cache
-!dashboard/build
+!src/orion/dashboard/build
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -41,7 +41,7 @@ import time
 import falcon
 from gunicorn.app.base import BaseApplication
 
-from orion.serving.webapi import MyCORS
+from orion.serving.webapi import OriginEnforcerMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +106,9 @@ class FalconApp(falcon.App):
 
         # Prevent CORS (Cross-Origin) issues.
         frontends_uri = ["http://localhost:3000", "http://127.0.0.1:3000"]
-        cors = MyCORS(allow_origins_list=frontends_uri)
-        super().__init__(middleware=[cors.middleware])
+        cors = falcon.CORSMiddleware(allow_origins=frontends_uri)
+        origin_enforcer = OriginEnforcerMiddleware(frontends_uri)
+        super().__init__(middleware=[origin_enforcer, cors])
 
         # Create static resource and map it to endpoints.
         resource = StaticResource()

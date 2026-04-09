@@ -1,0 +1,159 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orion"
+dynamic = ["version"]
+description = "Asynchronous [black-box] Optimization"
+readme = "README.rst"
+license = "BSD-3-Clause"
+requires-python = ">=3.10"
+authors = [
+    { name = "Epistímio", email = "xavier.bouthillier@umontreal.ca" },
+]
+keywords = ["Machine Learning", "Deep Learning", "Distributed", "Optimization"]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "cloudpickle",
+    "PyYAML",
+    "pymongo>=3",
+    "numpy>=1.17",
+    "scipy",
+    "gitpython",
+    "filelock",
+    "tabulate",
+    "AppDirs",
+    "plotly",
+    "kaleido==0.2.1",  # Pin to work around plotly/Kaleido#156
+    "requests",
+    "pandas",
+    "gunicorn",
+    "falcon>=4,<5",
+    "scikit-learn",
+    "psutil",
+    "joblib",
+    "scikit-optimize",
+    "pytest>=3.0.0",
+    "packaging",
+    'tomli; python_version < "3.11"',
+    "typing_extensions",
+]
+
+[project.urls]
+Homepage = "https://github.com/epistimio/orion"
+
+[project.scripts]
+orion = "orion.core.cli:main"
+
+[project.entry-points.BaseAlgorithm]
+random = "orion.algo.random:Random"
+gridsearch = "orion.algo.gridsearch:GridSearch"
+hyperband = "orion.algo.hyperband:Hyperband"
+asha = "orion.algo.asha:ASHA"
+dehb = "orion.algo.dehb.dehb:DEHB"
+tpe = "orion.algo.tpe:TPE"
+EvolutionES = "orion.algo.evolution_es:EvolutionES"
+ax = "orion.algo.axoptimizer:AxOptimizer"
+mofa = "orion.algo.mofa.mofa:MOFA"
+pb2 = "orion.algo.pbt.pb2:PB2"
+bohb = "orion.algo.bohb:BOHB"
+nevergrad = "orion.algo.nevergradoptimizer:NevergradOptimizer"
+
+[project.entry-points.Database]
+ephemeraldb = "orion.core.io.database.ephemeraldb:EphemeralDB"
+pickleddb = "orion.core.io.database.pickleddb:PickledDB"
+mongodb = "orion.core.io.database.mongodb:MongoDB"
+
+[project.entry-points.BaseStorageProtocol]
+track = "orion.storage.track:Track"
+legacy = "orion.storage.legacy:Legacy"
+
+[project.entry-points.BaseExecutor]
+singleexecutor = "orion.executor.single_backend:SingleExecutor"
+joblib = "orion.executor.joblib_backend:Joblib"
+poolexecutor = "orion.executor.multiprocess_backend:PoolExecutor"
+dask = "orion.executor.dask_backend:Dask"
+ray = "orion.executor.ray_backend:Ray"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=3.6.0",
+    "pytest-xdist",
+    "pytest-timeout",
+    "pytest-mock",
+    "pytest-custom_exit_code",
+    "scikit-learn",
+    "ptera>=1.1.0",
+    "selenium>=4.16.0",
+]
+docs = [
+    "matplotlib",
+    "numpydoc",
+    "sphinx",
+    "sphinx_rtd_theme",
+    "sphinxcontrib.httpdomain",
+    "sphinx-autoapi",
+    "sphinx_gallery",
+]
+dask = ["dask[complete]"]
+ax = ["ax-platform", "numpy"]
+pb2 = ['GPy; python_version < "3.13"', "matplotlib"]
+nevergrad = [
+    "nevergrad>=0.4.3.post10",
+    'fcmaes; python_version < "3.14"',
+    "pymoo",
+]
+# ConfigSpace >= 1 removed the `q` parameter used by sample-space/orion
+configspace = ['ConfigSpace>=0.7,<1; python_version < "3.12"']
+profet = [
+    'emukit; python_version < "3.13"',
+    'GPy; python_version < "3.13"',
+    'torch; python_version < "3.13"',
+    'pybnn; python_version < "3.13"',
+]
+ray = ['ray; python_version < "3.14"']
+all = ["orion[test,docs,dask,ax,pb2,nevergrad,configspace,profet,ray]"]
+# Extras with git dependencies (dehb, bohb, hebo, track) are not declarable
+# in pyproject.toml due to PyPI restrictions. Install them via: orion install <extra>
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/orion/core/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/orion"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".github/",
+    "conda/",
+    "tox.ini",
+    "*-requirements.txt",
+    ".pylintrc",
+    "codecov.yml",
+    ".mailmap",
+    ".readthedocs.yml",
+    "docs/build/",
+    "docs/src/reference/",
+    "dashboard/src/",
+]

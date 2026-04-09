@@ -10,7 +10,6 @@ Exposes a WSGI REST server application instance by subclassing ``falcon.API``.
 import logging
 
 import falcon
-from falcon_cors import CORS, CORSMiddleware
 
 from orion.serving.benchmarks_resource import BenchmarksResource
 from orion.serving.experiments_resource import ExperimentsResource
@@ -22,58 +21,26 @@ from orion.serving.trials_resource import TrialsResource
 logger = logging.getLogger(__name__)
 
 
-class MyCORSMiddleware(CORSMiddleware):
-    """Subclass of falcon-cors CORSMiddleware class.
+class OriginEnforcerMiddleware:
+    """Reject requests from disallowed origins with 403 Forbidden.
 
-    Generate a HTTP 403 Forbidden response if request sender is not allowed
-    to access requested content.
+    Falcon's built-in CORSMiddleware handles CORS headers but does not
+    reject requests from disallowed origins — it simply omits the headers.
+    This middleware enforces strict origin checking: if a request includes
+    an Origin header that is not in the allowed list, it is rejected.
 
-    Default middleware just prints a message in server side
-    (e.g. "Aborting response due to origin not allowed"), but still
-    sends content, so, a client ignoring headers might still access
-    data even if not allowed.
-
-    CORS middleware role is to add necessary "access-control-" headers to
-    response to mark it as allowed. So, a response lacking expected headers
-    after call to parent method `process_ressource()` can be considered
-    to not be delivered to request sender.
-
-    More info about CORS:
-    - https://developer.mozilla.org/fr/docs/Web/HTTP/CORS
-    - https://fr.wikipedia.org/wiki/Cross-origin_resource_sharing
+    Requests without an Origin header (e.g. same-origin browser requests
+    or non-browser clients) are allowed through.
     """
 
-    def process_resource(self, req, resp, resource, *args):
-        """Generate a 403 Forbidden response if response is not allowed."""
+    def __init__(self, allow_origins):
+        self.allow_origins = set(allow_origins)
 
-        cors_resp_headers_before = [
-            header
-            for header in resp.headers
-            if header.lower().startswith("access-control-")
-        ]
-        assert not cors_resp_headers_before, cors_resp_headers_before
-
-        super().process_resource(req, resp, resource, *args)
-
-        # We then verify if some access control headers were added to response.
-        # If not, response is not allowed.
-        # Special case: if request did not have an origin, it was certainly sent from
-        # a browser (ie. not another server), so CORS is not relevant.
-        cors_resp_headers_after = [
-            header
-            for header in resp.headers
-            if header.lower().startswith("access-control-")
-        ]
-        if not cors_resp_headers_after and req.get_header("origin"):
+    def process_resource(self, req, resp, resource, params):
+        """Generate a 403 Forbidden response if origin is not allowed."""
+        origin = req.get_header("origin")
+        if origin and origin not in self.allow_origins:
             raise falcon.HTTPForbidden()
-
-
-class MyCORS(CORS):
-    """Subclass of falcon-cors CORS class to return a custom middleware."""
-
-    @property
-    def middleware(self):
-        return MyCORSMiddleware(self)
 
 
 class WebApi(falcon.App):
@@ -88,10 +55,8 @@ class WebApi(falcon.App):
         # http://myorionserver.com, it won't accept an API call
         # coming from a server not hosted at same address
         # (e.g. a local installation at http://localhost)
-        # This is a Cross-Origin Resource Sharing (CORS) security:
+        # Cross-Origin Resource Sharing (CORS) security:
         # https://developer.mozilla.org/fr/docs/Web/HTTP/CORS
-        # To make server accept CORS requests, we need to use
-        # falcon-cors package: https://github.com/lwcolton/falcon-cors
         frontends_uri = (
             config["frontends_uri"]
             if "frontends_uri" in config
@@ -102,8 +67,9 @@ class WebApi(falcon.App):
                 ", ".join(frontends_uri) if frontends_uri else "(none)"
             )
         )
-        cors = MyCORS(allow_origins_list=frontends_uri)
-        super().__init__(middleware=[cors.middleware])
+        cors = falcon.CORSMiddleware(allow_origins=frontends_uri)
+        origin_enforcer = OriginEnforcerMiddleware(frontends_uri)
+        super().__init__(middleware=[origin_enforcer, cors])
         self.config = config
         self.storage = storage
 

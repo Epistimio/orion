@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import os
+import shutil
 import signal
 import sys
+import tempfile
 import time
 import traceback
 from contextlib import contextmanager
@@ -68,7 +70,7 @@ class FakeClient:
         self.suggest_error = WaitingForTrials
         self.trials = []
         self.status = []
-        self.working_dir = ""
+        self.working_dir = tempfile.mkdtemp(prefix="orion-test-")
 
     def suggest(self, pool_size=None):
         """Fake suggest."""
@@ -87,15 +89,22 @@ class FakeClient:
 
     def close(self):
         self._free_executor()
+        self._cleanup_working_dir()
 
     def __del__(self):
         self._free_executor()
+        self._cleanup_working_dir()
 
     def _free_executor(self):
         if self.executor is not None:
             self.executor.__exit__(None, None, None)
             self.executor = None
             self.executor_owner = False
+
+    def _cleanup_working_dir(self):
+        if self.working_dir and os.path.isdir(self.working_dir):
+            shutil.rmtree(self.working_dir, ignore_errors=True)
+            self.working_dir = ""
 
     def get_trial(self, uid: str) -> Trial:
         trial = [trial for trial in self.trials if trial.id == uid]

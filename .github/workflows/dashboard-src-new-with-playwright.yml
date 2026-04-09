@@ -57,18 +57,9 @@ jobs:
     - name: Build dashboard
       run: yarn build
     - name: Serve build
-      run: ./node_modules/.bin/serve -l 3000 build/ &
+      run: ./node_modules/.bin/serve -l 3000 ../../src/orion/dashboard/build &
 
-    - name: Run Playwright tests (1)
-      run: yarn playwright test --project=chromium --reporter=line
-
-    - name: Run Playwright tests (2)
-      run: yarn playwright test --project=chromium --reporter=line
-
-    - name: Run Playwright tests (3)
-      run: yarn playwright test --project=chromium --reporter=line
-
-    - name: Run Playwright tests (4)
+    - name: Run Playwright tests
       run: yarn playwright test --project=chromium --reporter=line
 
     # Upload orion backend log.

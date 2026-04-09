@@ -562,6 +562,36 @@ class TestExperimentConfig(ConfigurationTestSuite):
         assert experiment.max_broken == self.env_vars["ORION_EXP_MAX_BROKEN"]
         assert experiment.working_dir == self.env_vars["ORION_WORKING_DIR"]
 
+    @contextmanager
+    def setup_db_config(self, tmp_path):
+        saved = self.database["working_dir"]
+        self.database["working_dir"] = str(tmp_path / saved)
+        try:
+            with super().setup_db_config(tmp_path) as storage:
+                yield storage
+        finally:
+            self.database["working_dir"] = saved
+
+    @contextmanager
+    def setup_local_config(self, tmp_path):
+        saved = self.local["experiment"]["working_dir"]
+        self.local["experiment"]["working_dir"] = str(tmp_path / saved)
+        try:
+            with super().setup_local_config(tmp_path) as conf_file:
+                yield conf_file
+        finally:
+            self.local["experiment"]["working_dir"] = saved
+
+    @contextmanager
+    def setup_cmd_args_config(self, tmp_path):
+        saved = self.cmdargs["working-dir"]
+        self.cmdargs["working-dir"] = str(tmp_path / saved)
+        try:
+            with super().setup_cmd_args_config(tmp_path) as conf_file:
+                yield conf_file
+        finally:
+            self.cmdargs["working-dir"] = saved
+
     def check_db_config(self):
         """Check that db config overrides global/envvar config"""
         name = "test-name"
